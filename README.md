@@ -47,7 +47,7 @@ I will add some question directly here for the time beeing: I would like to add 
 ## Stokes Equation
 ------------------
 ------------------
-## Bechmarks
+## Benchmarks
 ------------------
 ------------------
 ## Examples
