@@ -1,5 +1,17 @@
 module GeoModBox
 
-greet() = print("Hello World!")
+    using Statistics: mean
+    using ExtendableSparse, LinearAlgebra
 
-end # module GeoModBox
+    module HeatEquation
+
+        # Handle analytical solution for 2D Diffusion2D_Gaussian
+        include("./HeatEquation/AnalyticsDiffusion2D.jl")
+        export AnalyticalSolution!, BoundaryConditions!
+
+        # Implicit solver
+        include("./HeatEquation/BackwardEuler.jl")
+        export ComputeResiduals!, AssembleMatrix
+    end
+
+end 
