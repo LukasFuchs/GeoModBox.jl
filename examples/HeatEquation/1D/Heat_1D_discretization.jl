@@ -22,6 +22,7 @@ xc          =   Δx/2:Δx:(L-Δx/2)    # Coordinates
 niter       =   10  
 ϵ           =   1.0e-10       
 R           =   zeros(nc)           # Residual
+# ----------------------------------------------------------------------- #
 # Time Parameters ------------------------------------------------------- #
 day         =   3600.0*24.0         # Seconds per day
 tmax        =   2.0*365.25*day      # Maximum time [ s ]
@@ -44,12 +45,12 @@ xp          =   L/2.0
 @. T        =   Trock + (Tmagma-Trock)*exp(-((xc-xp)/σ)^2)
 
 T0exp       =   T
-T1exp       =   T0exp
 T0imp       =   T
-T1imp       =   T0imp
 T0dc        =   T
-T1dc        =   T0dc
 T0cnv       =   T
+T1exp       =   T0exp
+T1imp       =   T0imp
+T1dc        =   T0dc
 T1cnv       =   T0cnv
 Tana        =   zeros(nc)
 εexp        =   zeros(nc)
@@ -74,7 +75,7 @@ K1          =   ExtendableSparseMatrix(ndof,ndof)
 K2          =   ExtendableSparseMatrix(ndof,ndof)    
 ## ----------------------------------------------------------------------- #
 # Animationssettings ---------------------------------------------------- #
-path        =   string("./examples/HeatEquation/1D/Figures/")
+path        =   string("./examples/HeatEquation/1D/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("1D_comparison")
 save_fig    =   1
@@ -114,18 +115,17 @@ for n=1:nt
 
     for iter = 1:niter
         # Residual iteration
-        ComputeResiduals!(R, T1dc, T_ex, T0dc, ∂T2∂x2, BC, κ, Δx, Δt)
+        ComputeResiduals!( R, T1dc, T_ex, T0dc, ∂T2∂x2, BC, κ, Δx, Δt )
         @printf("||R|| = %1.4e\n", norm(R)/length(R))            
         norm(R)/length(R) < ϵ ? break : nothing
         # Assemble linear system
-        K  = AssembleMatrix!(K,BC,nc,κ,Δx,Δt)
+        K  = AssembleMatrix( K, BC, nc, κ, Δx, Δt )
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K.cscmatrix)
         # Solve for temperature correction: Back substitutions
-        δT = -(Kc\R[:])
-        #δT = -(K\R[:])            
+        δT = -(Kc\R[:])          
         # Update temperature            
-        T = T .+ δT            
+        T1dc += δT            
     end        
     
     T1cnv,K1,K2     =   CNV!(T0cnv,nc,κ,Δt,Δx,BC,K1,K2)
@@ -167,7 +167,7 @@ for n=1:nt
             title="Error",
             subplot=2)
         plot!(p, xc, εimp,linestyle=:dash, label="ε_imp",subplot=2)
-        plot!(p, xc, εdc,linestyle=:dash, label="ε_dc",subplot=2)
+        plot!(p, xc, εdc,linestyle=:dot, label="ε_dc",subplot=2)
         plot!(p, xc, εcnv,linestyle=:dash, label="ε_CNV",subplot=2)                
         # Display the plots ---    
         if save_fig == 1
