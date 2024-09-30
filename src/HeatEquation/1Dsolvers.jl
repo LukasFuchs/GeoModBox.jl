@@ -24,11 +24,7 @@ BC      : Structure for the boundary condition
 
 using ExtendableSparse
 
-<<<<<<< HEAD
 function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
-=======
-function ForwardEuler!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
->>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -93,73 +89,68 @@ function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
 end
 
 function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
-    # ======================================================================= #
-    # LF; 19.09.2024 - Version 1.0 - Julia                                    #
-    # ======================================================================= #    
-        rhs     = zeros(length(cnv.T0))
-        # Define coefficients ---
-        a       =   κ / 2 / Δx^2
-        b       =   1 / Δt
-        # Loop over the grid points ---
-        for i = 1:nc
-            # Equation number ---
-            ii          =   i
-            # Stencil ---
-            iW          =   ii - 1      # West
-            iC          =   ii          # Central
-            iE          =   ii + 1      # East
-            # Boundaries ---
-            # If an West index is required ---
-            inW    =  i==1    ? false  : true
-            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-            # If an East index is required ---
-            inE    =  i==nc ? false  : true
-            DirE   = (i==nc && BC.type.E==:Dirichlet) ? 1. : 0.
-            NeuE   = (i==nc && BC.type.E==:Neumann  ) ? 1. : 0.
-            if inE
-                K1[ii,iE]   =   - a
-                K2[ii,iE]   =   a
-            end
-            K1[ii,iC]       =   b + (2 + DirW + DirE - NeuW - NeuE) * a
-            K2[ii,iC]       =   b - (2 + DirW + DirE - NeuW - NeuE) * a 
-            if inW 
-                K1[ii,iW]   =   - a
-                K2[ii,iW]   =   a
-            end                    
+# ======================================================================= #
+# LF; 19.09.2024 - Version 1.0 - Julia                                    #
+# ======================================================================= #    
+    rhs     = zeros(length(cnv.T0))
+    # Define coefficients ---
+    a       =   κ / 2 / Δx^2
+    b       =   1 / Δt
+    # Loop over the grid points ---
+    for i = 1:nc
+        # Equation number ---
+        ii          =   i
+        # Stencil ---
+        iW          =   ii - 1      # West
+        iC          =   ii          # Central
+        iE          =   ii + 1      # East
+        # Boundaries ---
+        # If an West index is required ---
+        inW    =  i==1    ? false  : true
+        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+        # If an East index is required ---
+        inE    =  i==nc ? false  : true
+        DirE   = (i==nc && BC.type.E==:Dirichlet) ? 1. : 0.
+        NeuE   = (i==nc && BC.type.E==:Neumann  ) ? 1. : 0.
+        if inE
+            K1[ii,iE]   =   - a
+            K2[ii,iE]   =   a            
         end
-        # ------------------------------------------------------------------- #
-        # Berechnung der rechten Seite -------------------------------------- #
-        rhs     .=   K2 * cnv.T0 
-        # ------------------------------------------------------------------- #        
-        # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
-        for i = 1:nc        
-            # Boundaries         
-            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-            DirE   = (i==nc && BC.type.E==:Dirichlet) ? 1. : 0.
-            NeuE   = (i==nc && BC.type.E==:Neumann  ) ? 1. : 0.
-            # West boundary
-            rhs[1]   = rhs[1] + 4*a*BC.val.W * DirW - 2*a*BC.val.W*Δx * NeuW
-        
-            # East boundary
-            rhs[nc]  = rhs[nc] + 4*a*BC.val.E * DirE + 2*a*BC.val.E*Δx * NeuE
-        end
-        # ------------------------------------------------------------------- #    
-        # Compute new temperature ------------------------------------------- #
-        cnv.T      .=    K1 \ rhs
-        # ------------------------------------------------------------------- #
-        #return T1, K1, K2
+        K1[ii,iC]       =   b + (2 + DirW + DirE - NeuW - NeuE) * a
+        K2[ii,iC]       =   b - (2 + DirW + DirE - NeuW - NeuE) * a 
+        if inW 
+            K1[ii,iW]   =   - a
+            K2[ii,iW]   =   a
+        end                    
     end
+    # ------------------------------------------------------------------- #
+    # Berechnung der rechten Seite -------------------------------------- #
+    rhs     .=   K2 * cnv.T0 
+    # ------------------------------------------------------------------- #        
+    # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
+    for i = 1:nc        
+        # Boundaries         
+        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+        DirE   = (i==nc && BC.type.E==:Dirichlet) ? 1. : 0.
+        NeuE   = (i==nc && BC.type.E==:Neumann  ) ? 1. : 0.
+        # West boundary
+        rhs[1]   = rhs[1] + 4*a*BC.val.W * DirW - 2*a*BC.val.W*Δx * NeuW        
+    
+        # East boundary
+        rhs[nc]  = rhs[nc] + 4*a*BC.val.E * DirE + 2*a*BC.val.E*Δx * NeuE
+    end
+    # ------------------------------------------------------------------- #    
+    # Compute new temperature ------------------------------------------- #
+    cnv.T      .=    K1 \ rhs
+    # ------------------------------------------------------------------- #
+end
 
 function ComputeResiduals!( dc, BC, κ, Δx, Δt )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
-<<<<<<< HEAD
     dc.T_ex[2:end-1]    .=   dc.T    
-=======
-    @. T_ex[2:end-1]       =   T    
->>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # Define temperature on the ghost nodes; West 
     dc.T_ex[1]          =   (BC.type.W==:Dirichlet)*(2*BC.val.W - dc.T_ex[2]) + 
                             (BC.type.W==:Neumannn)*(dc.T_ex[2] - BC.val.W*Δx)
@@ -168,7 +159,6 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
                             (BC.type.W==:Neumannn)*(dc.T_ex[end-1] + BC.val.E*Δx)
     # ------------------------------------------------------------------- #
     # Calculate temperature derivative ---------------------------------- #
-<<<<<<< HEAD
     @. dc.∂T2∂x2        =   κ * 
             (dc.T_ex[3:end] - 2 * dc.T_ex[2:end-1] + dc.T_ex[1:end-2]) / Δx^2
     # ------------------------------------------------------------------- #
@@ -178,17 +168,6 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
 end
 
 function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
-=======
-    @. ∂T2∂x2              =   κ * 
-            (T_ex[3:end] - 2 * T_ex[2:end-1] + T_ex[1:end-2]) / Δx^2
-    # ------------------------------------------------------------------- #
-    # Calculate residual ------------------------------------------------ #
-    @. R                   =   (T - Told)/Δt - ∂T2∂x2
-    # ------------------------------------------------------------------- #
-end
-
-function AssembleMatrix(K,BC,nc,κ,Δx,Δt)
->>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
