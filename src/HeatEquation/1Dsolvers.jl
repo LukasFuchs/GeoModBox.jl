@@ -22,34 +22,36 @@ BC      : Structure for the boundary condition
 
 """
 
-function ForwardEuler!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
+using ExtendableSparse
+
+function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
+    explicit.T_ex[2:end-1]  =   explicit.T0
     # Define boundary conditions ---------------------------------------- #
     # West ---
-    T_ex[1]     =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - T_ex[2]) + 
-                    (BC.type.W==:Neumann) * (T_ex[2] - BC.val.W*Δx)
+    explicit.T_ex[1]    =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - explicit.T_ex[2]) + 
+                            (BC.type.W==:Neumann) * (explicit.T_ex[2] - BC.val.W*Δx)
     # East --
-    T_ex[end]   =   (BC.type.W==:Dirichlet) * (2 * BC.val.E - T_ex[nc+1]) +
-                    (BC.type.W==:Neumann) * (T_ex[nc+1] + BC.val.E*Δx)
+    explicit.T_ex[end]  =   (BC.type.W==:Dirichlet) * (2 * BC.val.E - explicit.T_ex[nc+1]) +
+                            (BC.type.W==:Neumann) * (explicit.T_ex[nc+1] + BC.val.E*Δx)
     for i = 1:nc
         # Calculate temperature at point i for the new time ---        
-        Tnew[i] =   T_ex[i+1] + κ * Δt * 
-                            (T_ex[i + 2] - 2.0 * T_ex[i+1] + T_ex[i]) / Δx^2
-    end
-    return Tnew
+        explicit.T[i] =   explicit.T_ex[i+1] + κ * Δt * 
+                (explicit.T_ex[i + 2] - 2.0 * explicit.T_ex[i+1] + explicit.T_ex[i]) / Δx^2
+    end    
 end
 
-function BackwardEuler!( T0, nc, Δx, κ, Δt, BC, K )
+function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
-    # Multiply rhs with 1/Δt ---
-    T0  =   b * T0
+    # Multiply rhs with 1/Δt ---    
+    implicit.T0  .=   b .* implicit.T0
     # Loop over the grid points ---
     for i = 1:nc  
         # Equation number ---
@@ -73,24 +75,24 @@ function BackwardEuler!( T0, nc, Δx, κ, Δt, BC, K )
         # Modify right hand side due to boundary conditions ------------- #
         if inE 
             # West boundary ---
-            T0[1]   = T0[1] + 2*a*BC.val.W * DirW - a*BC.val.W*Δx * NeuW
+            implicit.T0[1]   = implicit.T0[1] + 2*a*BC.val.W * DirW - a*BC.val.W*Δx * NeuW
                     end
         if inW
             # East boundary ---
-            T0[nc]  = T0[nc] + 2*a*BC.val.E * DirE + a*BC.val.E*Δx * NeuE
+            implicit.T0[nc]  = implicit.T0[nc] + 2*a*BC.val.E * DirE + a*BC.val.E*Δx * NeuE
         end
     end
     # ------------------------------------------------------------------- #    
     # Calculate temperature at new time step ---------------------------- #
-    T1      =   K\T0
+    implicit.T  .=   K \ implicit.T0
     # ------------------------------------------------------------------- #    
-    return T1, K 
 end
 
-function CNV!(T0,nc,κ,Δt,Δx,BC,K1,K2)
+function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
     # ======================================================================= #
     # LF; 19.09.2024 - Version 1.0 - Julia                                    #
     # ======================================================================= #    
+        rhs     = zeros(length(cnv.T0))
         # Define coefficients ---
         a       =   κ / 2 / Δx^2
         b       =   1 / Δt
@@ -122,9 +124,9 @@ function CNV!(T0,nc,κ,Δt,Δx,BC,K1,K2)
                 K2[ii,iW]   =   a
             end                    
         end
-        # ------------------------------------------------------------------- #    
+        # ------------------------------------------------------------------- #
         # Berechnung der rechten Seite -------------------------------------- #
-        rhs     =   K2*T0 
+        rhs     .=   K2 * cnv.T0 
         # ------------------------------------------------------------------- #        
         # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
         for i = 1:nc        
@@ -141,27 +143,28 @@ function CNV!(T0,nc,κ,Δt,Δx,BC,K1,K2)
         end
         # ------------------------------------------------------------------- #    
         # Compute new temperature ------------------------------------------- #
-        T1      = K1\rhs
+        cnv.T      .=    K1 \ rhs
         # ------------------------------------------------------------------- #
-        return T1, K1, K2
+        #return T1, K1, K2
     end
 
-function ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
+function ComputeResiduals!( dc, BC, κ, Δx, Δt )
+    #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
-    T_ex[2:end-1]       =   T    
+    dc.T_ex[2:end-1]    .=   dc.T    
     # Define temperature on the ghost nodes; West 
-    T_ex[1]             =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex[2]) + 
-                            (BC.type.W==:Neumannn)*(T_ex[2] - BC.val.W*Δx)
+    dc.T_ex[1]          =   (BC.type.W==:Dirichlet)*(2*BC.val.W - dc.T_ex[2]) + 
+                            (BC.type.W==:Neumannn)*(dc.T_ex[2] - BC.val.W*Δx)
     # Define temperature on the ghost nodes; East ---
-    T_ex[end]           =   (BC.type.W==:Dirichlet)*(2*BC.val.E - T_ex[end-1]) + 
-                            (BC.type.W==:Neumannn)*(T_ex[end-1] + BC.val.E*Δx)
+    dc.T_ex[end]        =   (BC.type.W==:Dirichlet)*(2*BC.val.E - dc.T_ex[end-1]) + 
+                            (BC.type.W==:Neumannn)*(dc.T_ex[end-1] + BC.val.E*Δx)
     # ------------------------------------------------------------------- #
     # Calculate temperature derivative ---------------------------------- #
-    ∂T2∂x2              =   κ .* 
-            (T_ex[3:end] .- 2 .* T_ex[2:end-1] .+ T_ex[1:end-2]) ./ Δx^2
+    @. dc.∂T2∂x2        =   κ * 
+            (dc.T_ex[3:end] - 2 * dc.T_ex[2:end-1] + dc.T_ex[1:end-2]) / Δx^2
     # ------------------------------------------------------------------- #
     # Calculate residual ------------------------------------------------ #
-    R                   =   (T .- Told)./Δt .- ∂T2∂x2
+    @. dc.R             =   (dc.T - dc.T0)/Δt - dc.∂T2∂x2
     # ------------------------------------------------------------------- #
 end
 
