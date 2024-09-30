@@ -22,6 +22,7 @@ xc          =   Δx/2:Δx:(L-Δx/2)    # Coordinates
 niter       =   10  
 ϵ           =   1.0e-10       
 # ----------------------------------------------------------------------- #
+# ----------------------------------------------------------------------- #
 # Time Parameters ------------------------------------------------------- #
 day         =   3600.0*24.0         # Seconds per day
 tmax        =   2.0*365.25*day      # Maximum time [ s ]
@@ -46,7 +47,6 @@ implicit    =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
                     ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
 cnv         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
-Tana        =   zeros(nc)
 # Assign initial temperature ---
 explicit.T0 .=  T.ini
 implicit.T0 .=  T.ini
@@ -84,7 +84,7 @@ p = plot(xc, explicit.T0, label="explicit",
 plot!(p,xc, implicit.T0,label="implicit",subplot=1)
 plot!(p,xc, dc.T0,label="def correction",subplot=1)
 plot!(p,xc, cnv.T0,label="cnv",subplot=1)
-plot!(p,xc, Tana, linestyle=:dash, label="analytical",subplot=1)
+plot!(p,xc, T.ana, linestyle=:dash, label="analytical",subplot=1)
 plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         title="Error",
         label="ε_exp",xlim=(0,L),ylim=(0,2.0),
@@ -150,7 +150,7 @@ for n=1:nt
         plot!(p, xc, implicit.T,linestyle=:dash, label="implicit",subplot=1)
         plot!(p, xc, dc.T,linestyle=:dash, label="def correction",subplot=1)
         plot!(p, xc, cnv.T,linestyle=:dash, label="CNV",subplot=1)
-        plot!(p, xc, Tana, linestyle=:dash, label="analytical",subplot=1)    
+        plot!(p, xc, T.ana, linestyle=:dash, label="analytical",subplot=1)    
         # Subplot 2 ---
         plot!(p,xc, explicit.ε, label="ε_exp",
             xlim=(0,L),ylim=(0,2.0),
