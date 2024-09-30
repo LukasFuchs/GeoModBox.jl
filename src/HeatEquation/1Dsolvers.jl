@@ -24,7 +24,11 @@ BC      : Structure for the boundary condition
 
 using ExtendableSparse
 
+<<<<<<< HEAD
 function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
+=======
+function ForwardEuler!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
+>>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -151,7 +155,11 @@ function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
 function ComputeResiduals!( dc, BC, κ, Δx, Δt )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
+<<<<<<< HEAD
     dc.T_ex[2:end-1]    .=   dc.T    
+=======
+    @. T_ex[2:end-1]       =   T    
+>>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # Define temperature on the ghost nodes; West 
     dc.T_ex[1]          =   (BC.type.W==:Dirichlet)*(2*BC.val.W - dc.T_ex[2]) + 
                             (BC.type.W==:Neumannn)*(dc.T_ex[2] - BC.val.W*Δx)
@@ -160,6 +168,7 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
                             (BC.type.W==:Neumannn)*(dc.T_ex[end-1] + BC.val.E*Δx)
     # ------------------------------------------------------------------- #
     # Calculate temperature derivative ---------------------------------- #
+<<<<<<< HEAD
     @. dc.∂T2∂x2        =   κ * 
             (dc.T_ex[3:end] - 2 * dc.T_ex[2:end-1] + dc.T_ex[1:end-2]) / Δx^2
     # ------------------------------------------------------------------- #
@@ -169,6 +178,17 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
 end
 
 function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
+=======
+    @. ∂T2∂x2              =   κ * 
+            (T_ex[3:end] - 2 * T_ex[2:end-1] + T_ex[1:end-2]) / Δx^2
+    # ------------------------------------------------------------------- #
+    # Calculate residual ------------------------------------------------ #
+    @. R                   =   (T - Told)/Δt - ∂T2∂x2
+    # ------------------------------------------------------------------- #
+end
+
+function AssembleMatrix(K,BC,nc,κ,Δx,Δt)
+>>>>>>> a6148d73499cc2463e753a0fb54e9486bd879d77
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
