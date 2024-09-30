@@ -168,7 +168,7 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
     # ------------------------------------------------------------------- #
 end
 
-function AssembleMatrix!(K,BC,nc,κ,Δx,Δt)
+function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
