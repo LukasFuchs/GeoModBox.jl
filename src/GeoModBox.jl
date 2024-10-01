@@ -5,13 +5,19 @@ module GeoModBox
 
     module HeatEquation        
 
-        # Handle analytical solution for 2D Diffusion2D_Gaussian
-        include("./HeatEquation/AnalyticsDiffusion2D.jl")
-        export AnalyticalSolution!, BoundaryConditions!	    
+        module TwoD
+            # Handle analytical solution for 2D Diffusion2D_Gaussian
+            include("./HeatEquation/AnalyticsDiffusion2D.jl")
+            export AnalyticalSolution!, BoundaryConditions!	    
 
-        # Implicit solver
-        include("./HeatEquation/BackwardEuler.jl")
-        export ComputeResiduals!, AssembleMatrix 
+            # Implicit solver
+            include("./HeatEquation/BackwardEuler.jl")
+            export ComputeResiduals!, AssembleMatrix 
+
+            # Poisson solver
+            include("./HeatEquation/PoissonSolvers.jl")
+            # export Poisson! 
+        end
 
         module OneD
             # 1D solver

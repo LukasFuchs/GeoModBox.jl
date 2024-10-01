@@ -1,4 +1,4 @@
-using GeoModBox.HeatEquation
+using GeoModBox.HeatEquation.TwoD
 using ExactFieldSolutions, LinearAlgebra, Plots, Printf
 
 function HeatEquation()
