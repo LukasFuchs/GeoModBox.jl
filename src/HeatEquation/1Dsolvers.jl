@@ -198,3 +198,5 @@ function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
     end
     flush!(K)
 end
+
+# SolveDiff1Dexplicit_vary
