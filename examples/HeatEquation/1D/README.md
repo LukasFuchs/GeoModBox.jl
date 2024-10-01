@@ -58,6 +58,7 @@ where $a = \frac{\kappa \Delta t}{(\Delta x)^2}$. Equation $(5)$ can be solved *
 $$
 T_{G,W} = 2T_{BC,W} - T_{1}, \tag{6}
 $$
+
 $$
 T_{G,E} = 2T_{BC,E} - T_{nc}, \tag{7}
 $$
