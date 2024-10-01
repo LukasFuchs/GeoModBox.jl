@@ -46,12 +46,12 @@ explicit    =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), ε = zeros(n
 implicit    =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
                     ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
-cnv         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
+cna         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 # Assign initial temperature ---
 explicit.T0 .=  T.ini
 implicit.T0 .=  T.ini
 dc.T0       .=  T.ini
-cnv.T0      .=  T.ini
+cna.T0      .=  T.ini
 # Analytical solution ---
 @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
@@ -83,7 +83,7 @@ p = plot(xc, explicit.T0, label="explicit",
         xlim=(0,L),ylim=(0, Tmagma),layout=(1,2))
 plot!(p,xc, implicit.T0,label="implicit",subplot=1)
 plot!(p,xc, dc.T0,label="def correction",subplot=1)
-plot!(p,xc, cnv.T0,label="cnv",subplot=1)
+plot!(p,xc, cna.T0,label="cna",subplot=1)
 plot!(p,xc, T.ana, linestyle=:dash, label="analytical",subplot=1)
 plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         title="Error",
@@ -91,7 +91,7 @@ plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         subplot=2)        
 plot!(p,xc, implicit.ε, label="ε_imp",subplot=2)      
 plot!(p,xc, dc.ε, label="ε_dc",subplot=2)  
-plot!(p,xc, cnv.ε, label="ε_cnv",subplot=2)  
+plot!(p,xc, cna.ε, label="ε_cna",subplot=2)  
 
 if save_fig == 1
     Plots.frame(anim)
@@ -122,12 +122,12 @@ for n=1:nt
         dc.T .= dc.T .+ δT            
     end        
     # Crank-Nicolson method --------------------------------------------- #
-    CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
+    CNA!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
     explicit.T0     .=  explicit.T
     implicit.T0     .=  implicit.T
     dc.T0           .=  dc.T
-    cnv.T0          .=  cnv.T
+    cna.T0          .=  cna.T
     # Update time ------------------------------------------------------- #
     time    =   time + Δt
     # Analytical Solution ----------------------------------------------- #
@@ -137,7 +137,7 @@ for n=1:nt
     @. explicit.ε   =   abs((T.ana-explicit.T0)/T.ana)*100
     @. implicit.ε   =   abs((T.ana-implicit.T0)/T.ana)*100
     @. dc.ε         =   abs((T.ana-dc.T0)/T.ana)*100
-    @. cnv.ε        =   abs((T.ana-cnv.T0)/T.ana)*100
+    @. cna.ε        =   abs((T.ana-cna.T0)/T.ana)*100
     # Plot solution ----------------------------------------------------- #
     if n == 1 || n % 5 == 0 || n == nt
         # Subplot 1 ---
@@ -149,7 +149,7 @@ for n=1:nt
                 layout=(1,2))
         plot!(p, xc, implicit.T,linestyle=:dash, label="implicit",subplot=1)
         plot!(p, xc, dc.T,linestyle=:dash, label="def correction",subplot=1)
-        plot!(p, xc, cnv.T,linestyle=:dash, label="CNV",subplot=1)
+        plot!(p, xc, cna.T,linestyle=:dash, label="cna",subplot=1)
         plot!(p, xc, T.ana, linestyle=:dash, label="analytical",subplot=1)    
         # Subplot 2 ---
         plot!(p,xc, explicit.ε, label="ε_exp",
@@ -159,7 +159,7 @@ for n=1:nt
             subplot=2)
         plot!(p, xc, implicit.ε,linestyle=:dash, label="ε_imp",subplot=2)
         plot!(p, xc, dc.ε,linestyle=:dot, label="ε_dc",subplot=2)
-        plot!(p, xc, cnv.ε,linestyle=:dash, label="ε_CNV",subplot=2)                
+        plot!(p, xc, cna.ε,linestyle=:dash, label="ε_cna",subplot=2)                
         # Display the plots ---    
         if save_fig == 1
             Plots.frame(anim)
