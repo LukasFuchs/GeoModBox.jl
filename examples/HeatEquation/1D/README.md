@@ -4,9 +4,9 @@
 
 [comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!)
 
-## Energy equation
+## Energy Equation
 
-&emsp; In one dimension, the diffusive part of the energy equation is described by (assuming only radiogenic heating):
+In one dimension, the diffusive part of the energy equation is described by (assuming only radiogenic heating):
 
 $$ 
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H, \tag{1}
@@ -26,7 +26,7 @@ $$
   
 where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q=\rho H$ is the heat production rate per volume [W/m<sup>3</sup>]. Equation $(3)$ is a *parabolic partial differential equation* which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
 
-&emsp; First, we would like to discuss the a simple, but effective, finite difference method to discretize and solve the equation, that is the forward in time and centered in space (FTCS) method in an *explicit* manner. This finite difference scheme will converge to the exact solution for small $\Delta x$ and $\Delta t$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusive stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusive stability criterion* is defined as $\Delta t < \frac{\Delta x^2}{2 \kappa}$ (assuming equal grid spacing), that is the time step is limited by the model’s resolution. 
+&emsp; First, we would like to discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the forward in time and centered in space (FTCS) method in an *explicit* manner. This finite difference scheme will converge to the exact solution for small $\Delta x$ and $\Delta t$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusive stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusive stability criterion* is defined as $\Delta t < \frac{\Delta x^2}{2 \kappa}$ (assuming equal grid spacing), that is the time step is limited by the model’s resolution. 
 
 ## Discretization 
 
@@ -37,7 +37,7 @@ where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q
 
 ### Explicit, FTCS (or Forward Euler Method)
 
-&emsp;Using an FTCS, explicit finite difference scheme to approximate the partial derivatives from equation $(3)$ results in:
+Using an FTCS, explicit finite difference scheme to approximate the partial derivatives from equation $(3)$ results in:
 
 $$
 \frac{T_{i}^{n+1} - T_{i}^{n} }{\Delta t} = \kappa \frac{T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n}}{(\Delta x)^2} + \frac{Q_{i}^n}{\rho c_p}, \tag{4}
@@ -53,7 +53,7 @@ where $a = \frac{\kappa \Delta t}{(\Delta x)^2}$. Equation $(5)$ can be solved *
 
 #### Boundary conditions 
 
-&emsp;Different thermal boundary conditions can be set for our model for which we now utilize the *ghost nodes*. Here, we focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider both boundary conditions to solving the equations, one needs to define the temperature on the *ghost nodes* based on the assumed boundary condition. The Dirichlet boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (west) and right (east) *ghost node* are defined as:
+&emsp;Different thermal boundary conditions can be set for our model for which we now utilize the *ghost nodes*. Here, we focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider both boundary conditions to solving the equations, one needs to define the temperature at the *ghost nodes* based on the assumed boundary condition. The Dirichlet boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (west) and right (east) *ghost node* are defined as:
 
 $$
 T_{G,W} = 2T_{BC,W} - T_{1}, \tag{6}
@@ -64,7 +64,7 @@ $$
 
 where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectrively. Now one can solve equation $(5)$ for each central grid point using the defined temperature at the *ghost nodes*.  
 
-&emsp;The Neumann boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux *q* through the boundary. The temperature of the *ghost nodes* is then defined as: 
+&emsp;The Neumann boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux *q* through the boundary. The temperature at the *ghost nodes* is then defined as: 
 
 $$
 T_{G,W} = T_{1} - c_{W} \Delta{x}, \tag{8}
@@ -103,7 +103,7 @@ where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a 
 
 #### Boundary Conditions
 
-&emsp;The temperature on the *ghost nodes* to solve the equations on the central grid points adjacent to the boundary are defined as before (equations $(8)$ and $(9)$). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the inner grid points adjacent to the boundary and the corresponding right hand side, such that the equations are defined as:  
+&emsp;The temperature on the *ghost nodes* to solve the equations on the central grid points adjacent to the boundary are defined as before (equations $(8)$ and $(9)$). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the inner grid points adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet** <br>
 *West*
@@ -178,6 +178,27 @@ $$
 \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta x^2}
 $$
 
+&emsp;Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the central grid points adjacent to the boundaries are defined as: 
+
+**Dirichlet**<br>
+*West*
+$$
+\left(b + 3 a \right) T_{1}^{n+1} - a T_{2}^{n+1} = \left( b - 3 a \right) T_{1}^{n} + a T_{2}^{n} + 4 a T_{BC,W}
+$$
+*East*
+$$
+- a T_{nc-1}^{n+1} + \left(b + 3 a \right) T_{nc}^{n+1} = a T_{nc-1}^{n} + \left( b - 3 a \right) T_{nc}^{n} + 4 a T_{BC,E}
+$$
+**Neumann**<br>
+*West*
+$$
+\left(b+a\right)T_{1}^{n+1} - a T_{2}^{n+1} = \left(b-a\right)T_{1}^{n} + a T_{2} - 2ac_{W} \Delta{x}
+$$
+*East*
+$$
+- a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
+$$
+
 &emsp;However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
 
 -------------
@@ -185,9 +206,13 @@ $$
 
 ## Examples
 
-### Gaussian Diffusion [Heat_1D_discretization.jl](Heat_1D_discretization.jl)
+### Gaussian Diffusion ([Heat_1D_discretization.jl](Heat_1D_discretization.jl))
 
 ...
+
+<img src="./Results/1D_comparison.gif" alt="drawing" width="600"/> <br>
+**Figure 2. Diffusion of an initial Gaussian temperature distribution.** ... 
+
 
 ### Geotherms
 
