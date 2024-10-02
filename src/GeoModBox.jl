@@ -16,7 +16,7 @@ module GeoModBox
 
             # Poisson solver
             include("./HeatEquation/PoissonSolvers.jl")
-            # export Poisson! 
+            export Poisson! 
         end
 
         module OneD
