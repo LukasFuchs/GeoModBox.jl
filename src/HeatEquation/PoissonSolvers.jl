@@ -56,14 +56,6 @@ function Poisson!(D,NC,P,BC,Δ,K,rhs,Num)
                         - BC.val.N * Δ.y[1] * NeuN / Δ.y[1]^2.0
     end
 
-    println(size(rhs))
-
     D.T[:]  .=   K \ rhs[:]
-
-    println(size(D.T))
-
-    
-
-    #F      = reshape(F,[N.nx,N.nz])';
     
 end
