@@ -17,6 +17,9 @@ module GeoModBox
             # Poisson solver
             include("./HeatEquation/PoissonSolvers.jl")
             export Poisson! 
+
+            include("./HeatEquation/ForwardEuler.jl")
+            export ForwardEuler_const!
         end
 
         module OneD

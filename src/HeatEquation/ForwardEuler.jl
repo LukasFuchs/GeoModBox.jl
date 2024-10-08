@@ -1,65 +1,34 @@
-#function ForwarEuler!()
-#    # Function to solve 2D heat diffusion equation using the explicit finite
-#    # difference scheme
-#    # Q - Waermeproduktionsrate pro Volumen [W/m^3]
-#    # ----------------------------------------------------------------------- #
-#    
-#    T1      = zeros(N.nz,N.nx);
-#    
-#    ind1    = 2:N.nz-1;
-#    ind2    = 2:N.nx-1;
-#    
-#    sx      = P.kappa*dt/N.dx^2;
-#    sz      = P.kappa*dt/N.dz^2;
-#    
-#    T1(ind1,ind2) = T0(ind1,ind2) + ...
-#        sx.*(T0(ind1,ind2+1) - 2.*T0(ind1,ind2) + T0(ind1,ind2-1)) + ...
-#        sz.*(T0(ind1+1,ind2) - 2.*T0(ind1,ind2) + T0(ind1-1,ind2)) + ...
-#        Q(ind1,ind2)*dt/P.rho/P.cp;
-#    
-#    # Boundary condition ---------------------------------------------------- #
-#    # Bottom ---------------------------------------------------------------- #
-#    switch B.btbc
-#        case {'const','dirichlet'}
-#            T1(1,:)         = T0(1,:);
-#        case {'flux','neumann'}
-#            T1(1,ind2) = T0(1,ind2) + ...
-#                sx.*(T0(1,ind2+1) - 2.*T0(1,ind2) + T0(1,ind2-1)) + ...
-#                2*sz.*(T0(2,ind2) - T0(1,ind2) + N.dz*B.bhf) + ...
-#                Q(1,ind2)*dt/P.rho/P.cp;
-#            T1(1,1)    = T1(1,2);
-#            T1(1,N.nx) = T1(1,N.nx-1);        
-#    end
-#    # Top ------------------------------------------------------------------- #
-#    switch B.ttbc
-#        case {'const','dirichlet'}
-#            T1(N.nz,:)    = T0(N.nz,:);
-#        case {'flux','neumann'}
-#            T1(N.nz,ind2) = T0(N.nz,ind2) + ...
-#                sx.*(T0(N.nz,ind2+1) - 2.*T0(N.nz,ind2) + T0(N.nz,ind2-1)) + ...
-#                2*sz.*(T0(N.nz-1,ind2) - T0(N.nz,ind2) - N.dz*B.thf) + ...
-#                Q(N.nz,ind2)*dt/P.rho/P.cp;
-#            T1(N.nz,1)    = T1(N.nz,2);
-#            T1(N.nz,N.nx) = T1(N.nz,N.nx-1);        
-#    end
-#    # Left ------------------------------------------------------------------ #
-#    switch B.ltbc
-#        case {'const','dirichlet'}
-#            T1(ind1,1)         = T0(ind1,1);
-#        case {'flux','neumann'}
-#            T1(ind1,1)  = T0(ind1,1)  + ...
-#                2*sx.*(T0(ind1,2) - T0(ind1,1) + N.dx*B.lhf) +...
-#                sz.*(T0(ind1+1,1) - 2.*T0(ind1,1) + T0((ind1)-1,1)) + ...
-#                Q(ind1,1)*dt/P.rho/P.cp;        
-#    end
-#    # Right ----------------------------------------------------------------- #
-#    switch B.rtbc
-#        case {'const','dirichlet'}
-#            T1(ind1,N.nx)        = T0(ind1,N.nx);
-#        case {'flux','neumann'}
-#            T1(ind1,N.nx) = T0(ind1,N.nx) + ...
-#                2*sx.*(T0(ind1,N.nx-1) - T0(ind1,N.nx) + N.dx*B.rhf) + ...
-#                sz.*(T0((ind1)+1,1) - 2.*T0(ind1,1) + T0((ind1)-1,1)) + ...
-#                Q(ind1,N.nx)*dt/P.rho/P.cp;
-#    end
-#    end
+function ForwardEuler_const!(D,NC,BC,P,Δ,T)
+    # Function to solve 2D heat diffusion equation using the explicit finite
+    # difference scheme
+    # Q - Waermeproduktionsrate pro Volumen [W/m^3]
+    # ------------------------------------------------------------------- #
+    
+    sx      = P.κ[1] * T.Δ[1] / Δ.x[1]^2
+    sz      = P.κ[1] * T.Δ[1] / Δ.y[1]^2
+
+    D.T_ex[2:end-1,2:end-1]     .=  D.T
+
+    # Temperature at the ghost nodes ------------------------------------ #
+    # West boundary ---
+    D.T_ex[1,2:end-1]   .= (BC.type.W==:Dirichlet) .* (2 .* BC.val.W .- D.T_ex[2,2:end-1])
+    # East boundary ---
+    D.T_ex[end,2:end-1] .= (BC.type.E==:Dirichlet) .* (2 .* BC.val.E .- D.T_ex[end-1,2:end-1])
+    # South boundary --- 
+    D.T_ex[2:end-1,1]   .= (BC.type.S==:Dirichlet) .* (2 .* BC.val.S .- D.T_ex[2:end-1,2])
+    # Northern boundary ---
+    D.T_ex[2:end-1,end] .= (BC.type.N==:Dirichlet) .* (2 .* BC.val.N .- D.T_ex[2:end-1,end-1])
+    # ------------------------------------------------------------------- #
+    
+    # Loop over internal nodes ------------------------------------------ #
+    for i = 1:NC.x, j = 1:NC.y
+        i1 = i+1
+        j1 = j+1
+        D.T[i,j] = D.T_ex[i1,j1] + 
+            sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
+            sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
+            D.Q[i,j] * T.Δ[1] / P.ρ / P.cp
+    end
+    # ------------------------------------------------------------------- #
+    
+    end
