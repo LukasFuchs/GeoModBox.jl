@@ -12,7 +12,7 @@ module GeoModBox
 
             # Implicit solver
             include("./HeatEquation/BackwardEuler.jl")
-            export ComputeResiduals!, AssembleMatrix 
+            export ComputeResiduals!, AssembleMatrix, BackwardEuler_const!
 
             # Poisson solver
             include("./HeatEquation/PoissonSolvers.jl")
