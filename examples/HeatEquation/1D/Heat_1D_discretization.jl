@@ -42,13 +42,13 @@ T           =   (ini = zeros(nc), ana = zeros(nc))
 xp          =   L/2.0
 @. T.ini    =   Trock + (Tmagma-Trock)*exp(-((xc-xp)/σ)^2)
 # Setting up field memroy ---
-explicit    =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
+explicit    =   (T = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
 implicit    =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
                     ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
 cna         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 # Assign initial temperature ---
-explicit.T0 .=  T.ini
+explicit.T  .=  T.ini
 implicit.T0 .=  T.ini
 dc.T0       .=  T.ini
 cna.T0      .=  T.ini
@@ -76,7 +76,7 @@ filename    =   string("1D_comparison")
 save_fig    =   1
 # ----------------------------------------------------------------------- #
 # Plot initial condition ------------------------------------------------ #
-p = plot(xc, explicit.T0, label="explicit", 
+p = plot(xc, explicit.T, label="explicit", 
         xlabel="x [m]", ylabel="T [°C]", 
         title="Temperature after $(round(time / day, digits=1)) days
         Δt = $(round(Δt / Δtexp, digits=2))*Δt_{crit}",
@@ -124,7 +124,7 @@ for n=1:nt
     # Crank-Nicolson method --------------------------------------------- #
     CNA!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
-    explicit.T0     .=  explicit.T
+    # explicit.T     .=  explicit.T
     implicit.T0     .=  implicit.T
     dc.T0           .=  dc.T
     cna.T0          .=  cna.T
@@ -134,7 +134,7 @@ for n=1:nt
     @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
     # Error ------------------------------------------------------------- #
-    @. explicit.ε   =   abs((T.ana-explicit.T0)/T.ana)*100
+    @. explicit.ε   =   abs((T.ana-explicit.T)/T.ana)*100
     @. implicit.ε   =   abs((T.ana-implicit.T0)/T.ana)*100
     @. dc.ε         =   abs((T.ana-dc.T0)/T.ana)*100
     @. cna.ε        =   abs((T.ana-cna.T0)/T.ana)*100
@@ -175,7 +175,7 @@ if save_fig == 1
 else
     display(plot(p))
 end
-foreach(rm, filter(endswith(".png"), readdir(path,join=true)))
+foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 # ----------------------------------------------------------------------- #
 end
 # Call function --------------------------------------------------------- #
