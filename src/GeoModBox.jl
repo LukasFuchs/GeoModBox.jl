@@ -12,11 +12,16 @@ module GeoModBox
 
             # Implicit solver
             include("./HeatEquation/BackwardEuler.jl")
-            export ComputeResiduals2D!, AssembleMatrix2D 
+            export ComputeResiduals2D!, AssembleMatrix2D, 
+                    BackwardEuler2Dc!
 
             # Poisson solver
             include("./HeatEquation/PoissonSolvers.jl")
             export Poisson2Dc! 
+
+            # Explicit solver
+            include("./HeatEquation/ForwardEuler.jl")
+            export ForwardEuler2Dc!
         end
 
         module OneD

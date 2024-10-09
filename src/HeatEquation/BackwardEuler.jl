@@ -60,7 +60,7 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     return flush!(K)
 end
 
- function BackwardEuler_const!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+ function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
 # difference scheme
 # assuming constant k, rho, cp

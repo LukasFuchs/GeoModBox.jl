@@ -1,4 +1,4 @@
-function ForwardEuler_const!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the explicit finite
     # difference scheme
     # Q - Waermeproduktionsrate pro Volumen [W/m^3]
@@ -7,7 +7,7 @@ function ForwardEuler_const!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     sx      = κ * Δt / Δx^2
     sz      = κ * Δt / Δy^2
 
-    D.T_ex[2:end-1,2:end-1]     .=  D.T0
+    D.T_ex[2:end-1,2:end-1]     .=  D.T
 
     # Temperature at the ghost nodes ------------------------------------ #
     # West boundary ---
