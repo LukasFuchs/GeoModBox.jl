@@ -28,7 +28,7 @@ function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
-    explicit.T_ex[2:end-1]  =   explicit.T0
+    explicit.T_ex[2:end-1]  =   explicit.T
     # Define boundary conditions ---------------------------------------- #
     # West ---
     explicit.T_ex[1]    =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - explicit.T_ex[2]) + 
