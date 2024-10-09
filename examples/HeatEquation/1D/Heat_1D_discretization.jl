@@ -42,16 +42,16 @@ T           =   (ini = zeros(nc), ana = zeros(nc))
 xp          =   L/2.0
 @. T.ini    =   Trock + (Tmagma-Trock)*exp(-((xc-xp)/σ)^2)
 # Setting up field memroy ---
-explicit    =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
+explicit    =   (T = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
 implicit    =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
                     ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
-cnv         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
+cna         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
 # Assign initial temperature ---
-explicit.T0 .=  T.ini
+explicit.T  .=  T.ini
 implicit.T0 .=  T.ini
 dc.T0       .=  T.ini
-cnv.T0      .=  T.ini
+cna.T0      .=  T.ini
 # Analytical solution ---
 @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
@@ -76,14 +76,14 @@ filename    =   string("1D_comparison")
 save_fig    =   1
 # ----------------------------------------------------------------------- #
 # Plot initial condition ------------------------------------------------ #
-p = plot(xc, explicit.T0, label="explicit", 
+p = plot(xc, explicit.T, label="explicit", 
         xlabel="x [m]", ylabel="T [°C]", 
         title="Temperature after $(round(time / day, digits=1)) days
         Δt = $(round(Δt / Δtexp, digits=2))*Δt_{crit}",
         xlim=(0,L),ylim=(0, Tmagma),layout=(1,2))
 plot!(p,xc, implicit.T0,label="implicit",subplot=1)
 plot!(p,xc, dc.T0,label="def correction",subplot=1)
-plot!(p,xc, cnv.T0,label="cnv",subplot=1)
+plot!(p,xc, cna.T0,label="cna",subplot=1)
 plot!(p,xc, T.ana, linestyle=:dash, label="analytical",subplot=1)
 plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         title="Error",
@@ -91,7 +91,7 @@ plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         subplot=2)        
 plot!(p,xc, implicit.ε, label="ε_imp",subplot=2)      
 plot!(p,xc, dc.ε, label="ε_dc",subplot=2)  
-plot!(p,xc, cnv.ε, label="ε_cnv",subplot=2)  
+plot!(p,xc, cna.ε, label="ε_cna",subplot=2)  
 
 if save_fig == 1
     Plots.frame(anim)
@@ -103,17 +103,17 @@ end
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
-    ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
+    ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # Implicit, Backward Euler ------------------------------------------ #
-    BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
+    BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # Defection correction method --------------------------------------- #
     for iter = 1:niter
         # Residual iteration
-        ComputeResiduals!( dc, BC, κ, Δx, Δt )
+        ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
         @printf("||R|| = %1.4e\n", norm(dc.R)/length(dc.R))            
         norm(dc.R)/length(dc.R) < ϵ ? break : nothing
         # Assemble linear system
-        AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
+        AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K.cscmatrix)
         # Solve for temperature correction: Back substitutions
@@ -122,22 +122,22 @@ for n=1:nt
         dc.T .= dc.T .+ δT            
     end        
     # Crank-Nicolson method --------------------------------------------- #
-    CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
+    CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
-    explicit.T0     .=  explicit.T
+    # explicit.T     .=  explicit.T
     implicit.T0     .=  implicit.T
     dc.T0           .=  dc.T
-    cnv.T0          .=  cnv.T
+    cna.T0          .=  cna.T
     # Update time ------------------------------------------------------- #
     time    =   time + Δt
     # Analytical Solution ----------------------------------------------- #
     @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
     # Error ------------------------------------------------------------- #
-    @. explicit.ε   =   abs((T.ana-explicit.T0)/T.ana)*100
+    @. explicit.ε   =   abs((T.ana-explicit.T)/T.ana)*100
     @. implicit.ε   =   abs((T.ana-implicit.T0)/T.ana)*100
     @. dc.ε         =   abs((T.ana-dc.T0)/T.ana)*100
-    @. cnv.ε        =   abs((T.ana-cnv.T0)/T.ana)*100
+    @. cna.ε        =   abs((T.ana-cna.T0)/T.ana)*100
     # Plot solution ----------------------------------------------------- #
     if n == 1 || n % 5 == 0 || n == nt
         # Subplot 1 ---
@@ -149,7 +149,7 @@ for n=1:nt
                 layout=(1,2))
         plot!(p, xc, implicit.T,linestyle=:dash, label="implicit",subplot=1)
         plot!(p, xc, dc.T,linestyle=:dash, label="def correction",subplot=1)
-        plot!(p, xc, cnv.T,linestyle=:dash, label="CNV",subplot=1)
+        plot!(p, xc, cna.T,linestyle=:dash, label="cna",subplot=1)
         plot!(p, xc, T.ana, linestyle=:dash, label="analytical",subplot=1)    
         # Subplot 2 ---
         plot!(p,xc, explicit.ε, label="ε_exp",
@@ -159,7 +159,7 @@ for n=1:nt
             subplot=2)
         plot!(p, xc, implicit.ε,linestyle=:dash, label="ε_imp",subplot=2)
         plot!(p, xc, dc.ε,linestyle=:dot, label="ε_dc",subplot=2)
-        plot!(p, xc, cnv.ε,linestyle=:dash, label="ε_CNV",subplot=2)                
+        plot!(p, xc, cna.ε,linestyle=:dash, label="ε_cna",subplot=2)                
         # Display the plots ---    
         if save_fig == 1
             Plots.frame(anim)
@@ -175,7 +175,7 @@ if save_fig == 1
 else
     display(plot(p))
 end
-foreach(rm, filter(endswith(".png"), readdir(path,join=true)))
+foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 # ----------------------------------------------------------------------- #
 end
 # Call function --------------------------------------------------------- #

@@ -1,5 +1,5 @@
-using GeoModBox.HeatEquation
-using ExactFieldSolutions, LinearAlgebra, Plots, Printf
+using GeoModBox.HeatEquation.TwoD
+using Plots
 
 function HeatEquation()
     # Spatial domain
@@ -13,64 +13,48 @@ function HeatEquation()
     x    = (c=LinRange(xlim.min+Δ.x/2, xlim.max-Δ.x/2, nc.x), v=LinRange(xlim.min, xlim.max, nv.x))
     y    = (c=LinRange(ylim.min+Δ.y/2, ylim.max-Δ.y/2, nc.y), v=LinRange(ylim.min, ylim.max, nv.y))
     # Time domain
-    nt   = 500
+    nt   = 400
     t    = 0.
     nout = 10 
-    # Iterations
-    niter = 10
-    ϵ     = 1e-10
     # Primitive variables
     T_ex  = zeros(nc.x+2, nc.y+2)
     T     = zeros(nc...)
-    T0    = zeros(nc...)
     Te    = zeros(nc...)
     # Derived fields
     ∂T    = (∂x=zeros(nv.x, nc.x), ∂y=zeros(nc.x, nv.x))
-    q     = (x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x))
+    q     = ( x=zeros(nv.x, nc.x),  y=zeros(nc.x, nv.x))
     # Material parameters
     ρ     = zeros(nc...)
     Cp    = zeros(nc...)
-    k     = (x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x))
-    # Residuals
-    R     = zeros(nc...)
+    k     = ( x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x))
     # Boundary conditions
     BC   = (
         type = (W=:Dirichlet, E=:Dirichlet, S=:Dirichlet, N=:Dirichlet),
-        # type = (W=:Neumann, E=:Neumann, S=:Neumann, N=:Neumann),
-        val  = (W=zeros(nc.y), E=zeros(nc.y), S=zeros(nc.x), N=zeros(nc.x)))
-    # Numbering 
-    Num    = (T=reshape(1:nc.x*nc.y, nc.x, nc.y),)
+        val  = (W=zeros(nc.y), E=zeros(nc.y), S=zeros(nc.x), N=zeros(nc.x)))  
     # Initial conditions
-    AnalyticalSolution!(T, x.c, y.c, t)
+    AnalyticalSolution2D!(T, x.c, y.c, t)
     @. k.x = 1e-6 
     @. k.y = 1e-6
     @. ρ   = 1.0
     @. Cp  = 1.0
     Δt = max(Δ...)^2/(maximum(k.x)/minimum(ρ)/minimum(Cp))/4.1
-    # Time integration Loop
-    for it=1:nt
-        @printf("Time step = %05d\n", it)
+    # Time integration
+    @views for it=1:nt
         t += Δt
-        @. T0 = T
         # Exact solution on cell centroids
-        AnalyticalSolution!(Te, x.c, y.c, t)
+        AnalyticalSolution2D!(Te, x.c, y.c, t)
         # Exact solution on cell boundaries
-        BoundaryConditions!(BC, x.c, y.c, t)
-        # Iteration loop
-        for iter=1:niter
-            # Evaluate residual
-            ComputeResiduals!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
-            @printf("||R|| = %1.4e\n", norm(R)/length(R))
-            norm(R)/length(R) < ϵ ? break : nothing
-            # Assemble linear system
-            K  = AssembleMatrix(ρ, Cp, k, BC, Num, nc, Δ, Δt)
-            # Solve for temperature correction: Cholesky factorisation
-            Kc = cholesky(K.cscmatrix)
-            # Solve for temperature correction: Back substitutions
-            δT = -(Kc\R[:])
-            # Update temperature
-            @. T += δT[Num.T]
-        end
+        BoundaryConditions2D!(BC, x.c, y.c, t)
+        @. T_ex[2:end-1,2:end-1] = T 
+        @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1])# + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
+        @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1])# + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
+        @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2])# + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
+        @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1])# + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] - Δ.y/k.y[:,end]*BC.val.N)
+        @. ∂T.∂x = (T_ex[2:end,2:end-1] - T_ex[1:end-1,2:end-1])/Δ.x
+        @. ∂T.∂y = (T_ex[2:end-1,2:end] - T_ex[2:end-1,1:end-1])/Δ.y
+        @. q.x   = -k.x * ∂T.∂x
+        @. q.y   = -k.y * ∂T.∂y
+        @. T    -= Δt *( (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y )              # Visualisation
         # Visualisation
         if mod(it, nout)==0
             p1 = plot(aspect_ratio=1, xlims=(xlim...,), ylims=(ylim...,))

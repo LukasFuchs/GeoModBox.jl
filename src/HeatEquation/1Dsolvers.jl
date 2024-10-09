@@ -24,11 +24,11 @@ BC      : Structure for the boundary condition
 
 using ExtendableSparse
 
-function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
+function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
-    explicit.T_ex[2:end-1]  =   explicit.T0
+    explicit.T_ex[2:end-1]  =   explicit.T
     # Define boundary conditions ---------------------------------------- #
     # West ---
     explicit.T_ex[1]    =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - explicit.T_ex[2]) + 
@@ -43,7 +43,7 @@ function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
     end    
 end
 
-function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
+function BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -88,11 +88,11 @@ function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
     # ------------------------------------------------------------------- #    
 end
 
-function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
+function CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
-    rhs     = zeros(length(cnv.T0))
+    rhs     = zeros(length(cna.T0))
     # Define coefficients ---
     a       =   κ / 2 / Δx^2
     b       =   1 / Δt
@@ -126,7 +126,7 @@ function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
     end
     # ------------------------------------------------------------------- #
     # Berechnung der rechten Seite -------------------------------------- #
-    rhs     .=   K2 * cnv.T0 
+    rhs     .=   K2 * cna.T0 
     # ------------------------------------------------------------------- #        
     # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
     for i = 1:nc        
@@ -143,11 +143,11 @@ function CNV!( cnv, nc, κ, Δt, Δx, BC, K1, K2 )
     end
     # ------------------------------------------------------------------- #    
     # Compute new temperature ------------------------------------------- #
-    cnv.T      .=    K1 \ rhs
+    cna.T      .=    K1 \ rhs
     # ------------------------------------------------------------------- #
 end
 
-function ComputeResiduals!( dc, BC, κ, Δx, Δt )
+function ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
     dc.T_ex[2:end-1]    .=   dc.T    
@@ -167,7 +167,7 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
     # ------------------------------------------------------------------- #
 end
 
-function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
+function AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
@@ -198,3 +198,5 @@ function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
     end
     flush!(K)
 end
+
+# SolveDiff1Dexplicit_vary
