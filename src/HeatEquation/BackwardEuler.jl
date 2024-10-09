@@ -59,3 +59,67 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     end
     return flush!(K)
 end
+
+ function BackwardEuler_const!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+# Function to solve 2D heat diffusion equation using the explicit finite
+# difference scheme
+# assuming constant k, rho, cp
+# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
+# ----------------------------------------------------------------------- #
+# Define coefficients ---
+a   =   κ / Δx^2
+b   =   κ / Δy^2
+c   =   1 / Δt
+# Multiply rhs with 1/Δt and add Q/ρ/cp ---    
+rhs  .= reshape(D.T0,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
+
+# Loop over the grid points ---
+for i = 1:NC.x, j = 1:NC.y
+    # Equation number ---
+    ii          =   Num.T[i,j]
+    # Stencil ---
+    iS          =   ii - NC.x   # South
+    iW          =   ii - 1      # West
+    iC          =   ii          # Central
+    iE          =   ii + 1      # East
+    iN          =   ii + NC.x   # North
+    # Boundaries ---
+    # If an West index is required ---
+    inW    =  i==1      ? false  : true
+    DirW   = (i==1      && BC.type.W==:Dirichlet) ? 1. : 0.
+    NeuW   = (i==1      && BC.type.W==:Neumann  ) ? 1. : 0.
+    # If an East index is required ---
+    inE    =  i==NC.x   ? false  : true
+    DirE   = (i==NC.x   && BC.type.E==:Dirichlet) ? 1. : 0.
+    NeuE   = (i==NC.x   && BC.type.E==:Neumann  ) ? 1. : 0.
+    # If an South index is required
+    inS    =  j==1      ? false  : true
+    DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
+    NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
+    # If an North index is required 
+    inN    =  j==NC.y   ? false  : true
+    DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+    NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
+    # Stencil ---
+    if inS K[ii,iS]     = - b end
+    if inW K[ii,iW]     = - a end
+    K[ii,iC]            =   (2 + DirW + DirE - NeuW - NeuE)*a + (2 + DirS + DirN - NeuS - NeuN) *b + c
+    if inE K[ii,iE]     = - a end    
+    if inN K[ii,iN]     = - b end
+    # Modify right hand side due to boundary conditions ------------- #
+    rhs[ii]     = rhs[ii] + 
+                    2*a*BC.val.W[j] * DirW +
+                    2*a*BC.val.E[j] * DirE +
+                    2*b*BC.val.S[i] * DirS +
+                    2*b*BC.val.N[i] * DirN -
+                    a*BC.val.W[j]*Δx * NeuW  + 
+                    a*BC.val.E[j]*Δx * NeuE  - 
+                    b*BC.val.S[i]*Δy * NeuS  + 
+                    b*BC.val.N[i]*Δy * NeuN 
+end
+# ------------------------------------------------------------------- #    
+# Calculate temperature at new time step ---------------------------- #
+D.T[:]  .=   K \ rhs[:]
+# ------------------------------------------------------------------- #
+
+end
