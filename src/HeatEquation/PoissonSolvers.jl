@@ -1,6 +1,6 @@
 using ExtendableSparse
 
-function Poisson!(D,NC,P,BC,Δ,K,rhs,Num)
+function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
 # difference scheme
 # [Q] = W/m^3
