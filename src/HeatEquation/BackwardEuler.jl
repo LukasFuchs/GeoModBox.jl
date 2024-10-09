@@ -1,6 +1,6 @@
 using ExtendableSparse
 
-function ComputeResiduals!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
+function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. T_ex[2:end-1,2:end-1] = T 
     @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
     @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
@@ -13,7 +13,7 @@ function ComputeResiduals!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y  
 end
 
-function AssembleMatrix(rho, cp, k, BC, Num, nc, Δ, Δt)
+function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     # Linear system of equation
     ndof   = maximum(Num.T)
     K      = ExtendableSparseMatrix(ndof, ndof)

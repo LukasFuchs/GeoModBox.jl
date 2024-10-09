@@ -103,17 +103,17 @@ end
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
-    ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
+    ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # Implicit, Backward Euler ------------------------------------------ #
-    BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
+    BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # Defection correction method --------------------------------------- #
     for iter = 1:niter
         # Residual iteration
-        ComputeResiduals!( dc, BC, κ, Δx, Δt )
+        ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
         @printf("||R|| = %1.4e\n", norm(dc.R)/length(dc.R))            
         norm(dc.R)/length(dc.R) < ϵ ? break : nothing
         # Assemble linear system
-        AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
+        AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K.cscmatrix)
         # Solve for temperature correction: Back substitutions
@@ -122,7 +122,7 @@ for n=1:nt
         dc.T .= dc.T .+ δT            
     end        
     # Crank-Nicolson method --------------------------------------------- #
-    CNA!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
+    CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
     # explicit.T     .=  explicit.T
     implicit.T0     .=  implicit.T

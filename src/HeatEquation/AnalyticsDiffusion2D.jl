@@ -18,7 +18,7 @@ julia> AnalyticalSolution!(a, x, y, 0.0)
    6.04202e-67  3.6506e-135
 ```
 """
-@views function AnalyticalSolution!(Te, x, y, t)
+@views function AnalyticalSolution2D!(Te, x, y, t)
     for i in axes(Te,1), j in axes(Te,2)
         X = @SVector([x[i], y[j], t])
         s = Diffusion2D_Gaussian( X )
@@ -26,7 +26,7 @@ julia> AnalyticalSolution!(a, x, y, 0.0)
     end
 end
 
-@views function BoundaryConditions!(BC, x, y, t) 
+@views function BoundaryConditions2D!(BC, x, y, t) 
     # Box boundaries coordinates
     xmin = x[1]   - (x[2]-x[1])/2
     xmax = x[end] + (x[2]-x[1])/2

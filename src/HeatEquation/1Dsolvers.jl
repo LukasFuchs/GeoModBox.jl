@@ -24,7 +24,7 @@ BC      : Structure for the boundary condition
 
 using ExtendableSparse
 
-function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
+function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -43,7 +43,7 @@ function ForwardEuler!( explicit, κ, Δt, nc, Δx, BC )
     end    
 end
 
-function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
+function BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -88,7 +88,7 @@ function BackwardEuler!( implicit, nc, Δx, κ, Δt, BC, K )
     # ------------------------------------------------------------------- #    
 end
 
-function CNA!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
+function CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
@@ -147,7 +147,7 @@ function CNA!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # ------------------------------------------------------------------- #
 end
 
-function ComputeResiduals!( dc, BC, κ, Δx, Δt )
+function ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
     dc.T_ex[2:end-1]    .=   dc.T    
@@ -167,7 +167,7 @@ function ComputeResiduals!( dc, BC, κ, Δx, Δt )
     # ------------------------------------------------------------------- #
 end
 
-function AssembleMatrix!( K, BC, nc, κ, Δx, Δt )
+function AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt

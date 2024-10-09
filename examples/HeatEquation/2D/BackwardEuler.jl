@@ -41,7 +41,7 @@ function HeatEquation()
     # Numbering 
     Num    = (T=reshape(1:nc.x*nc.y, nc.x, nc.y),)
     # Initial conditions
-    AnalyticalSolution!(T, x.c, y.c, t)
+    AnalyticalSolution2D!(T, x.c, y.c, t)
     @. k.x = 1e-6 
     @. k.y = 1e-6
     @. ρ   = 1.0
@@ -53,17 +53,17 @@ function HeatEquation()
         t += Δt
         @. T0 = T
         # Exact solution on cell centroids
-        AnalyticalSolution!(Te, x.c, y.c, t)
+        AnalyticalSolution2D!(Te, x.c, y.c, t)
         # Exact solution on cell boundaries
-        BoundaryConditions!(BC, x.c, y.c, t)
+        BoundaryConditions2D!(BC, x.c, y.c, t)
         # Iteration loop
         for iter=1:niter
             # Evaluate residual
-            ComputeResiduals!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
+            ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
             @printf("||R|| = %1.4e\n", norm(R)/length(R))
             norm(R)/length(R) < ϵ ? break : nothing
             # Assemble linear system
-            K  = AssembleMatrix(ρ, Cp, k, BC, Num, nc, Δ, Δt)
+            K  = AssembleMatrix2D(ρ, Cp, k, BC, Num, nc, Δ, Δt)
             # Solve for temperature correction: Cholesky factorisation
             Kc = cholesky(K.cscmatrix)
             # Solve for temperature correction: Back substitutions
