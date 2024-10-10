@@ -1,233 +1,350 @@
-# Diffusionsgleichung (2D)
-function Diffusion_2D_discretization_comparison
-clear 
-clc
+using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
+using Statistics, Printf, LinearAlgebra
 
-Model       =   'Gaussian';
-# 'explicit','implicit','CNV','ADI'
-Schema    =   {'explicit';'implicit';'CNV';'ADI';'implicito'};
+function Gaussian_Diffusion()
 
-# Physikalischer Parameter ---------------------------------------------- #
-P.L         =   200e3;          #   L??nge des Models    [m]
-P.H         =   200e3;          #   H??he des Models     [m]
+Schema  =   ["explicit","implicit","CNA","ADI","dc"]
+ns      =   size(Schema,1)
+nrnxny  =   10
 
-P.k         =   3;              #   Thermische Konduktivit??t [W/m/K]
-P.cp        =   1000;           #   W??rmekapazit??t [J/kg/K]
-P.rho       =   3200;           #   Dichte [kg/m^3]
-P.kappa     =   P.k/P.rho/P.cp; #   Thermische Diffusivit??t [m^2/s]
-P.K0        =   273.15;         #   Kelvin bei 0 C
-
-P.Q0        =   0;              #   Hintergrund Waermeproduktionsrate;
-
-# N.dn        =   5;              # Inkremente der Graphischen Darstellung, d.h. hier nur jeder 25 Zeitschritt
-
-P.Tbot      =   500;            # Temperatur am unteren Rand  [C]
-P.Tbot      =   P.Tbot+P.K0;    # Temperatur in Kelvin
-P.Ttop      =   500;            # Temperatur am oberen Rand   [C]
-P.Ttop      =   P.Ttop+P.K0;    # Temperatur in Kelvin
-
-P.Tmax      =   500;            # Temperaturamplitude [C]
-P.Tmax      =   P.Tmax+P.K0;    # Temperatur in Kelvin
-P.sigma     =   8e3;            #
-P.Xc        =   P.L/2;          # X-Koordinate des Zentrums
-P.Zc        =   P.H/2;          # z-Koordinate des Zentrums
-
-eps         = zeros(size(Schema,1),4);
-epsr        = zeros(size(Schema,1),4);
-nxnz        = zeros(size(Schema,1),4);
-Tmax        = zeros(size(Schema,1),4);
-Tmean       = zeros(size(Schema,1),4);
-
-for k = 1:size(Schema,1)
-    FDSchema = Schema{k};
-    disp('')
-    disp(FDSchema)
-    for l = 1:3
-        # Numerische Parameter ------------------------------------------ #
-        N.nx        =   l*20+1;           # # Gitterpunkte in x-Richtung
-        N.nz        =   l*20+1;           # # Gitterpunkte in z-Richtung
-        N.dx        =   P.L/(N.nx-1);   # Gitterabstand in x-Richtung
-        N.dz        =   P.H/(N.nz-1);   # Gitterabstand in z-Richtung
+# Physical Parameters --------------------------------------------------- #
+P       = ( 
+    L       =   200e3,          #   Length [ m ]
+    H       =   200e3,          #   Height [ m ]
+    k       =   3,              #   Thermal Conductivity [ W/m/K ]
+    cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
+    ρ       =   3200,           #   Density [ kg/m^3 ]
+    K0      =   273.15,         #   Kelvin at 0 °C
+    Q0      =   0               #   Heat production rate
+)
+P1      = (
+    κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
+    Tback   =   500 + P.K0,     #   Background Temperature [ K ]
+    Tamp    =   500,            #   Temperaturamplitude [K]
+    σ       =   20e3,           #   
+    Xc      =   P.L/2,          #   x-Coordinate of the Anomalycenter
+    Zc      =   P.H/2           #   y-Coordinate of the Anomalycenter
+)
+P       =   merge(P,P1)
+# ----------------------------------------------------------------------- #
+# Statistical Parameter ------------------------------------------------- #
+St      = (
+    ε           =   zeros(size(Schema,1),nrnxny),    
+    nxny        =   zeros(size(Schema,1),nrnxny),
+    Tmax        =   zeros(size(Schema,1),nrnxny),
+    Tmean       =   zeros(size(Schema,1),nrnxny),
+    Tanamax     =   [0.0],
+    Tanamean    =   [0.0]
+)
+# ------------------------------------------------------------------------ #
+# Loop over different discretization schemes ----------------------------- #
+for m = 1:ns
+    FDSchema = Schema[m]
+    display(FDSchema)
+    for l = 1:nrnxny
+        # Numerical Parameters ------------------------------------------ #
+        NC  = (
+            x       =   l*20,       #   Number of Centroids in x
+            y       =   l*20        #   Number of Centroids in y
+        )
+        Δ   = (
+            x       =   P.L/NC.x,   #   Grid spacing in x
+            y       =   P.H/NC.y    #   Grid Spacing in y
+        )
+        display(string("nx = ",NC.x,", ny = ",NC.y))
+        # --------------------------------------------------------------- #
+        # Animationssettings -------------------------------------------- #
+        path        =   string("./examples/HeatEquation/2D/Results/")
+        anim        =   Plots.Animation(path, String[] )
+        filename    =   string("Gaussian_Diffusion_",FDSchema,
+                            "_nx_",NC.x,"_ny_",NC.y)
+        save_fig    =   -1
+        # --------------------------------------------------------------- #        
+        # Grid coordinates ---------------------------------------------- #
+        x       = (
+            c       =   LinRange(0.0 + Δ.x/2.0, P.L - Δ.x/2.0, NC.x),
+        )
+        y       = (
+            c       =   LinRange(-P.H + Δ.y/2.0, 0.0 - Δ.y/2.0, NC.y),
+        )
+        # --------------------------------------------------------------- #
+        # Time Parameters ----------------------------------------------- #
+        T       = (
+            year        =   365.25*3600*24,     #   Seconds per year
+            Δfac        =   1.0,                #   Factor for Explicit Stability Criterion
+        )
+        T1      = (
+            tmax        =   10 * 1e6 * T.year,  #   Maximum Time in [ s ]
+            Δ           =   [0.0]            
+        )
+        T       =   merge(T,T1)
+        T.Δ[1]  =   T.Δfac * (1.0 / ( 2.0 * P.κ * ( 1 /Δ.x^2 + 1 / Δ.y^2 )))
         
-        disp(['nx = ',num2str(N.nx)])
-        
-        [N.x,N.z]   =   meshgrid(0:N.dx:P.L,-P.H:N.dz:0);
-        
-        N.beenhere  =   0;              # Dummy parameter, nicht ver??ndern!
-        
-        # Berechnung der stabilen Zeitschrittlaenge --------------------- #
-        T.tmax      =   20;                 # Maximale Laufzeit des Models in Ma
-        T.day       =   3600*24;            # # Sekunden pro Tag
-        T.year      =   365.25*T.day;       # # Sekunden pro Jahr
-        T.tmax      =   T.tmax*1e6*T.year;  # Maximale Zeit in Sekunden
-        
-        T.dtfac     =   1.0;                # Multiplikationsfaktor f??r dt
-        T.dt        =   T.dtfac*(1/(2*P.kappa*(1/N.dx^2+1/N.dz^2)));
-        
-        N.nt        =   ceil(T.tmax/T.dt);  # Anzahl der Zeitschritte
-        T.time      =   zeros(1,N.nt);
-        #
-        
-        B.ttbc      =   'const';            # Oben - bisher nur const
-        B.btbc      =   'const';            # Unten - bisher nur const
-        B.ltbc      =   'const';             # links - const od. flux
-        B.rtbc      =   'const';             # rechts - const od. flux
-        ##
-        
-        # Waermefluss
-        # ----------
-        B.lhf       = 0;    B.rhf       = 0;
-        # ----------
-        B.bhf       = 0;    B.thf       = 0;
-        ## Erstellung des Anfangstemperaturfseld
-        
-        D.T0    =  P.Tbot + P.Tmax .*...
-            exp( -( (N.x-P.Xc).^2 + (N.z+P.Zc).^2 ) ./...
-            ( 2*P.sigma^2/pi ));
-        D.Tana          = D.T0;
-        
-        # Hintergrundfeld f??r W??rmequellen
-        D.Q             = P.Q0.*ones(N.nz,N.nx);
-                
-        D.RMS           = zeros(1,N.nt);        
-        
-        ## Zeitschleife        
-        for n=1:N.nt
-            if n>1
-                switch FDSchema
-                    case 'explicit'
-                        D.T1        =   ...
-                            SolveDiff2Dexplicit(D.T0,D.Q,T.dt,P,N,B);
-                        
-                    case 'implicit'
-                        [D.T1,N]    =   ...
-                            SolveDiff2Dimplicit(D.T0,D.Q,T.dt,P,N,B);
-                    case 'implicito'
-                        [D.T1,N]    =   ...
-                            SolveDiff2Dimplicit_opt(D.T0,D.Q,T.dt,P,N,B);                
-                    case 'ADI'
-                        if(n==1)
-                            N.beenhere = 0;
-                        end
-                        [D.T1,N]    =   ...
-                            SolveDiff2DADI(D.T0,D.Q,T.dt,P,N,B);
-                    case 'CNV'
-                        if(n==1)
-                            N.beenhere = 0;
-                        end
-                        [D.T1,N]    = ...
-                            SolveDiff2DCNV(D.T0,D.Q,T.dt,P,N,B);
-                end
-                
-                # Zuweisung der neuen Temperatur
-                D.T0        =   D.T1;
-                
-                T.time(n)   =   T.time(n-1) + T.dt;                
-                
-                D.Tana      =  P.Tbot + P.Tmax ./...
-                    (1 + 2*pi*T.time(n)*P.kappa/P.sigma^2) .*...
-                    exp( -( (N.x-P.Xc).^2 + (N.z+P.Zc).^2 ) ./...
-                    ( 2*P.sigma^2/pi + 4*T.time(n)*P.kappa));
-                
-            end
-            
-            D.Tmax(n)           = max(max(D.T0));            
-            D.Tmean(n)          = mean(mean(D.T0));            
-            
-            D.epsT      = (D.Tana-D.T0);
-            D.epsTr     = (D.Tana-D.T0)./D.Tana;
-            
-            D.RMS(n)    = sqrt(sum(sum((D.epsT).^2))/(N.nx*N.nz));
-            D.RMSr(n)   = sqrt(sum(sum((D.epsTr).^2))/(N.nx*N.nz));
-            
-            
-            if (n==N.nt)
-                figure(1),
-                clf
-                pcolor(N.x/1e3,N.z/1e3,D.T0-P.K0); shading interp; colorbar
-                hold on
-                contour(N.x/1e3,N.z/1e3,D.T0-P.K0,10,'k')
-                switch Model
-                    case 'Gaussian'
-                        contour(N.x/1e3,N.z/1e3,D.Tana-P.K0,10,'y--')
-                end
-                xlabel('x [km]'); ylabel('z [km]'); zlabel('Temperature [^oC]')
-                axis square; axis equal
-                title({['Temperature evolution after ',...
-                    num2str(T.time(n)/T.year/1e6),' Myrs'];...
-                    ['for the ',FDSchema,' method and dt = ',...
-                    num2str(T.dt/(1/(2*P.kappa*(1/N.dx^2+1/N.dz^2)))),...
-                    '*dt_{critical}']})
-                set(gca,'FontWeight','Bold','FontSize',10,'LineWidth',2)
-                
-            end
+        nt      =   ceil(Int,T.tmax/T.Δ[1])     #   Number of Time Steps
+        time    =   zeros(1,nt)
+        # --------------------------------------------------------------- #
+        # Initial Conditions  ------------------------------------------- #        
+        D       = (
+            Q           =   zeros(NC...),
+            T           =   zeros(NC...),
+            T0          =   zeros(NC...),
+            T_ex        =   zeros(NC.x+2,NC.y+2),
+            Tana        =   zeros(NC...),
+            RMS         =   zeros(1,nt),
+            εT          =   zeros(NC...),
+            Tmax        =   zeros(1,nt),
+            Tmean       =   zeros(1,nt),
+            Tmaxa       =   zeros(1,nt),
+            Tprofile    =   zeros(NC.y,nt),
+            Tprofilea   =   zeros(NC.y,nt),
+            ρ           =   zeros(NC...),
+            cp          =   zeros(NC...)            
+        )
+        for i = 1:NC.x, j = 1:NC.y
+            D.T[i,j]    =   P.Tback + P.Tamp * 
+                            exp( -( (x.c[i] - P.Xc)^2 + (y.c[j] + P.Zc)^2 ) /
+                            ( 2.0 * P.σ^2.0 / π ))
         end
+        @. D.Tana       =   D.T
+        @. D.T0         =   D.T
+    
+        D.Tprofile[:,1]     .=  (D.T[convert(Int,NC.x/2),:] + 
+                                    D.T[convert(Int,NC.x/2)+1,:]) / 2
+        D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
+                                    D.Tana[convert(Int,NC.x/2)+1,:]) / 2
         
-        disp(' Time loop finished ... ')
-        disp('-> Use new grid size...')
-        
-        eps(k,l)    = D.RMS(N.nt);
-        epsr(k,l)   = D.RMSr(N.nt);
-        nxnz(k,l)   = N.nx*N.nz;
-        Tmax(k,l)   = D.Tmax(N.nt);
-        Tmean(k,l)  = D.Tmean(N.nt);
-        
-        Tana        = D.Tana; 
-        clear N T B
+        # Heat production rate ---
+        @. D.Q          = P.Q0
+        # Visualize initial condition ---
+        # subplot 1 ---
+        p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
+                color=:viridis, colorbar=false, aspect_ratio=:equal, 
+                xlabel="x [km]", ylabel="z [km]", 
+                title="Temperature", 
+                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
+                subplot=1)
+
+        contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
+                    levels=:5,linecolor=:black,subplot=1)
+        contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
+                    levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
+        # subplot 2 ---
+        heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
+                color=:viridis, colorbar=true, aspect_ratio=:equal, 
+                xlabel="x [km]", ylabel="z [km]", 
+                title="Deviation", 
+                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                clims=(-1,1),layout=(2,2),
+                subplot=2)
+        # subplot 3 ---
+        plot!(p,D.Tprofile[:,1],y.c./1e3,
+                linecolor=:black,
+                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                label="",
+                subplot=3)
+        plot!(p,D.Tprofilea[:,1],y.c./1e3,
+                linestyle=:dash,linecolor=:yellow,
+                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                label="",
+                subplot=3)
+        # subplot 4 ---
+        plot!(p,time[1:end]./T.year./1e6,D.RMS[1:end],
+                label="",
+                xlabel="Time [ Myrs ]",ylabel="RMS",
+                subplot=4)
+        if save_fig == 0
+            display(p)
+        end
+        # Boundary Conditions ------------------------------------------- #
+        BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
+                                N=:Dirichlet, S=:Dirichlet),
+                    val     = (W=D.T[1,:],E=D.T[end,:],
+                                N=D.T[:,end],S=D.T[:,1]))
+        # --------------------------------------------------------------- #
+        if FDSchema == "implicit"
+            # Linear System of Equations -------------------------------- #
+            Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+            ndof    =   maximum(Num.T)
+            K       =   ExtendableSparseMatrix(ndof,ndof)
+            rhs     =   zeros(ndof)
+        end
+        if FDSchema == "CNA"
+            # Linear System of Equations -------------------------------- #
+            Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+            ndof    =   maximum(Num.T)
+            K1      =   ExtendableSparseMatrix(ndof,ndof)
+            K2      =   ExtendableSparseMatrix(ndof,ndof)
+            rhs     =   zeros(ndof)
+        end
+        if FDSchema == "dc"
+            niter       =   10
+            ϵ           =   1e-10
+            @. D.ρ      =   P.ρ
+            @. D.cp     =   P.cp
+            k           =   (x=zeros(NC.x+1,NC.x), y=zeros(NC.x,NC.x+1))
+            @. k.x      =   P.k
+            @. k.y      =   P.k
+            Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+            ndof        =   maximum(Num.T)
+            K           =   ExtendableSparseMatrix(ndof,ndof)
+            R           =   zeros(NC...)
+            ∂T          =   (∂x=zeros(NC.x+1, NC.x), ∂y=zeros(NC.x, NC.x+1))
+            q           =   (x=zeros(NC.x+1, NC.x), y=zeros(NC.x, NC.x+1))
+        end
+        # Time Loop ----------------------------------------------------- #
+        for n = 1:nt
+            if n>1
+                if FDSchema == "explicit"
+                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+                elseif FDSchema == "implicit"
+                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K, Num)
+                    D.T0 .= D.T
+                elseif FDSchema == "CNA"
+                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+                    D.T0 .= D.T
+                elseif FDSchema == "ADI"
+                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+                    D.T0 .= D.T
+                elseif FDSchema == "dc"
+                    for iter = 1:niter
+                        # Evaluate residual
+                        ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, BC, Δ, T.Δ[1])
+                        # @printf("||R|| = %1.4e\n", norm(R)/length(R))
+                        norm(R)/length(R) < ϵ ? break : nothing
+                        # Assemble linear system
+                        K  = AssembleMatrix2D(D.ρ, D.cp, k, BC, Num, NC, Δ, T.Δ[1])
+                        # Solve for temperature correction: Cholesky factorisation
+                        Kc = cholesky(K.cscmatrix)
+                        # Solve for temperature correction: Back substitutions
+                        δT = -(Kc\R[:])
+                        # Update temperature
+                        @. D.T += δT[Num.T]
+                    end
+                    D.T0    .= D.T
+                end
+                time[n]     =   time[n-1] + T.Δ[1]
+                if time[n] > T.tmax 
+                    T.Δ[1]  =   T.tmax - time[n-1]
+                    time[n] =   time[n-1] + T.Δ[1]
+                end                
+                for i = 1:NC.x, j = 1:NC.y
+                    D.Tana[i,j] =  P.Tback + P.Tamp /
+                                    (1 + 2.0*π*time[n] * P.κ / P.σ^2 ) *
+                                    exp( -( (x.c[i] - P.Xc)^2.0 + (y.c[j] + P.Zc)^2.0 ) /
+                                    ( 2.0*P.σ^2/π + 4*time[n] * P.κ))
+                end
+            end
+            # Maximum and Mean Temperature with time ---
+            D.Tmax[n]   =   maximum(D.T)
+            D.Tmean[n]  =   mean(D.T)
+            # Vertical Profile along the Center of the Domain ---
+            D.Tprofile[:,n]     .=  (D.T[convert(Int,NC.x/2),:] + 
+                                        D.T[convert(Int,NC.x/2)+1,:]) / 2
+            D.Tprofilea[:,n]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
+                                        D.Tana[convert(Int,NC.x/2)+1,:]) / 2
+            # Deviation from the Analytical Solution ---
+            @. D.εT     =   (D.Tana - D.T)
+            # RMS ---
+            D.RMS[n]    =   sqrt(sum(D.εT.^2)/(NC.x*NC.y))
+            # Plot Solution ---
+            if mod(n,2) == 0 || n == nt
+                # subplot 1 ---
+                p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
+                color=:viridis, colorbar=false, aspect_ratio=:equal, 
+                xlabel="x [km]", ylabel="z [km]", 
+                title="Temperature", 
+                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
+                subplot=1)
+
+                contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
+                            levels=:5,linecolor=:black,subplot=1)
+                contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
+                            levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
+                # subplot 2 ---
+                heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
+                        color=:viridis, colorbar=true, aspect_ratio=:equal, 
+                        xlabel="x [km]", ylabel="z [km]", 
+                        title="Deviation", 
+                        xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                        clims=(-1,1),
+                        subplot=2)
+                # subplot 3 ---
+                plot!(p,D.Tprofile[:,n].-P.K0,y.c./1e3,
+                    linecolor=:black,ylim=(-P.H/1e3,0),
+                    xlim=(P.Tback-P.K0,P.Tback+P.Tamp-P.K0),
+                    xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                    label="",
+                    subplot=3)
+                plot!(p,D.Tprofilea[:,n].-P.K0,y.c./1e3,
+                    linestyle=:dash,linecolor=:yellow,
+                    xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                    label="",
+                    subplot=3)
+                # subplot 4 ---
+                plot!(p,time[1:n]./T.year./1e6,D.RMS[1:n],
+                    label="",
+                    xlabel="Time [ Myrs ]",ylabel="RMS",
+                    subplot=4)
+                if save_fig == 1
+                    Plots.frame(anim)
+                elseif save_fig == 0
+                    display(p)                        
+                end
+            end
+            # End Time Loop ---
+        end        
+        display("Time loop finished ...")
+        display("-> Use new grid size...")
+        # Save Animation ---
+        if save_fig == 1
+            # Write the frames to a GIF file
+            Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+        elseif save_fig == 0
+            display(plot(p))
+        end
+        foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+        # --------------------------------------------------------------- #
+        # Statistical Values for Each Scheme and Resolution ---
+        St.ε[m,l]       =   D.RMS[nt]
+        St.nxny[m,l]    =   1/NC.x/NC.y
+        St.Tmax[m,l]    =   D.Tmax[nt]
+        St.Tmean[m,l]   =   D.Tmean[nt]
+        St.Tanamax[1]   =   maximum(D.Tana)
+        St.Tmean[1]     =   mean(D.Tana)
+        # --------------------------------------------------------------- #
     end
 end
-
-legendinfo  = cell(1,size(Schema,1)+1);
-linstyle    = {'-','--',':','-.','-'};
-figure(2)
-clf
-for k = 1:size(Schema,1)
-    subplot(1,3,1)
-    p(k) = loglog(1./nxnz(k,:),eps(k,:),'LineStyle',linstyle{k},...
-        'Marker','*','LineWidth',2);
-#     loglog(1./nxnz(k,:),epsr(k,:),'LineStyle',linstyle{k},...
-#         'Marker','o','LineWidth',2);
-    legendinfo{k} = Schema{k};
-    hold on
-    if k == size(Schema,1)        
-        legendinfo{k+1} = '';
-        xlabel('1/nx/nz'); ylabel('RMS_{\DeltaT}')
-        axis square        
-        set(gca,'FontWeight','Bold','FontSize',10,'LineWidth',2)
-        legend(p,legendinfo,'Location','NorthWest')
-        axis([1e-5 1e-2 1e-2 2])
-    end
-    subplot(1,3,2)
-    loglog(1./nxnz(k,:),Tmax(k,:),'LineStyle',linstyle{k},...
-        'Marker','*','LineWidth',2)
-    hold on
-    if k == size(Schema,1)
-        legendinfo{k+1} = 'Sol_{ana}';
-        plot(1/max(nxnz(1,:)):1e-4:1/min(nxnz(1,:)),...
-            max(max(D.Tana)).*...
-            ones(1,length(1/max(nxnz(1,:)):1e-4:1/min(nxnz(1,:)))),'k--')
-        xlabel('1/nx/nz'); ylabel('T_{max}')
-        axis square
-        set(gca,'FontWeight','Bold','FontSize',10,'LineWidth',2,...
-            'xscale','log')
-        legend(legendinfo,'Location','NorthWest')
-        axis([1e-5 1e-2 785 795])
-    end
-    subplot(1,3,3)
-    loglog(1./nxnz(k,:),Tmean(k,:),'LineStyle',linstyle{k},...
-        'Marker','*','LineWidth',2)
-    hold on
-    if k == size(Schema,1)
-        plot(1/max(nxnz(1,:)):1e-4:1/min(nxnz(1,:)),...
-            mean(mean(D.Tana)).*...
-            ones(1,length(1/max(nxnz(1,:)):1e-4:1/min(nxnz(1,:)))),'k--')
-        xlabel('1/nx/nz'); ylabel('\langle T \rangle')
-        axis square
-        set(gca,'FontWeight','Bold','FontSize',10,'LineWidth',2)
-        legend(legendinfo,'Location','NorthEast')
-        axis([1e-5 1e-2 775 776])
-    end
+# Visualize Statistical Values ------------------------------------------ #
+q   =   plot(0,0,layout=(1,3))
+for m = 1:ns
+#    subplot(1,3,1)
+    plot!(q,St.nxny[m,:],St.ε[m,:],
+                marker=:circle,markersize=3,label=Schema[m],
+                xaxis=:log,
+                xlabel="1/nx/ny",ylabel="ε_{T}",layout=(1,3),
+                subplot=1)
+    plot!(q,St.nxny[m,:],St.Tmax[m,:],
+                marker=:circle,markersize=3,label="",
+                xaxis=:log,
+                xlabel="1/nx/ny",ylabel="T_{max}",
+                subplot=2)
+    #plot!(q,1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]),
+    #        St.Tanamax .* ones(1,length(1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]))),
+    #        linecolor=:black,linestyle=:dash)
+    plot!(q,St.nxny[m,:],St.Tmean[m,:],
+                marker=:circle,markersize=3,label="",
+                xaxis=:log,
+                xlabel="1/nx/ny",ylabel="⟨T⟩",
+                subplot=3)
+    display(q)
+end
+# ------------------------------------------------------------------------ #
+# Save Final Figure ------------------------------------------------------ #
+savefig(q,"./examples/HeatEquation/2D/Results/Gaussian_ResTest.png")
+# ------------------------------------------------------------------------ #
 end
 
-# end
+Gaussian_Diffusion()
 

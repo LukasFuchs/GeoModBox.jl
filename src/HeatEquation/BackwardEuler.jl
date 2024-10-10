@@ -61,9 +61,6 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
 end
 
  function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
-# Function to solve 2D heat diffusion equation using the explicit finite
-# difference scheme
-# assuming constant k, rho, cp
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
