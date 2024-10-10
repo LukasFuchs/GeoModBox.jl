@@ -19,11 +19,10 @@ P       = (
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
-    Tback   =   500 + P.K0,     #   Background Temperature [ K ]
     Tamp    =   500,            #   Temperaturamplitude [K]
     σ       =   20e3,           #   
-    Xc      =   P.L/2,          #   x-Coordinate of the Anomalycenter
-    Zc      =   P.H/2           #   y-Coordinate of the Anomalycenter
+    Xc      =   0.0,            #   x-Coordinate of the Anomalycenter
+    Zc      =   0.0             #   y-Coordinate of the Anomalycenter
 )
 P       =   merge(P,P1)
 # ----------------------------------------------------------------------- #
@@ -62,10 +61,10 @@ for m = 1:ns
         # --------------------------------------------------------------- #        
         # Grid coordinates ---------------------------------------------- #
         x       = (
-            c       =   LinRange(0.0 + Δ.x/2.0, P.L - Δ.x/2.0, NC.x),
+            c       =   LinRange(-P.L/2+ Δ.x/2.0, P.L/2 - Δ.x/2.0, NC.x),
         )
         y       = (
-            c       =   LinRange(-P.H + Δ.y/2.0, 0.0 - Δ.y/2.0, NC.y),
+            c       =   LinRange(-P.H/2 + Δ.y/2.0, P.H/2 - Δ.y/2.0, NC.y),
         )
         # --------------------------------------------------------------- #
         # Time Parameters ----------------------------------------------- #
@@ -100,11 +99,8 @@ for m = 1:ns
             ρ           =   zeros(NC...),
             cp          =   zeros(NC...)            
         )
-        for i = 1:NC.x, j = 1:NC.y
-            D.T[i,j]    =   P.Tback + P.Tamp * 
-                            exp( -( (x.c[i] - P.Xc)^2 + (y.c[j] + P.Zc)^2 ) /
-                            ( 2.0 * P.σ^2.0 / π ))
-        end
+        # Initial conditions
+        AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana       =   D.T
         @. D.T0         =   D.T
     
@@ -112,7 +108,6 @@ for m = 1:ns
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
         D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
-        
         # Heat production rate ---
         @. D.Q          = P.Q0
         # Visualize initial condition ---
@@ -121,20 +116,19 @@ for m = 1:ns
                 color=:viridis, colorbar=false, aspect_ratio=:equal, 
                 xlabel="x [km]", ylabel="z [km]", 
                 title="Temperature", 
-                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
                 clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
                 subplot=1)
-
-        contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
+            contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
                     levels=:5,linecolor=:black,subplot=1)
-        contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
+            contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
                     levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
         # subplot 2 ---
         heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
                 color=:viridis, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x [km]", ylabel="z [km]", 
                 title="Deviation", 
-                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3),  
                 clims=(-1,1),layout=(2,2),
                 subplot=2)
         # subplot 3 ---
@@ -159,8 +153,8 @@ for m = 1:ns
         # Boundary Conditions ------------------------------------------- #
         BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
                                 N=:Dirichlet, S=:Dirichlet),
-                    val     = (W=D.T[1,:],E=D.T[end,:],
-                                N=D.T[:,end],S=D.T[:,1]))
+                    val     = (W=D.Tana[1,:],E=D.Tana[end,:],
+                                N=D.Tana[:,end],S=D.Tana[:,1]))
         # --------------------------------------------------------------- #
         if FDSchema == "implicit"
             # Linear System of Equations -------------------------------- #
@@ -228,12 +222,10 @@ for m = 1:ns
                     T.Δ[1]  =   T.tmax - time[n-1]
                     time[n] =   time[n-1] + T.Δ[1]
                 end                
-                for i = 1:NC.x, j = 1:NC.y
-                    D.Tana[i,j] =  P.Tback + P.Tamp /
-                                    (1 + 2.0*π*time[n] * P.κ / P.σ^2 ) *
-                                    exp( -( (x.c[i] - P.Xc)^2.0 + (y.c[j] + P.Zc)^2.0 ) /
-                                    ( 2.0*P.σ^2/π + 4*time[n] * P.κ))
-                end
+                # Exact solution on cell centroids
+                AnalyticalSolution2D!(D.Tana, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ))
+                # Exact solution on cell boundaries
+                BoundaryConditions2D!(BC, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ)) 
             end
             # Maximum and Mean Temperature with time ---
             D.Tmax[n]   =   maximum(D.T)
@@ -251,12 +243,12 @@ for m = 1:ns
             if mod(n,2) == 0 || n == nt
                 # subplot 1 ---
                 p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
-                color=:viridis, colorbar=false, aspect_ratio=:equal, 
-                xlabel="x [km]", ylabel="z [km]", 
-                title="Temperature", 
-                xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
-                clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
-                subplot=1)
+                    color=:viridis, colorbar=false, aspect_ratio=:equal, 
+                    xlabel="x [km]", ylabel="z [km]", 
+                    title="Temperature", 
+                    xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
+                    clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
+                    subplot=1)
 
                 contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
                             levels=:5,linecolor=:black,subplot=1)
@@ -267,17 +259,17 @@ for m = 1:ns
                         color=:viridis, colorbar=true, aspect_ratio=:equal, 
                         xlabel="x [km]", ylabel="z [km]", 
                         title="Deviation", 
-                        xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+                        xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
                         clims=(-1,1),
                         subplot=2)
                 # subplot 3 ---
-                plot!(p,D.Tprofile[:,n].-P.K0,y.c./1e3,
-                    linecolor=:black,ylim=(-P.H/1e3,0),
-                    xlim=(P.Tback-P.K0,P.Tback+P.Tamp-P.K0),
+                plot!(p,D.Tprofile[:,n],y.c./1e3,
+                    linecolor=:black, ylim=(-P.H/2/1e3,P.H/2/1e3),
+                    xlim=(0,P.Tamp),
                     xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
                     label="",
                     subplot=3)
-                plot!(p,D.Tprofilea[:,n].-P.K0,y.c./1e3,
+                plot!(p,D.Tprofilea[:,n],y.c./1e3,
                     linestyle=:dash,linecolor=:yellow,
                     xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
                     label="",
@@ -307,7 +299,7 @@ for m = 1:ns
         foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
         # --------------------------------------------------------------- #
         # Statistical Values for Each Scheme and Resolution ---
-        St.ε[m,l]       =   D.RMS[nt]
+        St.ε[m,l]       =   maximum(D.RMS[:])
         St.nxny[m,l]    =   1/NC.x/NC.y
         St.Tmax[m,l]    =   D.Tmax[nt]
         St.Tmean[m,l]   =   D.Tmean[nt]
@@ -322,7 +314,7 @@ for m = 1:ns
 #    subplot(1,3,1)
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
-                xaxis=:log,
+                xaxis=:log,yaxis=:log,
                 xlabel="1/nx/ny",ylabel="ε_{T}",layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
