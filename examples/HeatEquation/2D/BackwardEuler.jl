@@ -41,7 +41,7 @@ function HeatEquation()
     # Numbering 
     Num    = (T=reshape(1:nc.x*nc.y, nc.x, nc.y),)
     # Initial conditions
-    AnalyticalSolution2D!(T, x.c, y.c, t)
+    AnalyticalSolution2D!(T, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
     @. k.x = 1e-6 
     @. k.y = 1e-6
     @. ρ   = 1.0
@@ -53,9 +53,9 @@ function HeatEquation()
         t += Δt
         @. T0 = T
         # Exact solution on cell centroids
-        AnalyticalSolution2D!(Te, x.c, y.c, t)
+        AnalyticalSolution2D!(Te, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
         # Exact solution on cell boundaries
-        BoundaryConditions2D!(BC, x.c, y.c, t)
+        BoundaryConditions2D!(BC, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
         # Iteration loop
         for iter=1:niter
             # Evaluate residual
