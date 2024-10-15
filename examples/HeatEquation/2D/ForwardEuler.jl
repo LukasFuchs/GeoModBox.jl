@@ -32,7 +32,7 @@ function HeatEquation()
         type = (W=:Dirichlet, E=:Dirichlet, S=:Dirichlet, N=:Dirichlet),
         val  = (W=zeros(nc.y), E=zeros(nc.y), S=zeros(nc.x), N=zeros(nc.x)))  
     # Initial conditions
-    AnalyticalSolution2D!(T, x.c, y.c, t)
+    AnalyticalSolution2D!(T, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
     @. k.x = 1e-6 
     @. k.y = 1e-6
     @. ρ   = 1.0
@@ -42,9 +42,9 @@ function HeatEquation()
     @views for it=1:nt
         t += Δt
         # Exact solution on cell centroids
-        AnalyticalSolution2D!(Te, x.c, y.c, t)
+        AnalyticalSolution2D!(Te, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
         # Exact solution on cell boundaries
-        BoundaryConditions2D!(BC, x.c, y.c, t)
+        BoundaryConditions2D!(BC, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
         @. T_ex[2:end-1,2:end-1] = T 
         @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1])# + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
         @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1])# + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)

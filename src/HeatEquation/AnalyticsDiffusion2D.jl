@@ -18,15 +18,15 @@ julia> AnalyticalSolution!(a, x, y, 0.0)
    6.04202e-67  3.6506e-135
 ```
 """
-@views function AnalyticalSolution2D!(Te, x, y, t)
+@views function AnalyticalSolution2D!(Te, x, y, t, params)
     for i in axes(Te,1), j in axes(Te,2)
         X = @SVector([x[i], y[j], t])
-        s = Diffusion2D_Gaussian( X )
+        s = Diffusion2D_Gaussian( X; params )
         Te[i,j] = s.u
     end
 end
 
-@views function BoundaryConditions2D!(BC, x, y, t) 
+@views function BoundaryConditions2D!(BC, x, y, t, params) 
     # Box boundaries coordinates
     xmin = x[1]   - (x[2]-x[1])/2
     xmax = x[end] + (x[2]-x[1])/2
@@ -35,19 +35,19 @@ end
     # Loop over W/E sides
     for j in axes(BC.val.W,1)
         X = @SVector([xmin, y[j], t])
-        s = Diffusion2D_Gaussian( X )
+        s = Diffusion2D_Gaussian( X; params)
         BC.val.W[j] = s.u
         X = @SVector([xmax, y[j], t])
-        s = Diffusion2D_Gaussian( X )
+        s = Diffusion2D_Gaussian( X; params )
         BC.val.E[j] = s.u
     end
     # Loop over S/N sides
     for i in axes(BC.val.S,1)
         X = @SVector([x[i], ymin, t])
-        s = Diffusion2D_Gaussian( X )
+        s = Diffusion2D_Gaussian( X; params )
         BC.val.S[i] = s.u
         X = @SVector([x[i], ymax, t])
-        s = Diffusion2D_Gaussian( X )
+        s = Diffusion2D_Gaussian( X; params )
         BC.val.N[i] = s.u
     end
 end
