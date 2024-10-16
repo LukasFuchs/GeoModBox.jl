@@ -1,29 +1,27 @@
+using ExtendableSparse
 @doc raw"""
-    SolveHeat1D_explicit!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
+    ForwardEuler1Dc!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
 
 Function to solve the 1D heat equation (diffusion only, no internal
 heating, konstant thermal parameters) using an explicit (foward euler) 
-finite difference scheme. The equation has the form of: 
-|
-| ∂T/∂t = κ ∂²T / ∂x².
-| 
+finite difference scheme. The equation has the form of:
+
+∂T/∂t = κ ∂²T / ∂x².
+ 
 The temperature is defined on central nodes and the heat flux on the 
 vertices. Boundary conditions are currently limited to Dirichlet and 
 Neumann. Using central temperature nodes requires external ghost nodes, 
 which are used to define the boundary conditions. 
 
-Tnew    : New temperature vector [ C ]
-T_ex    : Temperature vector including the ghost nodes
-κ       : Diffusivity [ m²/s ]
-Δt      : Time step [ s ]
-nc      : Number of central nodes
-Δx      : Grid spacing [ m ]
-BC      : Structure for the boundary condition
+    Tnew    : New temperature vector [ C ]
+    T_ex    : Temperature vector including the ghost nodes
+    κ       : Diffusivity [ m²/s ]
+    Δt      : Time step [ s ]
+    nc      : Number of central nodes
+    Δx      : Grid spacing [ m ]
+    BC      : Structure for the boundary condition
 
 """
-
-using ExtendableSparse
-
 function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
