@@ -1,30 +1,24 @@
-@doc raw"""
-    SolveHeat1D_explicit!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
-
-Function to solve the 1D heat equation (diffusion only, no internal
-heating, konstant thermal parameters) using an explicit (foward euler) 
-finite difference scheme. The equation has the form of: 
-|
-| ∂T/∂t = κ ∂²T / ∂x².
-| 
-The temperature is defined on central nodes and the heat flux on the 
-vertices. Boundary conditions are currently limited to Dirichlet and 
-Neumann. Using central temperature nodes requires external ghost nodes, 
-which are used to define the boundary conditions. 
-
-Tnew    : New temperature vector [ C ]
-T_ex    : Temperature vector including the ghost nodes
-κ       : Diffusivity [ m²/s ]
-Δt      : Time step [ s ]
-nc      : Number of central nodes
-Δx      : Grid spacing [ m ]
-BC      : Structure for the boundary condition
-
-"""
-
 using ExtendableSparse
+@doc raw"""
+    ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC)
 
-function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
+Solves the onedimensional heat diffusion equation assuming no internal heating and
+constant thermal parameters using an explicit, forward euler finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    explicit    : Tuple, containing the regular temperature array T and 
+                  array containing the ghost nodes T_ex
+    κ           : Diffusivity [ m²/s ]
+    Δt          : Time step [ s ]
+    nc          : Number of central nodes
+    Δx          : Grid spacing [ m ]
+    BC          : Tuple for the boundary condition
+"""
+function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -43,7 +37,27 @@ function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     end    
 end
 
-function BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
+@doc raw"""
+    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
+
+Solves the onedimensional heat diffusion equation assuming no internal heating and
+constant thermal parameters using an implicit, backward euler finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    implicit    : Tuple, containing the current temperature array T0 and 
+                  the new temperature array T
+    κ           : Diffusivity [ m²/s ]
+    Δt          : Time step [ s ]
+    nc          : Number of central nodes
+    Δx          : Grid spacing [ m ]
+    BC          : Tuple for the boundary condition
+    K           : Coefficient matrix for linear system of equations
+"""
+function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -88,7 +102,28 @@ function BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # ------------------------------------------------------------------- #    
 end
 
-function CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
+@doc raw"""
+    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+
+Solves the onedimensional heat diffusion equation assuming no internal heating and
+constant thermal parameters using Crank-Nicolson finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    cna         : Tuple, containing the current temperature array T0 and 
+                  the new temperature array T
+    κ           : Diffusivity [ m²/s ]
+    Δt          : Time step [ s ]
+    nc          : Number of central nodes
+    Δx          : Grid spacing [ m ]
+    BC          : Tuple for the boundary condition
+    K1          : Coefficient matrix for the unknow variables 
+    K2          : Coefficient matrix for the know variables
+"""
+function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
@@ -147,7 +182,27 @@ function CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
     # ------------------------------------------------------------------- #
 end
 
-function ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
+@doc raw"""
+    ComputeResiduals1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+
+Computes the residual of the onedimensional heat diffusion equation assuming 
+no internal heating and constant thermal parameters.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    dc          : Tuple, containing the current temperature array T, 
+                  the temperature array with ghost nodes T_ex,
+                  the partial derivatives ∂T2∂x2, and the
+                  residual R
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Grid spacing [ m ]
+    Δt          : Time step [ s ]       
+    BC          : Tuple for the boundary condition
+"""
+function ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
     dc.T_ex[2:end-1]    .=   dc.T    
@@ -167,7 +222,13 @@ function ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
     # ------------------------------------------------------------------- #
 end
 
-function AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
+@doc raw"""
+    AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
+
+Setup the coefficient matrix for the linear system of equations. 
+    
+"""
+function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt

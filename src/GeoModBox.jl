@@ -37,6 +37,6 @@ module GeoModBox
             include("./HeatEquation/1Dsolvers.jl")
             export ForwardEuler1Dc!, BackwardEuler1Dc!,
                 ComputeResiduals1Dc!, AssembleMatrix1Dc!, CNA1Dc!
-        end        
+        end                
     end
 end 
