@@ -5,7 +5,6 @@ version = "0.1.0"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 ExactFieldSolutions = "2a6b1ac7-2de5-4354-bffb-bf009f6a4bef"
 ExtendableSparse = "95c220a8-a1cf-11e9-0c77-dbfce5f500b3"
 GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
