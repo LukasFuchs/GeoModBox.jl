@@ -73,7 +73,7 @@ K2          =   ExtendableSparseMatrix(ndof,ndof)
 path        =   string("./examples/HeatEquation/1D/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("1D_comparison")
-save_fig    =   1
+save_fig    =   0
 # ----------------------------------------------------------------------- #
 # Plot initial condition ------------------------------------------------ #
 p = plot(xc, explicit.T, label="explicit", 
@@ -103,17 +103,17 @@ end
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
-    ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
+    ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     # Implicit, Backward Euler ------------------------------------------ #
-    BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
+    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC, K )
     # Defection correction method --------------------------------------- #
     for iter = 1:niter
         # Residual iteration
-        ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
+        ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
         @printf("||R|| = %1.4e\n", norm(dc.R)/length(dc.R))            
         norm(dc.R)/length(dc.R) < ϵ ? break : nothing
         # Assemble linear system
-        AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
+        AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K.cscmatrix)
         # Solve for temperature correction: Back substitutions
@@ -122,7 +122,7 @@ for n=1:nt
         dc.T .= dc.T .+ δT            
     end        
     # Crank-Nicolson method --------------------------------------------- #
-    CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
+    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
     # explicit.T     .=  explicit.T
     implicit.T0     .=  implicit.T

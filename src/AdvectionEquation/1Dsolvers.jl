@@ -1,24 +1,30 @@
-using ExtendableSparse
 @doc raw"""
-    ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC)
+    SolveHeat1D_explicit!( Tnew, T_ex, κ, Δt, nc, Δx, BC )
 
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using an explicit, forward euler finite difference scheme.
+Function to solve the 1D heat equation (diffusion only, no internal
+heating, konstant thermal parameters) using an explicit (foward euler) 
+finite difference scheme. The equation has the form of: 
+|
+| ∂T/∂t = κ ∂²T / ∂x².
+| 
+The temperature is defined on central nodes and the heat flux on the 
+vertices. Boundary conditions are currently limited to Dirichlet and 
+Neumann. Using central temperature nodes requires external ghost nodes, 
+which are used to define the boundary conditions. 
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Tnew    : New temperature vector [ C ]
+T_ex    : Temperature vector including the ghost nodes
+κ       : Diffusivity [ m²/s ]
+Δt      : Time step [ s ]
+nc      : Number of central nodes
+Δx      : Grid spacing [ m ]
+BC      : Structure for the boundary condition
 
-    explicit    : Tuple, containing the regular temperature array T and 
-                  array containing the ghost nodes T_ex
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
 """
-function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
+
+using ExtendableSparse
+
+function ForwardEuler1Dc!( explicit, κ, Δt, nc, Δx, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -37,98 +43,7 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     end    
 end
 
-#@doc raw"""
-#    ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
-#
-#"""
-#function ForwardEuler1D!()
-#
-#    T0      =   T.T;
-#    
-#    if size(Py.k,1) == 1
-#        k   =   Py.k.*ones(N.nz,1);
-#        rho =   Py.rho.*ones(N.nz,1);
-#        cp  =   Py.cp.*ones(N.nz,1);
-#    else
-#        k   =   Py.k;
-#        rho =   Py.rho;
-#        cp  =   Py.cp;
-#    end
-#    if size(Py.H,1) == 1
-#        H   =   Py.H.*ones(N.nz,1);     # [Q] = W/m^3; [Q] = [rho*H]
-#    else
-#        H   =   Py.H;
-#    end
-#    
-#    ind     =   2:N.nz-1;
-#    
-#    # Boundary conditions =================================================== #
-#    switch lower(T.ubound)
-#        case {'direchlet','const'}
-#            T.T(1)      =   T0(1);         
-#        case {'neumann','flux'}
-#            kB          =   (k(2)+k(1))/2;
-#            kA          =   (k(1)+k(1))/2;
-#            
-#            a           =   (t.dt*(kA+kB))./(N.dz^2.*rho(1).*cp(1));
-#            b           =   1 - (t.dt.*(kB + kA))./(N.dz^2.*rho(1).*cp(1));
-#            c           =   -(kA*t.dt*2*T.utbf)/(N.dz*rho(1)*cp(1));
-#            
-#            T.T(1)      =   a*T0(2) + b*T0(1) + c + ...
-#                                H(1).*t.dt./cp(1);
-#    end
-#    switch lower(T.lbound)
- #       case {'direchlet','const'}
- #           T.T(N.nz)   =   T0(N.nz);
- #       case {'neumann','flux'}
- #           kB          =   (k(N.nz)+k(N.nz))/2;
-#            kA          =   (k(N.nz)+k(N.nz-1))/2;
-#                    
-#            a           =   (t.dt*(kA+kB))./(N.dz^2.*rho(N.nz).*cp(N.nz));
- #           b           =   1 - (t.dt.*(kA + kB))./(N.dz^2.*rho(N.nz).*cp(N.nz));
- #           c           =   (kB*t.dt*2*T.ltbf)/(N.dz*rho(N.nz)*cp(N.nz));
-#            
-#            T.T(N.nz)   =   a*T0(N.nz-1) + b*T0(N.nz) + c + ...
-#                                H(N.nz).*t.dt./cp(N.nz);
-#        otherwise
-#            error('Boundary condition not defined!')
-#    end
-#    
-#    kA      =   (k(ind-1) + k(ind))/2;
-#    kB      =   (k(ind) + k(ind+1))/2;
-#    
-#    a       =   (kB.*t.dt)./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    b       =   1 - (t.dt.*(kA + kB))./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    c       =   (kA.*t.dt)./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    T.T(ind)    =   a.*T0(ind+1) + b.*T0(ind) + c.*T0(ind-1) + ... 
-#                        H(ind).*t.dt./cp(ind);
-#    
-#    end
-
-@doc raw"""
-    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
-
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using an implicit, backward euler finite difference scheme.
-
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
-
-    implicit    : Tuple, containing the current temperature array T0 and 
-                  the new temperature array T
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
-    K           : Coefficient matrix for linear system of equations
-"""
-function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
+function BackwardEuler1Dc!( implicit, nc, Δx, κ, Δt, BC, K )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -173,28 +88,7 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
     # ------------------------------------------------------------------- #    
 end
 
-@doc raw"""
-    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
-
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using Crank-Nicolson finite difference scheme.
-
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
-
-    cna         : Tuple, containing the current temperature array T0 and 
-                  the new temperature array T
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
-    K1          : Coefficient matrix for the unknow variables 
-    K2          : Coefficient matrix for the know variables
-"""
-function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+function CNA1Dc!( cna, nc, κ, Δt, Δx, BC, K1, K2 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
@@ -253,27 +147,7 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
-    ComputeResiduals1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
-
-Computes the residual of the onedimensional heat diffusion equation assuming 
-no internal heating and constant thermal parameters.
-
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
-
-    dc          : Tuple, containing the current temperature array T, 
-                  the temperature array with ghost nodes T_ex,
-                  the partial derivatives ∂T2∂x2, and the
-                  residual R
-    κ           : Diffusivity [ m²/s ]
-    Δx          : Grid spacing [ m ]
-    Δt          : Time step [ s ]       
-    BC          : Tuple for the boundary condition
-"""
-function ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
+function ComputeResiduals1Dc!( dc, BC, κ, Δx, Δt )
     #ComputeResiduals!(R, T, T_ex, Told, ∂T2∂x2, BC, κ, Δx, Δt)    
     # Assign temperature to extra field --------------------------------- #
     dc.T_ex[2:end-1]    .=   dc.T    
@@ -293,13 +167,7 @@ function ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
     # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
-    AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
-
-Setup the coefficient matrix for the linear system of equations. 
-    
-"""
-function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
+function AssembleMatrix1Dc!( K, BC, nc, κ, Δx, Δt )
     # Define coefficients ---
     a   =   κ / Δx^2
     b   =   1 / Δt
