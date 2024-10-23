@@ -106,7 +106,7 @@ function ContinentalGeotherm_1D(T,M,N,Py,t,plotparam)
         # =================================================================== #
         # Time stability criterion ------------------------------------------ #
         fac     =   0.8                 #   Courant criterion
-        tmax    =   60                  #   Lithosphere age [ Ma ]
+        tmax    =   60                 #   Lithosphere age [ Ma ]
         tsca    =   60*60*24*365.25     #   Seconds per year
 
         age     =   tmax*1e6*tsca        #   Age in seconds    
@@ -171,10 +171,10 @@ function ContinentalGeotherm_1D(T,M,N,Py,t,plotparam)
     for j = 1:nc+1
         if yv[j] >= -yUC
             # Upper Crust ---
-            Py.k[j]     =   Py.kLC
+            Py.k[j]     =   Py.kUC
         elseif yv[j] >= -yLC && yv[j] < -yUC
             # Lower Crust ---
-            Py.k[j]     =   Py.kUC
+            Py.k[j]     =   Py.kLC
         else
             # Mantle ---
             Py.k[j]     =   Py.kM
@@ -223,7 +223,7 @@ function ContinentalGeotherm_1D(T,M,N,Py,t,plotparam)
     # ======================================================================= #
     # Calculate heaf flow =================================================== #
     # South ---
-    T.T_ex[2:end-1]     =   T.T
+    T.T_ex[2:end-1]     .=   T.T
     T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
                     (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
     # North ---
@@ -235,8 +235,8 @@ function ContinentalGeotherm_1D(T,M,N,Py,t,plotparam)
                 (T.T_ex[j+1] - T.T_ex[j])/Δy
         end    
     else
-        for j=1:nc+1
-            T.q[j]  =   -Py.k[j] * 
+        for j=1:nc+1                        
+            T.q[j]  =   - Py.k[j] * 
                 (T.T_ex[j+1] - T.T_ex[j])/Δy
         end
     end
