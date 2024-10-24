@@ -37,76 +37,61 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     end    
 end
 
-#@doc raw"""
-#    ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
-#
-#"""
-#function ForwardEuler1D!()
-#
-#    T0      =   T.T;
-#    
-#    if size(Py.k,1) == 1
-#        k   =   Py.k.*ones(N.nz,1);
-#        rho =   Py.rho.*ones(N.nz,1);
-#        cp  =   Py.cp.*ones(N.nz,1);
-#    else
-#        k   =   Py.k;
-#        rho =   Py.rho;
-#        cp  =   Py.cp;
-#    end
-#    if size(Py.H,1) == 1
-#        H   =   Py.H.*ones(N.nz,1);     # [Q] = W/m^3; [Q] = [rho*H]
-#    else
-#        H   =   Py.H;
-#    end
-#    
-#    ind     =   2:N.nz-1;
-#    
-#    # Boundary conditions =================================================== #
-#    switch lower(T.ubound)
-#        case {'direchlet','const'}
-#            T.T(1)      =   T0(1);         
-#        case {'neumann','flux'}
-#            kB          =   (k(2)+k(1))/2;
-#            kA          =   (k(1)+k(1))/2;
-#            
-#            a           =   (t.dt*(kA+kB))./(N.dz^2.*rho(1).*cp(1));
-#            b           =   1 - (t.dt.*(kB + kA))./(N.dz^2.*rho(1).*cp(1));
-#            c           =   -(kA*t.dt*2*T.utbf)/(N.dz*rho(1)*cp(1));
-#            
-#            T.T(1)      =   a*T0(2) + b*T0(1) + c + ...
-#                                H(1).*t.dt./cp(1);
-#    end
-#    switch lower(T.lbound)
- #       case {'direchlet','const'}
- #           T.T(N.nz)   =   T0(N.nz);
- #       case {'neumann','flux'}
- #           kB          =   (k(N.nz)+k(N.nz))/2;
-#            kA          =   (k(N.nz)+k(N.nz-1))/2;
-#                    
-#            a           =   (t.dt*(kA+kB))./(N.dz^2.*rho(N.nz).*cp(N.nz));
- #           b           =   1 - (t.dt.*(kA + kB))./(N.dz^2.*rho(N.nz).*cp(N.nz));
- #           c           =   (kB*t.dt*2*T.ltbf)/(N.dz*rho(N.nz)*cp(N.nz));
-#            
-#            T.T(N.nz)   =   a*T0(N.nz-1) + b*T0(N.nz) + c + ...
-#                                H(N.nz).*t.dt./cp(N.nz);
-#        otherwise
-#            error('Boundary condition not defined!')
-#    end
-#    
-#    kA      =   (k(ind-1) + k(ind))/2;
-#    kB      =   (k(ind) + k(ind+1))/2;
-#    
-#    a       =   (kB.*t.dt)./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    b       =   1 - (t.dt.*(kA + kB))./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    c       =   (kA.*t.dt)./(N.dz^2.*rho(ind).*cp(ind));
-#    
-#    T.T(ind)    =   a.*T0(ind+1) + b.*T0(ind) + c.*T0(ind-1) + ... 
-#                        H(ind).*t.dt./cp(ind);
-#    
-#    end
+@doc raw"""
+    ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
+
+Solves the onedimensional heat diffusion equation assuming internal heating and
+variable thermal parameters using an explicit, forward euler finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    T           : Tuple, containing the regular temperature array T and 
+                  array containing the ghost nodes T_ex
+    Py          : Tuple, containing the thermal parameters ρ, k, cp, and H [ W/kg ]
+    Δt          : Time step [ s ]
+    Δy          : Grid spacing [ m ]
+    nc          : Number of central nodes
+    BC          : Tuple for the boundary condition
+
+"""
+function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
+
+    T.T_ex[2:end-1]     =   T.T
+    
+    if size(Py.k,1) == 1
+        k   =   Py.k.*ones(nc+1,1)
+        ρ   =   Py.ρ.*ones(nc,1)
+        cp  =   Py.cp.*ones(nc,1)
+    else
+        k   =   Py.k
+        ρ   =   Py.ρ
+        cp  =   Py.cp
+    end
+    if size(Py.H,1) == 1
+        H   =   Py.H.*ones(nc,1)      #   [H] = W/kg; [Q] = [ρ*H], [Q] = W/m³
+    else
+        H   =   Py.H
+    end
+
+    # Define boundary conditions ---------------------------------------- #
+    # South ---
+    T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
+                    (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
+    # North ---
+    T.T_ex[end] =   (BC.type.N==:Dirichlet) * (2 * BC.val.N - T.T_ex[nc+1]) +
+                    (BC.type.N==:Neumann) * (T.T_ex[nc+1] + BC.val.N*Δy)
+    
+    for j = 1:nc
+        a       =   Δt/(Δy^2*ρ[j]*cp[j])
+        T.T[j]  =   a*k[j]*T.T_ex[j] + 
+                    (1-a*(k[j+1]+k[j]))*T.T_ex[j+1] +
+                    a*k[j+1]*T.T_ex[j+2] +
+                    H[j]*Δt/cp[j]
+    end
+end
 
 @doc raw"""
     BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
@@ -330,5 +315,3 @@ function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
     end
     flush!(K)
 end
-
-# SolveDiff1Dexplicit_vary
