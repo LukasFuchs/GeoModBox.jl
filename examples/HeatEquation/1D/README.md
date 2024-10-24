@@ -4,6 +4,9 @@
 
 [comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!)
 
+----------------------------------
+----------------------------------
+
 ## Energy Equation
 
 In one dimension, the diffusive part of the energy equation is described by (assuming only radiogenic heating):
@@ -27,6 +30,9 @@ $$
 where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q=\rho H$ is the heat production rate per volume [W/m<sup>3</sup>]. Equation $(3)$ is a *parabolic partial differential equation* which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
 
 &emsp; First, we would like to discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the forward in time and centered in space (FTCS) method in an *explicit* manner. This finite difference scheme will converge to the exact solution for small $\Delta x$ and $\Delta t$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusive stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusive stability criterion* is defined as $\Delta t < \frac{\Delta x^2}{2 \kappa}$ (assuming equal grid spacing), that is the time step is limited by the model’s resolution. 
+
+----------------------------------
+----------------------------------
 
 ## Discretization 
 
@@ -83,6 +89,9 @@ $$
 
 are the constant heat fluxes along the left and right boundary, respectively. Now one can solve equation $(5)$ for each central grid point using the defined temperature at the *ghost nodes*.  
 
+----------------------------------
+----------------------------------
+
 ## Numerical schemes
 
 &emsp; Within the example code [Heat_1D_discretization.jl](Heat_1D_discretization.jl) different numerical schemes are used to solve the diffusive part of the temperature equation (i.e., *explicit*, *implicit*, *CNA*, and *defection correction*). In the following, we will briefly describe those well-know numerical schemes to solve the diffusive part of the temperature equation and briefly discuss their advantages and disadvantages.
@@ -135,48 +144,59 @@ $$
 
 ### Defection Correction Method
 
-...
-
-<!--- 
+&emsp; The defection correction method is an iterative solution, in which the residual of the diffusion equation for an initial temperature conditions is reduced by a correction term. In case, the system is linear, one iteration is sufficient enough to optain the exact solution. 
 
 *Theory*
+
+The diffusion equation, in an implicit form, can be simplified to an equation in the form of: 
+
 $$
-\boldsymbol{K} \cdot T - b = R
+\boldsymbol{K} \cdot T - b = R, \tag{17}
+$$
+
+where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is an term containing the remaining variables, and $R$ is the resiual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
+
+$$
+R_i = \boldsymbol{K} \cdot T_i - b. \tag{18}
+$$
+
+Adding a correction term $\delta{T}$ to the initial guess, assuming that it results in zero residual, leads to: 
+
+$$
+0 = \boldsymbol{K} \left(T_i + \delta{T} \right) - b = \boldsymbol{K} T_i - b + \boldsymbol{K} \delta{T} = R_i + \boldsymbol{K} \delta{T}, \tag{19}
+$$
+
+which results in:
+
+$$
+R_i = -\boldsymbol{K} \delta{T}, \tag{20}
+$$
+
+and finally the correction term: 
+
+$$
+\delta{T} = -\boldsymbol{K}^{-1} R_i. \tag{21}
+$$
+
+The coefficients of the matrix can be derived, for example, via: 
+
+$$
+\frac{\partial{T}}{\partial{t}} - \kappa \frac{\partial^2{T}}{\partial{x}^2} = R, \tag{22}
 $$
 
 $$
-R_i = \boldsymbol{K} \cdot T_i - b
+\frac{T_i^{n+1}-T_i^{n}}{\Delta{t}} - \kappa \frac{T_{i-1}^{n+1} - 2 T_{i}^{n+1} + T_{i+1}^{n+1}}{\Delta{x}^2} = R, \tag{23}
 $$
 
 $$
-0 = \boldsymbol{K} \left(T_i + \delta{T} \right) - b = \boldsymbol{K} T_i - b + \boldsymbol{K} \delta{T} = R_i + \boldsymbol{K} \delta{T} 
+- a T_{i-1}^{n+1} + \left(2 a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} - b T_{i}^{n} = R, \tag{24}
 $$
 
-$$
-R_i = -\boldsymbol{K} \delta{T}
-$$
+where
 
 $$
-\delta{T} = -\boldsymbol{K}^{-1} R_i
+a = \frac{\kappa}{\Delta{x}^2},\ and \ b = \frac{1}{\Delta{t}}, \tag{25}
 $$
-
-$$
-\frac{\partial{T}}{\partial{t}} - \kappa \frac{\partial^2{T}}{\partial{x}^2} = R
-$$
-
-$$
-\frac{T_i^{n+1}-T_i^{n}}{\Delta{t}} - \kappa \frac{T_{i-1}^{n+1} - 2 T_{i}^{n+1} + T_{i+1}^{n+1}}{\Delta{x}^2} = R
-$$
-
-$$
-- a T_{i-1}^{n+1} + \left(2 a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} - b T_{i}^{n} = R
-$$
-
-$$
-a = \frac{\kappa}{\Delta{x}^2},\ and \ b = \frac{1}{\Delta{t}}
-$$
-
--->
 
 ### Cranck-Nicolson approach (CNA)
 
@@ -217,6 +237,32 @@ $$
 
 &emsp;However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
 
+<!--- ### Variable thermal parameters 
+
+$$
+\rho c_p \frac{\partial{T}}{\partial{t}}=\frac{\partial}{\partial{y}} \left(k_y\frac{\partial{T}}{\partial{y}}\right)
+$$
+
+<img src="" alt="drawing" width="600"/> <br>
+**Figure 2.** ... *Discretization for variable thermal parameters.*
+
+$$
+\rho_j c_{p_{j}} \frac{T^{n+1}-T^n}{\Delta{T}} = \frac{ k_{j+1} \frac{\partial{T}}{\partial{y}} \vert_{j+1} - k_j \frac{\partial{T}}{\partial{y}}\vert_{j} }{\Delta{y}} + \rho_j H_j, \tag{}
+$$
+
+$$
+\rho_j c_{p_{j}} \frac{T^{n+1}-T^n}{\Delta{T}} = \frac{k_{j+1}}{\Delta{y}} \frac{T_{j+1}-T_j}{\Delta{y}} - \frac{k_{j}}{\Delta{y}} \frac{T_{j}-T_{j-1}}{\Delta{y}} + \rho_j H_j, \tag{}
+$$
+
+$$
+T_j^{n+1} = a k_{j} T_{j-1} - \left(1-a\left(k_{j+1}+k_j\right)\right)T_j + a k_{j+1} T_{j+1} + \frac{H_j \Delta{t}}{c_{p_{j}}}, \tag{}
+$$
+
+$$
+a = \frac{\Delta{t}}{\Delta{y^2} \rho c_{p_{j}}}
+$$
+
+-->
 -------------
 -------------
 
@@ -228,6 +274,24 @@ $$
 
 <img src="./Results/1D_comparison.gif" alt="drawing" width="600"/> <br>
 **Figure 2. Diffusion of an initial Gaussian temperature distribution.** ... 
+
+### Geotherms
+
+The 1-D temperature profiles of a geotherm are calculated by solving the diffusive part of the 1-D temperature conservation equation (so far only with a radiogenic heat source) for variable thermal parameters with a proper conserving finite difference scheme. That is, the heat flow is calculated on the vertices and the temperature is defined on the centroids, respectively.
+
+#### Oceanic
+<img src="./Results/OceanicGeotherm_1D_evolve.png" alt="drawing" width="600"/> <br>
+**Figure ...** ... 
+
+<img src="./Results/OceanicGeotherm_1D.png" alt="drawing" width="600"/> <br>
+**Figure ...** ... 
+
+#### Continental
+<img src="./Results/ContinentalGeotherm_1D_evolve.png" alt="drawing" width="600"/> <br>
+**Figure ...** ... 
+
+<img src="./Results/ContinentalGeotherm_1D.png" alt="drawing" width="600"/> <br>
+**Figure ...** ... 
 
 <!---  
 ### Geotherms
@@ -367,8 +431,11 @@ The gradient of temperature (and thus the vertical heat flux) can be defined usi
 [Heat_1D_discretization.jl](Heat_1D_discretization.jl)<br>
 &emsp;-> Solving the time-dependent diffusion of an initial Gaussian temperature distribution using different numerical finite difference schemes and comparing the results with the analytical solution.
     
-[OceanicGeotherm_1D.jl]()<br>
+[OceanicGeotherm_1D.jl](OceanicGeotherm_1D.jl)<br>
 &emsp;-> Script to calculate the 1-D oceanic geotherm.
+
+[ContinentalGeotherm_1D.jl](ContinentalGeotherm_1D.jl)<br>
+&emsp;-> Script to calculate the 1-D continental geotherm.
 
 [comment]: <> (Needs, in detail:- discretization of explicit variable thermal parameters, at some point!)
 
