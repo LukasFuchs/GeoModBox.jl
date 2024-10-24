@@ -40,6 +40,22 @@ end
 @doc raw"""
     ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
 
+Solves the onedimensional heat diffusion equation assuming internal heating and
+variable thermal parameters using an explicit, forward euler finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    T           : Tuple, containing the regular temperature array T and 
+                  array containing the ghost nodes T_ex
+    Py          : Tuple, containing the thermal parameters ρ, k, cp, and H [ W/kg ]
+    Δt          : Time step [ s ]
+    Δy          : Grid spacing [ m ]
+    nc          : Number of central nodes
+    BC          : Tuple for the boundary condition
+
 """
 function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
 
@@ -55,7 +71,7 @@ function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
         cp  =   Py.cp
     end
     if size(Py.H,1) == 1
-        H   =   Py.H.*ones(nc,1)      #   [Q] = W/m^3; [Q] = [ρ*H]
+        H   =   Py.H.*ones(nc,1)      #   [H] = W/kg; [Q] = [ρ*H], [Q] = W/m³
     else
         H   =   Py.H
     end
@@ -72,7 +88,8 @@ function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
         a       =   Δt/(Δy^2*ρ[j]*cp[j])
         T.T[j]  =   a*k[j]*T.T_ex[j] + 
                     (1-a*(k[j+1]+k[j]))*T.T_ex[j+1] +
-                    a*k[j+1]*T.T_ex[j+2]
+                    a*k[j+1]*T.T_ex[j+2] +
+                    H[j]*Δt/cp[j]
     end
 end
 
@@ -298,5 +315,3 @@ function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
     end
     flush!(K)
 end
-
-# SolveDiff1Dexplicit_vary

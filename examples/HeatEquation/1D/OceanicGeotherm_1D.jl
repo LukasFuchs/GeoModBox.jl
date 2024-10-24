@@ -1,125 +1,78 @@
 using Plots, SpecialFunctions
 using GeoModBox.HeatEquation.OneD
 
-function OceanicGeotherm_1D(T,M,N,Py,t,plotparam)
-# Function to calculate the 1D geotherm for an oceanic lithosphere.       #
-# Temperature is calculated by solving the 1-D heat equation assuming     #
-# variable thermal parameters and a radiogenic heat source.               #
-# The equation is solved using a proper conserving finite difference      #
-# scheme.                                                                 #
-# The vertical axis is pointing downwards in negative direction.          #
-#                                                                         #
-# Input:                                                                  #
-#   A list of structural parameters M,N,Py,t,plotparam                    #
-#   M - contains:                                                         #
-#       H   -   Model depth [ m ]                                         #
-#   N - contains:                                                         #
-#       nz  -   Number of grid points                                     #
-#   Py - contains:                                                        #
-#       rho -   Density [ kg/m^3 ]                                        #
-#       cp  -   Specific heat [ J/kg/K ]                                  #
-#       k   -   Thermal conductivity [ W/m/K ]                            #
-#       H   -   Radiogenic heat source per mass [ W/kg ]                  #
-#   t - contains:                                                         #
-#       dtfac   -   Courant criterion                                     #
-#       age     -   Lithospheric age [ Ma ]                               #
-#   plotparam:                                                            #
-#       0   -   no plotting                                               #
-#       1   -   Plot initial and final temperature profile and thermal    #
-#               parameters. The solution of the 1-D heat equation is      #
-#               compared to the steady state solution (poisson equation). #
-#                                                                         #
-# Output:                                                                 #
-#   T - contains:                                                         #
-#       Tpot    -   Potential mantle temperature [ K ]                    #
-#       dTadi   -   Adiabatic mantle temperature gradient [ K/km ]        #
-#       T0      -   Surface temperature [ K ]                             #
-#       T1      -   Bottom temperature [ K ]                              #
-#       T       -   Tempeture profile [ K ]                               #
-#                                                                         #
-# ----------------------------------------------------------------------- #
-#    LF - 22.10.2024 - juila                                              #
-# ======================================================================= #
-    
-if isempty(T) && isempty(M) && isempty(N) && isempty(Py) && isempty(t)
-    ## ================================================================== #
-    # Use some default values if no input parameters are defined ======== #
-    # Constants --------------------------------------------------------- #
-    H           =   200e3               #   Hight of the model [ m ]
-    nc          =   200                 #   Number of central grid points    
-    Δy          =   H/nc                #   Grid resolution
-    # Depth [ m ] ---
-    yc          =   LinRange(-H + Δy/2.0,0.0 - Δy/2.0,nc)     
-    yv          =   LinRange(-H,0,nc+1)
-    
-    Py  =   (
-        ρm      =   3000,               #   Density [ kg/m^3 ]
-        cpm     =   1000,               #   Heat capacity [ J/kg/K ]
-        km      =   3.0,                #   Conductivity [ W/m/K ]
-        HM      =   0,                  #   Heat generation rate [W/kg]; Q = ρ*H0
-    )    
-    # ------------------------------------------------------------------- #
-    # Initial Condition ------------------------------------------------- #
-    T   =   (
-        Tpot    =   1315 + 273.15,      #   Potential temperautre [ K ]
-        ΔTadi   =   0.5,                #   Adiabatic temperature gradient [ K/km ]
-        Ttop    =   273.15,             #   Surface temperature [ K ]
-        T_ex    =   zeros(nc+2,1),    
-    )
-    T1  =   (
-        Tbot    =   T.Tpot + T.ΔTadi*abs(H/1e3),    # Bottom temperature [ K ]
-        T       =   T.Tpot .+ abs.(yc./1e3).*T.ΔTadi,   # Initial T-profile [ K ]
-    )
-    T   =   merge(T,T1)
-      
-    Tini        =   zeros(nc,1)
-    Tini        .=   T.T
-    # ------------------------------------------------------------------- #
-    # Boundary conditions ----------------------------------------------- #
-    BC      =   (
-        type    = (N=:Dirichlet, S=:Dirichlet),
-        val     = (N=T.Ttop[1],S=T.Tbot[1])
-    )
-    # S      =   -0.03;          # c     =   -k/q -> 90 mW/m^2
-    # N      =   -0.0033;        # c     =   -k/q -> 10 mW/m^2
-    # ------------------------------------------------------------------- #
-    # Time stability criterion ------------------------------------------ #
-    fac     =   0.8                 #   Courant criterion
-    tmax    =   60                  #   Lithosphere age [ Ma ]
-    tsca    =   60*60*24*365.25     #   Seconds per year
+@doc raw"""
+    OceanicGeotherm_1D()
 
-    age     =   tmax*1e6*tsca        #   Age in seconds    
-    # =================================================================== #        
-    # Plot Initial condition -------------------------------------------- #
-    plotparam   =   1
-    p = plot(Tini.-T.Ttop,yc./1e3, 
-        label="", 
-        xlabel="T [°C]", ylabel="z [m]", 
-        title="Initial Temperature",
-        xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0))
-    display(p)
-    # =================================================================== #
-else
-    # =================================================================== #
-    # Initial Condition ------------------------------------------------- #
-    T1  =   (
-        Tbot    =   T.Tpot + T.ΔTadi*abs(H./1e3),    # Bottom temperature [ K ]
-        T       =   T.Tpot .+ abs(yc./1e3).*T.ΔTadi,   # Initial T-profile [ K ]
-    )
-    T   =   merge(T,T1)
-    Tini        =   zeros(nc,1)
-    Tini        .=   T.T
-    # =================================================================== #
-    if plotparam==1
-        p = plot(T.T.-T.Ttop,yc./1e3, 
-        label="", 
-        xlabel="T [°C]", ylabel="z [m]", 
-        title="Initial Temperature",
-        xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0))
-        display(p)
-    end
-end
-# Setup Fields ========================================================== #
+Function to calculate the 1D geotherm for an oceanic lithosphere. 
+Temperature is calculated by solving the 1-D heat equation assuming
+variable thermal parameters and a radiogenic heat source.
+The equation is solved using a proper conserving finite difference
+scheme.
+
+"""
+function OceanicGeotherm_1D()
+# ------------------------------------------------------------------- #
+#    LF - 22.10.2024 - juila                                          #
+# ------------------------------------------------------------------- #
+    
+# Constants --------------------------------------------------------- #
+H           =   200e3               #   Hight of the model [ m ]
+nc          =   200                 #   Number of central grid points    
+Δy          =   H/nc                #   Grid resolution
+
+# Depth [ m ] ---
+yc          =   LinRange(-H + Δy/2.0,0.0 - Δy/2.0,nc)     
+yv          =   LinRange(-H,0,nc+1)
+    
+Py  =   (
+    ρm      =   3000,               #   Density [ kg/m^3 ]
+    cpm     =   1000,               #   Heat capacity [ J/kg/K ]
+    km      =   3.0,                #   Conductivity [ W/m/K ]
+    HM      =   0,                  #   Heat generation rate [W/kg]; Q = ρ*H0
+)    
+# ------------------------------------------------------------------- #
+# Initial Condition ------------------------------------------------- #
+T   =   (
+    Tpot    =   1315 + 273.15,      #   Potential temperautre [ K ]
+    ΔTadi   =   0.5,                #   Adiabatic temperature gradient [ K/km ]
+    Ttop    =   273.15,             #   Surface temperature [ K ]
+    T_ex    =   zeros(nc+2,1),    
+)
+T1  =   (
+    Tbot    =   T.Tpot + T.ΔTadi*abs(H/1e3),    # Bottom temperature [ K ]
+    T       =   T.Tpot .+ abs.(yc./1e3).*T.ΔTadi,   # Initial T-profile [ K ]
+)
+T   =   merge(T,T1)
+     
+Tini        =   zeros(nc,1)
+Tini        .=   T.T
+# ------------------------------------------------------------------- #
+# Boundary conditions ----------------------------------------------- #
+BC      =   (
+    type    = (N=:Dirichlet, S=:Dirichlet),
+    val     = (N=T.Ttop[1],S=T.Tbot[1])
+)
+# S      =   -0.03;          # c     =   -k/q -> 90 mW/m^2
+# N      =   -0.0033;        # c     =   -k/q -> 10 mW/m^2
+# ------------------------------------------------------------------- #
+# Time stability criterion ------------------------------------------ #
+fac     =   0.8                 #   Courant criterion
+tmax    =   60                  #   Lithosphere age [ Ma ]
+tsca    =   60*60*24*365.25     #   Seconds per year
+
+age     =   tmax*1e6*tsca        #   Age in seconds    
+# ------------------------------------------------------------------- #
+# Plot Initial condition -------------------------------------------- #
+plotparam   =   1
+q = plot(Tini,yc./1e3, 
+    label="", 
+    xlabel="T [ K ]", ylabel="z [ km ]", 
+    title="Initial Temperature",
+    xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0))
+display(q)
+# ------------------------------------------------------------------- #
+# Setup Fields ------------------------------------------------------ #
 Py1     =   (
     ρ       =   Py.ρm.*ones(nc,1),
     cp      =   Py.cpm.*ones(nc,1),
@@ -136,17 +89,17 @@ T2  =   (
     q   =   zeros(nc+1,1),
 )
 T   =   merge(T,T2)
-# ======================================================================= #
-# Time stability criterion ==0=========================================== #
+# ------------------------------------------------------------------- #
+# Time stability criterion ------------------------------------------ #
 Δtexp   =   Δy^2/2/Py.κ             #   Stability criterion for explicit
 Δt      =   fac*Δtexp               #   total time step
 
 nit     =   ceil(Int64,age/Δt)      #   Number of iterations    
 
 time    =   zeros(1,nit)            #   Time array
-# ======================================================================= #
-# Calculate 1-D temperature profile ===================================== #
-#count   =   1
+# ------------------------------------------------------------------- #
+# Calculate 1-D temperature profile --------------------------------- #
+count   =   1
 for i = 1:nit
     if i > 1
         time[i]     =   time[i-1] + Δt
@@ -155,20 +108,19 @@ for i = 1:nit
         time[i]     =   time[i-1] + Δt
     end
     ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
-    #if i == nit || abs(time[i]/1e6/tsca - count*5.0) < Δt/1e6/tsca        
-    #    println(string("i = ",i,", time = ", time[i]/1e6/tsca))
-    #    #println(abs(time[i]/1e6/tsca - count*5.0))                
-    #    p = plot(T.T.-T.Ttop,yc./1e3, 
-    #        label=string("t = ",ceil(time[i]/1e6/tsca),"[Ma]"), 
-    #        xlabel="T [°C]", ylabel="z [m]", 
-    #        title="Initial Temperature",
-    #        xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0))
-    #    display(p)
-    #    count = count + 1
-    #end
+    if i == nit || abs(time[i]/1e6/tsca - count*5.0) < Δt/1e6/tsca        
+        println(string("i = ",i,", time = ", time[i]/1e6/tsca))        
+        q = plot!(T.T,yc./1e3, 
+            label=string("t = ",ceil(time[i]/1e6/tsca),"[Ma]"), 
+            xlabel="T [ K ]", ylabel="z [ km ]", 
+            title="Oceanic Geotherm",
+            xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0))
+        display(q)
+        count = count + 1
+    end
 end
-# ======================================================================= #
-# Calculate heaf flow =================================================== #
+# ------------------------------------------------------------------- #
+# Calculate heaf flow ----------------------------------------------- #
 # South ---
 T.T_ex[2:end-1]     =   T.T
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
@@ -187,42 +139,34 @@ else
             (T.T_ex[j+1] - T.T_ex[j])/Δy
     end
 end
-
-# ======================================================================= #
-## Plot profile if requested ============================================ #
-if plotparam == 1
-    if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
-        Tana    =   zeros(nc,1)
-        Tana    .=   Tini .+ (T.Ttop - T.Tpot).*erfc.(-yc./(2*sqrt(age*Py.κ)))
-        Tana[end] =   T.Ttop
-    end    
-    q = plot(T.T.-T.Ttop,yc./1e3, 
-            label=string("t = ",ceil(maximum(time)/1e6/tsca),"[Ma]"), 
-            xlabel="T [°C]", ylabel="z [m]",
-            title="Initial Temperature",
-            xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0),
+# ------------------------------------------------------------------- #
+# Plot -------------------------------------------------------------- #
+if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
+    Tana    =   zeros(nc,1)
+    Tana    .=   Tini .+ (T.Ttop - T.Tpot).*erfc.(-yc./(2*sqrt(age*Py.κ)))
+    Tana[end] =   T.Ttop
+end    
+p = plot(T.T,yc./1e3, 
+        label=string("t = ",ceil(maximum(time)/1e6/tsca),"[Ma]"), 
+        xlabel="T [ K ]", ylabel="z [ km ]",
+        title="Oceanic Geotherm",
+        xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0),
+        layout=(1,2),subplot=1)        
+if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
+    plot!(p,Tana,yc./1e3, 
+            label="T_HSCM",linestyle=:dash,
             layout=(1,2),subplot=1)        
-    if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
-        plot!(q,Tana.-T.Ttop,yc./1e3, 
-                label="T_HSCM",linestyle=:dash,
-                layout=(1,2),subplot=1)        
-    end        
-    q = plot!(T.q.*1e3,yv./1e3, 
-            label="", 
-            xlabel="q [ mW ]", ylabel="z [m]", 
-            title="Heat Flux",
-            ylim=(-H/1e3,0),
-            subplot=2)        
-    display(q)
-end
+end        
+p = plot!(T.q.*1e3,yv./1e3, 
+        label="", 
+        xlabel="q [ mW ]", ylabel="z [m]", 
+        title="Heat Flux",
+        ylim=(-H/1e3,0),
+        subplot=2)        
+display(p)
+savefig(p,"./examples/HeatEquation/1D/Results/OceanicGeotherm_1D.png")
+savefig(q,"./examples/HeatEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
-# keyboard
 end
-T   = []
-M   = []
-N   = [] 
-Py  = []
-t   = []
-plotparam = 1
 
-OceanicGeotherm_1D(T,M,N,Py,t,plotparam)
+OceanicGeotherm_1D()
