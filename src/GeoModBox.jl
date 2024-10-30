@@ -17,7 +17,7 @@ module GeoModBox
 
             # Poisson solver ---
             include("./HeatEquation/PoissonSolvers.jl")
-            export Poisson2Dc! 
+            export Poisson2Dc!, Poisson2D!
 
             # Explicit solver ---
             include("./HeatEquation/ForwardEuler.jl")

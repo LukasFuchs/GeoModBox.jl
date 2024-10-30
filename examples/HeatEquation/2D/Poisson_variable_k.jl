@@ -1,75 +1,110 @@
-#
-clear
-clc
+using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots
 
-## Physikalischer Parameter --------------------------------------------- #
-P.L         =   4e3;        #   [m]
-P.H         =   2e3;        #   [m]
+# Physikalischer Parameter ---------------------------------------------- #
+P       =   (
+    L           =   4e3,      #   [m]
+    H           =   2e3,      #   [m]
+    k1          =   5.6,      #   Waermeleitfaehigkeit, W/m/K
+    k2          =   6.2,      #   Waermeleitfaehigkeit, W/m/K
+    Wcave       =   200,      #
+    Hcave       =   200,      #
+    Dcave       =   1e3,      # 
+    Xcave       =   2.0e3, 
+    Q           =   0.3       # W/m³ Q = rho*H
+)
+# ----------------------------------------------------------------------- #
+# Numerische Parameter -------------------------------------------------- #
+NC      =   (
+    x           =   641,      #   Gitterpunkte in x-Richtung
+    y           =   321       #   Gitterpunkte in y-Richtung
+)
+NV      =   (
+    x           =   NC.x + 1, 
+    y           =   NC.y + 1
+)
+# Initialize grid spacing ----------------------------------------------- #
+Δ       = (
+    x       =   P.L/NC.x,
+    y       =   P.H/NC.y
+)
+# ----------------------------------------------------------------------- #
+# Generate the grid ----------------------------------------------------- #
+x       = (
+    c       =   LinRange(0.0 + Δ.x/2.0, P.L - Δ.x/2.0, NC.x),
+    v       =   LinRange(0.0, P.L, NV.x)
+)
+y       = (
+    c       =   LinRange(-P.H + Δ.y/2.0, 0.0 - Δ.y/2.0, NC.y),
+    v       =   LinRange(-P.H, 0.0, NV.y)
+)
+# ----------------------------------------------------------------------- #
+# Boundary conditions --------------------------------------------------- #
+BC      =   (
+    type    = (W=:Dirichlet, E=:Dirichlet, N=:Dirichlet, S=:Dirichlet),
+    # type    = (W=:Dirichlet, E=:Dirichlet, N=:Dirichlet, S=:Dirichlet),
+    val     = (W=zeros(NC.y,1),E=zeros(NC.y,1),N=zeros(NC.x,1),S=zeros(NC.x,1))
+)
+# ----------------------------------------------------------------------- #
+# Initialcondition -------------------------------------------------- #
+D       = ( 
+    Q       =   zeros(NC...),           # (row,col) 
+    T       =   zeros(NC...),
+    kx      =   zeros(NV.x,NC.y),
+    ky      =   zeros(NC.x,NV.y)
+)
+# Heat production rate in the anomaly ---
+for i = 1:NC.x, j = 1:NC.y
+    if x.c[i] >= (P.Xcave-P.Wcave/2.0) && x.c[i] <=(P.Xcave+P.Wcave/2.0) && 
+        y.c[j] >= -P.Dcave-P.Hcave/2.0 && y.c[j] <= -P.Dcave+P.Hcave/2.0 
+        D.Q[i,j]    = P.Q
+    end
+end
+#D.kx                        .=  P.k1
+#D.ky                        .=  P.k2
+D.kx[:,y.c.>=-P.H/2.0]      .=  P.k1
+D.kx[:,y.c.<-P.H/2.0]       .=  P.k2
+D.ky[x.c.>=P.L/2.0,:]       .=  P.k1
+D.ky[x.c.<P.L/2.0,:]        .=  P.k2
+# ------------------------------------------------------------------- #
+# Linear System of Equations ---------------------------------------- #
+Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+ndof    =   maximum(Num.T)
+K       =   ExtendableSparseMatrix(ndof,ndof)
+rhs     =   zeros(ndof)
+# ------------------------------------------------------------------- #
+# Solve equation ---------------------------------------------------- #
+Poisson2D!(D.T, D.Q, D.kx, D.ky, Δ.x, Δ.y, NC, BC, K, rhs, Num )
+# ------------------------------------------------------------------- #
 
-P.k1        =   5.6;        #   Waermeleitfaehigkeit, W/m/K
-P.k2        =   6.2;        #   Waermeleitfaehigkeit, W/m/K
+# Plot solution --------------------------------------------------------- #
+p = heatmap(x.c ./ 1e3, y.c ./ 1e3, D.T', 
+        color=:viridis, colorbar=true, aspect_ratio=:equal, 
+        xlabel="x [km]", ylabel="z [km]", 
+        title="Stationary temperature field", 
+        xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+        clims=(0, 900))
 
-P.Wcave     =   200;        #
-P.Hcave     =   200;        #
-P.Dcave     =   1e3;        # Tiefe des zentrums der welle
-P.Zcave     =   P.L/2; 
+contour!(p, x.c ./ 1e3, y.c ./ 1e3, D.T', 
+    levels=100:100:1500, linecolor=:black,subplot=1)
 
-P.Q0        =   0.3;        # W/m³ Q = rho*H
+q = heatmap(x.v ./ 1e3, y.c ./ 1e3, D.kx', 
+    color=:viridis, colorbar=true, aspect_ratio=:equal, 
+    xlabel="x [km]", ylabel="z [km]", 
+    title="horizontal conductivity", 
+    xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+    layout=(1,2),subplot=1)
+heatmap!(q,x.c ./ 1e3, y.v ./ 1e3, D.ky', 
+    color=:viridis, colorbar=true, aspect_ratio=:equal, 
+    xlabel="x [km]", ylabel="z [km]", 
+    title="horizontal conductivity", 
+    xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
+    subplot=2)
 
-## Numerische Parameter ------------------------------------------------- #
-N.nx        =   641;        #   # Gitterpunkte in x-Richtung
-N.nz        =   321;         #   # Gitterpunkte in z-Richtung
+display(p)
+display(q)
 
-N.dx        =   P.L/(N.nx-1);   #   Gitterabstand in x-Richtung
-N.dz        =   P.H/(N.nz-1);   #   Gitterabstand in z-Richtung
-
-B.btbc      = 'const';
-B.ttbc      = 'const';
-B.ltbc      = 'const';
-B.rtbc      = 'const';
-
-# ------------------
-B.rhf       = 0;        
-B.lhf       = 0; 
-# ------------------
-B.bhf       = 0;        
-B.thf       = 0; 
-
-# Erstellung des Gitters ------------------------------------------------ #
-[N.x,N.z]   = meshgrid(0:N.dx:P.L,-P.H:N.dz:0);
-
-
-## Erstellung des Anfangstemperaturfeld --------------------------------- #
-D.Q         = 0*ones(N.nz,N.nx);
-
-P.ind2      = N.x>P.H/2; 
-D.k         = P.k1.*ones(N.nz,N.nx);
-D.k(P.ind2) = P.k2; 
-
-D.T         = zeros(N.nz,N.nx);
-
-# Defniere die Region of additional heat source
-P.ind       = ((N.x>=(P.Zcave-P.Wcave/2))&(N.x<=(P.Zcave+P.Wcave/2))&...
-    (N.z>=-P.Dcave-P.Hcave/2)&(N.z<=-P.Dcave+P.Hcave/2));
-
-D.Q(P.ind)  = P.Q0;
-
-## Solve equation ------------------------------------------------------- #
-D.T         = SolvePoisson2Dvaryk(D.Q,P,N,B,D.k);
-
-## Plot solution -------------------------------------------------------- #
-set(figure(1),'Position',[331.4,231.4,914.4,420])
-clf
-pcolor(N.x/1e3,N.z/1e3,D.T); shading interp; colorbar
-hold on
-contour(N.x/1e3,N.z/1e3,D.T,100:100:1500,'k');
-xlabel('x [km]'); ylabel('z [km]'); zlabel('Temperature [^oC]')
-title(['Stationary temperature field for ',B.ltbc,' lateral boundary conditions'])
-caxis([0 900])
-set(gca,'FontWeight','Bold')
-
-
-
+# savefig("./Results/04_Steady_State_Solution.png")
+# ----------------------------------------------------------------------- #
 
 
 
