@@ -96,14 +96,15 @@ q = heatmap(x.v ./ 1e3, y.c ./ 1e3, D.kx',
 heatmap!(q,x.c ./ 1e3, y.v ./ 1e3, D.ky', 
     color=:viridis, colorbar=true, aspect_ratio=:equal, 
     xlabel="x [km]", ylabel="z [km]", 
-    title="horizontal conductivity", 
+    title="vertical conductivity", 
     xlims=(0, P.L/1e3), ylims=(-P.H/1e3, 0.0), 
     subplot=2)
 
 display(p)
 display(q)
 
-# savefig("./Results/04_Steady_State_Solution.png")
+savefig(p,"./examples/HeatEquation/2D/Results/Poisson_variable_k_01.png")
+savefig(q,"./examples/HeatEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
 
 
