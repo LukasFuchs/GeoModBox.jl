@@ -40,4 +40,12 @@ module GeoModBox
                 ForwardEuler1D!
         end                
     end
+
+    module AdvectionEquation
+        module OneD
+            # 1D solver
+            include("./AdvectionEquation/1Dsolvers.jl")
+            export upwind1D!, lax1D!, slf1D!, semilag1D!, RK4O1D!
+        end
+    end
 end 
