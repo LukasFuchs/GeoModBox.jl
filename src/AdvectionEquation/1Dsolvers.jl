@@ -4,23 +4,18 @@ using Dierckx
     RK4O1D
 
 """
-function RK4O1D!( x, Δt, vx )
+function RK4O1D!( x, Δt, vx, xmin, xmax )    
 
-    x1      =   zeros(size(x))
-    x2      =   zeros(size(x))
-    x3      =   zeros(size(x))
-    x4      =   zeros(size(x))
+    x1  =   Δt * vx 
+    x2  =   Δt * vx
+    x3  =   Δt * vx
+    x4  =   Δt * vx 
 
-    xmax    =   maximum(x)
+    x    .+=   (x1 + 2.0 * (x2 + x3) + x4) / 6.0 
 
-    x1  .=   Δt .* vx 
-    x2  .=   Δt .* vx
-    x3  .=   Δt .* vx
-    x4  .=   Δt .* vx 
-
-    x    .=   x .+ (x1 .+ 2.0 .* (x2 .+ x3) .+ x4) ./ 6.0 
-
-    x[x.>xmax] .= x[x.>xmax] .- xmax
+    x[x.>xmax] .= xmin .+ abs.(x[x.>xmax] .- xmax)
+    x[x.<xmin] .= xmax .- abs.(x[x.<xmin] .- xmin)
+    
 end
 
 @doc raw"""
