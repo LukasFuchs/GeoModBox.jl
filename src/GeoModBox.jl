@@ -42,10 +42,15 @@ module GeoModBox
     end
 
     module AdvectionEquation
+    
         module OneD
             # 1D solver
             include("./AdvectionEquation/1Dsolvers.jl")
             export upwind1D!, lax1D!, slf1D!, semilag1D!, RK4O1D!
+
+            # Tracer options
+            include("./Tracers/ItpTracers.jl")
+            export Itp1D_Centers2Markers!, Itp1D_Markers2Centers!
         end
     end
 end 
