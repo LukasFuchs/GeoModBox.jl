@@ -20,6 +20,8 @@
 # -------------------------------------------------------------------- #
 # Vers. 1.0 - 26.11.2024 - Julia
 # ==================================================================== #
+# using Statistics
+
 function Advection_2D()
 
 # Definition numerischer Verfahren =================================== #
@@ -32,7 +34,9 @@ Ini         =   (T=:circle,V=:RigidBody,)
 #FlowField   =:RigidBody
 
 # Plot Einstellungen ================================================= #
-inc         =   10      
+Pl  =   (
+    inc         =   10,
+)
 # -------------------------------------------------------------------- #
 # Model Konstanten =================================================== #
 M   =   (
@@ -44,22 +48,31 @@ M   =   (
 # -------------------------------------------------------------------- #
 # Numerische Konstanten ============================================== #
 NC  =   (
-    x       = 100,
-    y       = 100,
+    xc      =   100,        # Number of horizontal centroids
+    yc      =   100,        # Number of vertical centroids
 )
+NC1 =   (
+    xv      =   NC.xc + 1,  # Number of horizontal vertices
+    yv      =   NC.yc + 1,  # Number of vertical vertices
+)
+NC  =   merge(NC,NC1)
 
 Δ   =   (
-    x   =   (abs(M.xmin)+M.xmax)/NC.x,
-    y   =   (abs(M.ymin)+M.ymax)/NC.y,
+    x   =   (abs(M.xmin)+M.xmax)/NC.xc,
+    y   =   (abs(M.ymin)+M.ymax)/NC.yc,
 )
 # -------------------------------------------------------------------- #
 # Erstellung des Gitters ============================================= #
 x   =   (
-    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
+    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.xc),
+    v       =   LinRange(M.xmin, M.xmax , NC.xv)
 )
 y       = (
-    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
+    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.yc),
+    v       =   LinRange(M.ymin, M.ymax, NC.yv),
 )
+xc2d = xc .+ 0*yc'
+yc2d = 0*xc .+ yc'
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
@@ -68,66 +81,89 @@ T   =   (
 )
 # -------------------------------------------------------------------- #
 # Tracer Advektions Verfahren ======================================== #
-nmx     =   5
-nmz     =   5
+Ma  =   (
+    nmx     =   5,
+    nmz     =   5
+)
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
+D       =   (
+    T       =   zeros(NC.xc,NC.yc),
+    vx      =   zeros(NC.xv+1,NC.yv),
+    vy      =   zeros(NC.xv,NC.yv+1),
+    vxc     =   zeros(NC.xc,NC.yc),
+    vyc     =   zeros(NC.xc,NC.yc),
+    Tmax    =   [0.0],
+    Tmin    =   [0.0],
+    Tmean   =   [0.0],
+)
 if Ini.T==:circle    
     # Hintergrund Temperatur ----------------------------------------- #
-    Tb      =   1000
+    Tb          =   1000
         
     # Anomalie Temperatur -------------------------------------------- #
-    Ta      =   1200
-    T       =   zeros(nz,nx)
+    Ta          =   1200
         
     # Bereich der Anomalie ------------------------------------------- #
     ri          =   .2
-    xc          =   (xmin+xmax)/4
-    zc          =   (zmin+zmax)/2
+    xc          =   (M.xmin+M.xmax)/4
+    yc          =   (M.ymin+M.ymax)/2
     alpha       =   0.0
     a_ell       =   .2
     b_ell       =   .2
-    x_ell       =   X .* cosd(alpha) + Z .* sind(alpha)
-    z_ell       =   -X .* sind(alpha) + Z .* cosd(alpha)
-    Elli        =   ((x_ell - xc)./ a_ell).^2 + ((z_ell-zc)./ b_ell).^2
-    T(Elli<=ri) =   Ta
-    T(Elli>ri)  =   Tb
+    for i = 1:NC.xc, j = 1:NC.yc
+        x_ell   =  x.c[i]*cosd(alpha) + y.c[j]*sind(alpha)
+        y_ell   =  -x.c[i]*sind(alpha) + y.c[j]*cosd(alpha)
+        Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
+        if Elli <= ri 
+            D.T[i,j]    =   Ta
+        else
+            D.T[i,j]    =   Tb
+        end
+    end
         
-    Tmax        =   max(max(T))
-    Tmin        =   min(min(T))
-    Tmean       =   (Tmax+Tmin)/2
+    D.Tmax[1]   =   maximum(D.T)
+    D.Tmin[1]   =   minimum(D.T)
+    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 elseif Ini.T==:gaussian
-    # Gaussche Temperatur Anomalie ---------------------------------- #
-    Ampl    = 200;     # Amplitude der Anomalie
-    sigma   = 0.1;      # Breite der Anomalie
-    T0      = 1000;     # Hintergrund Temperatur
+    # Gaussche Temperatur Anomalie ----------------------------------- #
+    Ampl        =   200     # Amplitude der Anomalie
+    σ           =   0.1     # Breite der Anomalie
+    T0          =   1000    # Hintergrund Temperatur
+    κ           =   1e-6
         
-    T       = T0 + Ampl*exp(-((X - 0.25).^2 + (Z - 0.5).^2)./sigma^2);
+    # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
+
+    for i = 1:NC.xc, j = 1:NC.yc
+        D.T[i,j]    =   T0 + Ampl*exp(-((x.c[i] - 0.25)^2 + (y.c[j] - 0.5)^2)/σ^2)
+    end
         
-    Tmax    = max(max(T));
-    Tmin    = min(min(T));
-    Tmean   = (Tmax+Tmin)/2;
+    D.Tmax[1]   =   maximum(D.T)
+    D.Tmin[1]   =   minimum(D.T)
+    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
         
 elseif Ini.T==:block
-    # Hintergrund Temperatur ---------------------------------------- #
-    Tb      = 1000;
+    # Hintergrund Temperatur ----------------------------------------- #
+    Tb      =   1000
         
-    # Bereich der Temperatur Anomalie ------------------------------- #
-    xTl     = (abs(xmin)+abs(xmax))/4 - (abs(xmin)+abs(xmax))/10;
-    xTr     = (abs(xmin)+abs(xmax))/4 + (abs(xmin)+abs(xmax))/10;
-    zTu     = (abs(zmin)+abs(zmax))/2 - (abs(zmin)+abs(zmax))/10;
-    zTo     = (abs(zmin)+abs(zmax))/2 + (abs(zmin)+abs(zmax))/10;
+    # Bereich der Temperatur Anomalie -------------------------------- #
+    xTl     =   (abs(M.xmin)+abs(M.xmax))/4 - (abs(M.xmin)+abs(M.xmax))/10
+    xTr     =   (abs(M.xmin)+abs(M.xmax))/4 + (abs(M.xmin)+abs(M.xmax))/10
+    yTu     =   (abs(M.ymin)+abs(M.ymax))/2 - (abs(M.ymin)+abs(M.ymax))/10
+    yTo     =   (abs(M.ymin)+abs(M.ymax))/2 + (abs(M.ymin)+abs(M.ymax))/10
         
-    Ta      = 1200;
+    Ta      =   1200
         
-    Tmean   = (Tb + Ta)/2;
-        
-    # Anfangstemperatur Verteilung ---------------------------------- #
-    T       = Tb.*ones(nz,nx);
-    T(z>=zTu&z<=zTo,x>=xTl&x<=xTr) = Ta
-    #         tc      = 100;
-    Tmax    = max(max(T));
+    D.Tmean[1]  =   (Tb + Ta)/2
+         
+    # Anfangstemperatur Verteilung ----------------------------------- #
+    for i = i:NC.xc, j = 1:NC.yc
+        if y.c[j]>=yTu & y.c[j] <= yTo & x.c[i]>=xTl & x.c[i]<=xTr
+            D.T[i,j]    =   Ta
+        end
+    end
+    D.Tmax[1]    = maximum(D.T)
 end
 
 # if FD.Method.Adv==slf
@@ -149,30 +185,51 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 
-## Definition des Geschwindigkeitsfeldes -------------------------------- #
+# Definition des Geschwindigkeitsfeldes ------------------------------ #
 if Ini.V==:RigidBody
     # Starre Rotation
-    vx      = (Z-(zmax-zmin)/2);            # [ m/s ]
-    vz      = -(X-(xmax-xmin)/2);           # [ m/s ]
-        
-    if FD.Method.Adv==:tracers
-            Rad = sqrt((X-(xmax-xmin)/2).^2 + (Z-(zmax-zmin)/2).^2);
-                
-            vx(Rad>((xmax-xmin)/2)) = 0;
-            vz(Rad>((xmax-xmin)/2)) = 0;
+    for i = 1:NC.xv+1, j = 1:NC.yv
+        D.vx[i,j]  =    (y.v[j]-(M.ymax-M.ymin)/2)            # [ m/s ]
     end
+    for i = 1:NC.xv, j = 1:NC.yv+1
+        D.vy[i,j]  =   -(x.v[i]-(M.xmax-M.xmin)/2)           # [ m/s ]
+    end
+        
+    #if FD.Method.Adv==:tracers
+    #        Rad = sqrt((X-(xmax-xmin)/2).^2 + (Z-(zmax-zmin)/2).^2);
+    #            
+    #        vx(Rad>((xmax-xmin)/2)) = 0;
+    #        vz(Rad>((xmax-xmin)/2)) = 0;
+    #end
 elseif Ini.V==:ShearCell
     # Zelle mit einfacher Scherdehnung
-    vx      = -sin(pi.*X).*cos(pi.*Z);
-    vz      = cos(pi.*X).*sin(pi.*Z);
+    for i = 2:NC.xv j = 1:NC.yv
+        D.vx[i,j]   =   -sin(π*x.c[i-1])*cos(π*y.v[j])
+    end
+    for i = 1:NC.xv, j = 1:NC.yv+1
+        D.vz[i,j]   =   cos(pi.*X).*sin(pi.*Z);
+    end
 end
+for i = 1:NC.xc, j = 1:NC.yc
+    D.vxc[i,j]  = (D.vx[i+1,j] + D.vx[i+1,j+1])/2
+    D.vyc[i,j]  = (D.vy[i,j+1] + D.vy[i+1,j+1])/2
+end
+D.vc        = 
 
 # Visualize initial condition ---
-
-# Define time step ------------------------------------------------------ #
-# dt      = dtfac*min(dx,dz)/max(max(max(abs(vx))),max(max(abs(vz))));
-dt      = dtfac*min(dx,dz)/(sqrt(max(max(vx))^2 + max(max(vz))^2));
-nt      = ceil(tmax/dt);
+p = heatmap(x.c , y.c, D.T', 
+        color=:thermal, colorbar=false, aspect_ratio=:equal, 
+        xlabel="x", ylabel="z", 
+        title="Temperature", 
+        xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+        clims=(minimum(D.T), maximum(D.T)),layout=(2,1),
+        subplot=1)
+heatmap!(p,x.c,y.c,D.vxc',subplot=2)
+# -------------------------------------------------------------------- #
+## Define time step ------------------------------------------------------ #
+## dt      = dtfac*min(dx,dz)/max(max(max(abs(vx))),max(max(abs(vz))));
+#dt      = dtfac*min(dx,dz)/(sqrt(max(max(vx))^2 + max(max(vz))^2));
+#nt      = ceil(tmax/dt);
 
 # ## Animation settings
 # filename    = ['2D_Advection_',fdmethod,'_',Tanomaly,'_',FlowField,'.gif'];
