@@ -21,6 +21,7 @@
 # Vers. 1.0 - 26.11.2024 - Julia
 # ==================================================================== #
 # using Statistics
+using Plots
 
 function Advection_2D()
 
@@ -71,8 +72,8 @@ y       = (
     c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.yc),
     v       =   LinRange(M.ymin, M.ymax, NC.yv),
 )
-xc2d = xc .+ 0*yc'
-yc2d = 0*xc .+ yc'
+xc2d = x.c .+ 0*y.c'
+yc2d = 0*x.c .+ y.c'
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
@@ -94,6 +95,7 @@ D       =   (
     vy      =   zeros(NC.xv,NC.yv+1),
     vxc     =   zeros(NC.xc,NC.yc),
     vyc     =   zeros(NC.xc,NC.yc),
+    vc      =   zeros(NC.xc,NC.yc),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
@@ -109,12 +111,12 @@ if Ini.T==:circle
     ri          =   .2
     xc          =   (M.xmin+M.xmax)/4
     yc          =   (M.ymin+M.ymax)/2
-    alpha       =   0.0
+    α           =   0.0
     a_ell       =   .2
     b_ell       =   .2
     for i = 1:NC.xc, j = 1:NC.yc
-        x_ell   =  x.c[i]*cosd(alpha) + y.c[j]*sind(alpha)
-        y_ell   =  -x.c[i]*sind(alpha) + y.c[j]*cosd(alpha)
+        x_ell   =  x.c[i]*cosd(α) + y.c[j]*sind(α)
+        y_ell   =  -x.c[i]*sind(α) + y.c[j]*cosd(α)
         Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
         if Elli <= ri 
             D.T[i,j]    =   Ta
@@ -214,7 +216,7 @@ for i = 1:NC.xc, j = 1:NC.yc
     D.vxc[i,j]  = (D.vx[i+1,j] + D.vx[i+1,j+1])/2
     D.vyc[i,j]  = (D.vy[i,j+1] + D.vy[i+1,j+1])/2
 end
-D.vc        = 
+@. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 
 # Visualize initial condition ---
 p = heatmap(x.c , y.c, D.T', 
@@ -222,9 +224,13 @@ p = heatmap(x.c , y.c, D.T',
         xlabel="x", ylabel="z", 
         title="Temperature", 
         xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-        clims=(minimum(D.T), maximum(D.T)),layout=(2,1),
+        clims=(minimum(D.T), maximum(D.T)),layout=(1,2),
         subplot=1)
-heatmap!(p,x.c,y.c,D.vxc',subplot=2)
+# quiver!(p,xc2d,yc2d,quiver=(D.vxc,D.vyc),subplot=1)
+heatmap!(p,x.c,y.c,D.vc',
+        color=:viridis, colorbar=true, aspect_ratio=:equal, 
+        xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
+        subplot=2)
 # -------------------------------------------------------------------- #
 ## Define time step ------------------------------------------------------ #
 ## dt      = dtfac*min(dx,dz)/max(max(max(abs(vx))),max(max(abs(vz))));
