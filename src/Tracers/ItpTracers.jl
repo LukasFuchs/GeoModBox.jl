@@ -1,4 +1,5 @@
 function Itp1D_Centers2Markers!( Tm, xm, Tc, xc, Δx, xmin )
+    # Biliniear
     for i = 1:length(xm)
         iW    = trunc(Int, (xm[i] - xmin) / Δx) + 1
         wW    = 1 - (xm[i] - xc[iW]) / Δx
