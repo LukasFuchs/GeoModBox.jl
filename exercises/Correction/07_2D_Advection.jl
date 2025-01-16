@@ -22,23 +22,25 @@
 # ==================================================================== #
 # using Statistics
 using Plots
+using GeoModBox.AdvectionEquation.TwoD
+using GeoModBox.InitialCondition
 
 function Advection_2D()
 
 # Definition numerischer Verfahren =================================== #
-FD          =   (Method     = (Adv=:upwind,),)
-# circle, gaussian, block
-# RigidBody, ShearCell, 
-Ini         =   (T=:gaussian,V=:RigidBody,) 
+# Define Advection Scheme ---
+#   1) upwind, 2) slf
+FD          =   (Method     = (Adv=:slf,),)
+# Define Initial Condition ---
+# Temperature - 
+#   1) circle, 2) gaussian, 3) block
+# Velocity - 
+#   1) RigidBody, 2) ShearCell
+Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
-
-#fdmethod    =:upwind
-#Tanomaly    =:block
-#FlowField   =:RigidBody
-
 # Plot Einstellungen ================================================= #
 Pl  =   (
-    inc         =   10,
+    inc         =   5,
 )
 # -------------------------------------------------------------------- #
 # Model Konstanten =================================================== #
@@ -78,13 +80,16 @@ y       = (
 )
 x1      =   ( 
     xc2d    =   x.c .+ 0*y.c',
+    xv2d    =   x.v .+ 0*y.v', 
+    xcew2d  =   x.cew .+ 0*y.v',
 )
 x   =   merge(x,x1)
 y1      =   (
     yc2d    =   0*x.c .+ y.c',
+    yv2d    =   0*x.v .+ y.v',
+    ycns2d  =   0*x.v .+ y.cns',
 )
 y   =   merge(y,y1)
-
 # -------------------------------------------------------------------- #
 # Tracer Advektions Verfahren ======================================== #
 Ma  =   (
@@ -92,13 +97,21 @@ Ma  =   (
     nmz     =   5
 )
 # -------------------------------------------------------------------- #
+# Animationssettings ================================================= #
+path        =   string("./exercises/Correction/Results/")
+anim        =   Plots.Animation(path, String[] )
+filename    =   string("07_2D_advection_",Ini.T,"_",Ini.V,
+                        "_",FD.Method.Adv)
+save_fig    =   1
+# -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
 D       =   (
     T       =   zeros(NC.xc,NC.yc),
     T_ext   =   zeros(NC.xc+2,NC.yc+2),
-    vx      =   zeros(NC.xv+1,NC.yv),
-    vy      =   zeros(NC.xv,NC.yv+1),
+    T_exto  =   zeros(NC.xc+2,NC.yc+2),
+    vx      =   zeros(NC.xv,NC.yv+1),
+    vy      =   zeros(NC.xv+1,NC.yv),
     vxc     =   zeros(NC.xc,NC.yc),
     vyc     =   zeros(NC.xc,NC.yc),
     vc      =   zeros(NC.xc,NC.yc),
@@ -118,49 +131,55 @@ if Ini.T==:circle
     α           =   0.0
     a_ell       =   .2
     b_ell       =   .2
-    for i = 1:NC.xc, j = 1:NC.yc
-        x_ell   =  x.c[i]*cosd(α) + y.c[j]*sind(α)
-        y_ell   =  -x.c[i]*sind(α) + y.c[j]*cosd(α)
+    for i = 1:NC.xc+2, j = 1:NC.yc+2
+        x_ell   =  x.cew[i]*cosd(α) + y.cns[j]*sind(α)
+        y_ell   =  -x.cew[i]*sind(α) + y.cns[j]*cosd(α)
         Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
         if Elli <= ri 
-            D.T[i,j]    =   Ta
+            D.T_ext[i,j]    =   Ta
         else
-            D.T[i,j]    =   Tb
+            D.T_ext[i,j]    =   Tb
         end
-    end
-    D.Tmax[1]   =   maximum(D.T)
-    D.Tmin[1]   =   minimum(D.T)
+    end    
+    D.Tmax[1]   =   maximum(D.T_ext)
+    D.Tmin[1]   =   minimum(D.T_ext)
     D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 elseif Ini.T==:gaussian
     # Gaussche Temperatur Anomalie ---
     Ampl        =   200     # Amplitude der Anomalie
-    σ           =   0.1     # Breite der Anomalie
+    σ           =   0.05     # Breite der Anomalie
     T0          =   1000    # Hintergrund Temperatur
     # κ           =   1e-6
     # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
-    for i = 1:NC.xc, j = 1:NC.yc
-        D.T[i,j]    =   T0 + Ampl*exp(-((x.c[i] - 0.25)^2 + (y.c[j] - 0.5)^2)/σ^2)
+    for i = 1:NC.xc+2, j = 1:NC.yc+2
+        D.T_ext[i,j]    =   T0 + Ampl*exp(-((x.cew[i] - 0.20)^2 + (y.cns[j] - 0.5)^2)/σ^2)
     end
-    D.Tmax[1]   =   maximum(D.T)
-    D.Tmin[1]   =   minimum(D.T)
-    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2 
+    # D.T         .=  D.T_ext[2:end-1,2:end-1]
+    D.Tmax[1]   =   maximum(D.T_ext)
+    D.Tmin[1]   =   minimum(D.T_ext)
+    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 elseif Ini.T==:block
     # Hintergrund Temperatur ---
     Tb      =   1000
     # Bereich der Temperatur Anomalie ---
-    xTl     =   (abs(M.xmin)+abs(M.xmax))/4 - (abs(M.xmin)+abs(M.xmax))/10
-    xTr     =   (abs(M.xmin)+abs(M.xmax))/4 + (abs(M.xmin)+abs(M.xmax))/10
-    yTu     =   (abs(M.ymin)+abs(M.ymax))/2 - (abs(M.ymin)+abs(M.ymax))/10
-    yTo     =   (abs(M.ymin)+abs(M.ymax))/2 + (abs(M.ymin)+abs(M.ymax))/10
+    xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+    xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+    yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+    yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
     Ta      =   1200
     D.Tmean[1]  =   (Tb + Ta)/2
     # Anfangstemperatur Verteilung ---
-    for i = 1:NC.xc, j = 1:NC.yc
-        if y.c[j]>=yTu && y.c[j] <= yTo && x.c[i]>=xTl && x.c[i]<=xTr
-            D.T[i,j]    =   Ta
+    for i = 1:NC.xc+2, j = 1:NC.yc+2
+        if y.cns[j]>=yTu && y.cns[j] <= yTo && x.cew[i]>=xTl && x.cew[i]<=xTr
+            D.T_ext[i,j]    =   Ta
         end
     end
-    D.Tmax[1]    = maximum(D.T)
+    #D.T         .=  D.T_ext[2:end-1,2:end-1]
+    D.Tmax[1]   =   maximum(D.T_ext)
+end
+D.T         .=  D.T_ext[2:end-1,2:end-1]
+if FD.Method.Adv==:slf
+    D.T_exto    .=  D.T_ext
 end
 # if FD.Method.Adv==slf
 #     Told    = T;
@@ -181,50 +200,28 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 # Geschwindigkeit ---------------------------------------------------- #
-if Ini.V==:RigidBody
-    # Starre Rotation ---
-    for i = 1:NC.xv+1, j = 1:NC.yv
-        D.vx[i,j]  =    (y.v[j]-(M.ymax-M.ymin)/2)            # [ m/s ]
-    end
-    for i = 1:NC.xv, j = 1:NC.yv+1
-        D.vy[i,j]  =   -(x.v[i]-(M.xmax-M.xmin)/2)           # [ m/s ]
-    end
-    #if FD.Method.Adv==:tracers
-    #        Rad = sqrt((X-(xmax-xmin)/2).^2 + (Z-(zmax-zmin)/2).^2);
-    #            
-    #        vx(Rad>((xmax-xmin)/2)) = 0;
-    #        vz(Rad>((xmax-xmin)/2)) = 0;
-    #end
-elseif Ini.V==:ShearCell
-    # Zelle mit einfacher Scherdehnung ---
-    for i = 1:NC.xv+1, j = 1:NC.yv
-        D.vx[i,j]   =   -sin(π*x.cew[i])*cos(π*y.v[j])
-    end
-    for i = 1:NC.xv, j = 1:NC.yv+1
-        D.vy[i,j]   =   cos(π.*x.v[i]).*sin(π.*y.cns[j])
-    end
-end
+IniVelocity!(Ini.V,D,NC,M,x,y)
+# Get the velocity on the centroids ---
 for i = 1:NC.xc, j = 1:NC.yc
-    D.vxc[i,j]  = (D.vx[i+1,j] + D.vx[i+1,j+1])/2
-    D.vyc[i,j]  = (D.vy[i,j+1] + D.vy[i+1,j+1])/2
+    D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+    D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # Visualize initial condition ---------------------------------------- #
-p = heatmap(x.c , y.c, D.T', 
-        color=:thermal, colorbar=false, aspect_ratio=:equal, 
+p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+        color=:thermal, colorbar=true, aspect_ratio=:equal, 
         xlabel="x", ylabel="z", 
         title="Temperature", 
         xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-        clims=(minimum(D.T), maximum(D.T)),layout=(1,2),
-        subplot=1)
-heatmap!(p,x.c,y.c,D.vc',
-        color=:viridis, colorbar=true, aspect_ratio=:equal, 
-        xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-        subplot=2)
+        clims=(minimum(D.T)./D.Tmax[1], 1.0))
 quiver!(p,x.xc2d[1:Pl.inc:end,1:Pl.inc:end],y.yc2d[1:Pl.inc:end,1:Pl.inc:end],
         quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end],D.vyc[1:Pl.inc:end,1:Pl.inc:end]),        
-        color="white",
-        subplot=2)
+        color="white")
+if save_fig == 1
+    Plots.frame(anim)
+elseif save_fig == 0
+    display(p)
+end
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
@@ -232,30 +229,18 @@ T   =   (
     Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
     Δ       =   [0.0],
 )
-# dt      = dtfac*min(dx,dz)/max(max(max(abs(vx))),max(max(abs(vz))));
 T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) / 
         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
-# Animationssettings ================================================= #
-path        =   string("./Results/")
-anim        =   Plots.Animation(path, String[] )
-filename    =   string("07_2D_advection_",Ini.T,"_",FD.Method.Adv)
-save_fig    =   0
-# -------------------------------------------------------------------- #
-
 # Solve advection equation ------------------------------------------- #
  for i=2:nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
-        # Setzt die Elemente gleich 1, falls vx positiv oder negativ ist. 
-        Dx1     =   D.vx.>0
-        Dx2     =   D.vx.<0
-        # Setzt die Elemente gleich 1, falls vz positv oder negativ ist. 
-        Dy1     =   D.vy.>0
-        Dy2     =   D.vy.<0
-#                 T       = UpwindAdvection2D(vx,vz,T,dx,dz,dt);
+        upwindc2D!(D,NC,T,Δ)
+    elseif FD.Method.Adv==:slf
+        slfc2D!(D,NC,T,Δ)   
 #             case 'slf'
 #                 Tnew    = SLFAdvection2D(vx,vz,Told,T,dx,dz,dt);
 #                 Told    = T;
@@ -280,8 +265,10 @@ save_fig    =   0
 #                 [~,T]   = TracerInterp(Tm,XM,ZM,T,[],X,Z,'from');
     end
 
-    
-#     if (mod(t,5)==0||t==1)
+    display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
+
+    # Plot Solution ---
+    if mod(i,5) == 0 || i == nt
 #         switch fdmethod
 #             case 'tracers'
 #                 figure(1),clf
@@ -309,34 +296,33 @@ save_fig    =   0
 #                 axis equal; axis tight
 #                 drawnow
 #             otherwise
-#                 figure(1),clf
-#                 pcolor(X,Z,T./Tmax)
-#                 shading interp; lighting phong; hold on
-#                 k = colorbar;
-#                 title(k,'T / T_{max}')
-#                 quiver(X(3:inc:end-2,3:inc:end-2),Z(3:inc:end-2,3:inc:end-2),...
-#                     vx(3:inc:end-2,3:inc:end-2),vz(3:inc:end-2,3:inc:end-2))
-#                 xlabel('x [ m ]'); ylabel('z [ m ]')
-#                 title({['2-D numerical Advection:',fdmethod];...
-#                     ['\Deltat_{fac} = ',num2str(dtfac),...
-#                     '; nx = ',num2str(nx),', nz = ',num2str(nz)];...
-#                     ['Step: ',num2str(t)]})
-#                 axis equal; axis tight
-#                 drawnow
-#         end
+
+        p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+                color=:thermal, colorbar=true, aspect_ratio=:equal, 
+                xlabel="x", ylabel="z", 
+                title="Temperature", 
+                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+                clims=(minimum(D.T)./D.Tmax[1], 1.0))
+        quiver!(p,x.xc2d[1:Pl.inc:end,1:Pl.inc:end],
+                    y.yc2d[1:Pl.inc:end,1:Pl.inc:end],
+                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*0.2,
+                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*0.2),        
+                color="white")
+        if save_fig == 1
+            Plots.frame(anim)
+        elseif save_fig == 0
+            display(p)                        
+        end
+    end
         
-#         #         # Capture the plot as an image
-#         #         frame       = getframe(h);
-#         #         im          = frame2im(frame);
-#         #         [imind,cm]  = rgb2ind(im,256);
-#         #
-#         #         # Write to the GIF File
-#         #         if t == 1
-#         #             imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
-#         #         else
-#         #             imwrite(imind,cm,filename,'gif','WriteMode','append');
-#         #         end
-#     end
+end
+# Save Animation ----------------------------------------------------- #
+if save_fig == 1
+    # Write the frames to a GIF file
+    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+    foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+elseif save_fig == 0
+    display(plot(p))
 end
 
 end # Function end

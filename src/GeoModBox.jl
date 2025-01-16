@@ -33,7 +33,7 @@ module GeoModBox
         end
 
         module OneD
-            # 1D solver
+            # 1D solver ---
             include("./HeatEquation/1Dsolvers.jl")
             export ForwardEuler1Dc!, BackwardEuler1Dc!,
                 ComputeResiduals1Dc!, AssembleMatrix1Dc!, CNA1Dc!,
@@ -44,20 +44,25 @@ module GeoModBox
     module AdvectionEquation
     
         module OneD
-            # 1D solver
+            # 1D solver ---
             include("./AdvectionEquation/1Dsolvers.jl")
             export upwind1D!, lax1D!, slf1D!, semilag1D!, RK4O1D!
 
-            # Tracer options
+            # Tracer options ---
             include("./Tracers/ItpTracers.jl")
             export Itp1D_Centers2Markers!, Itp1D_Markers2Centers!
         end
+
+        module TwoD
+            # 2D solver --- 
+            include("./AdvectionEquation/2Dsolver.jl")
+            export upwindc2D!, slfc2D!
+        end
     end
 
-    #module InitialCondition
-        #function IniTemperature()
-        #    
-        #end        
-#
-#    end
+    module InitialCondition
+        # Initial Conditions ---
+        include("./InitialCondition/2Dini.jl")        
+        export IniVelocity!
+    end
 end 
