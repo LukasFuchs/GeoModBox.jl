@@ -5,7 +5,7 @@
 #    end
 #
 #end      
-function IniVelocity!(type,D,NC,M,x,y)
+function IniVelocity!(type,D,NC,Δ,M,x,y)
     if type==:RigidBody
         # Rigid Body Rotation ---
         for i = 1:NC.xv, j = 1:NC.yv+1
@@ -18,11 +18,12 @@ function IniVelocity!(type,D,NC,M,x,y)
         Radx    =   zeros(size(D.vx))
         Rady    =   zeros(size(D.vy))
 
-        Radx    .=   sqrt((x.xcew2d-(xmax-xmin)/2).^2 + (Z-(zmax-zmin)/2).^2);
-        #            
-        #        vx(Rad>((xmax-xmin)/2)) = 0;
-        #        vz(Rad>((xmax-xmin)/2)) = 0;
-        #end
+        @. Radx     =   sqrt((x.vx2d-(M.xmax-M.xmin)/2)^2 + (y.vx2d-(M.ymax-M.ymin)/2)^2)
+        @. Rady     =   sqrt((x.vy2d-(M.xmax-M.xmin)/2)^2 + (y.vy2d-(M.ymax-M.ymin)/2)^2)
+
+        @. D.vx[Radx>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+        @. D.vy[Rady>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+        
     elseif type==:ShearCell
         # Convection Cell with a Shear Deformation --- (REF?!)
         for i = 1:NC.xv, j = 1:NC.yv+1

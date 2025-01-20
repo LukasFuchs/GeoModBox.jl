@@ -23,7 +23,7 @@
 # using Statistics
 using Plots
 using GeoModBox.AdvectionEquation.TwoD
-using GeoModBox.InitialCondition
+# using GeoModBox.InitialCondition
 
 function Advection_2D()
 
@@ -36,11 +36,12 @@ FD          =   (Method     = (Adv=:slf,),)
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:circle,V=:RigidBody,) 
+Ini         =   (T=:gaussian,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
     inc         =   5,
+    sc          =   0.2,
 )
 # -------------------------------------------------------------------- #
 # Model Konstanten =================================================== #
@@ -79,15 +80,17 @@ y       = (
     v       =   LinRange(M.ymin, M.ymax, NC.yv),
 )
 x1      =   ( 
-    xc2d    =   x.c .+ 0*y.c',
-    xv2d    =   x.v .+ 0*y.v', 
-    xcew2d  =   x.cew .+ 0*y.v',
+    c2d     =   x.c .+ 0*y.c',
+    v2d     =   x.v .+ 0*y.v', 
+    vx2d    =   x.v .+ 0*y.cns',
+    vy2d    =   x.cew .+ 0*y.v',
 )
 x   =   merge(x,x1)
 y1      =   (
-    yc2d    =   0*x.c .+ y.c',
-    yv2d    =   0*x.v .+ y.v',
-    ycns2d  =   0*x.v .+ y.cns',
+    c2d     =   0*x.c .+ y.c',
+    v2d     =   0*x.v .+ y.v',
+    vx2d    =   0*x.v .+ y.cns',
+    vy2d    =   0*x.cew .+ y.v',
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
@@ -200,7 +203,34 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 # Geschwindigkeit ---------------------------------------------------- #
-IniVelocity!(Ini.V,D,NC,M,x,y)
+# IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
+if Ini.V==:RigidBody
+    # Rigid Body Rotation ---
+    for i = 1:NC.xv, j = 1:NC.yv+1
+        D.vx[i,j]  =    (y.cns[j]-(M.ymax-M.ymin)/2)
+    end
+    for i = 1:NC.xv+1, j = 1:NC.yv
+        D.vy[i,j]  =   -(x.cew[i]-(M.xmax-M.xmin)/2)
+    end
+    
+    Radx    =   zeros(size(D.vx))
+    Rady    =   zeros(size(D.vy))
+
+    @. Radx     =   sqrt((x.vx2d-(M.xmax-M.xmin)/2)^2 + (y.vx2d-(M.ymax-M.ymin)/2)^2)
+    @. Rady     =   sqrt((x.vy2d-(M.xmax-M.xmin)/2)^2 + (y.vy2d-(M.ymax-M.ymin)/2)^2)
+
+    @. D.vx[Radx>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+    @. D.vy[Rady>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+    
+elseif Ini.V==:ShearCell
+    # Convection Cell with a Shear Deformation --- (REF?!)
+    for i = 1:NC.xv, j = 1:NC.yv+1
+        D.vx[i,j]   =   -sin(π*x.v[i])*cos(π*y.cns[j])
+    end
+    for i = 1:NC.xv+1, j = 1:NC.yv
+        D.vy[i,j]   =   cos(π.*x.cew[i]).*sin(π.*y.v[j])
+    end
+end
 # Get the velocity on the centroids ---
 for i = 1:NC.xc, j = 1:NC.yc
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -213,9 +243,10 @@ p = heatmap(x.c , y.c, (D.T./D.Tmax)',
         xlabel="x", ylabel="z", 
         title="Temperature", 
         xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-        clims=(minimum(D.T)./D.Tmax[1], 1.0))
-quiver!(p,x.xc2d[1:Pl.inc:end,1:Pl.inc:end],y.yc2d[1:Pl.inc:end,1:Pl.inc:end],
-        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end],D.vyc[1:Pl.inc:end,1:Pl.inc:end]),        
+        clims=(0.5, 1.0))
+quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
         color="white")
 if save_fig == 1
     Plots.frame(anim)
@@ -241,11 +272,8 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
         upwindc2D!(D,NC,T,Δ)
     elseif FD.Method.Adv==:slf
         slfc2D!(D,NC,T,Δ)   
-#             case 'slf'
-#                 Tnew    = SLFAdvection2D(vx,vz,Told,T,dx,dz,dt);
-#                 Told    = T;
-                
-#                 T       = Tnew;
+    elseif FD.Method.Adv==:semilag
+        #semilagc2D!()
 #             case 'semi-lag'
 #                 Tnew    = SemiLagAdvection2D(vx,vz,[],[],X,Z,T,dt);
                 
@@ -302,11 +330,11 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
                 xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                clims=(minimum(D.T)./D.Tmax[1], 1.0))
-        quiver!(p,x.xc2d[1:Pl.inc:end,1:Pl.inc:end],
-                    y.yc2d[1:Pl.inc:end,1:Pl.inc:end],
-                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*0.2,
-                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*0.2),        
+                clims=(0.5, 1.0))
+        quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
                 color="white")
         if save_fig == 1
             Plots.frame(anim)
