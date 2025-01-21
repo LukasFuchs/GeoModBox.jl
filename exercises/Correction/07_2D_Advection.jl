@@ -23,20 +23,20 @@
 # using Statistics
 using Plots
 using GeoModBox.AdvectionEquation.TwoD
-# using GeoModBox.InitialCondition
+using GeoModBox.InitialCondition
 
 function Advection_2D()
 
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf
-FD          =   (Method     = (Adv=:slf,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:gaussian,V=:RigidBody,) 
+Ini         =   (T=:block,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -122,65 +122,7 @@ D       =   (
     Tmin    =   [0.0],
     Tmean   =   [0.0],
 )
-if Ini.T==:circle    
-    # Hintergrund Temperatur ---
-    Tb          =   1000
-    # Anomalie Temperatur ---
-    Ta          =   1200
-    # Bereich der Anomalie ---
-    ri          =   .2
-    xc          =   (M.xmin+M.xmax)/4
-    yc          =   (M.ymin+M.ymax)/2
-    α           =   0.0
-    a_ell       =   .2
-    b_ell       =   .2
-    for i = 1:NC.xc+2, j = 1:NC.yc+2
-        x_ell   =  x.cew[i]*cosd(α) + y.cns[j]*sind(α)
-        y_ell   =  -x.cew[i]*sind(α) + y.cns[j]*cosd(α)
-        Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
-        if Elli <= ri 
-            D.T_ext[i,j]    =   Ta
-        else
-            D.T_ext[i,j]    =   Tb
-        end
-    end    
-    D.Tmax[1]   =   maximum(D.T_ext)
-    D.Tmin[1]   =   minimum(D.T_ext)
-    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
-elseif Ini.T==:gaussian
-    # Gaussche Temperatur Anomalie ---
-    Ampl        =   200     # Amplitude der Anomalie
-    σ           =   0.05     # Breite der Anomalie
-    T0          =   1000    # Hintergrund Temperatur
-    # κ           =   1e-6
-    # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
-    for i = 1:NC.xc+2, j = 1:NC.yc+2
-        D.T_ext[i,j]    =   T0 + Ampl*exp(-((x.cew[i] - 0.20)^2 + (y.cns[j] - 0.5)^2)/σ^2)
-    end
-    # D.T         .=  D.T_ext[2:end-1,2:end-1]
-    D.Tmax[1]   =   maximum(D.T_ext)
-    D.Tmin[1]   =   minimum(D.T_ext)
-    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
-elseif Ini.T==:block
-    # Hintergrund Temperatur ---
-    Tb      =   1000
-    # Bereich der Temperatur Anomalie ---
-    xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-    xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-    yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-    yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-    Ta      =   1200
-    D.Tmean[1]  =   (Tb + Ta)/2
-    # Anfangstemperatur Verteilung ---
-    for i = 1:NC.xc+2, j = 1:NC.yc+2
-        if y.cns[j]>=yTu && y.cns[j] <= yTo && x.cew[i]>=xTl && x.cew[i]<=xTr
-            D.T_ext[i,j]    =   Ta
-        end
-    end
-    #D.T         .=  D.T_ext[2:end-1,2:end-1]
-    D.Tmax[1]   =   maximum(D.T_ext)
-end
-D.T         .=  D.T_ext[2:end-1,2:end-1]
+IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exto    .=  D.T_ext
 end
@@ -203,34 +145,7 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 # Geschwindigkeit ---------------------------------------------------- #
-# IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
-if Ini.V==:RigidBody
-    # Rigid Body Rotation ---
-    for i = 1:NC.xv, j = 1:NC.yv+1
-        D.vx[i,j]  =    (y.cns[j]-(M.ymax-M.ymin)/2)
-    end
-    for i = 1:NC.xv+1, j = 1:NC.yv
-        D.vy[i,j]  =   -(x.cew[i]-(M.xmax-M.xmin)/2)
-    end
-    
-    Radx    =   zeros(size(D.vx))
-    Rady    =   zeros(size(D.vy))
-
-    @. Radx     =   sqrt((x.vx2d-(M.xmax-M.xmin)/2)^2 + (y.vx2d-(M.ymax-M.ymin)/2)^2)
-    @. Rady     =   sqrt((x.vy2d-(M.xmax-M.xmin)/2)^2 + (y.vy2d-(M.ymax-M.ymin)/2)^2)
-
-    @. D.vx[Radx>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
-    @. D.vy[Rady>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
-    
-elseif Ini.V==:ShearCell
-    # Convection Cell with a Shear Deformation --- (REF?!)
-    for i = 1:NC.xv, j = 1:NC.yv+1
-        D.vx[i,j]   =   -sin(π*x.v[i])*cos(π*y.cns[j])
-    end
-    for i = 1:NC.xv+1, j = 1:NC.yv
-        D.vy[i,j]   =   cos(π.*x.cew[i]).*sin(π.*y.v[j])
-    end
-end
+IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
 # Get the velocity on the centroids ---
 for i = 1:NC.xc, j = 1:NC.yc
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2

@@ -63,6 +63,6 @@ module GeoModBox
     module InitialCondition
         # Initial Conditions ---
         include("./InitialCondition/2Dini.jl")        
-        export IniVelocity!
+        export IniVelocity!, IniTemperature!
     end
 end 

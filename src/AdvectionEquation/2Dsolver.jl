@@ -27,40 +27,40 @@ function slfc2D!(D,NC,T,Δ)
     D.T_ext[indx,indy]  .=  D.T
 end
 
-function semilagc2D!()
-    # mid-point iteration scheme -------------------------------------------- 
-    if isempty(D.vxo)
-        # Im Falle das die Geschwindigkeit zeitlich konstant ist, wird die
-        # aktuelle Geschwindigkeit auf die alte Geschwindigkeit
-        # uebertragen.
-        D.vxo   =   D.vx
-        D.vzo   =   D.vy
-    end
+# function semilagc2D!()
+#     # mid-point iteration scheme -------------------------------------------- 
+#     if isempty(D.vxo)
+#         # Im Falle das die Geschwindigkeit zeitlich konstant ist, wird die
+#         # aktuelle Geschwindigkeit auf die alte Geschwindigkeit
+#         # uebertragen.
+#         D.vxo   =   D.vx
+#         D.vzo   =   D.vy
+#     end
     
-    # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
-    vxm     =   0.5.*(D.vxo + D.vx)
-    vym     =   0.5.*(D.vzo + D.vz)
+#     # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
+#     vxm     =   0.5.*(D.vxo + D.vx)
+#     vym     =   0.5.*(D.vzo + D.vz)
     
-    # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
-    vxi     =   D.vx
-    vyi     =   D.vy
+#     # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
+#     vxi     =   D.vx
+#     vyi     =   D.vy
     
-    # Iteration ------------------------------------------------------------- 
-    for k = 1:10
-        xp  = M.X - 0.5*dt.*vxi
-        zp  = M.Z - 0.5*dt.*vyi
+#     # Iteration ------------------------------------------------------------- 
+#     for k = 1:10
+#         xp  = M.X - 0.5*dt.*vxi
+#         zp  = M.Z - 0.5*dt.*vyi
         
-        vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
-        vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
+#         vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
+#         vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
         
-        #vxi(isnan(vxi)) = vxm(isnan(vxi));
-        #vyi(isnan(vzi)) = vzm(isnan(vzi));
-    end
-    xp      =   M.X - dt.*vxi;
-    zp      =   M.Z - dt.*vzi;
+#         #vxi(isnan(vxi)) = vxm(isnan(vxi));
+#         #vyi(isnan(vzi)) = vzm(isnan(vzi));
+#     end
+#     xp      =   M.X - dt.*vxi;
+#     zp      =   M.Z - dt.*vzi;
     
-    Anew    =   interp2(M.X,M.Z,A,xp,zp,'cubic');
+#     Anew    =   interp2(M.X,M.Z,A,xp,zp,'cubic');
     
-    Anew(isnan(Anew)) = A(isnan(Anew));
+#     Anew(isnan(Anew)) = A(isnan(Anew));
     
-end
+# end
