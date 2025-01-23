@@ -10,34 +10,34 @@ function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
     # b       =   1.0 / Δ.y[1]^2.0
 
     #  --------------------------------------------- #
-    rhs     .=   - reshape(D.Q, NC.xc*NC.yc, 1) ./ P.k
+    rhs     .=   - reshape(D.Q, NC.x*NC.y, 1) ./ P.k
 
-    for i=1:NC.xc, j=1:NC.yc
+    for i=1:NC.x, j=1:NC.y
         # Equation number
         ii = Num.T[i,j]
         # Stencil
-        iS = ii - NC.xc
+        iS = ii - NC.x
         iW = ii - 1         
         iC = ii        
         iE = ii + 1
-        iN = ii + NC.xc
+        iN = ii + NC.x
         # Boundaries
         # West boundary ---
         inW    =  i==1    ? false  : true   
         DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
         NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
         # East boundary ---
-        inE    =  i==NC.xc ? false  : true   
-        DirE   = (i==NC.xc && BC.type.E==    :Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.xc && BC.type.E==:Neumann  ) ? 1. : 0.
+        inE    =  i==NC.x ? false  : true   
+        DirE   = (i==NC.x && BC.type.E==    :Dirichlet) ? 1. : 0.
+        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
         # South boundary ---
         inS    =  j==1    ? false  : true  
         DirS   = (j==1    && BC.type.S==:Dirichlet) ? 1. : 0.
         NeuS   = (j==1    && BC.type.S==:Neumann  ) ? 1. : 0.
         # North boundary ---
-        inN    =  j==NC.yc ? false  : true   
-        DirN   = (j==NC.yc && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.yc && BC.type.N==:Neumann  ) ? 1. : 0.
+        inN    =  j==NC.y ? false  : true   
+        DirN   = (j==NC.y && BC.type.N==:Dirichlet) ? 1. : 0.
+        NeuN   = (j==NC.y && BC.type.N==:Neumann  ) ? 1. : 0.
         # Linear system coefficients
         if inS K[ii,iS] =  1.0 / Δ.y[1]^2.0 end
         if inW K[ii,iW] =  1.0 / Δ.x[1]^2.0 end
@@ -62,34 +62,34 @@ end
 
 function Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
     #  --------------------------------------------- #
-    rhs     .=   - reshape(Q, NC.xc*NC.yc, 1)
+    rhs     .=   - reshape(Q, NC.x*NC.y, 1)
 
-    for i=1:NC.xc, j=1:NC.yc
+    for i=1:NC.x, j=1:NC.y
         # Equation number
         ii = Num.T[i,j]
         # Stencil
-        iS = ii - NC.xc
+        iS = ii - NC.x
         iW = ii - 1         
         iC = ii        
         iE = ii + 1
-        iN = ii + NC.xc
+        iN = ii + NC.x
         # Boundaries
         # West boundary ---
         inW    =  i==1    ? false  : true   
         DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
         NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
         # East boundary ---
-        inE    =  i==NC.xc ? false  : true   
-        DirE   = (i==NC.xc && BC.type.E==    :Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.xc && BC.type.E==:Neumann  ) ? 1. : 0.
+        inE    =  i==NC.x ? false  : true   
+        DirE   = (i==NC.x && BC.type.E==    :Dirichlet) ? 1. : 0.
+        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
         # South boundary ---
         inS    =  j==1    ? false  : true  
         DirS   = (j==1    && BC.type.S==:Dirichlet) ? 1. : 0.
         NeuS   = (j==1    && BC.type.S==:Neumann  ) ? 1. : 0.
         # North boundary ---
-        inN    =  j==NC.yc ? false  : true   
-        DirN   = (j==NC.yc && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.yc && BC.type.N==:Neumann  ) ? 1. : 0.
+        inN    =  j==NC.y ? false  : true   
+        DirN   = (j==NC.y && BC.type.N==:Dirichlet) ? 1. : 0.
+        NeuN   = (j==NC.y && BC.type.N==:Neumann  ) ? 1. : 0.
         # Linear system coefficients
         if inS K[ii,iS] = ky[i,j] / Δy^2.0 end
         if inW K[ii,iW] = kx[i,j] / Δx^2.0 end

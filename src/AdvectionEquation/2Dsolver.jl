@@ -5,8 +5,8 @@ using Interpolations
 
 function upwindc2D!(D,NC,T,Δ)
 
-    indx    =   2:(NC.xc+1)
-    indy    =   2:(NC.yc+1)
+    indx    =   2:(NC.x+1)
+    indy    =   2:(NC.y+1)
 
     @. D.T     =  D.T_ex[indx,indy] - 
             (D.vxc>0)*(D.vxc*T.Δ[1]/Δ.x*(D.T_ex[indx,indy] - D.T_ex[indx-1,indy])) - 
@@ -20,8 +20,8 @@ end
 
 function slfc2D!(D,NC,T,Δ)
 
-    indx    =   2:(NC.xc+1)
-    indy    =   2:(NC.yc+1)
+    indx    =   2:(NC.x+1)
+    indy    =   2:(NC.y+1)
 
     @. D.T  =   D.T_exo[indx,indy] - 
         D.vxc*T.Δ[1]/Δ.x*(D.T_ex[indx+1,indy]-D.T_ex[indx.-1,indy]) - 

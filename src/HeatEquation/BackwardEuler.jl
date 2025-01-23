@@ -21,28 +21,28 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     #############################
     #       Heat equation       #
     #############################
-    for i=1:nc.xc, j=1:nc.yc
+    for i=1:nc.x, j=1:nc.y
         # Equation number
         ii = Num.T[i,j]
         # Stencil
-        iS = ii - nc.xc
+        iS = ii - nc.x
         iW = ii - 1
         iC = ii
         iE = ii + 1
-        iN = ii + nc.xc
+        iN = ii + nc.x
         # Boundaries
         inW    =  i==1    ? false  : true   
         DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
         NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-        inE    =  i==nc.xc ? false  : true   
-        DirE   = (i==nc.xc && BC.type.E==:Dirichlet) ? 1. : 0.
-        NeuE   = (i==nc.xc && BC.type.E==:Neumann  ) ? 1. : 0.
+        inE    =  i==nc.x ? false  : true   
+        DirE   = (i==nc.x && BC.type.E==:Dirichlet) ? 1. : 0.
+        NeuE   = (i==nc.x && BC.type.E==:Neumann  ) ? 1. : 0.
         inS    =  j==1    ? false  : true  
         DirS   = (j==1    && BC.type.S==:Dirichlet) ? 1. : 0.
         NeuS   = (j==1    && BC.type.S==:Neumann  ) ? 1. : 0.
-        inN    =  j==nc.yc ? false  : true   
-        DirN   = (j==nc.yc && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==nc.yc && BC.type.N==:Neumann  ) ? 1. : 0.
+        inN    =  j==nc.y ? false  : true   
+        DirN   = (j==nc.y && BC.type.N==:Dirichlet) ? 1. : 0.
+        NeuN   = (j==nc.y && BC.type.N==:Neumann  ) ? 1. : 0.
         # Material coefficient
         kW = k.x[i,j]
         kE = k.x[i+1,j]
@@ -68,35 +68,35 @@ a   =   κ / Δx^2
 b   =   κ / Δy^2
 c   =   1 / Δt
 # Multiply rhs with 1/Δt and add Q/ρ/cp ---    
-rhs  .= reshape(D.T0,NC.xc*NC.yc).*c .+ reshape(D.Q,NC.xc*NC.yc)./ρ./cp
+rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 
 # Loop over the grid points ---
-for i = 1:NC.xc, j = 1:NC.yc
+for i = 1:NC.x, j = 1:NC.y
     # Equation number ---
     ii          =   Num.T[i,j]
     # Stencil ---
-    iS          =   ii - NC.xc   # South
+    iS          =   ii - NC.x   # South
     iW          =   ii - 1      # West
     iC          =   ii          # Central
     iE          =   ii + 1      # East
-    iN          =   ii + NC.xc   # North
+    iN          =   ii + NC.x   # North
     # Boundaries ---
     # If an West index is required ---
     inW    =  i==1      ? false  : true
     DirW   = (i==1      && BC.type.W==:Dirichlet) ? 1. : 0.
     NeuW   = (i==1      && BC.type.W==:Neumann  ) ? 1. : 0.
     # If an East index is required ---
-    inE    =  i==NC.xc   ? false  : true
-    DirE   = (i==NC.xc   && BC.type.E==:Dirichlet) ? 1. : 0.
-    NeuE   = (i==NC.xc   && BC.type.E==:Neumann  ) ? 1. : 0.
+    inE    =  i==NC.x   ? false  : true
+    DirE   = (i==NC.x   && BC.type.E==:Dirichlet) ? 1. : 0.
+    NeuE   = (i==NC.x   && BC.type.E==:Neumann  ) ? 1. : 0.
     # If an South index is required
     inS    =  j==1      ? false  : true
     DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
     NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
     # If an North index is required 
-    inN    =  j==NC.yc   ? false  : true
-    DirN   = (j==NC.yc   && BC.type.N==:Dirichlet) ? 1. : 0.
-    NeuN   = (j==NC.yc   && BC.type.N==:Neumann  ) ? 1. : 0.
+    inN    =  j==NC.y   ? false  : true
+    DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+    NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
     # Stencil ---
     if inS K[ii,iS]     = - b end
     if inW K[ii,iW]     = - a end

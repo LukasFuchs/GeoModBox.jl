@@ -36,7 +36,7 @@ FD          =   (Method     = (Adv=:upwind,),)
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:circle,V=:RigidBody,) 
+Ini         =   (T=:gaussian,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -54,30 +54,29 @@ M   =   (
 # -------------------------------------------------------------------- #
 # Numerische Konstanten ============================================== #
 NC  =   (
-    xc      =   100,        # Number of horizontal centroids
-    yc      =   100,        # Number of vertical centroids
+    x       =   100,        # Number of horizontal centroids
+    y       =   100,        # Number of vertical centroids
 )
-NC1 =   (
-    xv      =   NC.xc + 1,  # Number of horizontal vertices
-    yv      =   NC.yc + 1,  # Number of vertical vertices
+NV =   (
+    x       =   NC.x + 1,  # Number of horizontal vertices
+    y       =   NC.y + 1,  # Number of vertical vertices
 )
-NC  =   merge(NC,NC1)
 
 Δ   =   (
-    x   =   (abs(M.xmin)+M.xmax)/NC.xc,
-    y   =   (abs(M.ymin)+M.ymax)/NC.yc,
+    x   =   (abs(M.xmin)+M.xmax)/NC.x,
+    y   =   (abs(M.ymin)+M.ymax)/NC.y,
 )
 # -------------------------------------------------------------------- #
 # Erstellung des Gitters ============================================= #
 x   =   (
-    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.xc),
-    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.xc+2),
-    v       =   LinRange(M.xmin, M.xmax , NC.xv)
+    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
+    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+    v       =   LinRange(M.xmin, M.xmax , NV.x)
 )
 y       = (
-    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.yc),
-    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.yc+2),
-    v       =   LinRange(M.ymin, M.ymax, NC.yv),
+    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
+    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    v       =   LinRange(M.ymin, M.ymax, NV.y),
 )
 x1      =   ( 
     c2d     =   x.c .+ 0*y.c',
@@ -101,25 +100,25 @@ Ma  =   (
 )
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
-path        =   string("./examples/Advection/Results/")
+path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   0
+save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
 D       =   (
-    T       =   zeros(NC.xc,NC.yc),
-    T_ex    =   zeros(NC.xc+2,NC.yc+2),
-    T_exo   =   zeros(NC.xc+2,NC.yc+2),
-    vx      =   zeros(NC.xv,NC.yv+1),
-    vy      =   zeros(NC.xv+1,NC.yv),    
-    vxc     =   zeros(NC.xc,NC.yc),
-    vyc     =   zeros(NC.xc,NC.yc),
-    vxcm    =   zeros(NC.xc,NC.yc),
-    vycm    =   zeros(NC.xc,NC.yc),
-    vc      =   zeros(NC.xc,NC.yc),
+    T       =   zeros(NC.x,NC.y),
+    T_ex    =   zeros(NC.x+2,NC.y+2),
+    T_exo   =   zeros(NC.x+2,NC.y+2),
+    vx      =   zeros(NV.x,NV.y+1),
+    vy      =   zeros(NV.x+1,NV.y),    
+    vxc     =   zeros(NC.x,NC.y),
+    vyc     =   zeros(NC.x,NC.y),
+    vxcm    =   zeros(NC.x,NC.y),
+    vycm    =   zeros(NC.x,NC.y),
+    vc      =   zeros(NC.x,NC.y),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
@@ -147,9 +146,11 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 # Geschwindigkeit ---------------------------------------------------- #
-IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
+IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
+@. D.vx    = D.vx*(100*(60*60*24*365.25))
+@. D.vy    = D.vy*(100*(60*60*24*365.25))
 # Get the velocity on the centroids ---
-for i = 1:NC.xc, j = 1:NC.yc
+for i = 1:NC.x, j = 1:NC.y
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
     D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
 end
@@ -285,8 +286,8 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax)) #, 
-                #clims=(0.5, 1.0))
+                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+                clims=(0.5, 1.0))
         quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
