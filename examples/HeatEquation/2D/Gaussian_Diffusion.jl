@@ -101,8 +101,9 @@ for m = 1:ns
         )
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
-        @. D.Tana       =   D.T
-        @. D.T0         =   D.T
+        @. D.Tana                   =   D.T
+        @. D.T0                     =   D.T
+        D.T_ex[2:end-1,2:end-1]     .=  D.T
     
         D.Tprofile[:,1]     .=  (D.T[convert(Int,NC.x/2),:] + 
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
