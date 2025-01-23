@@ -39,22 +39,22 @@ function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600,Ta=1200,σ=0.1)
             y_ell   =  -x.cew[i]*sind(α) + y.cns[j]*cosd(α)
             Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
             if Elli <= ri 
-                D.T_ext[i,j]    =   Ta
+                D.T_ex[i,j]    =   Ta
             else
-                D.T_ext[i,j]    =   Tb
+                D.T_ex[i,j]    =   Tb
             end
         end    
-        D.Tmax[1]   =   maximum(D.T_ext)
-        D.Tmin[1]   =   minimum(D.T_ext)
+        D.Tmax[1]   =   maximum(D.T_ex)
+        D.Tmin[1]   =   minimum(D.T_ex)
         D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:gaussian        
         # κ           =   1e-6
         # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
         for i = 1:NC.xc+2, j = 1:NC.yc+2
-            D.T_ext[i,j]    =   Tb + Ta*exp(-((x.cew[i] - 0.20)^2 + (y.cns[j] - 0.5)^2)/σ^2)
+            D.T_ex[i,j]    =   Tb + Ta*exp(-((x.cew[i] - 0.20)^2 + (y.cns[j] - 0.5)^2)/σ^2)
         end        
-        D.Tmax[1]   =   maximum(D.T_ext)
-        D.Tmin[1]   =   minimum(D.T_ext)
+        D.Tmax[1]   =   maximum(D.T_ex)
+        D.Tmin[1]   =   minimum(D.T_ex)
         D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
@@ -67,15 +67,15 @@ function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600,Ta=1200,σ=0.1)
         # Anfangstemperatur Verteilung ---
         for i = 1:NC.xc+2, j = 1:NC.yc+2
             if y.cns[j]>=yTu && y.cns[j] <= yTo && x.cew[i]>=xTl && x.cew[i]<=xTr
-                D.T_ext[i,j]    =   Ta
+                D.T_ex[i,j]    =   Ta
             else
-                D.T_ext[i,j]    =   Tb
+                D.T_ex[i,j]    =   Tb
             end
         end        
-        D.Tmax[1]   =   maximum(D.T_ext)
+        D.Tmax[1]   =   maximum(D.T_ex)
     end
     # Assign temperature to regular field ---
-    D.T         .=  D.T_ext[2:end-1,2:end-1]
+    D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D
 end    
 

@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -111,8 +111,8 @@ save_fig    =   0
 # Temperatur --------------------------------------------------------- #
 D       =   (
     T       =   zeros(NC.xc,NC.yc),
-    T_ext   =   zeros(NC.xc+2,NC.yc+2),
-    T_exto  =   zeros(NC.xc+2,NC.yc+2),
+    T_ex    =   zeros(NC.xc+2,NC.yc+2),
+    T_exo   =   zeros(NC.xc+2,NC.yc+2),
     vx      =   zeros(NC.xv,NC.yv+1),
     vy      =   zeros(NC.xv+1,NC.yv),    
     vxc     =   zeros(NC.xc,NC.yc),
@@ -126,7 +126,7 @@ D       =   (
 )
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
-    D.T_exto    .=  D.T_ext
+    D.T_exo    .=  D.T_ex
 end
 # if FD.Method.Adv==slf
 #     Told    = T;
@@ -182,7 +182,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
- for i=2 #nt
+ for i=2:nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -226,10 +226,10 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
 
         
         
-        itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ext)
+        itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ex)
         D.T         .=  itp_cubic.(xp,yp)
         
-        D.T_ext[2:end-1,2:end-1]  .=  D.T
+        D.T_ex[2:end-1,2:end-1]  .=  D.T
 #             case 'semi-lag'
 #                 Tnew    = SemiLagAdvection2D(vx,vz,[],[],X,Z,T,dt);
                 
@@ -252,7 +252,7 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
     display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,1) == 0 || i == nt
+    if mod(i,5) == 0 || i == nt
 #         switch fdmethod
 #             case 'tracers'
 #                 figure(1),clf
