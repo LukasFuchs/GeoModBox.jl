@@ -1,36 +1,37 @@
 using Plots, Interpolations
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.InitialCondition
-using GeoModBox.HeatEquation.TwoD
+using GeoModBox.HeatEquation.Diffusion
 
 function EnergyEquation()
 
     # Definition numerischer Verfahren ================================== #
     # Define Advection Scheme ---
     #   1) upwind, 2) slf, 3) semilag
-    FD          =   (Method     = (Adv=:none,Diff=:explicit),)
+    # Define Diffusion Scheme --- 
+    #   1) 
+    FD          =   (Method     = (Adv=:none,Diff=:upwind),)
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block
     # Velocity - 
     #   1) RigidBody, 2) ShearCell
-    Ini         =   (T=:circle,V=:RigidBody,) 
+    Ini         =   (T=:block,V=:RigidBody,) 
     # ------------------------------------------------------------------- #
-
     # Plot Einstellungen ================================================ #
     Pl  =   (
         inc         =   5,
-        sc          =   0.2,
+        sc          =   20*(100*(60*60*24*365.15)),
     )
     # ------------------------------------------------------------------- #
     # Model Konstanten ================================================== #
     M   =   (
         xmin    =   0.0,
-        xmax    =   1.0,
+        xmax    =   200.0e3,
         ymin    =   0.0,
-        ymax    =   1.0,
+        ymax    =   200.0e3,
     )
     # ------------------------------------------------------------------- #
-    # Physical Parameters --------------------------------------------------- #
+    # Physical Parameters ----------------------------------------------- #
     P       = ( 
         #L       =   200e3,          #   Length [ m ]
         #H       =   200e3,          #   Height [ m ]
@@ -136,15 +137,16 @@ function EnergyEquation()
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 
     # Visualize initial condition ---------------------------------------- #
-    p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+    p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
     color=:thermal, colorbar=true, aspect_ratio=:equal, 
-    xlabel="x", ylabel="z", 
+    xlabel="x [km]", ylabel="z[km]", 
     title="Temperature", 
-    xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-    clims=(0.5, 1.0))
-    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+    xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3))#, 
+    #clims=(0.5, 1.0))
+    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
+            y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
+            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
     color="white")
     if save_fig == 1
     Plots.frame(anim)
@@ -174,16 +176,16 @@ function EnergyEquation()
         display(string("Time step: ",i))    
         
         # Loesung Advektionsgleichung ---
-        #if FD.Method.Adv==:upwind
+        if FD.Method.Adv==:upwind
             upwindc2D!(D,NC,T,Δ)
-        #elseif FD.Method.Adv==:slf
-        #    slfc2D!(D,NC,T,Δ)              
-        #end
+        elseif FD.Method.Adv==:slf
+            slfc2D!(D,NC,T,Δ)              
+        end
 
         # Loesung Diffusionsgleichung ---
-        #if FD.Method.Diff==:explicit
-        #    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
-        #end
+        if FD.Method.Diff==:explicit
+            ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+        end
 
         display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
 
@@ -193,12 +195,12 @@ function EnergyEquation()
         if mod(i,5) == 0 || i == nt
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
-                xlabel="x", ylabel="z", 
+                xlabel="x [km]", ylabel="z[km]", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax))# , 
+                xlims=(M.xmin, M.xmax)./1e3, ylims=(M.ymin, M.ymax)./1e3)# , 
                 #clims=(0.5, 1.0))
-            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
+                    y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                             D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
                 color="white")

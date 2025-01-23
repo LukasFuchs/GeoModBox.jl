@@ -32,8 +32,8 @@ function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600,Ta=1200,σ=0.1)
         xc          =   (M.xmin+M.xmax)/4
         yc          =   (M.ymin+M.ymax)/2
         α           =   0.0
-        a_ell       =   .2
-        b_ell       =   .2
+        a_ell       =   .2*(M.ymin+M.ymax)
+        b_ell       =   .2*(M.ymin+M.ymax)
         for i = 1:NC.xc+2, j = 1:NC.yc+2
             x_ell   =  x.cew[i]*cosd(α) + y.cns[j]*sind(α)
             y_ell   =  -x.cew[i]*sind(α) + y.cns[j]*cosd(α)
@@ -51,7 +51,8 @@ function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600,Ta=1200,σ=0.1)
         # κ           =   1e-6
         # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
         for i = 1:NC.xc+2, j = 1:NC.yc+2
-            D.T_ex[i,j]    =   Tb + Ta*exp(-((x.cew[i] - 0.20)^2 + (y.cns[j] - 0.5)^2)/σ^2)
+            D.T_ex[i,j]    =   Tb + Ta*exp(-((x.cew[i]/((M.ymin+M.ymax)) - 0.20)^2 + 
+                                    (y.cns[j]/((M.ymin+M.ymax)) - 0.5)^2)/σ^2)
         end        
         D.Tmax[1]   =   maximum(D.T_ex)
         D.Tmin[1]   =   minimum(D.T_ex)
@@ -90,10 +91,10 @@ function IniVelocity!(type,D,NC,Δ,M,x,y)
     if type==:RigidBody
         # Rigid Body Rotation ---
         for i = 1:NC.xv, j = 1:NC.yv+1
-            D.vx[i,j]  =    (y.cns[j]-(M.ymax-M.ymin)/2)
+            D.vx[i,j]  =    ((y.cns[j]-(M.ymax-M.ymin)/2))/(M.ymax-M.ymin)
         end
         for i = 1:NC.xv+1, j = 1:NC.yv
-            D.vy[i,j]  =   -(x.cew[i]-(M.xmax-M.xmin)/2)
+            D.vy[i,j]  =   -((x.cew[i]-(M.xmax-M.xmin)/2))/(M.ymax-M.ymin)
         end
         
         Radx        =   zeros(size(D.vx))
@@ -104,6 +105,9 @@ function IniVelocity!(type,D,NC,Δ,M,x,y)
 
         @. D.vx[Radx>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
         @. D.vy[Rady>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+
+        @. D.vx     =   D.vx/(100*(60*60*24*365.25))        # [m/s]
+        @. D.vy     =   D.vy/(100*(60*60*24*365.25))        # [m/s]
         
     elseif type==:ShearCell
         # Convection Cell with a Shear Deformation --- (REF?!)
@@ -113,6 +117,8 @@ function IniVelocity!(type,D,NC,Δ,M,x,y)
         for i = 1:NC.xv+1, j = 1:NC.yv
             D.vy[i,j]   =   cos(π.*x.cew[i]).*sin(π.*y.v[j])
         end
+        @. D.vx     =   D.vx/(100*(60*60*24*365.25))        # [m/s]
+        @. D.vy     =   D.vy/(100*(60*60*24*365.25))        # [m/s]
     end
     return D
 end
