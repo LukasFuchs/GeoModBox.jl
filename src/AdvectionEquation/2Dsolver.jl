@@ -1,6 +1,8 @@
 # -------------------------------------------------------------------- #
 # 2D solver for the advection equation 
 # -------------------------------------------------------------------- #
+using Interpolations
+
 function upwindc2D!(D,NC,T,Δ)
 
     indx    =   2:(NC.xc+1)
@@ -27,40 +29,55 @@ function slfc2D!(D,NC,T,Δ)
     D.T_ext[indx,indy]  .=  D.T
 end
 
-# function semilagc2D!()
-#     # mid-point iteration scheme -------------------------------------------- 
-#     if isempty(D.vxo)
-#         # Im Falle das die Geschwindigkeit zeitlich konstant ist, wird die
-#         # aktuelle Geschwindigkeit auf die alte Geschwindigkeit
-#         # uebertragen.
-#         D.vxo   =   D.vx
-#         D.vzo   =   D.vy
-#     end
+function semilagc2D!(D,vxo,vyo,x,y,T)
+    # mid-point iteration scheme -------------------------------------------- 
+    if isempty(vxo) || isempty(vyo)
+        # Im Falle das die Geschwindigkeit zeitlich konstant ist, wird die
+        # aktuelle Geschwindigkeit auf die alte Geschwindigkeit
+        # uebertragen.
+        vxo   =   copy(D.vxc)
+        vyo   =   copy(D.vyc)
+    end
     
-#     # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
-#     vxm     =   0.5.*(D.vxo + D.vx)
-#     vym     =   0.5.*(D.vzo + D.vz)
+    # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
+    D.vxcm   .=   0.5.*(vxo .+ D.vxc)
+    D.vycm   .=   0.5.*(vyo .+ D.vyc)
     
-#     # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
-#     vxi     =   D.vx
-#     vyi     =   D.vy
+    # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
+    vxi     =   copy(D.vxc)
+    vyi     =   copy(D.vyc)
+    xp      =   copy(x.c2d)
+    yp      =   copy(y.c2d)
     
-#     # Iteration ------------------------------------------------------------- 
-#     for k = 1:10
-#         xp  = M.X - 0.5*dt.*vxi
-#         zp  = M.Z - 0.5*dt.*vyi
+    # Iteration ------------------------------------------------------------- 
+    for k = 1:10
+        #xp  = M.X - 0.5*dt.*vxi
+        #zp  = M.Z - 0.5*dt.*vyi
+        @. xp  = x.c - 0.5*T.Δ[1]*vxi
+        @. yp  = y.c - 0.5*T.Δ[1]*vyi
+
+        itp_linearx  =  linear_interpolation((x.c,y.c),D.vxc,extrapolation_bc = Line())
+        itp_lineary  =  linear_interpolation((x.c,y.c),D.vyc,extrapolation_bc = Line())
+
+        vxi         .=  itp_linearx.(xp,yp)
+        vyi         .=  itp_lineary.(xp,yp)
+        #vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
+        #vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
         
-#         vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
-#         vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
-        
-#         #vxi(isnan(vxi)) = vxm(isnan(vxi));
-#         #vyi(isnan(vzi)) = vzm(isnan(vzi));
-#     end
-#     xp      =   M.X - dt.*vxi;
-#     zp      =   M.Z - dt.*vzi;
+        ##vxi(isnan(vxi)) = vxm(isnan(vxi));
+        ##vyi(isnan(vzi)) = vzm(isnan(vzi));
+    end
+    @. xp   =   x.c - T.Δ[1]*vxi
+    @. yp   =   y.c - T.Δ[1]*vyi
     
-#     Anew    =   interp2(M.X,M.Z,A,xp,zp,'cubic');
+    itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ext)
+    D.T         .=  itp_cubic.(xp,yp)
     
-#     Anew(isnan(Anew)) = A(isnan(Anew));
+    D.T_ext[2:end-1,2:end-1]  .=  D.T
+
+    #Anew    =   interp2(M.X,M.Z,A,xp,zp,'cubic');
     
-# end
+    #Anew(isnan(Anew)) = A(isnan(Anew));
+
+    return D
+end

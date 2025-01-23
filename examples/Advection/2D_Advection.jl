@@ -21,7 +21,7 @@
 # Vers. 1.0 - 26.11.2024 - Julia
 # ==================================================================== #
 # using Statistics
-using Plots
+using Plots, Interpolations
 using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.InitialCondition
 
@@ -29,14 +29,14 @@ function Advection_2D()
 
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
-#   1) upwind, 2) slf
-FD          =   (Method     = (Adv=:upwind,),)
+#   1) upwind, 2) slf, 3) semilag
+FD          =   (Method     = (Adv=:semilag,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:block,V=:RigidBody,) 
+Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -101,11 +101,11 @@ Ma  =   (
 )
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
-path        =   string("./exercises/Correction/Results/")
+path        =   string("./examples/Advection/Results/")
 anim        =   Plots.Animation(path, String[] )
-filename    =   string("07_2D_advection_",Ini.T,"_",Ini.V,
+filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   1
+save_fig    =   0
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -114,9 +114,11 @@ D       =   (
     T_ext   =   zeros(NC.xc+2,NC.yc+2),
     T_exto  =   zeros(NC.xc+2,NC.yc+2),
     vx      =   zeros(NC.xv,NC.yv+1),
-    vy      =   zeros(NC.xv+1,NC.yv),
+    vy      =   zeros(NC.xv+1,NC.yv),    
     vxc     =   zeros(NC.xc,NC.yc),
     vyc     =   zeros(NC.xc,NC.yc),
+    vxcm    =   zeros(NC.xc,NC.yc),
+    vycm    =   zeros(NC.xc,NC.yc),
     vc      =   zeros(NC.xc,NC.yc),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
@@ -180,7 +182,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
- for i=2:nt
+ for i=2 #nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -188,7 +190,46 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
     elseif FD.Method.Adv==:slf
         slfc2D!(D,NC,T,Δ)   
     elseif FD.Method.Adv==:semilag
-        #semilagc2D!()
+        #semilagc2D!(D,[],[],x,y,T)
+        vxo   =   copy(D.vxc)
+        vyo   =   copy(D.vyc)
+        # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
+        D.vxcm   .=   0.5.*(vxo .+ D.vxc)
+        D.vycm   .=   0.5.*(vyo .+ D.vyc)
+        
+        # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
+        vxi     =   copy(D.vxc)
+        vyi     =   copy(D.vyc)
+        xp      =   copy(x.c2d)
+        yp      =   copy(y.c2d)
+        
+        # Iteration ------------------------------------------------------------- 
+        for k = 1:10
+            #xp  = M.X - 0.5*dt.*vxi
+            #zp  = M.Z - 0.5*dt.*vyi
+            @. xp  = x.c - 0.5*T.Δ[1]*vxi
+            @. yp  = y.c - 0.5*T.Δ[1]*vyi
+
+            itp_linearx  =  linear_interpolation((x.c,y.c),D.vxc,extrapolation_bc = Line())
+            itp_lineary  =  linear_interpolation((x.c,y.c),D.vyc,extrapolation_bc = Line())
+
+            vxi         .=  itp_linearx.(xp,yp)
+            vyi         .=  itp_lineary.(xp,yp)
+            #vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
+            #vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
+            
+            ##vxi(isnan(vxi)) = vxm(isnan(vxi));
+            ##vyi(isnan(vzi)) = vzm(isnan(vzi));
+        end
+        @. xp   =   x.c - T.Δ[1]*vxi
+        @. yp   =   y.c - T.Δ[1]*vyi
+
+        
+        
+        itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ext)
+        D.T         .=  itp_cubic.(xp,yp)
+        
+        D.T_ext[2:end-1,2:end-1]  .=  D.T
 #             case 'semi-lag'
 #                 Tnew    = SemiLagAdvection2D(vx,vz,[],[],X,Z,T,dt);
                 
@@ -207,11 +248,11 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
 #                 Told    = T;
 #                 [~,T]   = TracerInterp(Tm,XM,ZM,T,[],X,Z,'from');
     end
-
+    
     display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,5) == 0 || i == nt
+    if mod(i,1) == 0 || i == nt
 #         switch fdmethod
 #             case 'tracers'
 #                 figure(1),clf
@@ -244,8 +285,8 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                clims=(0.5, 1.0))
+                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax)) #, 
+                #clims=(0.5, 1.0))
         quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,

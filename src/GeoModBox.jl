@@ -56,7 +56,7 @@ module GeoModBox
         module TwoD
             # 2D solver --- 
             include("./AdvectionEquation/2Dsolver.jl")
-            export upwindc2D!, slfc2D!
+            export upwindc2D!, slfc2D!, semilagc2D!
         end
     end
 
