@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -56,17 +56,12 @@ M   =   (
 NC  =   (
     x       =   100,        # Number of horizontal centroids
     y       =   100,        # Number of vertical centroids
-    x       =   100,        # Number of horizontal centroids
-    y       =   100,        # Number of vertical centroids
 )
 NV =   (
     x       =   NC.x + 1,   # Number of horizontal vertices
     y       =   NC.y + 1,   # Number of vertical vertices
 )
-
 Δ   =   (
-    x   =   (abs(M.xmin)+M.xmax)/NC.x,
-    y   =   (abs(M.ymin)+M.ymax)/NC.y,
     x   =   (abs(M.xmin)+M.xmax)/NC.x,
     y   =   (abs(M.ymin)+M.ymax)/NC.y,
 )
@@ -75,18 +70,12 @@ NV =   (
 x   =   (
     c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
     cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
-    v       =   LinRange(M.xmin, M.xmax , NV.x)
-    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
-    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
-    v       =   LinRange(M.xmin, M.xmax , NV.x)
+    v       =   LinRange(M.xmin, M.xmax , NV.x)    
 )
 y       = (
     c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
     cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
-    v       =   LinRange(M.ymin, M.ymax, NV.y),
-    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
-    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
-    v       =   LinRange(M.ymin, M.ymax, NV.y),
+    v       =   LinRange(M.ymin, M.ymax, NV.y),    
 )
 x1      =   ( 
     c2d     =   x.c .+ 0*y.c',
@@ -160,7 +149,6 @@ IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
 @. D.vy     =   D.vy*(100*(60*60*24*365.25))
 # Get the velocity on the centroids ---
 for i = 1:NC.x, j = 1:NC.y
-for i = 1:NC.x, j = 1:NC.y
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
     D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
 end
@@ -193,7 +181,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
- for i=2 #:nt
+for i=2:nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -292,8 +280,6 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                clims=(0.5, 1.0))
                 xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
                 clims=(0.5, 1.0))
         quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
