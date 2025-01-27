@@ -36,7 +36,7 @@ FD          =   (Method     = (Adv=:semilag,),)
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:circle,V=:RigidBody,) 
+Ini         =   (T=:gaussian,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -56,6 +56,8 @@ M   =   (
 NC  =   (
     x       =   100,        # Number of horizontal centroids
     y       =   100,        # Number of vertical centroids
+    x       =   100,        # Number of horizontal centroids
+    y       =   100,        # Number of vertical centroids
 )
 NV =   (
     x       =   NC.x + 1,   # Number of horizontal vertices
@@ -65,6 +67,8 @@ NV =   (
 Δ   =   (
     x   =   (abs(M.xmin)+M.xmax)/NC.x,
     y   =   (abs(M.ymin)+M.ymax)/NC.y,
+    x   =   (abs(M.xmin)+M.xmax)/NC.x,
+    y   =   (abs(M.ymin)+M.ymax)/NC.y,
 )
 # -------------------------------------------------------------------- #
 # Erstellung des Gitters ============================================= #
@@ -72,8 +76,14 @@ x   =   (
     c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
     cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
     v       =   LinRange(M.xmin, M.xmax , NV.x)
+    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
+    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+    v       =   LinRange(M.xmin, M.xmax , NV.x)
 )
 y       = (
+    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
+    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    v       =   LinRange(M.ymin, M.ymax, NV.y),
     c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
     cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
     v       =   LinRange(M.ymin, M.ymax, NV.y),
@@ -101,10 +111,11 @@ Ma  =   (
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
 path        =   string("./examples/AdvectionEquation/Results/")
+path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   0
+save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -148,6 +159,7 @@ IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
 @. D.vx     =   D.vx*(100*(60*60*24*365.25))
 @. D.vy     =   D.vy*(100*(60*60*24*365.25))
 # Get the velocity on the centroids ---
+for i = 1:NC.x, j = 1:NC.y
 for i = 1:NC.x, j = 1:NC.y
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
     D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
@@ -280,6 +292,8 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
+                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+                clims=(0.5, 1.0))
                 xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
                 clims=(0.5, 1.0))
         quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],

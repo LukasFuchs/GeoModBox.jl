@@ -1,6 +1,6 @@
-using Plots, Interpolations
+using Plots, Interpolations, ExtendableSparse, LinearAlgebra
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.InitialCondition
-using GeoModBox.HeatEquation.Diffusion
+using GeoModBox.HeatEquation.TwoD
 
 function EnergyEquation()
 
@@ -8,8 +8,8 @@ function EnergyEquation()
     # Define Advection Scheme ---
     #   1) upwind, 2) slf, 3) semilag
     # Define Diffusion Scheme --- 
-    #   1) 
-    FD          =   (Method     = (Adv=:none,Diff=:upwind),)
+    #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
+    FD          =   (Method     = (Adv=:upwind,Diff=:none),)
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block
@@ -26,9 +26,9 @@ function EnergyEquation()
     # Model Konstanten ================================================== #
     M   =   (
         xmin    =   0.0,
-        xmax    =   200.0e3,
+        xmax    =   100.0e3,
         ymin    =   0.0,
-        ymax    =   200.0e3,
+        ymax    =   100.0e3,
     )
     # ------------------------------------------------------------------- #
     # Physical Parameters ----------------------------------------------- #
@@ -47,30 +47,29 @@ function EnergyEquation()
     P       =   merge(P,P1)
     # Numerische Konstanten ============================================= #
     NC  =   (
-        xc      =   100,        # Number of horizontal centroids
-        yc      =   100,        # Number of vertical centroids
+        x       =   100,        # Number of horizontal centroids
+        y       =   100,        # Number of vertical centroids
     )
-    NC1 =   (
-        xv      =   NC.xc + 1,  # Number of horizontal vertices
-        yv      =   NC.yc + 1,  # Number of vertical vertices
+    NV  =   (
+        x       =   NC.x + 1,  # Number of horizontal vertices
+        y       =   NC.y + 1,  # Number of vertical vertices
     )
-    NC  =   merge(NC,NC1)
 
     Δ   =   (
-        x   =   (abs(M.xmin)+M.xmax)/NC.xc,
-        y   =   (abs(M.ymin)+M.ymax)/NC.yc,
+        x   =   (abs(M.xmin)+M.xmax)/NC.x,
+        y   =   (abs(M.ymin)+M.ymax)/NC.y,
     )
     # ------------------------------------------------------------------- #
     # Erstellung des Gitters ============================================ #
     x   =   (
-        c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.xc),
-        cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.xc+2),
-        v       =   LinRange(M.xmin, M.xmax , NC.xv)
+        c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
+        cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+        v       =   LinRange(M.xmin, M.xmax , NV.x)
     )
     y       = (
-        c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.yc),
-        cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.yc+2),
-        v       =   LinRange(M.ymin, M.ymax, NC.yv),
+        c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
+        cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        v       =   LinRange(M.ymin, M.ymax, NV.y),
     )
     x1      =   ( 
         c2d     =   x.c .+ 0*y.c',
@@ -103,19 +102,20 @@ function EnergyEquation()
     # Anfangsbedingungen ================================================= #
     # Temperatur --------------------------------------------------------- #
     D       =   (
-        Q       =   zeros(NC.xc,NC.yc),
-        T       =   zeros(NC.xc,NC.yc),
-        T_ex    =   zeros(NC.xc+2,NC.yc+2),
-        T_exo   =   zeros(NC.xc+2,NC.yc+2),
-        ρ       =   zeros(NC.xc,NC.yc),
-        cp      =   zeros(NC.xc,NC.yc),
-        vx      =   zeros(NC.xv,NC.yv+1),
-        vy      =   zeros(NC.xv+1,NC.yv),    
-        vxc     =   zeros(NC.xc,NC.yc),
-        vyc     =   zeros(NC.xc,NC.yc),
-        vxcm    =   zeros(NC.xc,NC.yc),
-        vycm    =   zeros(NC.xc,NC.yc),
-        vc      =   zeros(NC.xc,NC.yc),
+        Q       =   zeros(NC.x,NC.y),
+        T       =   zeros(NC.x,NC.y),
+        T0      =   zeros(NC.x,NC.y),
+        T_ex    =   zeros(NC.x+2,NC.y+2),
+        T_exo   =   zeros(NC.x+2,NC.y+2),
+        ρ       =   zeros(NC.x,NC.y),
+        cp      =   zeros(NC.x,NC.y),
+        vx      =   zeros(NV.x,NV.y+1),
+        vy      =   zeros(NV.x+1,NV.y),    
+        vxc     =   zeros(NC.x,NC.y),
+        vyc     =   zeros(NC.x,NC.y),
+        vxcm    =   zeros(NC.x,NC.y),
+        vycm    =   zeros(NC.x,NC.y),
+        vc      =   zeros(NC.x,NC.y),
         Tmax    =   [0.0],
         Tmin    =   [0.0],
         Tmean   =   [0.0],
@@ -130,7 +130,7 @@ function EnergyEquation()
     # Geschwindigkeit ---------------------------------------------------- #
     IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
     # Get the velocity on the centroids ---
-    for i = 1:NC.xc, j = 1:NC.yc
+    for i = 1:NC.x, j = 1:NC.y
         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
     end
@@ -138,40 +138,73 @@ function EnergyEquation()
 
     # Visualize initial condition ---------------------------------------- #
     p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
-    color=:thermal, colorbar=true, aspect_ratio=:equal, 
-    xlabel="x [km]", ylabel="z[km]", 
-    title="Temperature", 
-    xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3))#, 
-    #clims=(0.5, 1.0))
+        color=:thermal, colorbar=true, aspect_ratio=:equal, 
+        xlabel="x [km]", ylabel="z[km]", 
+        title="Temperature", 
+        xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3), 
+        clims=(0.5, 1.0))
     quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
             y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
             quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                 D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-    color="white")
+            color="white")
     if save_fig == 1
-    Plots.frame(anim)
+        Plots.frame(anim)
     elseif save_fig == 0
-    display(p)
+        display(p)
     end
-    # -------------------------------------------------------------------- #
-    # Boundary Conditions ------------------------------------------- #
+    # ------------------------------------------------------------------- #
+    # Boundary Conditions ----------------------------------------------- #
     BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
         N=:Dirichlet, S=:Dirichlet),
     val     = (W=D.T[1,:],E=D.T[end,:],
         N=D.T[:,end],S=D.T[:,1]))
-    # --------------------------------------------------------------- #
-    # Zeit Konstanten ==================================================== #
-    T   =   ( 
-        tmax    =   6.336,
-        Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
-        Δ       =   [0.0],
-    )
-    T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) / 
-            (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-    nt      =   ceil(Int,T.tmax/T.Δ[1])
     # ------------------------------------------------------------------- #
-
-    # Zeitschleife
+    # Linear Equations ================================================== #
+    if FD.Method.Diff==:implicit || FD.Method.Diff==:CNA
+        Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+        ndof    =   maximum(Num.T)        
+        if FD.Method.Diff==:CNA
+            K1      =   ExtendableSparseMatrix(ndof,ndof)
+            K2      =   ExtendableSparseMatrix(ndof,ndof)
+        else
+            K       =   ExtendableSparseMatrix(ndof,ndof)
+        end
+        rhs     =   zeros(ndof)
+    elseif FD.Method.Diff==:dc
+        niter       =   10
+        ϵ           =   1e-10
+        @. D.ρ      =   P.ρ
+        @. D.cp     =   P.cp
+        k           =   (x=zeros(NC.x+1,NC.y), y=zeros(NC.x,NC.y+1))
+        @. k.x      =   P.k
+        @. k.y      =   P.k
+        Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+        ndof        =   maximum(Num.T)
+        K           =   ExtendableSparseMatrix(ndof,ndof)
+        R           =   zeros(NC.x,NC.y)
+        ∂T          =   (∂x=zeros(NC.x+1, NC.y), ∂y=zeros(NC.x, NC.y+1))
+        q           =   (x=zeros(NC.x+1, NC.y), y=zeros(NC.x, NC.y+1))
+    end
+    # ------------------------------------------------------------------- #
+    # Zeit Konstanten =================================================== #
+    T   =   ( 
+        tmax    =   [6.336],    # Zeit in Ma
+        Δfacc   =   1.0,        # Courant time factor, i.e. dtfac*dt_courant
+        Δfacd   =   1.0,        # Diffusion time factor, i.e. dtfac*dt_diff
+        Δ       =   [0.0],      # Absolute time step
+        Δc      =   [0.0],      # Courant time step
+        Δd      =   [0.0],      # Diffusion time stability criterion
+    )
+    # Courant Kriterium ---
+    T.Δc[1]     =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
+                        (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+    T.Δd[1]     =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
+    T.Δ[1]      =   minimum([T.Δd[1],T.Δc[1]])
+    T.tmax[1]   =   T.tmax[1]*(1e6*(60*60*24*365.25))   # Zeit in [s]
+    nt          =   ceil(Int,T.tmax[1]/T.Δ[1])     # Anzahl der Zeitschritte
+    # ------------------------------------------------------------------- #
+    # Zeitschleife ====================================================== #
     for i=2:nt
         display(string("Time step: ",i))    
         
@@ -185,6 +218,29 @@ function EnergyEquation()
         # Loesung Diffusionsgleichung ---
         if FD.Method.Diff==:explicit
             ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+        elseif FD.Method.Diff==:implicit
+            BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K, Num)
+        elseif FD.Method.Diff==:CNA
+            CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+        elseif FD.Method.Diff==:ADI
+            ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+        elseif FD.Method.Diff==:dc
+            D.T0    .=  D.T
+            for iter = 1:niter
+                # Evaluate residual
+                ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, BC, Δ, T.Δ[1])
+                # @printf("||R|| = %1.4e\n", norm(R)/length(R))
+                norm(R)/length(R) < ϵ ? break : nothing
+                # Assemble linear system
+                K  = AssembleMatrix2D(D.ρ, D.cp, k, BC, Num, NC, Δ, T.Δ[1])
+                # Solve for temperature correction: Cholesky factorisation
+                Kc = cholesky(K.cscmatrix)
+                # Solve for temperature correction: Back substitutions
+                δT = -(Kc\R[:])
+                # Update temperature
+                @. D.T += δT[Num.T]
+            end
+            D.T0    .= D.T
         end
 
         display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
@@ -192,13 +248,13 @@ function EnergyEquation()
         # Update Temperatur
 
         # Plot Solution ---
-        if mod(i,5) == 0 || i == nt
-            p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+        if mod(i,10) == 0 || i == nt
+            p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x [km]", ylabel="z[km]", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax)./1e3, ylims=(M.ymin, M.ymax)./1e3)# , 
-                #clims=(0.5, 1.0))
+                xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3), 
+                clims=(0.5, 1.0))
             quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
