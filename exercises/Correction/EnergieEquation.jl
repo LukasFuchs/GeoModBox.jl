@@ -26,15 +26,13 @@ function EnergyEquation()
     # Model Konstanten ================================================== #
     M   =   (
         xmin    =   0.0,
-        xmax    =   100.0e3,
+        xmax    =   200.0e3,
         ymin    =   0.0,
-        ymax    =   100.0e3,
+        ymax    =   200.0e3,
     )
     # ------------------------------------------------------------------- #
     # Physical Parameters ----------------------------------------------- #
     P       = ( 
-        #L       =   200e3,          #   Length [ m ]
-        #H       =   200e3,          #   Height [ m ]
         k       =   3,              #   Thermal Conductivity [ W/m/K ]
         cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
         ρ       =   3200,           #   Density [ kg/m^3 ]
@@ -54,7 +52,6 @@ function EnergyEquation()
         x       =   NC.x + 1,  # Number of horizontal vertices
         y       =   NC.y + 1,  # Number of vertical vertices
     )
-
     Δ   =   (
         x   =   (abs(M.xmin)+M.xmax)/NC.x,
         y   =   (abs(M.ymin)+M.ymax)/NC.y,
