@@ -36,7 +36,7 @@ FD          =   (Method     = (Adv=:semilag,),)
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:gaussian,V=:RigidBody,) 
+Ini         =   (T=:block,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -103,7 +103,7 @@ path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   0
+save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -115,8 +115,8 @@ D       =   (
     vy      =   zeros(NV.x+1,NV.y),    
     vxc     =   zeros(NC...),
     vyc     =   zeros(NC...),
-    vxcm    =   zeros(NC...),
-    vycm    =   zeros(NC...),
+    #vxcm    =   zeros(NC...),
+    #vycm    =   zeros(NC...),
     vc      =   zeros(NC...),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
@@ -188,47 +188,7 @@ for i=2:nt
     elseif FD.Method.Adv==:slf
         slfc2D!(D,NC,T,Δ)   
     elseif FD.Method.Adv==:semilag
-        #semilagc2D!(D,[],[],x,y,T)
-        vxo   =   copy(D.vxc)
-        vyo   =   copy(D.vyc)
-        
-        # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --- 
-        @. D.vxcm   =   0.5*(vxo + D.vxc)
-        @. D.vycm   =   0.5*(vyo + D.vyc)
-        
-        # Initialisierung der Geschwindigkeit fuer die Iteration ---
-        vxi     =   copy(D.vxc)
-        vyi     =   copy(D.vyc)
-        xp      =   copy(x.c2d)
-        yp      =   copy(y.c2d)
-        
-        # Iteration ---
-        for k = 1:10
-            #xp  = M.X - 0.5*dt.*vxi
-            #zp  = M.Z - 0.5*dt.*vyi
-            @. xp  = x.c - 0.5*T.Δ[1]*vxi
-            @. yp  = y.c - 0.5*T.Δ[1]*vyi
-
-            itp_linearx  =  linear_interpolation((x.c,y.c),D.vxc,extrapolation_bc = Line())
-            itp_lineary  =  linear_interpolation((x.c,y.c),D.vyc,extrapolation_bc = Line())
-
-            vxi         .=  itp_linearx.(xp,yp)
-            vyi         .=  itp_lineary.(xp,yp)
-            #vxi = interp2(M.X,M.Z,vxm,xp,zp,'linear')
-            #vyi = interp2(M.X,M.Z,vzm,xp,zp,'linear')
-            
-            ##vxi(isnan(vxi)) = vxm(isnan(vxi));
-            ##vyi(isnan(vzi)) = vzm(isnan(vzi));
-        end
-        @. xp   =   x.c - T.Δ[1]*vxi
-        @. yp   =   y.c - T.Δ[1]*vyi
-
-        
-        
-        itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ex)
-        D.T         .=  itp_cubic.(xp,yp)
-        
-        D.T_ex[2:end-1,2:end-1]  .=  D.T
+        semilagc2D!(D,[],[],x,y,T)
 #             case 'tracers'
 #                 # if (t>2)
 #                 #     # Interpolate temperature grid to tracers --------------- #
@@ -244,7 +204,7 @@ for i=2:nt
 #                 [~,T]   = TracerInterp(Tm,XM,ZM,T,[],X,Z,'from');
     end
     
-    display(string("ΔT = ",((D.Tmax[1]-maximum(D.T))/D.Tmax[1])*100))
+    display(string("ΔT = ",((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
     if mod(i,5) == 0 || i == nt

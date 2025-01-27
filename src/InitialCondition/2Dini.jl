@@ -103,8 +103,8 @@ function IniVelocity!(type,D,NV,Δ,M,x,y)
         @. Radx     =   sqrt((x.vx2d-(M.xmax-M.xmin)/2)^2 + (y.vx2d-(M.ymax-M.ymin)/2)^2)
         @. Rady     =   sqrt((x.vy2d-(M.xmax-M.xmin)/2)^2 + (y.vy2d-(M.ymax-M.ymin)/2)^2)
 
-        @. D.vx[Radx>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
-        @. D.vy[Rady>(M.xmax-M.xmin)/2-5*Δ.x]     =   0
+        @. D.vx[Radx>(M.xmax-M.xmin)/2-1*Δ.x]     =   0
+        @. D.vy[Rady>(M.xmax-M.xmin)/2-1*Δ.x]     =   0
 
         @. D.vx     =   D.vx/(100*(60*60*24*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100*(60*60*24*365.25))        # [m/s]
