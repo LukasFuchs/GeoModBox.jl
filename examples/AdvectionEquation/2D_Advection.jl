@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:upwind,),)
+FD          =   (Method     = (Adv=:semilag,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -54,30 +54,29 @@ M   =   (
 # -------------------------------------------------------------------- #
 # Numerische Konstanten ============================================== #
 NC  =   (
-    xc      =   100,        # Number of horizontal centroids
-    yc      =   100,        # Number of vertical centroids
+    x       =   100,        # Number of horizontal centroids
+    y       =   100,        # Number of vertical centroids
 )
-NC1 =   (
-    xv      =   NC.xc + 1,  # Number of horizontal vertices
-    yv      =   NC.yc + 1,  # Number of vertical vertices
+NV =   (
+    x       =   NC.x + 1,   # Number of horizontal vertices
+    y       =   NC.y + 1,   # Number of vertical vertices
 )
-NC  =   merge(NC,NC1)
 
 Δ   =   (
-    x   =   (abs(M.xmin)+M.xmax)/NC.xc,
-    y   =   (abs(M.ymin)+M.ymax)/NC.yc,
+    x   =   (abs(M.xmin)+M.xmax)/NC.x,
+    y   =   (abs(M.ymin)+M.ymax)/NC.y,
 )
 # -------------------------------------------------------------------- #
 # Erstellung des Gitters ============================================= #
 x   =   (
-    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.xc),
-    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.xc+2),
-    v       =   LinRange(M.xmin, M.xmax , NC.xv)
+    c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
+    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+    v       =   LinRange(M.xmin, M.xmax , NV.x)
 )
 y       = (
-    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.yc),
-    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.yc+2),
-    v       =   LinRange(M.ymin, M.ymax, NC.yv),
+    c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
+    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    v       =   LinRange(M.ymin, M.ymax, NV.y),
 )
 x1      =   ( 
     c2d     =   x.c .+ 0*y.c',
@@ -101,7 +100,7 @@ Ma  =   (
 )
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
-path        =   string("./examples/Advection/Results/")
+path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
@@ -110,16 +109,16 @@ save_fig    =   0
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
 D       =   (
-    T       =   zeros(NC.xc,NC.yc),
-    T_ex    =   zeros(NC.xc+2,NC.yc+2),
-    T_exo   =   zeros(NC.xc+2,NC.yc+2),
-    vx      =   zeros(NC.xv,NC.yv+1),
-    vy      =   zeros(NC.xv+1,NC.yv),    
-    vxc     =   zeros(NC.xc,NC.yc),
-    vyc     =   zeros(NC.xc,NC.yc),
-    vxcm    =   zeros(NC.xc,NC.yc),
-    vycm    =   zeros(NC.xc,NC.yc),
-    vc      =   zeros(NC.xc,NC.yc),
+    T       =   zeros(NC...),
+    T_ex    =   zeros(NC.x+2,NC.y+2),
+    T_exo   =   zeros(NC.x+2,NC.y+2),
+    vx      =   zeros(NV.x,NV.y+1),
+    vy      =   zeros(NV.x+1,NV.y),    
+    vxc     =   zeros(NC...),
+    vyc     =   zeros(NC...),
+    vxcm    =   zeros(NC...),
+    vycm    =   zeros(NC...),
+    vc      =   zeros(NC...),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
@@ -128,8 +127,6 @@ IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
-# if FD.Method.Adv==slf
-#     Told    = T;
 # elseif FD.Method.Adv==tracers
 #     nmxx        = (nx-1)*nmx;
 #     nmzz        = (nz-1)*nmz;
@@ -147,9 +144,11 @@ end
 #     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
 # end
 # Geschwindigkeit ---------------------------------------------------- #
-IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
+IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
+@. D.vx     =   D.vx*(100*(60*60*24*365.25))
+@. D.vy     =   D.vy*(100*(60*60*24*365.25))
 # Get the velocity on the centroids ---
-for i = 1:NC.xc, j = 1:NC.yc
+for i = 1:NC.x, j = 1:NC.y
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
     D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
 end
@@ -182,7 +181,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
- for i=2:nt
+ for i=2 #:nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -193,17 +192,17 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
         #semilagc2D!(D,[],[],x,y,T)
         vxo   =   copy(D.vxc)
         vyo   =   copy(D.vyc)
-        # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --------------- 
+        # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --- 
         D.vxcm   .=   0.5.*(vxo .+ D.vxc)
         D.vycm   .=   0.5.*(vyo .+ D.vyc)
         
-        # Initialisierung der Geschwindigkeit fuer die Iteration ---------------- 
+        # Initialisierung der Geschwindigkeit fuer die Iteration ---
         vxi     =   copy(D.vxc)
         vyi     =   copy(D.vyc)
         xp      =   copy(x.c2d)
         yp      =   copy(y.c2d)
         
-        # Iteration ------------------------------------------------------------- 
+        # Iteration ---
         for k = 1:10
             #xp  = M.X - 0.5*dt.*vxi
             #zp  = M.Z - 0.5*dt.*vyi
@@ -230,10 +229,6 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
         D.T         .=  itp_cubic.(xp,yp)
         
         D.T_ex[2:end-1,2:end-1]  .=  D.T
-#             case 'semi-lag'
-#                 Tnew    = SemiLagAdvection2D(vx,vz,[],[],X,Z,T,dt);
-                
-#                 T       = Tnew;
 #             case 'tracers'
 #                 # if (t>2)
 #                 #     # Interpolate temperature grid to tracers --------------- #
@@ -285,8 +280,8 @@ nt      =   ceil(Int,T.tmax/T.Δ[1])
                 color=:thermal, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x", ylabel="z", 
                 title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax)) #, 
-                #clims=(0.5, 1.0))
+                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+                clims=(0.5, 1.0))
         quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,

@@ -25,7 +25,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # ------------------------------------------------------------------- #
     
     # Loop over internal nodes ------------------------------------------ #
-    for i = 1:NC.xc, j = 1:NC.yc
+    for i = 1:NC.x, j = 1:NC.y
         i1 = i+1
         j1 = j+1
         D.T[i,j] = D.T_ex[i1,j1] + 

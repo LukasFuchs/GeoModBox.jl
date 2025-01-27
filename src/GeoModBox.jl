@@ -3,13 +3,7 @@ module GeoModBox
     using Statistics: mean
     using ExtendableSparse, LinearAlgebra
 
-    module HeatEquation
-    
-        module Diffusion2D
-            # Include All Solvers ---
-            include("./HeatEquation/Diffusion2D.jl")
-            export Advection!
-        end
+    module HeatEquation            
 
         module TwoD
             # Handle analytical solution for 2D Diffusion2D_Gaussian ---
