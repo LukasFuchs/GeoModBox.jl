@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:upwind,),)
+FD          =   (Method     = (Adv=:semilag,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -100,11 +100,10 @@ Ma  =   (
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
 path        =   string("./examples/AdvectionEquation/Results/")
-path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   1
+save_fig    =   0
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -192,9 +191,10 @@ for i=2:nt
         #semilagc2D!(D,[],[],x,y,T)
         vxo   =   copy(D.vxc)
         vyo   =   copy(D.vyc)
+        
         # Mittlere Geschwindigkeit am Zentralen Punkt in der Zeit --- 
-        D.vxcm   .=   0.5.*(vxo .+ D.vxc)
-        D.vycm   .=   0.5.*(vyo .+ D.vyc)
+        @. D.vxcm   =   0.5*(vxo + D.vxc)
+        @. D.vycm   =   0.5*(vyo + D.vyc)
         
         # Initialisierung der Geschwindigkeit fuer die Iteration ---
         vxi     =   copy(D.vxc)
