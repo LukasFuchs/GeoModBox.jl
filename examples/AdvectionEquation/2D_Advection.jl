@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:slf,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block

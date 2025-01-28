@@ -120,7 +120,7 @@ for m = 1:ns
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                                 "_",FD.Method.Adv,"_",NC.x,"_",NC.y)
-        save_fig    =   -1
+        save_fig    =   1
         # ------------------------------------------------------------ #
         # Anfangsbedingungen ========================================= #
         # Temperatur ------------------------------------------------- #
@@ -138,7 +138,7 @@ for m = 1:ns
             Tmean   =   [0.0],
         )
         IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
-        if FD.Method.Adv==:slf
+        if FD.Method.Adv == "slf"
             D.T_exo    .=  D.T_ex
         end
         # elseif FD.Method.Adv==tracers
@@ -279,10 +279,10 @@ for m = 1:ns
             display(plot(p))
         end
         # Statistical Values for Each Scheme and Resolution ---
-        St.Δ[m,l]       =   ((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100
+        St.Δ[m,l]       =   abs((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100
         St.nxny[m,l]    =   1/NC.x/NC.y
         St.Tmax[m,l]    =   maximum(D.T)
-        St.Tmean[m,l]   =   mean(D.T)  
+        St.Tmean[m,l]   =   mean(abs.(D.T))
         # ------------------------------------------------------------ #
 
     end # End resolution loop
@@ -293,12 +293,12 @@ q   =   plot(0,0,layout=(1,3))
 for m=1:ns    
     plot!(q,St.nxny[m,:],St.Δ[m,:],
                 marker=:circle,markersize=3,label=Scheme[m],
-                xaxis=:log,yaxis=:lin,
+                xaxis=:log,yaxis=:log,
                 xlabel="1/nx/ny",ylabel="ΔT[%]",layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
-                xaxis=:log,
+                xaxis=:log,yaxis=:log,
                 xlabel="1/nx/ny",ylabel="T_{max}",
                 subplot=2)
         #plot!(q,1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]),
@@ -306,13 +306,15 @@ for m=1:ns
         #        linecolor=:black,linestyle=:dash)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
                 marker=:circle,markersize=3,label="",
-                xaxis=:log,
+                xaxis=:log,yaxis=:log,
                 xlabel="1/nx/ny",ylabel="⟨T⟩",
                 subplot=3)
     display(q)
 end
 # Save Final Figure --------------------------------------------------- #
-savefig(q,"./examples/AdvectionEquation/Results/2D_Advection_ResTest.png")
+savefig(q,string("./examples/AdvectionEquation/",
+                    "Results/2D_advection_",Ini.T,"_",
+                    Ini.V,"_ResTest.png"))
 # --------------------------------------------------------------------- #
 
 end # Function end
