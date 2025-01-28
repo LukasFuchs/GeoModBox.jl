@@ -9,13 +9,13 @@ function EnergyEquation()
     #   1) upwind, 2) slf, 3) semilag
     # Define Diffusion Scheme --- 
     #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
-    FD          =   (Method     = (Adv=:upwind,Diff=:none),)
+    FD          =   (Method     = (Adv=:semilag,Diff=:none),)
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block
     # Velocity - 
     #   1) RigidBody, 2) ShearCell
-    Ini         =   (T=:block,V=:RigidBody,) 
+    Ini         =   (T=:circle,V=:RigidBody,) 
     # ------------------------------------------------------------------- #
     # Plot Einstellungen ================================================ #
     Pl  =   (
@@ -99,20 +99,18 @@ function EnergyEquation()
     # Anfangsbedingungen ================================================= #
     # Temperatur --------------------------------------------------------- #
     D       =   (
-        Q       =   zeros(NC.x,NC.y),
-        T       =   zeros(NC.x,NC.y),
-        T0      =   zeros(NC.x,NC.y),
+        Q       =   zeros(NC...),
+        T       =   zeros(NC...),
+        T0      =   zeros(NC...),
         T_ex    =   zeros(NC.x+2,NC.y+2),
         T_exo   =   zeros(NC.x+2,NC.y+2),
-        ρ       =   zeros(NC.x,NC.y),
-        cp      =   zeros(NC.x,NC.y),
+        ρ       =   zeros(NC...),
+        cp      =   zeros(NC...),
         vx      =   zeros(NV.x,NV.y+1),
         vy      =   zeros(NV.x+1,NV.y),    
-        vxc     =   zeros(NC.x,NC.y),
-        vyc     =   zeros(NC.x,NC.y),
-        vxcm    =   zeros(NC.x,NC.y),
-        vycm    =   zeros(NC.x,NC.y),
-        vc      =   zeros(NC.x,NC.y),
+        vxc     =   zeros(NC...),
+        vyc     =   zeros(NC...),
+        vc      =   zeros(NC...),
         Tmax    =   [0.0],
         Tmin    =   [0.0],
         Tmean   =   [0.0],
@@ -125,14 +123,13 @@ function EnergyEquation()
     @. D.Q          = P.Q0
 
     # Geschwindigkeit ---------------------------------------------------- #
-    IniVelocity!(Ini.V,D,NC,Δ,M,x,y)
+    IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
     # Get the velocity on the centroids ---
     for i = 1:NC.x, j = 1:NC.y
         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-
     # Visualize initial condition ---------------------------------------- #
     p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
         color=:thermal, colorbar=true, aspect_ratio=:equal, 
@@ -153,9 +150,9 @@ function EnergyEquation()
     # ------------------------------------------------------------------- #
     # Boundary Conditions ----------------------------------------------- #
     BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
-        N=:Dirichlet, S=:Dirichlet),
-    val     = (W=D.T[1,:],E=D.T[end,:],
-        N=D.T[:,end],S=D.T[:,1]))
+                        N=:Dirichlet, S=:Dirichlet),
+            val     = (W=D.T[1,:],E=D.T[end,:],
+                        N=D.T[:,end],S=D.T[:,1]))
     # ------------------------------------------------------------------- #
     # Linear Equations ================================================== #
     if FD.Method.Diff==:implicit || FD.Method.Diff==:CNA
@@ -186,7 +183,7 @@ function EnergyEquation()
     # ------------------------------------------------------------------- #
     # Zeit Konstanten =================================================== #
     T   =   ( 
-        tmax    =   [6.336],    # Zeit in Ma
+        tmax    =   [16.336],    # Zeit in Ma
         Δfacc   =   1.0,        # Courant time factor, i.e. dtfac*dt_courant
         Δfacd   =   1.0,        # Diffusion time factor, i.e. dtfac*dt_diff
         Δ       =   [0.0],      # Absolute time step
@@ -209,7 +206,9 @@ function EnergyEquation()
         if FD.Method.Adv==:upwind
             upwindc2D!(D,NC,T,Δ)
         elseif FD.Method.Adv==:slf
-            slfc2D!(D,NC,T,Δ)              
+            slfc2D!(D,NC,T,Δ)       
+        elseif FD.Method.Adv==:semilag
+            semilagc2D!(D,[],[],x,y,T)       
         end
 
         # Loesung Diffusionsgleichung ---
