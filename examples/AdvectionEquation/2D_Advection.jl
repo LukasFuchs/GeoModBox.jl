@@ -22,7 +22,7 @@
 # ==================================================================== #
 # using Statistics
 using Plots, Interpolations
-using GeoModBox.AdvectionEquation.TwoD
+using GeoModBox.AdvectionEquation.TwoD, GeoModBox.Tracers.TwoD
 using GeoModBox.InitialCondition
 
 function Advection_2D()
@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:slf,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -69,12 +69,12 @@ NV =   (
 # Erstellung des Gitters ============================================= #
 x   =   (
     c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
-    cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+    ce      =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
     v       =   LinRange(M.xmin, M.xmax , NV.x)    
 )
 y       = (
     c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
-    cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce      =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
     v       =   LinRange(M.ymin, M.ymax, NV.y),    
 )
 x1      =   ( 
