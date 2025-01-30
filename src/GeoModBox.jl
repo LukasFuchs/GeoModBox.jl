@@ -62,8 +62,22 @@ module GeoModBox
     end
 
     module InitialCondition
+
         # Initial Conditions ---
         include("./InitialCondition/2Dini.jl")        
         export IniVelocity!, IniTemperature!
+    end
+
+    module Tracers
+
+        module OneD
+            include("./Tracers/1Dsolvers.jl")
+            export Itp1D_Centers2Markers!, Itp1D_Markers2Centers!
+        end
+
+        module TwoD
+            include("./Tracers/2Dsolvers.jl")
+            export VxFromVxNodes, VyFromVyNodes
+        end
     end
 end 
