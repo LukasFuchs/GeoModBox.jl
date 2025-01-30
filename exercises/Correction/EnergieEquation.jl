@@ -60,26 +60,26 @@ function EnergyEquation()
     # Erstellung des Gitters ============================================ #
     x   =   (
         c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
-        cew     =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+        ce      =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
         v       =   LinRange(M.xmin, M.xmax , NV.x)
     )
     y       = (
         c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
-        cns     =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce      =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
         v       =   LinRange(M.ymin, M.ymax, NV.y),
     )
     x1      =   ( 
         c2d     =   x.c .+ 0*y.c',
         v2d     =   x.v .+ 0*y.v', 
-        vx2d    =   x.v .+ 0*y.cns',
-        vy2d    =   x.cew .+ 0*y.v',
+        vx2d    =   x.v .+ 0*y.ce',
+        vy2d    =   x.ce .+ 0*y.v',
     )
     x   =   merge(x,x1)
     y1      =   (
         c2d     =   0*x.c .+ y.c',
         v2d     =   0*x.v .+ y.v',
-        vx2d    =   0*x.v .+ y.cns',
-        vy2d    =   0*x.cew .+ y.v',
+        vx2d    =   0*x.v .+ y.ce',
+        vy2d    =   0*x.ce .+ y.v',
     )
     y   =   merge(y,y1)
     # ------------------------------------------------------------------- #
