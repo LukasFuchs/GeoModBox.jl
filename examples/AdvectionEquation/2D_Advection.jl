@@ -29,14 +29,14 @@ function Advection_2D()
 
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
-#   1) upwind, 2) slf, 3) semilag
-FD          =   (Method     = (Adv=:upwind,),)
+#   1) upwind, 2) slf, 3) semilag, 4) tracers
+FD          =   (Method     = (Adv=:tracers,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
-Ini         =   (T=:block,V=:RigidBody,) 
+Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
@@ -93,17 +93,19 @@ y1      =   (
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
 # Tracer Advektions Verfahren ======================================== #
-Ma  =   (
-    nmx     =   5,
-    nmz     =   5
-)
+if FD.Method.Adv==:tracers 
+    nmx,nmy =   3,3
+    noise   =   1
+    nmark   =   nmx*nmy*NC.x*NC.y
+    Ma      =   IniTracer2D(nmx,nmy,Δ,M,NC,noise)
+end
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   1
+save_fig    =   0
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -124,22 +126,12 @@ IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
-# elseif FD.Method.Adv==tracers
-#     nmxx        = (nx-1)*nmx;
-#     nmzz        = (nz-1)*nmz;
-#     dmx         = (abs(xmin)+abs(xmax))/(nmxx-1);
-#     dmz         = (abs(zmin)+abs(zmax))/(nmzz-1);
-#     xm          = linspace(xmin,xmax-dmx,nmxx);
-#     zm          = linspace(zmin,zmax-dmz,nmzz);
-#     [XM,ZM]     = meshgrid(xm,zm);
-#     XM          = XM + rand(nmzz,nmxx)*dmx;
-#     XM          = reshape(XM,[nmzz*nmxx,1]);
-#     ZM          = ZM + rand(nmzz,nmxx)*dmz;
-#     ZM          = reshape(ZM,[nmzz*nmxx,1]);
-#     Tm          = zeros(nmzz,nmxx);
-#     Tm          = reshape(Tm,[nmzz*nmxx,1]);
-#     [Tm,~]      = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
-# end
+if FD.Method.Adv==:tracers
+    for k = 1:nmark
+        Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
+    end
+    Ma      =   CountMPC(Ma,nmark,x,y,Δ)
+end
 # Geschwindigkeit ---------------------------------------------------- #
 IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
 @. D.vx     =   D.vx*(100*(60*60*24*365.25))
@@ -151,21 +143,32 @@ for i = 1:NC.x, j = 1:NC.y
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # Visualize initial condition ---------------------------------------- #
-p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
-        color=:thermal, colorbar=true, aspect_ratio=:equal, 
-        xlabel="x", ylabel="z", 
-        title="Temperature", 
-        xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-        clims=(0.5, 1.0))
-quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-        color="white")
+if FD.Method.Adv==:tracers
+    #p = heatmap(x.c,y.c,Ma.mpc',color=:inferno, alpha=0.5, 
+    #        aspect_ratio=:equal,colorbar=false)
+    p = scatter(Ma.x,Ma.y, zcolor=Ma.T,color=:thermal,alpha=0.5,
+            markersize=0.2,legend=false,colorbar=true, 
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax))
+    #scatter!(p,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1], color="blue",
+    #        markersize=0.2,legend=false)
+else
+    p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+            color=:thermal, colorbar=true, aspect_ratio=:equal, 
+            xlabel="x", ylabel="z", 
+            title="Temperature", 
+            xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+            clims=(0.5, 1.0))
+    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                    D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+            color="white")
+end
 if save_fig == 1
     Plots.frame(anim)
 elseif save_fig == 0
     display(p)
 end
+return
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
@@ -178,7 +181,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
-for i=2:nt
+for i=2# :nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind

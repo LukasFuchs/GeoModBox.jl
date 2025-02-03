@@ -73,7 +73,9 @@ module GeoModBox
 
         module TwoD
             include("./Tracers/2Dsolvers.jl")
-            export VxFromVxNodes, VyFromVyNodes
+            export Markers, IniTracer2D, 
+                    VxFromVxNodes, VyFromVyNodes, VxVyFromPrNodes,
+                    FromCtoM, CountMPC
         end
     end
 end 
