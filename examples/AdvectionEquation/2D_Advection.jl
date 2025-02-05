@@ -40,8 +40,10 @@ Ini         =   (T=:circle,V=:RigidBody,)
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
-    inc         =   5,
+    inc         =   10,
     sc          =   0.2,
+    Minc        =   1, 
+    Msz         =   0.2,
 )
 # -------------------------------------------------------------------- #
 # Model Konstanten =================================================== #
@@ -94,10 +96,11 @@ y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
 # Tracer Advektions Verfahren ======================================== #
 if FD.Method.Adv==:tracers 
-    nmx,nmy =   3,3
-    noise   =   1
-    nmark   =   nmx*nmy*NC.x*NC.y
-    Ma      =   IniTracer2D(nmx,nmy,Δ,M,NC,noise)
+    nmx,nmy     =   3,3
+    noise       =   1
+    nmark       =   nmx*nmy*NC.x*NC.y
+    Aparam      =   :thermal
+    Ma          =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
 end
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
@@ -105,7 +108,7 @@ path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   0
+save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -118,6 +121,7 @@ D       =   (
     vxc     =   zeros(NC...),
     vyc     =   zeros(NC...),
     vc      =   zeros(NC...),
+    wt      =   zeros(NC...),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
@@ -130,7 +134,7 @@ if FD.Method.Adv==:tracers
     for k = 1:nmark
         Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
     end
-    Ma      =   CountMPC(Ma,nmark,x,y,Δ)
+    CountMPC(Ma,nmark,x,y,Δ)
 end
 # Geschwindigkeit ---------------------------------------------------- #
 IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
@@ -144,13 +148,24 @@ end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # Visualize initial condition ---------------------------------------- #
 if FD.Method.Adv==:tracers
-    #p = heatmap(x.c,y.c,Ma.mpc',color=:inferno, alpha=0.5, 
-    #        aspect_ratio=:equal,colorbar=false)
-    p = scatter(Ma.x,Ma.y, zcolor=Ma.T,color=:thermal,alpha=0.5,
-            markersize=0.2,legend=false,colorbar=true, 
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax))
-    #scatter!(p,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1], color="blue",
-    #        markersize=0.2,legend=false)
+    #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
+    #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
+    #        markersize=Pl.Msz,legend=false,colorbar=true, 
+    #        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
+    #        layout=(1,2),subplot=1)
+    p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
+            ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
+            colorbar=true,layout=(1,2),subplot=1)
+    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                    D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+            color="white",layout=(1,2),subplot=1)
+    heatmap!(p,x.c,y.c,Ma.mpc',color=:inferno, 
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
+            colorbar=true,
+            layout=(1,2),subplot=2)
 else
     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
             color=:thermal, colorbar=true, aspect_ratio=:equal, 
@@ -168,7 +183,6 @@ if save_fig == 1
 elseif save_fig == 0
     display(p)
 end
-return
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
@@ -181,7 +195,7 @@ T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) /
 nt      =   ceil(Int,T.tmax/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
-for i=2# :nt
+for i=2:10 # :nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -190,6 +204,11 @@ for i=2# :nt
         slfc2D!(D,NC,T,Δ)   
     elseif FD.Method.Adv==:semilag
         semilagc2D!(D,[],[],x,y,T)
+    elseif FD.Method.Adv==:tracers
+        # Advect tracers -------------------------------------------- #
+
+        # Interpolate temperature from tracers to grid -------------- #
+        Markers2Cells(Ma,nmark,D.T,D.wt,x,y,Δ,Aparam)
 #             case 'tracers'
 #                 # if (t>2)
 #                 #     # Interpolate temperature grid to tracers --------------- #
@@ -208,24 +227,29 @@ for i=2# :nt
     display(string("ΔT = ",((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,5) == 0 || i == nt
+    if mod(i,1) == 0 || i == nt
+        if FD.Method.Adv==:tracers
+            #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
+            #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
+            #        markersize=Pl.Msz,legend=false,colorbar=true, 
+            #        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
+            #        layout=(1,2),subplot=1)
+            p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
+                    aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
+                    colorbar=true,layout=(1,2),subplot=1)
+            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+                    color="white",layout=(1,2),subplot=1)
+            heatmap!(p,x.c,y.c,Ma.mpc',color=:inferno, 
+                    aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
+                    colorbar=true,
+                    layout=(1,2),subplot=2)
+        else
 #         switch fdmethod
 #             case 'tracers'
-#                 figure(1),clf
-#                 subplot(1,2,1)
-#                 pcolor(X,Z,T./Tmax)
-#                 shading interp; lighting phong; hold on;
-#                 k = colorbar('southoutside');
-#                 title(k,'T / T_{max}','Position',[320 0])
-#                 quiver(X(1:inc:end,1:inc:end),Z(1:inc:end,1:inc:end),...
-#                     vx(1:inc:end,1:inc:end),vz(1:inc:end,1:inc:end))
-#                 xlabel('x [ m ]'); ylabel('z [ m ]')
-#                 axis equal; axis tight
-#                 title({['2-D numerical Advection:',fdmethod];...
-#                     ['\Deltat_{fac} = ',num2str(dtfac),...
-#                     '; nx = ',num2str(nx),', nz = ',num2str(nz),', mpe: ',num2str(nmx)];...
-#                     ['Step: ',num2str(t)]})
-                
 #                 subplot(1,2,2)
 #                 plot(XM,ZM,'.','MarkerSize',1)
 #                 hold on
@@ -237,17 +261,18 @@ for i=2# :nt
 #                 drawnow
 #             otherwise
 
-        p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
-                color=:thermal, colorbar=true, aspect_ratio=:equal, 
-                xlabel="x", ylabel="z", 
-                title="Temperature", 
-                xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                clims=(0.5, 1.0))
-        quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-                color="white")
+            p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
+                    color=:thermal, colorbar=true, aspect_ratio=:equal, 
+                    xlabel="x", ylabel="z", 
+                    title="Temperature", 
+                    xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
+                    clims=(0.5, 1.0))
+            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+                    color="white")
+        end
         if save_fig == 1
             Plots.frame(anim)
         elseif save_fig == 0
@@ -260,7 +285,7 @@ end
 if save_fig == 1
     # Write the frames to a GIF file
     Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-    foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+    #foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 elseif save_fig == 0
     display(plot(p))
 end

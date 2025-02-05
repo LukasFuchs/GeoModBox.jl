@@ -1,4 +1,4 @@
-mutable struct Markers
+mutable struct TMarkers
     x       ::  Array{Float64,1}
     y       ::  Array{Float64,1}
     T       ::  Array{Float64,1}
@@ -9,7 +9,7 @@ end
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
-function IniTracer2D(nmx,nmy,Δ,M,NC,noise)
+function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -23,11 +23,13 @@ function IniTracer2D(nmx,nmy,Δ,M,NC,noise)
     
     # Over allocate markers
     xm  =   vec(xmi)
-    ym  =   vec(ymi)
-    Tm  =   zeros(Float64, size(xm))
+    ym  =   vec(ymi)    
     phm =   zeros(Int64,   size(xm))
     mpc =   zeros(Float64,(NC.x,NC.y))
-    Ma  =   Markers( xm, ym, Tm, mpc, phm )
+    if Aparam==:thermal
+        Tm  =   zeros(Float64, size(xm))
+        Ma  =   TMarkers( xm, ym, Tm, mpc, phm )
+    end
 
     ## define phase ---
     #for k=1:nmark
@@ -236,6 +238,47 @@ function FromCtoM(Prop, k, Ma, x, y, Δ, NC)
                     Prop[i+1,j+1]*wtmi1j1
     # ---------------------------------------------------------------- #
     return Propm
+end
+
+@doc raw"""
+    Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
+"""
+function Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
+    PG      .*=     0.0
+    weight  .*=     0.0
+    if param==:thermal
+        PM  =       copy(Ma.T)
+    end
+    #chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+    #@sync for chunk in chunks
+    #    @spawn begin
+    #        tid = threadid()
+    #        fill!(phase_th[tid], 0)
+    #        fill!(weight_th[tid], 0)
+            #for k in chunk
+            for k = 1:nmark
+                # Get the column:
+                dstx = Ma.x[k] - x.c[1]
+                i = ceil(Int, dstx / Δ.x + 0.5)
+                # Get the line:
+                dsty = Ma.y[k] - y.c[1]
+                j = ceil(Int, dsty /  Δ.y + 0.5)
+                # Relative distances
+                Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
+                Δym = 2.0 * abs(y.c[j] - Ma.y[k])
+                # Increment cell counts
+                area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
+                PG[i, j] += PM[k] * area
+                weight[i, j] += area
+            end
+    #    end
+    #end
+
+    #phase  .= reduce(+, phase_th)
+    #weight .= reduce(+, weight_th)
+    PG ./= weight
+
+    return
 end
 
 @doc raw"""
