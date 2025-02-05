@@ -248,19 +248,6 @@ for i=2:10 # :nt
                     colorbar=true,
                     layout=(1,2),subplot=2)
         else
-#         switch fdmethod
-#             case 'tracers'
-#                 subplot(1,2,2)
-#                 plot(XM,ZM,'.','MarkerSize',1)
-#                 hold on
-#                 plot(X,Z,'kx','MarkerSize',2)
-#                 contour(X,Z,T,[Tmean Tmean],'k','LineWidth',1)
-#                 xlabel('x [ m ]'); ylabel('z [ m ]')
-#                 title('Tracerdistribution')
-#                 axis equal; axis tight
-#                 drawnow
-#             otherwise
-
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
                     xlabel="x", ylabel="z", 

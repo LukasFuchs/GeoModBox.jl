@@ -285,5 +285,38 @@ end
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
 function AdvectTracer2D()
-
+    #@threads for k=1:nmark
+    #    if (p.phase[k]>=0)
+    #        x0 = p.x[k];
+    #        y0 = p.y[k];
+    #        vx = 0.0
+    #        vy = 0.0
+    #        # Roger-Gunther loop
+    #        for rk=1:4
+    #            # Interp velocity from grid
+    #            if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
+    #                vxm = VxFromVxNodes()
+    #                vym = VyFromVxNodes()
+    #            elseif style == 2
+    #                vxx = VxFromVxNodes()
+    #                vyy = VyFromVxNodes()
+    #                vxp, vyp = VxVyFromPrNodes()
+    #                vxm = itpw*vxp + (1.0-itpw)*vxx
+    #                vym = itpw*vyp + (1.0-itpw)*vyy
+    #            elseif style == 3
+    #                vxm = VxFromVxNodes()
+    #                vym = VyFromVxNodes()
+    #            end
+    #            # Temporary RK advection steps
+    #            p.x[k] = x0 + rkv[rk]*dt*vxm
+    #            p.y[k] = y0 + rkv[rk]*dt*vym
+    #           # Average final velocity 
+    #            vx    += rkw[rk]*vxm
+    #            vy    += rkw[rk]*vym
+    #        end
+    #        # Advect points
+    #        p.x[k] = x0 + rkv[4]*dt*vx
+    #        p.y[k] = y0 + rkv[4]*dt*vy
+    #    end
+    #end
 end
