@@ -68,7 +68,7 @@ function semilagc2D!(D,vxo,vyo,x,y,T)
     @. xp   =   x.c2d - T.Δ[1]*vxi
     @. yp   =   y.c2d - T.Δ[1]*vyi        
 
-    itp_cubic   =   cubic_spline_interpolation((x.cew,y.cns),D.T_ex)
+    itp_cubic   =   cubic_spline_interpolation((x.ce,y.ce),D.T_ex)
     D.T         .=  itp_cubic.(xp,yp)
         
     D.T_ex[2:end-1,2:end-1]  .=  D.T
