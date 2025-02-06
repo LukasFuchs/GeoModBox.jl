@@ -40,8 +40,8 @@ Ini         =   (T=:circle,V=:RigidBody,)
 # -------------------------------------------------------------------- #
 # Plot Einstellungen ================================================= #
 Pl  =   (
-    inc         =   10,
-    sc          =   0.2,
+    inc         =   5,
+    sc          =   1.0e9,
     Minc        =   1, 
     Msz         =   0.2,
 )
@@ -101,6 +101,9 @@ if FD.Method.Adv==:tracers
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :thermal
     Ma          =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+    # RK4 weights
+    rkw         =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+    rkv         =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 end
 # -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
@@ -189,10 +192,11 @@ T   =   (
     Δ       =   [0.0],
 )
 T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
-T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) / 
-        (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-nt      =   ceil(Int,T.tmax[1]/T.Δ[1])
+T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
+                    (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
+#return
 # Solve advection equation ------------------------------------------- #
 for i=2:nt
     display(string("Time step: ",i))    
@@ -205,7 +209,8 @@ for i=2:nt
         semilagc2D!(D,[],[],x,y,T)
     elseif FD.Method.Adv==:tracers
         # Advect tracers -------------------------------------------- #
-
+        AdvectTracer2D(Ma,nmark,D,x,y,dt,rkw,rkv,style)
+        
         # Interpolate temperature from tracers to grid -------------- #
         Markers2Cells(Ma,nmark,D.T,D.wt,x,y,Δ,Aparam)
 #             case 'tracers'

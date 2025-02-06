@@ -6,6 +6,13 @@ mutable struct TMarkers
     phase   ::  Array{Int64,1}
 end
 
+mutable struct Markers
+    x       ::  Array{Float64,1}
+    y       ::  Array{Float64,1}
+    mpc     ::  Array{Float64,2}
+    phase   ::  Array{Int64,1}
+end
+
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
@@ -29,6 +36,8 @@ function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
     if Aparam==:thermal
         Tm  =   zeros(Float64, size(xm))
         Ma  =   TMarkers( xm, ym, Tm, mpc, phm )
+    elseif Aparam==:phase
+        Ma  =   Markers( xm, ym, mpc, phm )
     end
 
     ## define phase ---
@@ -284,39 +293,41 @@ end
 @doc raw"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
-function AdvectTracer2D()
+function AdvectTracer2D(Ma,nmark,D,x,y,dt,rkw,rkv,style)
     #@threads for k=1:nmark
+    for k = 1:nmark
     #    if (p.phase[k]>=0)
-    #        x0 = p.x[k];
-    #        y0 = p.y[k];
-    #        vx = 0.0
-    #        vy = 0.0
-    #        # Roger-Gunther loop
-    #        for rk=1:4
-    #            # Interp velocity from grid
-    #            if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
-    #                vxm = VxFromVxNodes()
-    #                vym = VyFromVxNodes()
-    #            elseif style == 2
-    #                vxx = VxFromVxNodes()
-    #                vyy = VyFromVxNodes()
-    #                vxp, vyp = VxVyFromPrNodes()
-    #                vxm = itpw*vxp + (1.0-itpw)*vxx
-    #                vym = itpw*vyp + (1.0-itpw)*vyy
-    #            elseif style == 3
-    #                vxm = VxFromVxNodes()
-    #                vym = VyFromVxNodes()
-    #            end
-    #            # Temporary RK advection steps
-    #            p.x[k] = x0 + rkv[rk]*dt*vxm
-    #            p.y[k] = y0 + rkv[rk]*dt*vym
-    #           # Average final velocity 
-    #            vx    += rkw[rk]*vxm
-    #            vy    += rkw[rk]*vym
-    #        end
-    #        # Advect points
-    #        p.x[k] = x0 + rkv[4]*dt*vx
-    #        p.y[k] = y0 + rkv[4]*dt*vy
-    #    end
-    #end
+        x0  =   Ma.x[k]
+        y0  =   Ma.y[k]
+        vx  =   0.0
+        vy  =   0.0
+        # Roger-Gunther loop
+        for rk=1:4
+            # Interp velocity from grid
+            if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
+                vxm = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 0)
+                vym = VyFromVyNodes(D.Vy, k, Ma, x, y, Δ, NC, 0)
+            elseif style == 2
+                vxx = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 0)
+                vyy = VyFromVxNodes(D.Vy, k, Ma, x, y, Δ, NC, 0)
+                vxp, vyp = VxVyFromPrNodes(D.vxc ,D.vyc, k, Ma, x, y, Δ, NC)
+                vxm = itpw*vxp + (1.0-itpw)*vxx
+                vym = itpw*vyp + (1.0-itpw)*vyy
+            elseif style == 3
+                vxm = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 1)
+                vym = VyFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 1)
+            end
+            # Temporary RK advection steps
+            Ma.x[k]     =   x0 + rkv[rk]*dt*vxm
+            Ma.y[k]     =   y0 + rkv[rk]*dt*vym
+            # Average final velocity 
+            vx    += rkw[rk]*vxm
+            vy    += rkw[rk]*vym
+        end
+        # Advect points
+        Ma.x[k]     =   x0 + rkv[4]*dt*vx
+        Ma.y[k]     =   y0 + rkv[4]*dt*vy
+        #end
+    end
+    return Ma
 end
