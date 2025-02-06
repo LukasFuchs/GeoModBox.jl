@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:tracers,),)
+FD          =   (Method     = (Adv=:semilag,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -108,7 +108,7 @@ path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   1
+save_fig    =   0
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -137,9 +137,7 @@ if FD.Method.Adv==:tracers
     CountMPC(Ma,nmark,x,y,Δ)
 end
 # Geschwindigkeit ---------------------------------------------------- #
-IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
-@. D.vx     =   D.vx*(100*(60*60*24*365.25))
-@. D.vy     =   D.vy*(100*(60*60*24*365.25))
+IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
 for i = 1:NC.x, j = 1:NC.y
     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -186,16 +184,17 @@ end
 # -------------------------------------------------------------------- #
 # Zeit Konstanten ==================================================== #
 T   =   ( 
-    tmax    =   6.336,
+    tmax    =   [0.0],  
     Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
     Δ       =   [0.0],
 )
+T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
 T.Δ[1]  =   T.Δfac * minimum((Δ.x,Δ.y)) / 
         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-nt      =   ceil(Int,T.tmax/T.Δ[1])
+nt      =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Solve advection equation ------------------------------------------- #
-for i=2:10 # :nt
+for i=2:nt
     display(string("Time step: ",i))    
 
     if FD.Method.Adv==:upwind
@@ -227,7 +226,7 @@ for i=2:10 # :nt
     display(string("ΔT = ",((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,1) == 0 || i == nt
+    if mod(i,10) == 0 || i == nt
         if FD.Method.Adv==:tracers
             #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
             #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,

@@ -90,6 +90,7 @@ end
 function IniVelocity!(type,D,NV,Δ,M,x,y)
     if type==:RigidBody
         # Rigid Body Rotation ---
+        # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
         for i = 1:NV.x, j = 1:NV.y+1
             D.vx[i,j]  =    ((y.ce[j]-(M.ymax-M.ymin)/2))/(M.ymax-M.ymin)
         end
@@ -112,10 +113,12 @@ function IniVelocity!(type,D,NV,Δ,M,x,y)
     elseif type==:ShearCell
         # Convection Cell with a Shear Deformation --- (REF?!)
         for i = 1:NV.x, j = 1:NV.y+1
-            D.vx[i,j]   =   -sin(π*x.v[i])*cos(π*y.ce[j])
+            D.vx[i,j]   =   -sin(π*(x.v[i]/(M.xmax-M.xmin)))*
+                                cos(π*y.ce[j]/(M.ymax-M.ymin))
         end
         for i = 1:NV.x+1, j = 1:NV.y
-            D.vy[i,j]   =   cos(π.*x.ce[i]).*sin(π.*y.v[j])
+            D.vy[i,j]   =   cos(π*x.ce[i]/(M.xmax-M.xmin))*
+                                sin(π*y.v[j]/(M.ymax-M.ymin))
         end
         @. D.vx     =   D.vx/(100*(60*60*24*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100*(60*60*24*365.25))        # [m/s]

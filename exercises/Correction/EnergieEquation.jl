@@ -122,7 +122,8 @@ function EnergyEquation()
     @. D.Q          = P.Q0
 
     # Geschwindigkeit ---------------------------------------------------- #
-    IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
+    # RBR - maximum(v) = 0.5 cm/a
+    IniVelocity!(Ini.V,D,NV,Δ,M,x,y)        # [ m/s ]
     # Get the velocity on the centroids ---
     D.vx    .*=     20.0
     D.vy    .*=     20.0
