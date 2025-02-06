@@ -3,13 +3,12 @@ using GeoModBox.AdvectionEquation.TwoD, GeoModBox.InitialCondition
 using GeoModBox.HeatEquation.TwoD
 
 function EnergyEquation()
-
     # Definition numerischer Verfahren ================================== #
     # Define Advection Scheme ---
     #   1) upwind, 2) slf, 3) semilag
     # Define Diffusion Scheme --- 
     #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
-    FD          =   (Method     = (Adv=:semilag,Diff=:none),)
+    FD          =   (Method     = (Adv=:semilag,Diff=:explicit),)
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block
@@ -20,7 +19,7 @@ function EnergyEquation()
     # Plot Einstellungen ================================================ #
     Pl  =   (
         inc         =   5,
-        sc          =   20*(100*(60*60*24*365.15)),
+        sc          =   1.0*(100*(60*60*24*365.15)),
     )
     # ------------------------------------------------------------------- #
     # Model Konstanten ================================================== #
@@ -90,11 +89,11 @@ function EnergyEquation()
     )
     # -------------------------------------------------------------------- #
     # Animationssettings ================================================= #
-    path        =   string("./exercises/Results/")
+    path        =   string("./exercises/Correction/Results/")
     anim        =   Plots.Animation(path, String[] )
     filename    =   string("EnergyEquation",Ini.T,"_",Ini.V,
                             "_",FD.Method.Adv,"_",FD.Method.Diff)
-    save_fig    =   0
+    save_fig    =   1
     # -------------------------------------------------------------------- #
     # Anfangsbedingungen ================================================= #
     # Temperatur --------------------------------------------------------- #
@@ -125,6 +124,8 @@ function EnergyEquation()
     # Geschwindigkeit ---------------------------------------------------- #
     IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
     # Get the velocity on the centroids ---
+    D.vx    .*=     20.0
+    D.vy    .*=     20.0
     for i = 1:NC.x, j = 1:NC.y
         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
@@ -183,7 +184,7 @@ function EnergyEquation()
     # ------------------------------------------------------------------- #
     # Zeit Konstanten =================================================== #
     T   =   ( 
-        tmax    =   [16.336],    # Zeit in Ma
+        tmax    =   [6.336],    # Zeit in Ma
         Δfacc   =   1.0,        # Courant time factor, i.e. dtfac*dt_courant
         Δfacd   =   1.0,        # Diffusion time factor, i.e. dtfac*dt_diff
         Δ       =   [0.0],      # Absolute time step
@@ -194,6 +195,9 @@ function EnergyEquation()
     T.Δc[1]     =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd[1]     =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
+    #if FD.Method.Diff==:none
+    #    T.Δd[1]     =   99.0
+    #end
     T.Δ[1]      =   minimum([T.Δd[1],T.Δc[1]])
     T.tmax[1]   =   T.tmax[1]*(1e6*(60*60*24*365.25))   # Zeit in [s]
     nt          =   ceil(Int,T.tmax[1]/T.Δ[1])     # Anzahl der Zeitschritte
