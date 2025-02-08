@@ -62,6 +62,7 @@ end
     CountMPC()
 """
 function CountMPC(Ma,nmark,x,y,Δ)
+    Ma.mpc      .*=     0.0   
     for k = 1:nmark
         if (Ma.phase[k]>=0)
             # Get the column ---
@@ -109,13 +110,13 @@ function VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
     if new==1 
         if dxmj/dx>=0.5
             if i<ncx
-                vxm13 += 0.5*((dxmj/dx-0.5)^2) * (Vx[i,j  ] - 2.0*Vx[i+1,j  ] + Vx[i+2,j  ])
-                vxm24 += 0.5*((dxmj/dx-0.5)^2) * (Vx[i,j+1] - 2.0*Vx[i+1,j+1] + Vx[i+2,j+1])
+                vxm13 += 0.5*((dxmj/Δ.x-0.5)^2) * (Vx[i,j  ] - 2.0*Vx[i+1,j  ] + Vx[i+2,j  ])
+                vxm24 += 0.5*((dxmj/Δ.x-0.5)^2) * (Vx[i,j+1] - 2.0*Vx[i+1,j+1] + Vx[i+2,j+1])
             end
         else
             if i>1
-                vxm13 += 0.5*((dxmj/dx-0.5)^2) * (Vx[i-1,j  ] - 2.0*Vx[i,j  ] + Vx[i+1,j  ])
-                vxm24 += 0.5*((dxmj/dx-0.5)^2) * (Vx[i-1,j+1] - 2.0*Vx[i,j+1] + Vx[i+1,j+1])
+                vxm13 += 0.5*((dxmj/Δ.x-0.5)^2) * (Vx[i-1,j  ] - 2.0*Vx[i,j  ] + Vx[i+1,j  ])
+                vxm24 += 0.5*((dxmj/Δ.x-0.5)^2) * (Vx[i-1,j+1] - 2.0*Vx[i,j+1] + Vx[i+1,j+1])
             end
         end
     end
@@ -148,29 +149,29 @@ function VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
     end
     # ---------------------------------------------------------------- #
     # Compute distances ---------------------------------------------- #
-    dxmj = Ma.x[k] - xce[i]
-    dymi = Ma.y[k] -  yv[j]
+    dxmj = Ma.x[k] - x.ce[i]
+    dymi = Ma.y[k] -  y.v[j]
     # ---------------------------------------------------------------- #
     # Compute vy velocity for the left and right of the cell --------- #
-    vym12 = Vy[i,j  ]*(1-dymi/dy) + Vy[i  ,j+1]*dymi/dy
-    vym34 = Vy[i+1,j]*(1-dymi/dy) + Vy[i+1,j+1]*dymi/dy
+    vym12 = Vy[i,j  ]*(1-dymi/Δ.y) + Vy[i  ,j+1]*dymi/Δ.y
+    vym34 = Vy[i+1,j]*(1-dymi/Δ.y) + Vy[i+1,j+1]*dymi/Δ.y
     # ---------------------------------------------------------------- #
     if new==1 
         if dymi/dy>=0.5
             if j<ncy
-                vym12 += 0.5*((dymi/dy-0.5)^2) * ( Vy[i,j  ] - 2.0*Vy[i,j+1  ] + Vy[i,j+2  ]);
-                vym34 += 0.5*((dymi/dy-0.5)^2) * ( Vy[i+1,j] - 2.0*Vy[i+1,j+1] + Vy[i+1,j+2]);
+                vym12 += 0.5*((dymi/Δ.y-0.5)^2) * ( Vy[i,j  ] - 2.0*Vy[i,j+1  ] + Vy[i,j+2  ]);
+                vym34 += 0.5*((dymi/Δ.y-0.5)^2) * ( Vy[i+1,j] - 2.0*Vy[i+1,j+1] + Vy[i+1,j+2]);
             end      
         else
             if j>1
-                vym12 += 0.5*((dymi/dy-0.5)^2) * ( Vy[i,j-1  ] - 2.0*Vy[i,j  ] + Vy[i,j+1  ]);
-                vym34 += 0.5*((dymi/dy-0.5)^2) * ( Vy[i+1,j-1] - 2.0*Vy[i+1,j] + Vy[i+1,j+1]);
+                vym12 += 0.5*((dymi/Δ.y-0.5)^2) * ( Vy[i,j-1  ] - 2.0*Vy[i,j  ] + Vy[i,j+1  ]);
+                vym34 += 0.5*((dymi/Δ.y-0.5)^2) * ( Vy[i+1,j-1] - 2.0*Vy[i+1,j] + Vy[i+1,j+1]);
             end
         end
     end
     # ---------------------------------------------------------------- #
     # Compute vy ----------------------------------------------------- #
-    vym = (1-dxmj/dx)*vym12 + (dxmj/dx)*vym34
+    vym = (1-dxmj/Δ.x)*vym12 + (dxmj/Δ.x)*vym34
     # ---------------------------------------------------------------- #
     return vym
 end
@@ -293,7 +294,7 @@ end
 @doc raw"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
-function AdvectTracer2D(Ma,nmark,D,x,y,dt,rkw,rkv,style)
+function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
     #@threads for k=1:nmark
     for k = 1:nmark
     #    if (p.phase[k]>=0)
@@ -305,17 +306,17 @@ function AdvectTracer2D(Ma,nmark,D,x,y,dt,rkw,rkv,style)
         for rk=1:4
             # Interp velocity from grid
             if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
-                vxm = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 0)
-                vym = VyFromVyNodes(D.Vy, k, Ma, x, y, Δ, NC, 0)
+                vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
+                vym = VyFromVyNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
             elseif style == 2
-                vxx = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 0)
-                vyy = VyFromVxNodes(D.Vy, k, Ma, x, y, Δ, NC, 0)
+                vxx = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
+                vyy = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
                 vxp, vyp = VxVyFromPrNodes(D.vxc ,D.vyc, k, Ma, x, y, Δ, NC)
                 vxm = itpw*vxp + (1.0-itpw)*vxx
                 vym = itpw*vyp + (1.0-itpw)*vyy
             elseif style == 3
-                vxm = VxFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 1)
-                vym = VyFromVxNodes(D.Vx, k, Ma, x, y, Δ, NC, 1)
+                vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 1)
+                vym = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 1)
             end
             # Temporary RK advection steps
             Ma.x[k]     =   x0 + rkv[rk]*dt*vxm

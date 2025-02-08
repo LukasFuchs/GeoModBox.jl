@@ -30,7 +30,7 @@ function Advection_2D()
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:tracers,),)
 # Define Initial Condition ---
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -111,7 +111,7 @@ path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   0
+save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
 # Temperatur --------------------------------------------------------- #
@@ -209,7 +209,8 @@ for i=2:nt
         semilagc2D!(D,[],[],x,y,T)
     elseif FD.Method.Adv==:tracers
         # Advect tracers -------------------------------------------- #
-        AdvectTracer2D(Ma,nmark,D,x,y,dt,rkw,rkv,style)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
+        CountMPC(Ma,nmark,x,y,Δ)
         
         # Interpolate temperature from tracers to grid -------------- #
         Markers2Cells(Ma,nmark,D.T,D.wt,x,y,Δ,Aparam)
@@ -217,15 +218,7 @@ for i=2:nt
 #                 # if (t>2)
 #                 #     # Interpolate temperature grid to tracers --------------- #
 #                 #     [Tm,~]  = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
-#                 # end
-                
-#                 # Advect tracers with Runge-Kutta 4th order ----------------- #
-#                 [XM,ZM] = ...
-#                     AdvectMarker2D(X,Z,XM,ZM,dt,vx,vz,xmax,xmin,zmax,zmin);
-                
-#                 # Interpolate temperature from tracers to grid -------------- #
-#                 Told    = T;
-#                 [~,T]   = TracerInterp(Tm,XM,ZM,T,[],X,Z,'from');
+#                 # end                
     end
     
     display(string("ΔT = ",((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100))
@@ -276,7 +269,7 @@ end
 if save_fig == 1
     # Write the frames to a GIF file
     Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-    #foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+    foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 elseif save_fig == 0
     display(plot(p))
 end
