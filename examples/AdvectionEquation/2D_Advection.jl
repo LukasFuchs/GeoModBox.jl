@@ -24,8 +24,12 @@
 using Plots, Interpolations
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.Tracers.TwoD
 using GeoModBox.InitialCondition
+using Base.Threads
+using Printf
 
 function Advection_2D()
+
+@printf("Running on %d thread(s)\n", nthreads())
 
 # Definition numerischer Verfahren =================================== #
 # Define Advection Scheme ---
@@ -94,18 +98,6 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
-# Tracer Advektions Verfahren ======================================== #
-if FD.Method.Adv==:tracers 
-    nmx,nmy     =   3,3
-    noise       =   1
-    nmark       =   nmx*nmy*NC.x*NC.y
-    Aparam      =   :thermal
-    Ma          =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
-    # RK4 weights
-    rkw         =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-    rkv         =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
-end
-# -------------------------------------------------------------------- #
 # Animationssettings ================================================= #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
@@ -114,39 +106,80 @@ filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
 save_fig    =   1
 # -------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================= #
-# Temperatur --------------------------------------------------------- #
 D       =   (
-    T       =   zeros(NC...),
-    T_ex    =   zeros(NC.x+2,NC.y+2),
-    T_exo   =   zeros(NC.x+2,NC.y+2),
-    vx      =   zeros(NV.x,NV.y+1),
-    vy      =   zeros(NV.x+1,NV.y),    
-    vxc     =   zeros(NC...),
-    vyc     =   zeros(NC...),
-    vc      =   zeros(NC...),
-    wt      =   zeros(NC...),
+    T       =   zeros(Float64,(NC.x,NC.y)),
+    T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
+    T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
+    vx      =   zeros(Float64,(NV.x,NV.y+1)),
+    vy      =   zeros(Float64,(NV.x+1,NV.y)),    
+    vxc     =   zeros(Float64,(NC.x,NC.y)),
+    vyc     =   zeros(Float64,(NC.x,NC.y)),
+    vc      =   zeros(Float64,(NC.x,NC.y)),
+    wt      =   zeros(Float64,(NC.x,NC.y)),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
 )
+# Temperature ---
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
-if FD.Method.Adv==:tracers
-    for k = 1:nmark
-        Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
-    end
-    CountMPC(Ma,nmark,x,y,Δ)
-end
-# Geschwindigkeit ---------------------------------------------------- #
+# Velocity ---
 IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
-for i = 1:NC.x, j = 1:NC.y
-    D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-    D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+@threads for i = 1:NC.x
+    for j = 1:NC.y
+        D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+        D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+    end
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+# -------------------------------------------------------------------- #
+# Time =============================================================== #
+T   =   ( 
+    tmax    =   [0.0],  
+    Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
+    Δ       =   [0.0],
+)
+T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
+T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
+            (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
+# -------------------------------------------------------------------- #
+# Tracer Advection =================================================== #
+if FD.Method.Adv==:tracers 
+    # Tracer Initialization ---
+    nmx,nmy     =   3,3
+    noise       =   1
+    nmark       =   nmx*nmy*NC.x*NC.y
+    Aparam      =   :thermal
+    MPC         =   (
+        c               =   zeros(Float64,(NC.x,NC.y)),
+        th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+        nmark_out_th    =   zeros(Int64, nthreads()),
+        nmark_out       =   zeros(Float64,1),
+        min             =   zeros(Float64,nt),
+        max             =   zeros(Float64,nt),
+        mean            =   zeros(Float64,nt),
+    )
+    MPC1        = (
+        PG_th   =   [similar(D.T) for _ = 1:nthreads()], # per thread
+        wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
+    )
+    MPC     =   merge(MPC,MPC1)
+    Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+    # RK4 weights ---
+    rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+    rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
+    # Interpolate on centroids ---
+    @threads for k = 1:nmark
+        Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
+    end
+    # Count marker per cell ---
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
+end
+# -------------------------------------------------------------------- #
 # Visualize initial condition ---------------------------------------- #
 if FD.Method.Adv==:tracers
     #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
@@ -163,9 +196,9 @@ if FD.Method.Adv==:tracers
             quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                     D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
             color="white",layout=(1,2),subplot=1)
-    heatmap!(p,x.c,y.c,Ma.mpc',color=:inferno, 
+    heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-            colorbar=true,
+            colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
             layout=(1,2),subplot=2)
 else
     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
@@ -185,21 +218,9 @@ elseif save_fig == 0
     display(p)
 end
 # -------------------------------------------------------------------- #
-# Zeit Konstanten ==================================================== #
-T   =   ( 
-    tmax    =   [0.0],  
-    Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
-    Δ       =   [0.0],
-)
-T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
-T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
-                    (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
-# -------------------------------------------------------------------- #
-#return
 # Solve advection equation ------------------------------------------- #
 for i=2:nt
-    display(string("Time step: ",i))    
+    @printf("Time step: #%04d\n ",i)
 
     if FD.Method.Adv==:upwind
         upwindc2D!(D,NC,T,Δ)
@@ -210,10 +231,10 @@ for i=2:nt
     elseif FD.Method.Adv==:tracers
         # Advect tracers -------------------------------------------- #
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,x,y,Δ)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
         
         # Interpolate temperature from tracers to grid -------------- #
-        Markers2Cells(Ma,nmark,D.T,D.wt,x,y,Δ,Aparam)
+        Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)
 #             case 'tracers'
 #                 # if (t>2)
 #                 #     # Interpolate temperature grid to tracers --------------- #
@@ -221,7 +242,8 @@ for i=2:nt
 #                 # end                
     end
     
-    display(string("ΔT = ",((maximum(D.T)-D.Tmax[1])/D.Tmax[1])*100))
+    #@printf("T_{max} = %4.4e\n",maximum(filter(!isnan,D.T)))
+    display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
     if mod(i,10) == 0 || i == nt
@@ -240,9 +262,9 @@ for i=2:nt
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                             D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
                     color="white",layout=(1,2),subplot=1)
-            heatmap!(p,x.c,y.c,Ma.mpc',color=:inferno, 
+            heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-                    colorbar=true,
+                    colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
                     layout=(1,2),subplot=2)
         else
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
@@ -263,7 +285,6 @@ for i=2:nt
             display(p)                        
         end
     end
-        
 end
 # Save Animation ----------------------------------------------------- #
 if save_fig == 1

@@ -1,22 +1,23 @@
+using Base.Threads
+using Statistics, Printf
+
 mutable struct TMarkers
     x       ::  Array{Float64,1}
     y       ::  Array{Float64,1}
     T       ::  Array{Float64,1}
-    mpc     ::  Array{Float64,2}
     phase   ::  Array{Int64,1}
 end
 
 mutable struct Markers
     x       ::  Array{Float64,1}
     y       ::  Array{Float64,1}
-    mpc     ::  Array{Float64,2}
     phase   ::  Array{Int64,1}
 end
 
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
-function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -28,60 +29,90 @@ function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
     
     (xmi,ymi) = ([x for x=xm,y=ym], [y for x=xm,y=ym])
     
-    # Over allocate markers
-    xm  =   vec(xmi)
-    ym  =   vec(ymi)    
-    phm =   zeros(Int64,   size(xm))
-    mpc =   zeros(Float64,(NC.x,NC.y))
-    if Aparam==:thermal
-        Tm  =   zeros(Float64, size(xm))
-        Ma  =   TMarkers( xm, ym, Tm, mpc, phm )
+    # Over allocate markers ---
+    if Aparam==:thermal        
+        Ma  =   TMarkers( vec(xmi), vec(ymi), zeros(Float64, nmark), zeros(Int64, nmark) )
     elseif Aparam==:phase
-        Ma  =   Markers( xm, ym, mpc, phm )
+        Ma  =   Markers( vec(xmi), vec(ymi), zeros(Int64, nmark) )
     end
-
-    ## define phase ---
-    #for k=1:nmark
-    #    if (Ma.x[k]<Ma.y[k]) 
-    #        Ma.phase[k] = 1
-    #    end
-    #end
 
     # add noise ---
     if noise==1
-        for k=1:nmark
+        @threads for k=1:nmark
             Ma.x[k] += (rand()-0.5)*Δxm
             Ma.y[k] += (rand()-0.5)*Δym
         end
     end
-
     return Ma
 end
 
 @doc raw"""
     CountMPC()
 """
-function CountMPC(Ma,nmark,x,y,Δ)
-    Ma.mpc      .*=     0.0   
-    for k = 1:nmark
-        if (Ma.phase[k]>=0)
-            # Get the column ---
-            dstx    =   Ma.x[k] - x.c[1]
-            i       =   Int64(round(ceil( (dstx/Δ.x) + 0.5)))
-            # Get the line ---
-            dsty    =   Ma.y[k] - y.c[1]
-            j       =   Int64(round(ceil( (dsty/Δ.y) + 0.5)))
-            # Increment cell count ---
-            Ma.mpc[i,j]     +=  1.0
+@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,it)
+     # Disable markers outside of the domain
+     @threads for k=1:nmark
+        if (Ma.x[k]<M.xmin || Ma.x[k]>M.xmax || Ma.y[k]<M.ymin || Ma.y[k]>M.ymax) 
+            @inbounds Ma.phase[k] = -1
         end
     end
+    # How many are outside? save indices for reuse    
+    @threads for k=1:nmark
+        if Ma.phase[k] == -1
+            MPC.nmark_out_th[threadid()] += 1
+        end
+    end
+    
+    for ith=1:nthreads()
+        MPC.nmark_out[1] += MPC.nmark_out_th[ith]
+    end
+    @printf("%d markers out\n", MPC.nmark_out[1])
+
+    # Initialize marker per cell per thread array ---
+    @threads for j = 1:NC.y
+        for i = 1:NC.x
+            for ith=1:nthreads()
+                MPC.th[ith,i,j] = 0.0
+            end
+        end
+    end
+
+    # Count marker per cell per thread ---
+    @threads for k=1:nmark
+        if (Ma.phase[k]>=0)
+            # Get the column:
+            dstx = Ma.x[k] - x.c[1]
+            i    = Int64(round(ceil( (dstx/Δ.x) + 0.5)))
+            # Get the line:
+            dsty = Ma.y[k] - y.c[1]
+            j    = Int64(round(ceil( (dsty/Δ.y) + 0.5)))
+            # Increment cell count
+            MPC.th[threadid(),i,j] += 1.0
+        end
+    end
+
+    @threads for j=1:NC.y
+        for i=1:NC.x
+            for ith=1:nthreads()
+                if ith == 1 
+                    MPC.c[i,j] = 0.0
+                end
+                MPC.c[i,j] += MPC.th[ith,i,j]
+            end
+        end
+    end
+
+    MPC.min[it]         = minimum(MPC.c)
+    MPC.max[it]         = maximum(MPC.c)
+    MPC.mean[it]        = mean(MPC.c)
+    #MPC.tot_reseed[it] = nmark_add
     return Ma
 end
 
 @doc raw"""
     VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
 """
-function VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
+@views function VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
     # Interpolate vx
     # From https://github.com/tduretz/M2Dpt_Julia/blob/master/Markers2D/Main_Taras_v6_Hackathon.jl
     # ---------------------------------------------------------------- #
@@ -130,7 +161,7 @@ end
 @doc raw"""
     VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
 """
-function VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
+@views function VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
     # Interpolate vy
     # From https://github.com/tduretz/M2Dpt_Julia/blob/master/Markers2D/Main_Taras_v6_Hackathon.jl
     # ---------------------------------------------------------------- #
@@ -179,7 +210,7 @@ end
 @doc raw"""
     VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC )
 """
-function VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC)
+@views function VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC)
     # Interpolate vx, vy
     # ---------------------------------------------------------------- #
     i   =   Int64((trunc( (Ma.x[k] - x.ce[1])/Δ.x ) + 1.0))
@@ -215,8 +246,8 @@ end
 @doc raw"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
-function FromCtoM(Prop, k, Ma, x, y, Δ, NC)
-     # Interpolate Property from Centroids to Marker
+@views function FromCtoM(Prop, k, Ma, x, y, Δ, NC)
+    # Interpolate Property from Centroids to Marker ---
     # ---------------------------------------------------------------- #
     i   =   Int64((trunc( (Ma.x[k] - x.ce[1])/Δ.x ) + 1.0))
     j   =   Int64((trunc( (Ma.y[k] - y.ce[1])/Δ.y ) + 1.0))
@@ -253,20 +284,20 @@ end
 @doc raw"""
     Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
 """
-function Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
+@views function Markers2Cells(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param)
     PG      .*=     0.0
     weight  .*=     0.0
     if param==:thermal
         PM  =       copy(Ma.T)
     end
-    #chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
-    #@sync for chunk in chunks
-    #    @spawn begin
-    #        tid = threadid()
-    #        fill!(phase_th[tid], 0)
-    #        fill!(weight_th[tid], 0)
-            #for k in chunk
-            for k = 1:nmark
+    chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+    @sync for chunk in chunks
+        @spawn begin
+            tid = threadid()
+            fill!(PG_th[tid], 0)
+            fill!(weight_th[tid], 0)
+            for k in chunk
+                #for k = 1:nmark
                 # Get the column:
                 dstx = Ma.x[k] - x.c[1]
                 i = ceil(Int, dstx / Δ.x + 0.5)
@@ -278,14 +309,15 @@ function Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
                 Δym = 2.0 * abs(y.c[j] - Ma.y[k])
                 # Increment cell counts
                 area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                PG[i, j] += PM[k] * area
-                weight[i, j] += area
+                PG_th[tid][i, j] += PM[k] * area
+                weight_th[tid][i, j] += area
             end
-    #    end
-    #end
+        end
+    end
 
+    PG      .= reduce(+, PG_th)
     #phase  .= reduce(+, phase_th)
-    #weight .= reduce(+, weight_th)
+    weight  .= reduce(+, weight_th)
     PG ./= weight
 
     return
@@ -294,41 +326,40 @@ end
 @doc raw"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
-function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
-    #@threads for k=1:nmark
-    for k = 1:nmark
-    #    if (p.phase[k]>=0)
-        x0  =   Ma.x[k]
-        y0  =   Ma.y[k]
-        vx  =   0.0
-        vy  =   0.0
-        # Roger-Gunther loop
-        for rk=1:4
-            # Interp velocity from grid
-            if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
-                vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
-                vym = VyFromVyNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
-            elseif style == 2
-                vxx = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
-                vyy = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
-                vxp, vyp = VxVyFromPrNodes(D.vxc ,D.vyc, k, Ma, x, y, Δ, NC)
-                vxm = itpw*vxp + (1.0-itpw)*vxx
-                vym = itpw*vyp + (1.0-itpw)*vyy
-            elseif style == 3
-                vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 1)
-                vym = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 1)
+@views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+    @threads for k = 1:nmark
+        if (Ma.phase[k]>=0)
+            x0  =   Ma.x[k]
+            y0  =   Ma.y[k]
+            vx  =   0.0
+            vy  =   0.0
+            # Runge-Kutta loop ---
+            for rk=1:4
+                # Interp velocity from grid ---
+                if style == 1 # Bilinear velocity interp (original is Markers_divergence_ALLSCHEMES_RK4.m)
+                    vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
+                    vym = VyFromVyNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
+                elseif style == 2
+                    vxx = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
+                    vyy = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
+                    vxp, vyp = VxVyFromPrNodes(D.vxc ,D.vyc, k, Ma, x, y, Δ, NC)
+                    vxm = itpw*vxp + (1.0-itpw)*vxx
+                    vym = itpw*vyp + (1.0-itpw)*vyy
+                elseif style == 3
+                    vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 1)
+                    vym = VyFromVxNodes(D.vy, k, Ma, x, y, Δ, NC, 1)
+                end
+                # Temporary RK advection steps ---
+                Ma.x[k]     =   x0 + rkv[rk]*dt*vxm
+                Ma.y[k]     =   y0 + rkv[rk]*dt*vym
+                # Average final velocity ---
+                vx    += rkw[rk]*vxm
+                vy    += rkw[rk]*vym
             end
-            # Temporary RK advection steps
-            Ma.x[k]     =   x0 + rkv[rk]*dt*vxm
-            Ma.y[k]     =   y0 + rkv[rk]*dt*vym
-            # Average final velocity 
-            vx    += rkw[rk]*vxm
-            vy    += rkw[rk]*vym
+            # Advect points ---
+            Ma.x[k]     =   x0 + rkv[4]*dt*vx
+            Ma.y[k]     =   y0 + rkv[4]*dt*vy
         end
-        # Advect points
-        Ma.x[k]     =   x0 + rkv[4]*dt*vx
-        Ma.y[k]     =   y0 + rkv[4]*dt*vy
-        #end
     end
     return Ma
 end
