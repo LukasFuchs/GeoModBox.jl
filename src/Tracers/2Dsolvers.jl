@@ -56,17 +56,18 @@ end
             @inbounds Ma.phase[k] = -1
         end
     end
-    # How many are outside? save indices for reuse    
+    # How many are outside? save indices for reuse  
+    nmark_out_th    =   zeros(Int64, nthreads())  
     @threads for k=1:nmark
         if Ma.phase[k] == -1
-            MPC.nmark_out_th[threadid()] += 1
+            nmark_out_th[threadid()] += 1
         end
     end
-    
+    nmark_out       =   0
     for ith=1:nthreads()
-        MPC.nmark_out[1] += MPC.nmark_out_th[ith]
+        nmark_out += nmark_out_th[ith]
     end
-    @printf("%d markers out\n", MPC.nmark_out[1])
+    @printf("%d markers out\n", nmark_out[1])
 
     # Initialize marker per cell per thread array ---
     @threads for j = 1:NC.y
@@ -297,7 +298,6 @@ end
             fill!(PG_th[tid], 0)
             fill!(weight_th[tid], 0)
             for k in chunk
-                #for k = 1:nmark
                 # Get the column:
                 dstx = Ma.x[k] - x.c[1]
                 i = ceil(Int, dstx / Δ.x + 0.5)

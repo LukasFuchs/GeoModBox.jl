@@ -1,4 +1,4 @@
-using Base.Threads 
+#using Base.Threads 
 
 @doc raw""" 
     IniTemperature!(type,M,NC,Δ,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
@@ -25,7 +25,7 @@ Possible initial temperature conditions are:
     2) Gaussian anomaly
     3) Block anomaly
 """
-function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
+@views function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
     if type==:circle 
         # Circle shaped anomaly ---
         # Bereich der Anomalie ---       
@@ -93,7 +93,7 @@ end
 #
 # ---
 """
-function IniVelocity!(type,D,NV,Δ,M,x,y)
+@views function IniVelocity!(type,D,NV,Δ,M,x,y)
     if type==:RigidBody
         # Rigid Body Rotation ---
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 

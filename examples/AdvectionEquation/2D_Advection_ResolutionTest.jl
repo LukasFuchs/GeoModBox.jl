@@ -119,8 +119,9 @@ for m = 1:ns
         path        =   string("./examples/AdvectionEquation/Results/")
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
-                                "_",FD.Method.Adv,"_",NC.x,"_",NC.y)
-        save_fig    =   -1
+                                "_",FD.Method.Adv,"_",NC.x,"_",NC.y,
+                                "_nth_",nthreads())
+        save_fig    =   1
         # ------------------------------------------------------------ #
         # Anfangsbedingungen ========================================= #
         D       =   (
@@ -173,8 +174,6 @@ for m = 1:ns
             MPC         =   (
                 c               =   zeros(Float64,(NC.x,NC.y)),
                 th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-                nmark_out_th    =   zeros(Int64, nthreads()),
-                nmark_out       =   zeros(Float64,1),
                 min             =   zeros(Float64,nt),
                 max             =   zeros(Float64,nt),
                 mean            =   zeros(Float64,nt),
@@ -236,7 +235,7 @@ for m = 1:ns
         # ------------------------------------------------------------ #
         # Solve advection equation ----------------------------------- #
         for i=2:nt
-            display(string("Time step: ",i))    
+            @printf("Time step: #%04d\n ",i) 
 
             if FD.Method.Adv == "upwind"
                 upwindc2D!(D,NC,T,Δ)
@@ -351,9 +350,9 @@ for m=1:ns
 end
 
 # Save Final Figure --------------------------------------------------- #
-savefig(q,string("./examples/AdvectionEquation/",
-                    "Results/2D_advection_",Ini.T,"_",
-                    Ini.V,"_ResTest.png"))
+#savefig(q,string("./examples/AdvectionEquation/",
+ #                   "Results/2D_advection_",Ini.T,"_",
+  #                  Ini.V,"_ResTest.png"))
 # --------------------------------------------------------------------- #
 
 end # Function end

@@ -156,9 +156,7 @@ if FD.Method.Adv==:tracers
     Aparam      =   :thermal
     MPC         =   (
         c               =   zeros(Float64,(NC.x,NC.y)),
-        th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-        nmark_out_th    =   zeros(Int64, nthreads()),
-        nmark_out       =   zeros(Float64,1),
+        th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),                
         min             =   zeros(Float64,nt),
         max             =   zeros(Float64,nt),
         mean            =   zeros(Float64,nt),
@@ -246,7 +244,7 @@ for i=2:nt
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,10) == 0 || i == nt
+    if mod(i,2) == 0 || i == nt
         if FD.Method.Adv==:tracers
             #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
             #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
