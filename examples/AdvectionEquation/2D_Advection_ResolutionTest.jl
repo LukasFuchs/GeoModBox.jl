@@ -120,7 +120,7 @@ for m = 1:ns
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                                 "_",FD.Method.Adv,"_",NC.x,"_",NC.y)
-        save_fig    =   1
+        save_fig    =   -1
         # ------------------------------------------------------------ #
         # Anfangsbedingungen ========================================= #
         D       =   (
@@ -313,8 +313,8 @@ for m = 1:ns
         # Statistical Values for Each Scheme and Resolution ---
         St.Δ[m,l]       =   abs((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100
         St.nxny[m,l]    =   1/NC.x/NC.y
-        St.Tmax[m,l]    =   maximum(D.T)
-        St.Tmean[m,l]   =   mean(abs.(D.T))
+        St.Tmax[m,l]    =   maximum(filter(!isnan,D.T))
+        St.Tmean[m,l]   =   mean(abs.(filter(!isnan,D.T)))
         # ------------------------------------------------------------ #
 
     end # End resolution loop
@@ -326,11 +326,15 @@ for m=1:ns
     plot!(q,St.nxny[m,:],St.Δ[m,:],
                 marker=:circle,markersize=3,label=Scheme[m],
                 xaxis=:log,yaxis=:log,
+                xlims=(minimum(St.nxny), maximum(St.nxny)), 
+                ylims=(1e-15, 1e3), 
                 xlabel="1/nx/ny",ylabel="ΔT[%]",layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,yaxis=:log,
+                xlims=(minimum(St.nxny), maximum(St.nxny)), 
+                ylims=(1e2, 1e5),
                 xlabel="1/nx/ny",ylabel="T_{max}",
                 subplot=2)
         #plot!(q,1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]),
@@ -339,6 +343,8 @@ for m=1:ns
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,yaxis=:log,
+                xlims=(minimum(St.nxny), maximum(St.nxny)), 
+                ylims=(1e2, 1e4), 
                 xlabel="1/nx/ny",ylabel="⟨T⟩",
                 subplot=3)
     display(q)
