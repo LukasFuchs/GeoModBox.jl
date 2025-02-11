@@ -1,4 +1,4 @@
-using ExtendableSparse
+using ExtendableSparse, Base.Threads
 
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
@@ -26,76 +26,80 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # First ADI step, vertical running scheme ---
     # Erster ADI Schritt: A*T^(l+1/2) = B*T^l -> vertical running scheme
-    for i = 1:NC.x,j=1:NC.y
-        # Equation number ---
-        ii      =   Num.Tv[i,j]
-        # println(ii)
-        # Stencil ---
-        iW      =   ii - NC.y
-        iS      =   ii - 1
-        iC      =   ii
-        iN      =   ii + 1
-        iE      =   ii + NC.y
-        # Boundaries ---
-        # If an West index is required ---
-        inW    =  i==1    ? false  : true
-        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-        # If an East index is required ---
-        inE    =  i==NC.x ? false  : true
-        DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
-        # If an South index is required
-        inS    =  j==1      ? false  : true
-        DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
-        NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
-        # If an North index is required 
-        inN    =  j==NC.y   ? false  : true
-        DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-        if inW
-            B[ii,iW]   =  a 
+    @threads for i = 1:NC.x
+        for j=1:NC.y
+            # Equation number ---
+            ii      =   Num.Tv[i,j]
+            # println(ii)
+            # Stencil ---
+            iW      =   ii - NC.y
+            iS      =   ii - 1
+            iC      =   ii
+            iN      =   ii + 1
+            iE      =   ii + NC.y
+            # Boundaries ---
+            # If an West index is required ---
+            inW    =  i==1    ? false  : true
+            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+            # If an East index is required ---
+            inE    =  i==NC.x ? false  : true
+            DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
+            NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
+            # If an South index is required
+            inS    =  j==1      ? false  : true
+            DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
+            NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
+            # If an North index is required 
+            inN    =  j==NC.y   ? false  : true
+            DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+            NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
+            if inW
+                B[ii,iW]   =  a 
+            end
+            if inN
+                A[ii,iN]   =   - b
+            end
+            A[ii,iC]       =   c + (2 + DirS + DirN - NeuS - NeuN) * b
+            B[ii,iC]       =   c - (2 + DirW + DirE - NeuW - NeuE) * a
+            if inS
+                A[ii,iS]   =   - b
+            end
+            if inE
+                B[ii,iE]   =   a
+            end        
         end
-        if inN
-            A[ii,iN]   =   - b
-        end
-        A[ii,iC]       =   c + (2 + DirS + DirN - NeuS - NeuN) * b
-        B[ii,iC]       =   c - (2 + DirW + DirE - NeuW - NeuE) * a
-        if inS
-            A[ii,iS]   =   - b
-        end
-        if inE
-            B[ii,iE]   =   a
-        end        
     end
 
     rhs[:]  .=   B * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    for i = 1:NC.x, j = 1:NC.y
-        ii  =   Num.Tv[i,j]
-        # If an West index is required ---
-        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-        # If an East index is required ---
-        DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
-        # If an South index is required
-        DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
-        NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
-        # If an North index is required 
-        DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-    
-        rhs[ii]     =   rhs[ii] + 
-                        2*a*BC.val.W[j] * DirW + 
-                        2*a*BC.val.E[j] * DirE + 
-                        2*b*BC.val.S[i] * DirS + 
-                        2*b*BC.val.N[i] * DirN -
-                        a*BC.val.W[j] * NeuW + 
-                        a*BC.val.E[j] * NeuE - 
-                        b*BC.val.S[i] * NeuS + 
-                        b*BC.val.N[i] * NeuN    
+    @threads for i = 1:NC.x
+        for j = 1:NC.y
+            ii  =   Num.Tv[i,j]
+            # If an West index is required ---
+            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+            # If an East index is required ---
+            DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
+            NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
+            # If an South index is required
+            DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
+            NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
+            # If an North index is required 
+            DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+            NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
+        
+            rhs[ii]     =   rhs[ii] + 
+                            2*a*BC.val.W[j] * DirW + 
+                            2*a*BC.val.E[j] * DirE + 
+                            2*b*BC.val.S[i] * DirS + 
+                            2*b*BC.val.N[i] * DirN -
+                            a*BC.val.W[j] * NeuW + 
+                            a*BC.val.E[j] * NeuE - 
+                            b*BC.val.S[i] * NeuS + 
+                            b*BC.val.N[i] * NeuN    
+        end
     end
 
     # Temperature at Δt/2 ---
@@ -103,78 +107,82 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # Second ADI step, horizontal running scheme ---
     # Zweiter ADI Schritt: C*T^(l+1) = D*T^(l+1/2) -> horizontal running scheme
-    for j = 1:NC.y,i=1:NC.x
-        # Equation number ---
-        ii      =   Num.Th[i,j]
-        # println(ii)
-        # Stencil ---
-        iS      =   ii - NC.x
-        iW      =   ii - 1        
-        iC      =   ii
-        iE      =   ii + 1
-        iN      =   ii + NC.x
-        # Boundaries ---
-        # If an West index is required ---
-        inW    =  i==1    ? false  : true
-        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-        # If an East index is required ---
-        inE    =  i==NC.x ? false  : true
-        DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
-        # If an South index is required
-        inS    =  j==1      ? false  : true
-        DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
-        NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
-        # If an North index is required 
-        inN    =  j==NC.y   ? false  : true
-        DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-        
-        if inN
-            D[ii,iN]   =  b
+    @threads for j = 1:NC.y
+        for i=1:NC.x
+            # Equation number ---
+            ii      =   Num.Th[i,j]
+            # println(ii)
+            # Stencil ---
+            iS      =   ii - NC.x
+            iW      =   ii - 1        
+            iC      =   ii
+            iE      =   ii + 1
+            iN      =   ii + NC.x
+            # Boundaries ---
+            # If an West index is required ---
+            inW    =  i==1    ? false  : true
+            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+            # If an East index is required ---
+            inE    =  i==NC.x ? false  : true
+            DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
+            NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
+            # If an South index is required
+            inS    =  j==1      ? false  : true
+            DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
+            NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
+            # If an North index is required 
+            inN    =  j==NC.y   ? false  : true
+            DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+            NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
+            
+            if inN
+                D[ii,iN]   =  b
+            end
+            if inW
+                C[ii,iW]   =  - a
+            end
+            C[ii,iC]       =   c + (2 + DirW + DirE - NeuW - NeuE) * a
+            D[ii,iC]       =   c - (2 + DirS + DirN - NeuS - NeuN) * b
+            if inE
+                C[ii,iE]   =   - a
+            end   
+            if inS
+                D[ii,iS]   =   b
+            end        
         end
-        if inW
-            C[ii,iW]   =  - a
-        end
-        C[ii,iC]       =   c + (2 + DirW + DirE - NeuW - NeuE) * a
-        D[ii,iC]       =   c - (2 + DirS + DirN - NeuS - NeuN) * b
-        if inE
-            C[ii,iE]   =   - a
-        end   
-        if inS
-            D[ii,iS]   =   b
-        end        
     end
 
     # Update rhs to T^{n+1/2} --- 
     rhs[:]  .=   D * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    for i = 1:NC.x, j = 1:NC.y
-        ii  =   Num.Tv[i,j]
-        # If an West index is required ---
-        DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
-        NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
-        # If an East index is required ---
-        DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
-        NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
-        # If an South index is required
-        DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
-        NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
-        # If an North index is required 
-        DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-    
-        rhs[ii]     =   rhs[ii] + 
-                        2*a*BC.val.W[j] * DirW + 
-                        2*a*BC.val.E[j] * DirE + 
-                        2*b*BC.val.S[i] * DirS + 
-                        2*b*BC.val.N[i] * DirN -
-                        a*BC.val.W[j] * NeuW + 
-                        a*BC.val.E[j] * NeuE - 
-                        b*BC.val.S[i] * NeuS + 
-                        b*BC.val.N[i] * NeuN    
+    @threads for i = 1:NC.x
+        for j = 1:NC.y
+            ii  =   Num.Tv[i,j]
+            # If an West index is required ---
+            DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
+            NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
+            # If an East index is required ---
+            DirE   = (i==NC.x && BC.type.E==:Dirichlet) ? 1. : 0.
+            NeuE   = (i==NC.x && BC.type.E==:Neumann  ) ? 1. : 0.
+            # If an South index is required
+            DirS   = (j==1      && BC.type.S==:Dirichlet) ? 1. : 0.
+            NeuS   = (j==1      && BC.type.S==:Neumann  ) ? 1. : 0.
+            # If an North index is required 
+            DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
+            NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
+        
+            rhs[ii]     =   rhs[ii] + 
+                            2*a*BC.val.W[j] * DirW + 
+                            2*a*BC.val.E[j] * DirE + 
+                            2*b*BC.val.S[i] * DirS + 
+                            2*b*BC.val.N[i] * DirN -
+                            a*BC.val.W[j] * NeuW + 
+                            a*BC.val.E[j] * NeuE - 
+                            b*BC.val.S[i] * NeuS + 
+                            b*BC.val.N[i] * NeuN    
+        end
     end
 
     # Temperature at Δt ---
