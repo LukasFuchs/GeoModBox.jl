@@ -1,6 +1,6 @@
 using Plots, Interpolations, ExtendableSparse, LinearAlgebra
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.InitialCondition
-using GeoModBox.HeatEquation.TwoD
+using GeoModBox.HeatEquation.TwoD, Base.Threads
 
 function EnergyEquation()
     # Definition numerischer Verfahren ================================== #
@@ -8,7 +8,7 @@ function EnergyEquation()
     #   1) upwind, 2) slf, 3) semilag
     # Define Diffusion Scheme --- 
     #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
-    FD          =   (Method     = (Adv=:semilag,Diff=:explicit),)
+    FD          =   (Method     = (Adv=:semilag,Diff=:none),)
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block
@@ -19,7 +19,9 @@ function EnergyEquation()
     # Plot Einstellungen ================================================ #
     Pl  =   (
         inc         =   5,
-        sc          =   1.0*(100*(60*60*24*365.15)),
+        sc          =   1.0*(100*(60*60*24*365.15)),        
+        Minc        =   1, 
+        Msz         =   0.2,
     )
     # ------------------------------------------------------------------- #
     # Model Konstanten ================================================== #
@@ -82,73 +84,53 @@ function EnergyEquation()
     )
     y   =   merge(y,y1)
     # ------------------------------------------------------------------- #
-    # Tracer Advektions Verfahren ======================================== #
-    Ma  =   (
-        nmx     =   5,
-        nmz     =   5
-    )
-    # -------------------------------------------------------------------- #
-    # Animationssettings ================================================= #
+
+    # Animationssettings ================================================ #
     path        =   string("./exercises/Correction/Results/")
     anim        =   Plots.Animation(path, String[] )
     filename    =   string("EnergyEquation",Ini.T,"_",Ini.V,
                             "_",FD.Method.Adv,"_",FD.Method.Diff)
     save_fig    =   1
-    # -------------------------------------------------------------------- #
-    # Anfangsbedingungen ================================================= #
-    # Temperatur --------------------------------------------------------- #
+    # ------------------------------------------------------------------- #
+    # Anfangsbedingungen ================================================ #
+    # Temperatur -------------------------------------------------------- #
     D       =   (
-        Q       =   zeros(NC...),
-        T       =   zeros(NC...),
-        T0      =   zeros(NC...),
-        T_ex    =   zeros(NC.x+2,NC.y+2),
-        T_exo   =   zeros(NC.x+2,NC.y+2),
-        ρ       =   zeros(NC...),
-        cp      =   zeros(NC...),
-        vx      =   zeros(NV.x,NV.y+1),
-        vy      =   zeros(NV.x+1,NV.y),    
-        vxc     =   zeros(NC...),
-        vyc     =   zeros(NC...),
-        vc      =   zeros(NC...),
+        Q       =   zeros(Float64,(NC.x,NC.y)),
+        T       =   zeros(Float64,(NC.x,NC.y)),
+        T0      =   zeros(Float64,(NC.x,NC.y)),
+        T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
+        T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
+        ρ       =   zeros(Float64,(NC.x,NC.y)),
+        cp      =   zeros(Float64,(NC.x,NC.y)),
+        vx      =   zeros(Float64,(NV.x,NV.y+1)),
+        vy      =   zeros(Float64,(NV.x+1,NV.y)),    
+        vxc     =   zeros(Float64,(NC.x,NC.y)),
+        vyc     =   zeros(Float64,(NC.x,NC.y)),
+        vc      =   zeros(Float64,(NC.x,NC.y)),
         Tmax    =   [0.0],
         Tmin    =   [0.0],
         Tmean   =   [0.0],
     )
+    # Temperature ---
     IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
     if FD.Method.Adv==:slf
         D.T_exo    .=  D.T_ex
     end
     # Heat production rate ---
     @. D.Q          = P.Q0
-
-    # Geschwindigkeit ---------------------------------------------------- #
+    # Velocity ---
     # RBR - maximum(v) = 0.5 cm/a
     IniVelocity!(Ini.V,D,NV,Δ,M,x,y)        # [ m/s ]
     # Get the velocity on the centroids ---
     D.vx    .*=     20.0
     D.vy    .*=     20.0
-    for i = 1:NC.x, j = 1:NC.y
-        D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-        D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+    @threads for i = 1:NC.x 
+        for j = 1:NC.y
+            D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+            D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+        end
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-    # Visualize initial condition ---------------------------------------- #
-    p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
-        color=:thermal, colorbar=true, aspect_ratio=:equal, 
-        xlabel="x [km]", ylabel="z[km]", 
-        title="Temperature", 
-        xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3), 
-        clims=(0.5, 1.0))
-    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
-            y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
-            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-            color="white")
-    if save_fig == 1
-        Plots.frame(anim)
-    elseif save_fig == 0
-        display(p)
-    end
     # ------------------------------------------------------------------- #
     # Boundary Conditions ----------------------------------------------- #
     BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
@@ -183,26 +165,73 @@ function EnergyEquation()
         q           =   (x=zeros(NC.x+1, NC.y), y=zeros(NC.x, NC.y+1))
     end
     # ------------------------------------------------------------------- #
-    # Zeit Konstanten =================================================== #
+    # Time =============================================================== #
     T   =   ( 
-        tmax    =   [6.336],    # Zeit in Ma
+        tmax    =   [0.0], 
         Δfacc   =   1.0,        # Courant time factor, i.e. dtfac*dt_courant
-        Δfacd   =   1.0,        # Diffusion time factor, i.e. dtfac*dt_diff
-        Δ       =   [0.0],      # Absolute time step
+        Δfacd   =   1.0,        # Diffusion time factor, i.e. dtfac*dt_diff 
+        Δ       =   [0.0],
         Δc      =   [0.0],      # Courant time step
         Δd      =   [0.0],      # Diffusion time stability criterion
     )
-    # Courant Kriterium ---
+    T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
     T.Δc[1]     =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd[1]     =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
-    #if FD.Method.Diff==:none
-    #    T.Δd[1]     =   99.0
-    #end
+
     T.Δ[1]      =   minimum([T.Δd[1],T.Δc[1]])
-    T.tmax[1]   =   T.tmax[1]*(1e6*(60*60*24*365.25))   # Zeit in [s]
-    nt          =   ceil(Int,T.tmax[1]/T.Δ[1])     # Anzahl der Zeitschritte
-    # ------------------------------------------------------------------- #
+
+    nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
+    # -------------------------------------------------------------------- #
+    # Tracer Advection =================================================== #
+    if FD.Method.Adv==:tracers 
+        # Tracer Initialization ---
+        nmx,nmy     =   3,3
+        noise       =   1
+        nmark       =   nmx*nmy*NC.x*NC.y
+        Aparam      =   :thermal
+        MPC         =   (
+            c               =   zeros(Float64,(NC.x,NC.y)),
+            th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),                
+            min             =   zeros(Float64,nt),
+            max             =   zeros(Float64,nt),
+            mean            =   zeros(Float64,nt),
+        )
+        MPC1        = (
+            PG_th   =   [similar(D.T) for _ = 1:nthreads()], # per thread
+            wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
+        )
+        MPC     =   merge(MPC,MPC1)
+        Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+        # RK4 weights ---
+        rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+        rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
+        # Interpolate on centroids ---
+        @threads for k = 1:nmark
+            Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
+        end
+        # Count marker per cell ---
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
+    end
+    # -------------------------------------------------------------------- #
+    # Visualize initial condition ---------------------------------------- #
+    p = heatmap(x.c./1e3 , y.c./1e3, (D.T./D.Tmax)', 
+        color=:thermal, colorbar=true, aspect_ratio=:equal, 
+        xlabel="x [km]", ylabel="z[km]", 
+        title="Temperature", 
+        xlims=(M.xmin./1e3, M.xmax./1e3), ylims=(M.ymin./1e3, M.ymax./1e3), 
+        clims=(0.5, 1.0))
+    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
+            y.c2d[1:Pl.inc:end,1:Pl.inc:end]./1e3,
+            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+            color="white")
+    if save_fig == 1
+        Plots.frame(anim)
+    elseif save_fig == 0
+        display(p)
+    end
+    # ------------------------------------------------------------------- #    
     # Zeitschleife ====================================================== #
     for i=2:nt
         display(string("Time step: ",i))    
@@ -213,7 +242,19 @@ function EnergyEquation()
         elseif FD.Method.Adv==:slf
             slfc2D!(D,NC,T,Δ)       
         elseif FD.Method.Adv==:semilag
-            semilagc2D!(D,[],[],x,y,T)       
+            semilagc2D!(D,[],[],x,y,T)    
+        elseif FD.Method.Adv==:tracers
+            # Advect tracers -------------------------------------------- #
+            AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
+            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
+            
+            # Interpolate temperature from tracers to grid -------------- #
+            Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)
+    #             case 'tracers'
+    #                 # if (t>2)
+    #                 #     # Interpolate temperature grid to tracers --------------- #
+    #                 #     [Tm,~]  = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
+    #                 # end   
         end
 
         # Loesung Diffusionsgleichung ---
