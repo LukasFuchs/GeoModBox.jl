@@ -350,9 +350,9 @@ for m=1:ns
 end
 
 # Save Final Figure --------------------------------------------------- #
-#savefig(q,string("./examples/AdvectionEquation/",
- #                   "Results/2D_advection_",Ini.T,"_",
-  #                  Ini.V,"_ResTest.png"))
+savefig(q,string("./examples/AdvectionEquation/",
+                    "Results/2D_advection_",Ini.T,"_",
+                    Ini.V,"_ResTest.png"))
 # --------------------------------------------------------------------- #
 
 end # Function end
