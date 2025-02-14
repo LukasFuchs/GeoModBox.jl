@@ -12,19 +12,25 @@
 In one dimension, the diffusive part of the energy equation is described by (assuming only radiogenic heating):
 
 $$ 
+\begin{equation}
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H,
+\end{equation}
 $$ 
 
 or including Fourier’s law (assuming variable thermal parameters):
 
 $$
+\begin{equation}
 \frac{\partial T}{\partial t} = \frac{\partial}{\partial x} k_x \frac{\partial T}{\partial x} + \rho H. 
+\end{equation}
 $$
 
-Assuming that the thermal parameters are constant, equation $\left(2 \right)$ simplifies to: 
+Assuming that the thermal parameters are constant, equation $(2)$ simplifies to: 
 
 $$
+\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \frac{\partial^2 T}{\partial x^2} + \frac{Q}{\rho c_p},
+\end{equation}
 $$
   
 where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q=\rho H$ is the heat production rate per volume [W/m<sup>3</sup>]. Equation $(3)$ is a *parabolic partial differential equation* which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
@@ -37,7 +43,7 @@ where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q
 ## Discretization 
 
 <img src="./Figures/1D_Discretization.png" alt="drawing" width="600"/> <br>
-**Figure 1.** ... *Where would $\rho$ and $Q$ be defined?*
+**Figure 1.** ... <!-- ... *Where would $\rho$ and $Q$ be defined?* -->
 
 [comment]: <> (Needs to be completed)
 
@@ -46,13 +52,17 @@ where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q
 Using an FTCS, explicit finite difference scheme to approximate the partial derivatives from equation $(3)$ results in:
 
 $$
+\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n} }{\Delta t} = \kappa \frac{T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n}}{(\Delta x)^2} + \frac{Q_{i}^n}{\rho c_p},
+\end{equation}
 $$ 
 
 where *i* is the horizontal index of the numerical finite difference grid, *n* is the time step index, Δ*t* is the time step, and Δ*x* the width of the grid in horizontal direction. This equation contains know and unknow parameters and one can rearrange them to solve the equation for the unknowns as:
 
 $$
+\begin{equation}
 T_{i}^{n+1} = T_{i}^{n} + a \left(T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n} \right) + \frac{Q_{i}^n \Delta t}{\rho c_p}, 
+\end{equation}
 $$
 
 where $a = \frac{\kappa \Delta t}{(\Delta x)^2}$. Equation $(5)$ can be solved *iteratively* for every central grid point assuming initial and boundary coniditions are defined. For more details on how this is implemented see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
@@ -62,11 +72,15 @@ where $a = \frac{\kappa \Delta t}{(\Delta x)^2}$. Equation $(5)$ can be solved *
 &emsp;Different thermal boundary conditions can be set for our model for which we now utilize the *ghost nodes*. Here, we focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider both boundary conditions to solving the equations, one needs to define the temperature at the *ghost nodes* based on the assumed boundary condition. The Dirichlet boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (west) and right (east) *ghost node* are defined as:
 
 $$
+\begin{equation}
 T_{G,W} = 2T_{BC,W} - T_{1},
+\end{equation}
 $$
 
 $$
+\begin{equation}
 T_{G,E} = 2T_{BC,E} - T_{nc},
+\end{equation}
 $$
 
 where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectrively. Now one can solve equation $(5)$ for each central grid point using the defined temperature at the *ghost nodes*.  
@@ -74,17 +88,23 @@ where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the
 &emsp;The Neumann boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux *q* through the boundary. The temperature at the *ghost nodes* is then defined as: 
 
 $$
+\begin{equation}
 T_{G,W} = T_{1} - c_{W} \Delta{x},
+\end{equation}
 $$
 
 $$
+\begin{equation}
 T_{G,E} = T_{nc} + c_{E} \Delta{x},
+\end{equation}
 $$
 
 where 
 
 $$
+\begin{equation}
 \left. c_{W} = \frac{\partial{T}}{\partial{x}} \right\vert_{W}, and \ \left. c_{E} = \frac{\partial{T}}{\partial{x}} \right\vert_{E}, 
+\end{equation}
 $$
 
 are the constant heat fluxes along the left and right boundary, respectively. Now one can solve equation $(5)$ for each central grid point using the defined temperature at the *ghost nodes*.  
@@ -101,13 +121,17 @@ are the constant heat fluxes along the left and right boundary, respectively. No
 &emsp;The fully implicit finite difference scheme is unconditionally stable and one can use time steps larger than the diffusion time criterion. In 1-D, the temperature equation is then given as: 
 
 $$
+\begin{equation}
 \frac{T_{i}^{n+1}-T_{i}^n}{\Delta t} = \kappa \frac{T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1}}{\Delta x^2} + \frac{Q_{i}^n}{\rho c_p},
+\end{equation}
 $$
 
 where *n* is the current and *n+1* the next time step, $\Delta{t}$ is the time step length, $\Delta{x}$ is the horizontal grid spacing, and *i* is the horizontal index, respectively. Rearranging equation $(11)$ into known and unknown variables, one obtains a linear system of equations in the form of: 
 
 $$
--a T_{i-1}^{n+1} + \left(2a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} = b T_{i}^n + \frac{Q_{i}^n}{\rho c_p}, \tag{12}
+\begin{equation}
+-a T_{i-1}^{n+1} + \left(2a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} = b T_{i}^n + \frac{Q_{i}^n}{\rho c_p},
+\end{equation}
 $$
 
 where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a linear system of equation in the form of $\boldsymbol{A}\cdot x = rhs$, where $\boldsymbol{A}$ is a coefficient matrix (here with three non-zero diagonals), $x$ the unknown vector, and $rhs$ the known right-hand side. The main advantage of the implicit method is that there are no restrictions on the time step, but this does not mean that it is more accurate. Taking too large time steps may result in an inaccurate solution for features with small spatial scales.
@@ -120,26 +144,34 @@ where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a 
 *West*
 
 $$
+\begin{equation}
 \left(3 a + b\right) T_{1}^{n+1} - a T_{2}^{n+1} = b T_{1}^{n} + 2 a T_{BC,W},
+\end{equation}
 $$
 
 *East*
 
 $$
+\begin{equation}
 -a T_{nc-1}^{n+1} + \left(3 a + b\right) T_{nc}^{n+1}  = b T_{nc}^{n} + 2 a T_{BC,E}, 
+\end{equation}
 $$
 
 **Neumann** <br>
 *West*
 
 $$
+\begin{equation}
 \left(a + b\right) T_{1}^{n+1} - a T_{2}^{n+1} = b T_{1}^{n} - a c_{W} \Delta{x},
+\end{equation}
 $$
 
 *East*
 
 $$
+\begin{equation}
 -a T_{nc-1}^{n+1} + \left(a + b\right) T_{nc}^{n+1}  = b T_{nc}^{n} + a c_{E} \Delta{x}, 
+\end{equation}
 $$
 
 ### Defection Correction Method
@@ -151,51 +183,69 @@ $$
 The diffusion equation, in an implicit form, can be simplified to an equation in the form of: 
 
 $$
+\begin{equation}
 \boldsymbol{K} \cdot T - b = R, 
+\end{equation}
 $$
 
 where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is an term containing the remaining variables, and $R$ is the resiual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
 
 $$
+\begin{equation}
 R_i = \boldsymbol{K} \cdot T_i - b.
+\end{equation}
 $$
 
 Adding a correction term $\delta{T}$ to the initial guess, assuming that it results in zero residual, leads to: 
 
 $$
-0 = \boldsymbol{K} \left(T_i + \delta{T} \right) - b = \boldsymbol{K} T_i - b + \boldsymbol{K} \delta{T} = R_i + \boldsymbol{K} \delta{T}, \tag{19}
+\begin{equation}
+0 = \boldsymbol{K} \left(T_i + \delta{T} \right) - b = \boldsymbol{K} T_i - b + \boldsymbol{K} \delta{T} = R_i + \boldsymbol{K} \delta{T},
+\end{equation}
 $$
 
 which results in:
 
 $$
+\begin{equation}
 R_i = -\boldsymbol{K} \delta{T}, 
+\end{equation}
 $$
 
 and finally the correction term: 
 
 $$
+\begin{equation}
 \delta{T} = -\boldsymbol{K}^{-1} R_i. 
+\end{equation}
 $$
 
 The coefficients of the matrix can be derived, for example, via: 
 
 $$
+\begin{equation}
 \frac{\partial{T}}{\partial{t}} - \kappa \frac{\partial^2{T}}{\partial{x}^2} = R, 
+\end{equation}
 $$
 
 $$
+\begin{equation}
 \frac{T_i^{n+1}-T_i^{n}}{\Delta{t}} - \kappa \frac{T_{i-1}^{n+1} - 2 T_{i}^{n+1} + T_{i+1}^{n+1}}{\Delta{x}^2} = R,
+\end{equation}
 $$
 
 $$
+\begin{equation}
 - a T_{i-1}^{n+1} + \left(2 a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} - b T_{i}^{n} = R, 
+\end{equation}
 $$
 
 where
 
 $$
+\begin{equation}
 a = \frac{\kappa}{\Delta{x}^2},\ and \ b = \frac{1}{\Delta{t}}, 
+\end{equation}
 $$
 
 ### Cranck-Nicolson approach (CNA)
@@ -203,7 +253,9 @@ $$
 &emsp;The fully implicit method works well, but is only first order accurate in time. A way to modify this is to employ a Crank-Nicolson time step discretization, which is implicit and thus second order accurate in time. In 1-D, equation $(5)$ is then described as: 
 
 $$
+\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta x^2}
+\end{equation}
 $$
 
 &emsp;Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the central grid points adjacent to the boundaries are defined as: 
@@ -212,13 +264,17 @@ $$
 *West*
 
 $$
+\begin{equation}
 \left(b + 3 a \right) T_{1}^{n+1} - a T_{2}^{n+1} = \left( b - 3 a \right) T_{1}^{n} + a T_{2}^{n} + 4 a T_{BC,W}
+\end{equation}
 $$
 
 *East*
 
 $$
+\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b + 3 a \right) T_{nc}^{n+1} = a T_{nc-1}^{n} + \left( b - 3 a \right) T_{nc}^{n} + 4 a T_{BC,E}
+\end{equation}
 $$
 
 **Neumann**<br>
@@ -226,13 +282,17 @@ $$
 *West*
 
 $$
+\begin{equation}
 \left(b+a\right)T_{1}^{n+1} - a T_{2}^{n+1} = \left(b-a\right)T_{1}^{n} + a T_{2} - 2ac_{W} \Delta{x}
+\end{equation}
 $$
 
 *East*
 
 $$
+\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
+\end{equation}
 $$
 
 &emsp;However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
