@@ -24,13 +24,15 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
                             (BC.type.N==:Neumann) .* (D.T_ex[2:end-1,end-1] .+ BC.val.N .* Δy)
     # ------------------------------------------------------------------- #
     # Loop over internal nodes ------------------------------------------ #
-    for i = 1:NC.x, j = 1:NC.y
-        i1 = i+1
-        j1 = j+1
-        D.T[i,j] = D.T_ex[i1,j1] + 
-            sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
-            sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
-            D.Q[i,j] * Δt / ρ / cp
+    @threads for i = 1:NC.x
+        for j = 1:NC.y
+            i1 = i+1
+            j1 = j+1
+            D.T[i,j] = D.T_ex[i1,j1] + 
+                sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
+                sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
+                D.Q[i,j] * Δt / ρ / cp
+        end
     end
     # ------------------------------------------------------------------- #
     # Update extended temperature --------------------------------------- #
