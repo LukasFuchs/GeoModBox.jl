@@ -16,7 +16,7 @@
 
 $$
 \begin{equation}
-(\frac{\partial E}{\partial t} + \overrightarrow{v} \cdot \nabla E) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
+\left(\frac{\partial E}{\partial t} + \overrightarrow{v} \cdot \nabla E\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
 \end{equation}
 $$
 
@@ -32,7 +32,7 @@ where *k* is the thermal conductivity [W/m/K]. The heat flux is the amount of he
 
 $$
 \begin{equation}
-\rho c_p (\frac{\partial T}{\partial t} + \overrightarrow{v} \cdot \nabla T) = -\frac{\partial q_i}{\partial x_i} + \rho H.
+\rho c_p \left(\frac{\partial T}{\partial t} + \overrightarrow{v} \cdot \nabla T\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
 \end{equation}
 $$
 
