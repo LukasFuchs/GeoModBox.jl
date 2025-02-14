@@ -31,18 +31,19 @@ function Advection_2D()
 
 @printf("Running on %d thread(s)\n", nthreads())
 
-# Definition numerischer Verfahren =================================== #
-# Define Advection Scheme ---
+# Define Numerical Scheme ============================================ #
+# Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
 FD          =   (Method     = (Adv=:tracers,),)
-# Define Initial Condition ---
-# Temperature - 
+# -------------------------------------------------------------------- #
+# Define Initial Condition =========================================== #
+# Temperature --- 
 #   1) circle, 2) gaussian, 3) block
-# Velocity - 
+# Velocity ---
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
-# Plot Einstellungen ================================================= #
+# Plot constants ===================================================== #
 Pl  =   (
     inc         =   5,
     sc          =   1.0e9,
@@ -50,7 +51,7 @@ Pl  =   (
     Msz         =   0.2,
 )
 # -------------------------------------------------------------------- #
-# Model Konstanten =================================================== #
+# Model Constants ==================================================== #
 M   =   (
     xmin    =   0.0,
     xmax    =   1.0,
@@ -58,7 +59,7 @@ M   =   (
     ymax    =   1.0,
 )
 # -------------------------------------------------------------------- #
-# Numerische Konstanten ============================================== #
+# Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
     y       =   100,        # Number of vertical centroids
@@ -72,7 +73,7 @@ NV =   (
     y   =   (abs(M.ymin)+M.ymax)/NC.y,
 )
 # -------------------------------------------------------------------- #
-# Erstellung des Gitters ============================================= #
+# Grid =============================================================== #
 x   =   (
     c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
     ce      =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
@@ -98,14 +99,14 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
-# Animationssettings ================================================= #
+# Animationsettings ================================================== #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
 save_fig    =   1
 # -------------------------------------------------------------------- #
-# Anfangsbedingungen ================================================= #
+# Initialize Array =================================================== #
 D       =   (
     T       =   zeros(Float64,(NC.x,NC.y)),
     T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
@@ -120,6 +121,8 @@ D       =   (
     Tmin    =   [0.0],
     Tmean   =   [0.0],
 )
+# -------------------------------------------------------------------- #
+# Initial Conditions ================================================= #
 # Temperature ---
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
 if FD.Method.Adv==:slf
@@ -178,7 +181,7 @@ if FD.Method.Adv==:tracers
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
 end
 # -------------------------------------------------------------------- #
-# Visualize initial condition ---------------------------------------- #
+# Visualize initial condition ======================================== #
 if FD.Method.Adv==:tracers
     #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
     #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
@@ -189,11 +192,11 @@ if FD.Method.Adv==:tracers
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
             ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
             colorbar=true,layout=(1,2),subplot=1)
-    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-            y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                    D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-            color="white",layout=(1,2),subplot=1)
+    #quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+    #        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+    #        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+    #                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+    #        color="white",layout=(1,2),subplot=1)
     heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
             colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
@@ -216,10 +219,11 @@ elseif save_fig == 0
     display(p)
 end
 # -------------------------------------------------------------------- #
-# Solve advection equation ------------------------------------------- #
+# Time Loop ========================================================== #
 for i=2:nt
     @printf("Time step: #%04d\n ",i)
 
+    # Advection ===
     if FD.Method.Adv==:upwind
         upwindc2D!(D,NC,T,Δ)
     elseif FD.Method.Adv==:slf
@@ -227,24 +231,18 @@ for i=2:nt
     elseif FD.Method.Adv==:semilag
         semilagc2D!(D,[],[],x,y,T)
     elseif FD.Method.Adv==:tracers
-        # Advect tracers -------------------------------------------- #
+        # Advect tracers ---
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
         
-        # Interpolate temperature from tracers to grid -------------- #
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)
-#             case 'tracers'
-#                 # if (t>2)
-#                 #     # Interpolate temperature grid to tracers --------------- #
-#                 #     [Tm,~]  = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
-#                 # end                
+        # Interpolate temperature from tracers to grid ---
+        Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
     end
     
-    #@printf("T_{max} = %4.4e\n",maximum(filter(!isnan,D.T)))
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
-    if mod(i,2) == 0 || i == nt
+    if mod(i,10) == 0 || i == nt
         if FD.Method.Adv==:tracers
             #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
             #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
@@ -255,11 +253,11 @@ for i=2:nt
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                     ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
                     colorbar=true,layout=(1,2),subplot=1)
-            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-                    color="white",layout=(1,2),subplot=1)
+            #quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            #        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            #        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+            #                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+            #        color="white",layout=(1,2),subplot=1)
             heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
                     colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
@@ -283,8 +281,9 @@ for i=2:nt
             display(p)                        
         end
     end
-end
-# Save Animation ----------------------------------------------------- #
+end # End Time Loop
+# -------------------------------------------------------------------- #
+# Save Animation ===================================================== #
 if save_fig == 1
     # Write the frames to a GIF file
     Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
@@ -292,7 +291,7 @@ if save_fig == 1
 elseif save_fig == 0
     display(plot(p))
 end
-
+# -------------------------------------------------------------------- #
 end # Function end
 
 Advection_2D()

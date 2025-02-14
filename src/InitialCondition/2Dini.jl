@@ -1,4 +1,4 @@
-#using Base.Threads 
+using Base.Threads 
 
 @doc raw""" 
     IniTemperature!(type,M,NC,Δ,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
