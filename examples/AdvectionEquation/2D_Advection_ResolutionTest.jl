@@ -1,32 +1,15 @@
-# -------------------------------------------------------------------- #
-# Funktion zur Loesung des zweidimensionalen Advektionsproblem mit 
-# Hilfe von unterschiedlichen Methoden. Zu waehlen sind:
-#   'upwind'    - Upwind Schema
-#   'slf'       - Staggered Leaped Frog Schema
-#   'semi-lag'  - Semi-Lagrangian Schema
-#   'tracers'   - Tracer Methode (vollkommen Lagrangian)
-#
-# Für die Temperaturanomalie kann entweder ein rechteckiger Block 
-# gewählt werden oder eine Gausssche Temperaturverteilung:
-#   'block'     - Rechteckiger Block
-#   'gaussian'  - Gaussche Temperaturverteilung
-#   'circle'    - Kreisförmige Anomalie
-#
-# Für das konstante Geschwindigkeitsfeld könne  n zwei Varianten 
-# gewählt werden:
-#   'RigidBody' - Ein Rotationsfeld mit konstanter Rotation
-#   'ShearCell' - Eine konstantes Konvektionsfeld mit Sheardeformation
-#
-# -------------------------------------------------------------------- #
-# Vers. 1.0 - 26.11.2024 - Julia
-# ==================================================================== #
-# using Statistics
 using Plots, Interpolations, Statistics
 using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.InitialCondition, GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf
 
+@doc raw"""
+    Advection_2D_ResTest()
+
+...
+
+"""
 function Advection_2D_ResTest()
 
 @printf("Running on %d thread(s)\n", nthreads())
@@ -36,7 +19,7 @@ Scheme      =   ["upwind","slf","semilag","tracers"]
 ns          =   size(Scheme,1)
 @show ns
 
-# Statistical Parameter ---------------------------------------------- #
+# Statistical Parameter ============================================== #
 St      = (
     Δ           =   zeros(size(Scheme,1),nrnxny),    
     nxny        =   zeros(size(Scheme,1),nrnxny),
@@ -44,20 +27,19 @@ St      = (
     Tmean       =   zeros(size(Scheme,1),nrnxny),    
 )
 # -------------------------------------------------------------------- #
-# Define Initial Condition ---
+# Define Initial Condition =========================================== #
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
 # Velocity - 
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
-
-for m = 1:ns
-    # Definition numerischer Verfahren =============================== #
-    # Define Advection Scheme ---
-    #   1) upwind, 2) slf, 3) semilag
+# -------------------------------------------------------------------- #
+for m = 1:ns # Loop over advection schemes
+    # Define Numerical Scheme ======================================== #
     FD          =   (Method     = (Adv=Scheme[m],),)    
+    @printf("Advection Scheme: %s\n ",string(FD.Method.Adv))
     # ---------------------------------------------------------------- #
-    # Plot Einstellungen ============================================= #
+    # Plot constants ================================================= #
     Pl  =   (
         inc         =   5,
         sc          =   1.0e9,
@@ -65,7 +47,7 @@ for m = 1:ns
         Msz         =   0.2,
     )
     # ---------------------------------------------------------------- #
-    # Model Konstanten =============================================== #
+    # Model Constants ================================================ #
     M   =   (
         xmin    =   0.0,
         xmax    =   1.0,
@@ -73,8 +55,8 @@ for m = 1:ns
         ymax    =   1.0,
     )
     # ---------------------------------------------------------------- #
-    for l = 1:nrnxny    
-        # Numerische Konstanten ====================================== #
+    for l = 1:nrnxny # Loop over differnet resolutions
+        # Numerical Constants ======================================== #
         NC  =   (
             x       =   l*20,       # Number of horizontal centroids
             y       =   l*20,       # Number of vertical centroids
@@ -89,7 +71,7 @@ for m = 1:ns
             y   =   (abs(M.ymin)+M.ymax)/NC.y,
         )
         # ------------------------------------------------------------ #
-        # Erstellung des Gitters ===================================== #
+        # Grid ======================================================= #
         x   =   (
             c       =   LinRange(M.xmin + Δ.x/2.0, M.xmax - Δ.x/2.0, NC.x),
             ce      =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
@@ -115,15 +97,15 @@ for m = 1:ns
         )
         y   =   merge(y,y1)
         # ------------------------------------------------------------ #
-        # Animationssettings ========================================= #
+        # Animationsettings =0======================================== #
         path        =   string("./examples/AdvectionEquation/Results/")
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                                 "_",FD.Method.Adv,"_",NC.x,"_",NC.y,
                                 "_nth_",nthreads())
-        save_fig    =   1
+        save_fig    =   -1
         # ------------------------------------------------------------ #
-        # Anfangsbedingungen ========================================= #
+        # Array Initialization ======================================= #
         D       =   (
             T       =   zeros(Float64,(NC.x,NC.y)),
             T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
@@ -138,6 +120,7 @@ for m = 1:ns
             Tmin    =   [0.0],
             Tmean   =   [0.0],
         )
+        # Initial Condition ========================================== #
         # Temperature ---
         IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
         if FD.Method.Adv == "slf"
@@ -153,6 +136,7 @@ for m = 1:ns
             end
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+        # ------------------------------------------------------------ #
         # Time ======================================================= #
         T   =   ( 
             tmax    =   [0.0],  
@@ -233,9 +217,9 @@ for m = 1:ns
             display(p)
         end
         # ------------------------------------------------------------ #
-        # Solve advection equation ----------------------------------- #
+        # Time Loop ================================================== #
         for i=2:nt
-            @printf("Time step: #%04d\n ",i) 
+            #@printf("Time step: #%04d\n ",i) 
 
             if FD.Method.Adv == "upwind"
                 upwindc2D!(D,NC,T,Δ)
@@ -244,17 +228,12 @@ for m = 1:ns
             elseif FD.Method.Adv == "semilag"
                 semilagc2D!(D,[],[],x,y,T)
             elseif FD.Method.Adv == "tracers"
-                # Advect tracers -------------------------------------------- #
+                # Advect tracers ---
                 AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
                 
-                # Interpolate temperature from tracers to grid -------------- #
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)
-        #             case 'tracers'
-        #                 # if (t>2)
-        #                 #     # Interpolate temperature grid to tracers --------------- #
-        #                 #     [Tm,~]  = TracerInterp(Tm,XM,ZM,T,[],X,Z,'to');
-        #                 # end
+                # Interpolate temperature from tracers to grid ---
+                Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)        
             end
             
             display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
@@ -301,7 +280,7 @@ for m = 1:ns
             end
                 
         end # End Time loop    
-        # Save Animation --------------------------------------------- #
+        # Save Animation ============================================= #
         if save_fig == 1
             # Write the frames to a GIF file
             Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
@@ -348,8 +327,8 @@ for m=1:ns
                 subplot=3)
     display(q)
 end
-
-# Save Final Figure --------------------------------------------------- #
+# --------------------------------------------------------------------- #
+# Save Final Figure =================================================== #
 savefig(q,string("./examples/AdvectionEquation/",
                     "Results/2D_advection_",Ini.T,"_",
                     Ini.V,"_ResTest.png"))

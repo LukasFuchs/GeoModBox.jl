@@ -1,4 +1,4 @@
-using ExtendableSparse, Base.Threads
+using ExtendableSparse
 
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
@@ -26,7 +26,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # First ADI step, vertical running scheme ---
     # Erster ADI Schritt: A*T^(l+1/2) = B*T^l -> vertical running scheme
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j=1:NC.y
             # Equation number ---
             ii      =   Num.Tv[i,j]
@@ -74,7 +74,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     rhs[:]  .=   B * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j = 1:NC.y
             ii  =   Num.Tv[i,j]
             # If an West index is required ---
@@ -107,7 +107,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # Second ADI step, horizontal running scheme ---
     # Zweiter ADI Schritt: C*T^(l+1) = D*T^(l+1/2) -> horizontal running scheme
-    @threads for j = 1:NC.y
+    for j = 1:NC.y
         for i=1:NC.x
             # Equation number ---
             ii      =   Num.Th[i,j]
@@ -157,7 +157,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     rhs[:]  .=   D * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j = 1:NC.y
             ii  =   Num.Tv[i,j]
             # If an West index is required ---

@@ -1,4 +1,4 @@
-using ExtendableSparse, Base.Threads
+using ExtendableSparse
 
 function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. T_ex[2:end-1,2:end-1] = T 
@@ -21,7 +21,7 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     #############################
     #       Heat equation       #
     #############################
-    @threads for i=1:nc.x
+    for i=1:nc.x
         for j=1:nc.y
             # Equation number
             ii = Num.T[i,j]
@@ -73,7 +73,7 @@ c   =   1 / Δt
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 
 # Loop over the grid points ---
-@threads for i = 1:NC.x
+for i = 1:NC.x
     for j = 1:NC.y
         # Equation number ---
         ii          =   Num.T[i,j]
