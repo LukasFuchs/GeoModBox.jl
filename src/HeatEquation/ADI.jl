@@ -188,4 +188,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Temperature at Δt ---
     T.T[:]  .=  C \ rhs[:]
 
+    T.T_ex[2:end-1,2:end-1]     .=    T.T
+
 end
