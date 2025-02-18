@@ -90,8 +90,8 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
         
-            rhs[ii]     =   rhs[ii] + 
-                            2*a*BC.val.W[j] * DirW + 
+            #rhs[ii]     =   rhs[ii] + 
+            rhs[ii]     +=  2*a*BC.val.W[j] * DirW + 
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
                             2*b*BC.val.N[i] * DirN -

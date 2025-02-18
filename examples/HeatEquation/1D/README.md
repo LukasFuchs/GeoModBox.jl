@@ -1,6 +1,6 @@
-# General Information
+# General Information (Energyequation 1D)
 
-&emsp; This directory provides several examples solving the diffusive part of the *temperature conservation equation* (in 1-D) using different numerical discretization methods. The solvers for a 1-D problem are located in [src/HeatEquation/1Dsolver.jl](../../../src/HeatEquation/1Dsolvers.jl).
+&emsp; This directory provides several examples solving the diffusive part of the *temperature conservation equation* (in 1-D) using [different numerical discretization methods.](../../../src/HeatEquation/1Dsolvers.jl).
 
 [comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!)
 
@@ -9,7 +9,7 @@
 
 ## Energy Equation
 
-In one dimension, the diffusive part of the energy equation is described by (assuming only radiogenic heating):
+&emsp; In one dimension, the diffusive part of the *temperature conservation equation* is described by (assuming only radiogenic heating):
 
 $$ 
 \begin{equation}
