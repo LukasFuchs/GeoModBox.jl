@@ -169,17 +169,14 @@ where $a = \frac{\kappa}{\Delta{x^2}}$, $b = \frac{\kappa}{\Delta{y^2}}$, and $c
 
 #### Boundary Conditions
 
-The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(6)$ and $(13)$). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the centroids adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
+The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(6)-(13)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the centroids adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet** <br>
 *West (i=1)*
 
 $$
 \begin{equation}
--b T_{1,j-1}^{n+1} + 
-\left(3 a + 2b + c\right) T_{1,j}^{n+1} 
-- a T_{2,j}^{n+1}  - b T_{1,j+1}^{n+1} = 
-c T_{1,j}^{n} + 2 a T_{BC,W} + \frac{Q_{i,j}}{\rho c_p}, 
+-b T_{1,j-1}^{n+1} + \left(3 a + 2b + c\right) T_{1,j}^{n+1} - a T_{2,j}^{n+1}  - b T_{1,j+1}^{n+1} = c T_{1,j}^{n} + 2 a T_{BC,W} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
 
@@ -187,9 +184,7 @@ $$
 
 $$
 \begin{equation}
-- bT_{ncx,j-1}^{n+1} - aT_{ncx-1,j}^{n+1} + 
-\left(3 a + 2b + c\right) T_{ncx,j}^{n+1} 
-- b T_{ncx,j+1}^{n+1} = 
+-b T_{ncx,j-1}^{n+1} - aT_{ncx-1,j}^{n+1} + \left(3 a + 2b + c\right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = 
 c T_{ncx,j}^{n} + 2 a T_{BC,E} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -198,9 +193,7 @@ $$
 
 $$
 \begin{equation}
-- aT_{i-1,1}^{n+1} + 
-\left(2a + 3b + c\right) T_{i,1}^{n+1} 
-- a T_{i+1,1}^{n+1} - bT_{i,2}^{n+1} = 
+-a T_{i-1,1}^{n+1} + \left(2a + 3b + c\right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - bT_{i,2}^{n+1} = 
 c T_{i,1}^{n} + 2 b T_{BC,S} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -209,9 +202,7 @@ $$
 
 $$
 \begin{equation}
-- bT_{i,ncy}^{n+1} - aT_{i-1,ncy}^{n+1} + 
-\left(2a + 3b + c\right) T_{i,ncy}^{n+1} 
-- a T_{i+1,ncy}^{n+1} = 
+-b T_{i,ncy}^{n+1} - aT_{i-1,ncy}^{n+1} + \left(2a + 3b + c\right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
 c T_{i,ncy}^{n} + 2 b T_{BC,N} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -221,9 +212,7 @@ $$
 
 $$
 \begin{equation}
--b T_{1,j-1}^{n+1} + 
-\left(a + 2b + c\right) T_{1,j}^{n+1} 
-- a T_{2,j}^{n+1}  - b T_{1,j+1}^{n+1} = 
+-b T_{1,j-1}^{n+1} + \left(a + 2b + c\right) T_{1,j}^{n+1} - a T_{2,j}^{n+1}  - b T_{1,j+1}^{n+1} = 
 c T_{1,j}^{n} - a c_W \Delta{x} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -232,9 +221,7 @@ $$
 
 $$
 \begin{equation}
-- bT_{ncx,j-1}^{n+1} - aT_{ncx-1,j}^{n+1} + 
-\left(a + 2b + c\right) T_{ncx,j}^{n+1} 
-- b T_{ncx,j+1}^{n+1} = 
+-b T_{ncx,j-1}^{n+1} - aT_{ncx-1,j}^{n+1} + \left(a + 2b + c\right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = 
 c T_{ncx,j}^{n} + a c_E \Delta{x} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -243,9 +230,7 @@ $$
 
 $$
 \begin{equation}
-- aT_{i-1,1}^{n+1} + 
-\left(2a + b + c\right) T_{i,1}^{n+1} 
-- a T_{i+1,1}^{n+1} - bT_{i,2}^{n+1} = 
+-a T_{i-1,1}^{n+1} + \left(2a + b + c\right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - bT_{i,2}^{n+1} = 
 c T_{i,1}^{n} - b c_S \Delta{y} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -254,9 +239,7 @@ $$
 
 $$
 \begin{equation}
-- bT_{i,ncy}^{n+1} - aT_{i-1,ncy}^{n+1} + 
-\left(2a + b + c\right) T_{i,ncy}^{n+1} 
-- a T_{i+1,ncy}^{n+1} = 
+-b T_{i,ncy}^{n+1} - aT_{i-1,ncy}^{n+1} + \left(2a + b + c\right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
 c T_{i,ncy}^{n} + 2 c_N \Delta{y} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
@@ -320,15 +303,10 @@ $$
 
 $$
 \begin{equation}
-- b T_{1,j-1}^{n+1} +
+-b T_{1,j-1}^{n+1} +
 \left(3a + 2b + c \right) T_{1,j}^{n+1} 
-- a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1}
-= 
-b T_{1,j-1}^{n} -
-\left( 3a + 2b - c \right) T_{1,j}^{n} 
-+ a T_{2,j}^{n} 
-+ b T_{1,j+1}^{n}
-+ 4 a T_{BC,W},
+-a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = 
+b T_{1,j-1}^{n} - \left( 3a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} + 4 a T_{BC,W},
 \end{equation}
 $$
 
@@ -336,14 +314,11 @@ $$
 
 $$
 \begin{equation}
-- b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} +
+-b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} +
 \left(3a + 2b + c \right) T_{ncx,j}^{n+1} 
-- b T_{ncx,j+1}^{n+1}
-= 
+-b T_{ncx,j+1}^{n+1} = 
 b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} -
-\left( 3a + 2b - c \right) T_{ncx,j}^{n} 
-+ b T_{ncx,j+1}^{n}
-+ 4 a T_{BC,E},
+\left( 3a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 4 a T_{BC,E},
 \end{equation}
 $$
 
@@ -351,16 +326,9 @@ $$
 
 $$
 \begin{equation}
-- a T_{i-1,1}^{n+1} +
-\left(2a + 3b + c \right) T_{i,1}^{n+1} 
-- a T_{i+1,1}^{n+1}
-- b T_{i,2}^{n+1}
-= 
-a T_{i-1,1}^{n} -
-\left( 2a + 3b - c \right) T_{i,1}^{n} 
-+ a T_{i+1,1}^{n}
-+ b T_{i,2}^{n}
-+ 4 b T_{BC,S},
+-a T_{i-1,1}^{n+1} +
+\left(2a + 3b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = 
+a T_{i-1,1}^{n} - \left( 2a + 3b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} + 4 b T_{BC,S},
 \end{equation}
 $$
 
@@ -368,19 +336,10 @@ $$
 
 $$
 \begin{equation}
-- b T_{i,ncy-1}^{n+1} +
-- a T_{i-1,ncy}^{n+1} +
-\left(2a + 3b + c \right) T_{i,ncy}^{n+1} 
-- a T_{i+1,ncy}^{n+1}
-= 
-b T_{i,ncy-1}^{n} +
-a T_{i-1,ncy}^{n} -
-\left( 2a + 3b - c \right) T_{i,ncy}^{n} 
-+ a T_{i+1,ncy}^{n}
-+ 4 b T_{BC,N}.
+-b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + 3b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
+b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + 3b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 4 b T_{BC,N}.
 \end{equation}
 $$
-
 
 **Neumann**<br>
 
@@ -388,15 +347,8 @@ $$
 
 $$
 \begin{equation}
-- b T_{1,j-1}^{n+1} +
-\left(a + 2b + c \right) T_{1,j}^{n+1} 
-- a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1}
-= 
-b T_{1,j-1}^{n} -
-\left( a + 2b - c \right) T_{1,j}^{n} 
-+ a T_{2,j}^{n} 
-+ b T_{1,j+1}^{n}
-- 2 a c_W \Delta{x},
+-b T_{1,j-1}^{n+1} + \left(a + 2b + c \right) T_{1,j}^{n+1} - a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = 
+b T_{1,j-1}^{n} - \left( a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} - 2 a c_W \Delta{x},
 \end{equation}
 $$
 
@@ -404,14 +356,8 @@ $$
 
 $$
 \begin{equation}
-- b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} +
-\left(a + 2b + c \right) T_{ncx,j}^{n+1} 
-- b T_{ncx,j+1}^{n+1}
-= 
-b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} -
-\left( a + 2b - c \right) T_{ncx,j}^{n} 
-+ b T_{ncx,j+1}^{n}
-+ 2 a c_E \Delta{x},
+-b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} + \left(a + 2b + c \right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = 
+b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} - \left( a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 2 a c_E \Delta{x},
 \end{equation}
 $$
 
@@ -419,16 +365,8 @@ $$
 
 $$
 \begin{equation}
-- a T_{i-1,1}^{n+1} +
-\left(2a + b + c \right) T_{i,1}^{n+1} 
-- a T_{i+1,1}^{n+1}
-- b T_{i,2}^{n+1}
-= 
-a T_{i-1,1}^{n} -
-\left( 2a + b - c \right) T_{i,1}^{n} 
-+ a T_{i+1,1}^{n}
-+ b T_{i,2}^{n}
-- 2 b c_S \Delta{y}
+-a T_{i-1,1}^{n+1} + \left(2a + b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = 
+a T_{i-1,1}^{n} - \left( 2a + b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} - 2 b c_S \Delta{y}
 \end{equation}
 $$
 
@@ -436,16 +374,8 @@ $$
 
 $$
 \begin{equation}
-- b T_{i,ncy-1}^{n+1} +
-- a T_{i-1,ncy}^{n+1} +
-\left(2a + b + c \right) T_{i,ncy}^{n+1} 
-- a T_{i+1,ncy}^{n+1}
-= 
-b T_{i,ncy-1}^{n} +
-a T_{i-1,ncy}^{n} -
-\left( 2a + b - c \right) T_{i,ncy}^{n} 
-+ a T_{i+1,ncy}^{n}
-+ 2 b c_N \Delta{y}
+-b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
+b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 2 b c_N \Delta{y}
 \end{equation}
 $$
 
@@ -510,9 +440,7 @@ where *i* and *j* are the indices for the *x*- and *y*-direction, respectively. 
 
 $$
 \begin{equation} 
-aT_{i-1,j} + bT_{i,j-1} - 2(a+b)T_{i,j} + bT_{i,j+1} + aT_{i+1,j}
-=
--\frac{Q}{k},
+aT_{i-1,j} + bT_{i,j-1} - 2(a+b)T_{i,j} + bT_{i,j+1} + aT_{i+1,j} = -\frac{Q}{k},
 \end{equation} 
 $$
 
@@ -525,36 +453,28 @@ where $a = \frac{1}{\Delta x^2}$ and $b = \frac{1}{\Delta y^2}$.
 *West (i=1)*
 $$
 \begin{equation}
-bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} 
-= 
--\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,W}.
+bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,W}.
 \end{equation}
 $$
 
 *East (i=ncx)*
 $$
 \begin{equation}
-aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1}
-= 
--\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,E}.
+aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,E}.
 \end{equation}
 $$
 
 *South (j=1)*
 $$
 \begin{equation}
-aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1}
-= 
--\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,S}.
+aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,S}.
 \end{equation}
 $$
 
 *North (j=ncy)*
 $$
 \begin{equation}
-aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy}
-= 
--\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,N}.
+aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,N}.
 \end{equation}
 $$
 
@@ -563,36 +483,28 @@ $$
 *West (i=1)*
 $$
 \begin{equation}
-bT_{1,j-1} - (a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} 
-= 
--\frac{Q_{i,j}}{k_{i,j}} + ac_W\Delta{x}.
+bT_{1,j-1} - (a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} + ac_W\Delta{x}.
 \end{equation}
 $$
 
 *East (i=ncx)*
 $$
 \begin{equation}
-aT_{ncx-1,j} + bT_{ncx,j-1} - (a + 2b)T_{ncx,j} + bT_{ncx,j+1}
-= 
--\frac{Q_{i,j}}{k_{i,j}} - ac_E\Delta{x}.
+aT_{ncx-1,j} + bT_{ncx,j-1} - (a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} - ac_E\Delta{x}.
 \end{equation}
 $$
 
 *South (j=1)*
 $$
 \begin{equation}
-aT_{i-1,1} - (2a + b)T_{1,1} + bT_{i,2} + aT_{i+1,1}
-= 
--\frac{Q_{i,j}}{k_{i,j}} + bc_S\Delta{y}.
+aT_{i-1,1} - (2a + b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} + bc_S\Delta{y}.
 \end{equation}
 $$
 
 *North (j=ncy)*
 $$
 \begin{equation}
-aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy}
-= 
--\frac{Q_{i,j}}{k_{i,j}} - bc_N\Delta{y}.
+aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - bc_N\Delta{y}.
 \end{equation}
 $$
 
@@ -613,11 +525,7 @@ $$
 
 $$
 \begin{equation} 
-a k_{x;i,j} T_{i-1,j} + 
-b k_{y;i,j} T_{i,j-1} + 
-c T_{i,j} + 
-b k_{y;i,j+1} T_{i,j+1} + 
-a k_{x;i+1,j} T_{i+1,j} + Q_{i,j} = 0,  
+a k_{x;i,j} T_{i-1,j} + b k_{y;i,j} T_{i,j-1} + c T_{i,j} + b k_{y;i,j+1} T_{i,j+1} + a k_{x;i+1,j} T_{i+1,j} + Q_{i,j} = 0,  
 \end{equation}
 $$
 
