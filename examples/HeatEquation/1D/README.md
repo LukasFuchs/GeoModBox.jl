@@ -150,7 +150,7 @@ where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a 
 
 #### Boundary Conditions
 
-&emsp;The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(7)-(10)$). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the centroids adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
+&emsp;The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(7)-(10)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the centroids adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet** <br>
 *West*
@@ -260,7 +260,7 @@ a = \frac{\kappa}{\Delta{x}^2},\ and \ b = \frac{1}{\Delta{t}}.
 \end{equation}
 $$
 
-Similar to the implicit *FTCS* method, one needs to adjust the coefficients for the centroids adjacent to the boundaries (see equations $(14)$ - $(17)$), however, no adjustment needs to be made on the right-hand side.
+Similar to the implicit *FTCS* method, one needs to adjust the coefficients for the centroids adjacent to the boundaries (see equations $(14)-(17)$ ), however, no adjustment needs to be made on the right-hand side.
 
 ### Crank-Nicolson approach (CNA)
 <!-- Try this also for variable parameters?! -->
@@ -393,9 +393,7 @@ $$
 where $T$ is defined on the centroids, $q$ and $k$ are defined on the vertices, $\Delta{t}$ is the time step length, and $\Delta{y}$ is the grid resolution. Further replacing *q* results in: 
 
 $$\begin{equation}
-\rho_j c_{p,j} \frac{T_{j}^{n+1} - T_{j}^{n}}{\Delta{t}} 
-= 
-\frac{ k_{j+1} \frac{T_{j+1}^{n} - T_{j}^{n}}{\Delta{y}} - k_{j} \frac{T_{j}^{n} - T_{j-1}^{n}}{\Delta{y}} }{\Delta{y}} + \rho_j H_j
+\rho_j c_{p,j} \frac{T_{j}^{n+1} - T_{j}^{n}}{\Delta{t}} = \frac{ k_{j+1} \frac{T_{j+1}^{n} - T_{j}^{n}}{\Delta{y}} - k_{j} \frac{T_{j}^{n} - T_{j-1}^{n}}{\Delta{y}} }{\Delta{y}} + \rho_j H_j
 \end{equation}
 $$
 
