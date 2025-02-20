@@ -1,6 +1,6 @@
-# Energyequation
+# Energy Conservation Equation
 
-&emsp; The conservation of energy is a fundamental principle in physics and defines that the loss and generation of energy needs to be equal. In terms of a geodynamical problem, energy can be described by temperature, which is transported mainly through *conductive* and *convective* processes, such that a general energy equation is defined as followed (assuming only radioactive heat sources):
+&emsp; The conservation of energy is a fundamental principle in physics and defines that the loss and generation of energy needs to be equal within a closed system. In terms of a geodynamical problem, energy is described by temperature, which is transported mainly through *conductive* and *convective* processes, such that a general energy equation is defined as followed (assuming only radioactive heat sources):
 
 $$
 \begin{equation}
@@ -24,6 +24,6 @@ $$
 \end{equation}
 $$
 
-&emsp;This form of the temperature equation describes the variation of temperature due to a *conductive* (right hand side of the equation) and *convective* (left hand side of the equation) process. For a matter of simplicity, one can consider those terms in a separate manner and solve the energy equation using an *operator splitting* method, that is one first solves the *advective* part, followed by the *conductive* part. 
+&emsp;This form of the temperature equation describes the variation of temperature due to a *conductive* (right hand side of the equation) and *convective* (left hand side of the equation) process. For a matter of simplicity, one can consider those terms in a separate manner and solve the *temperature conservation equation* using an *operator splitting* method, that is one first solves the *convective* part, followed by the *conductive* part. 
 
-This directory focusses on examples for the **conductive** part of the *temperature conservation equation* using [different numerical finite difference schemes](../../src/HeatEquation/) applicable to [one-](./1D/) and [two-](./2D/)dimensional problem. 
+&emsp; This directory focusses on examples for the **conductive** part of the *temperature conservation equation* using [different numerical finite difference schemes](../../src/HeatEquation/) applicable to [one-](./1D/) and [two-](./2D/)dimensional problem. 

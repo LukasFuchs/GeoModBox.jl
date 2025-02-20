@@ -33,7 +33,6 @@ using Printf
 ...
 
 """
-
 function Advection_2D()
 
 @printf("Running on %d thread(s)\n", nthreads())
