@@ -277,9 +277,7 @@ $$
 
 $$
 \begin{equation}
--aT_{i+1}^{n+1} + \left(b+2a\right)T_{i}^{n+1} - a T_{i-1}^{n+1}
-= 
-aT_{i+1}^{n} + \left(b-2a\right)T_{i}^{n} + a T_{i-1}^{n},
+-aT_{i+1}^{n+1} + \left(b+2a\right)T_{i}^{n+1} - a T_{i-1}^{n+1} = aT_{i+1}^{n} + \left(b-2a\right)T_{i}^{n} + a T_{i-1}^{n},
 \end{equation}
 $$
 
