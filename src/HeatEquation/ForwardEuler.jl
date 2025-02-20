@@ -24,7 +24,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
                             (BC.type.N==:Neumann) .* (D.T_ex[2:end-1,end-1] .+ BC.val.N .* Δy)
     # ------------------------------------------------------------------- #
     # Loop over internal nodes ------------------------------------------ #
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j = 1:NC.y
             i1 = i+1
             j1 = j+1

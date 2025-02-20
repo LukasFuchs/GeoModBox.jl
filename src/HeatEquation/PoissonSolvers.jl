@@ -1,4 +1,4 @@
-using ExtendableSparse, Base.Threads
+using ExtendableSparse
 
 function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
@@ -12,7 +12,7 @@ function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
     #  --------------------------------------------- #
     rhs     .=   - reshape(D.Q, NC.x*NC.y, 1) ./ P.k
 
-    @threads for i=1:NC.x
+    for i=1:NC.x
         for j=1:NC.y
             # Equation number
             ii = Num.T[i,j]
@@ -66,7 +66,7 @@ function Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num )
     #  --------------------------------------------- #
     rhs     .=   - reshape(Q, NC.x*NC.y, 1)
 
-    @threads for i=1:NC.x
+    for i=1:NC.x
         for j=1:NC.y
             # Equation number
             ii = Num.T[i,j]

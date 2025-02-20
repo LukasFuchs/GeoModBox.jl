@@ -1,4 +1,4 @@
-using ExtendableSparse, Base.Threads
+using ExtendableSparse
 
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
@@ -26,7 +26,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # First ADI step, vertical running scheme ---
     # Erster ADI Schritt: A*T^(l+1/2) = B*T^l -> vertical running scheme
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j=1:NC.y
             # Equation number ---
             ii      =   Num.Tv[i,j]
@@ -74,7 +74,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     rhs[:]  .=   B * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j = 1:NC.y
             ii  =   Num.Tv[i,j]
             # If an West index is required ---
@@ -90,8 +90,8 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
         
-            rhs[ii]     =   rhs[ii] + 
-                            2*a*BC.val.W[j] * DirW + 
+            #rhs[ii]     =   rhs[ii] + 
+            rhs[ii]     +=  2*a*BC.val.W[j] * DirW + 
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
                             2*b*BC.val.N[i] * DirN -
@@ -107,7 +107,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # Second ADI step, horizontal running scheme ---
     # Zweiter ADI Schritt: C*T^(l+1) = D*T^(l+1/2) -> horizontal running scheme
-    @threads for j = 1:NC.y
+    for j = 1:NC.y
         for i=1:NC.x
             # Equation number ---
             ii      =   Num.Th[i,j]
@@ -157,7 +157,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     rhs[:]  .=   D * T.T[:] .+ T.Q[:]./ρ./cp
     
     # Update rhs from the boundary conditions ---
-    @threads for i = 1:NC.x
+    for i = 1:NC.x
         for j = 1:NC.y
             ii  =   Num.Tv[i,j]
             # If an West index is required ---
@@ -187,5 +187,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # Temperature at Δt ---
     T.T[:]  .=  C \ rhs[:]
+
+    T.T_ex[2:end-1,2:end-1]     .=    T.T
 
 end
