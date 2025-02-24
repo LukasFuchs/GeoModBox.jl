@@ -1,10 +1,13 @@
 # General Information
 
-This directory provides several examples solving the conductive part of the *temperature conservation equation* (in 2-D, steady state and time-dependent) using different numerical discretization methods. The different solvers for a 2-D problem are located in [src/HeatEquation/](../../../src/HeatEquation/). The theory does not really change expanding the problem to two dimensions. Thus, we mainly focus on expanding the equations. For more details on the theory of the different finite difference approaches, please see the 1-D [README.md](../1D/README.md).
+&emsp; This directory provides several examples solving the conductive part of the *temperature conservation equation* (in 2-D, steady state and time-dependent) using different numerical discretization methods. The different solvers for a 2-D problem are located in [src/HeatEquation/](../../../src/HeatEquation/). The theory does not change expanding the problem to two dimensions and, thus, we mainly focus on expanding the equations. For more details on the theory of the different finite difference approaches, please see the 1-D [README.md](../1D/README.md).
+
+----------------------------------
+----------------------------------
 
 ## Temperature Equation (2D)
 
-In two dimesions (*x* and *y*), the conductive part of *temperature conservation equation* is described by (assuming only radiogenic heating):
+In two dimesions (*x* and *y*), the conductive part of *temperature conservation equation*, *temperature equation* is described by (assuming only radiogenic heating):
 
 $$
 \begin{equation}
@@ -42,7 +45,7 @@ $$
 To numerically solve equation $(3)$ one needs to discretize the numerical domain and assign the parameters to their corresponding nodes. 
 
 <img src="./Figures/Diffusion_Grid.jpg" alt="drawing" width="600"/> <br>
-**Figure 1. 2-D Discretization.** *Conservative finite difference grid* to solve the 2-D conductive part of the *temperature conservation equation*. The temperature is defined on the centroids (red circles) and the heat flux between the vertices (horizontal - blue x, vertical - green square). The temperature *ghost nodes* (grey circles) are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
+**Figure 1. 2-D Discretization.** *Conservative finite difference grid* to solve the 2-D conductive part of the *temperature equation*. The temperature is defined on the centroids (red circles) and the heat flux between the vertices (horizontal - blue x, vertical - green square). The temperature *ghost nodes* (grey circles) are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
 
 
 ### Explicit, FTCS (or Forward Euler Method)
@@ -55,7 +58,7 @@ $$
 \end{equation}
 $$
 
-where *i* and *j* are the horizontal and vertical index of the numerical finite difference grid, *n* is the time step index, Δ*t* is the time step, and Δ*x* and Δ*y* the horizontal and vertical grid resolution, respectively. Equation $(5)$ contains know and unknow parameters and one can rearrange them to solve the equation for the unknowns as:
+where *i* and *j* are the horizontal and vertical index of the numerical finite difference grid, *n* is the time step index, Δ*t* is the time step, and Δ*x* and Δ*y* are the horizontal and vertical grid resolution, respectively. Equation $(5)$ contains know and unknow parameters and one can rearrange them to solve the equation for the unknowns as:
 
 $$
 \begin{equation}
@@ -139,7 +142,7 @@ are the constant heat fluxes along the left, right, bottom, and top boundary, re
 
 Within the example code [Gaussian_Diffusion.jl](Gaussian_Diffusion.jl) different numerical schemes are used to solve the conductive part of the *temperature equation* (i.e., *explicit*, *implicit*, *Crank-Nicholson Approach*, and *defection correction*) and the results are compared with the analytical solution.
 
-### Implicit, BTCS (or Backward Euler Method)
+### Implicit (or Backward Euler Method)
 
 In 2-D, the *temperature equation* is then given as: 
 
@@ -169,7 +172,7 @@ where $a = \frac{\kappa}{\Delta{x^2}}$, $b = \frac{\kappa}{\Delta{y^2}}$, and $c
 
 #### Boundary Conditions
 
-The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(6)-(13)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the centroids adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
+The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(7)-(14)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the centroids adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet** <br>
 *West (i=1)*
@@ -240,7 +243,7 @@ $$
 $$
 \begin{equation}
 -b T_{i,ncy}^{n+1} - aT_{i-1,ncy}^{n+1} + \left(2a + b + c\right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
-c T_{i,ncy}^{n} + 2 c_N \Delta{y} + \frac{Q_{i,j}}{\rho c_p}, 
+c T_{i,ncy}^{n} + b c_N \Delta{y} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}
 $$
 
@@ -296,7 +299,15 @@ $$
 \end{equation}
 $$
 
-&emsp;Similar to the implicit BTCS method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the centroids adjacent to the boundaries are defined as: 
+ Rearranging equation $(30)$ into known and unknown variables, one obtains a linear system of equations in the form of: 
+
+$$
+\begin{equation}
+-b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n}
+\end{equation}
+$$
+
+&emsp;Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the centroids adjacent to the boundaries are defined as: 
 
 **Dirichlet**<br>
 *West (i=1)*
@@ -389,8 +400,8 @@ $$
 \frac{T_{i,j}^{n+1/2}-T_{i,j}^n}{\Delta t/2} = 
 \kappa 
     \left( 
-    \frac{T_{i+1,j}^n-2T_{i,j}^n+T_{i-1,j}^n}{\Delta x^2} +
-    \frac{T_{i,j+1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j-1}^{n+1/2}}{\Delta y^2}
+    \frac{T_{i-1,j}^n-2T_{i,j}^n+T_{i+1,j}^n}{\Delta x^2} +
+    \frac{T_{i,j-1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j+1}^{n+1/2}}{\Delta y^2}
     \right)
 \end{equation}
 $$
@@ -400,8 +411,8 @@ $$
 \frac{T_{i,j}^{n+1}-T_{i,j}^{n+1/2}}{\Delta t/2} = 
 \kappa 
     \left( 
-    \frac{T_{i+1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i-1,j}^{n+1}}{\Delta x^2} + 
-    \frac{T_{i,j+1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j-1}^{n+1/2}}{\Delta y^2}
+    \frac{T_{i-1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i+1,j}^{n+1}}{\Delta x^2} + 
+    \frac{T_{i,j-1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j+1}^{n+1/2}}{\Delta y^2}
     \right)
 \end{equation}
 $$
@@ -410,13 +421,13 @@ $$
 
 ## Steady State Solution 
 
-**Note:** So far, variable thermal parameters are only implemented in the 1-D and 2-D steady state solutions (except for the 2-D defection correction method, which also enables a time-dependent solution for variable thermal parameters). 
+**Note:** So far, variable thermal parameters are only implemented in the 1-D and 2-D steady state solutions (except for the 2-D defection correction method, which also enables a time-dependent 2-D solution for variable thermal parameters). 
 
-&emsp; In steady state, one assumes that the temperature does not vary over time (i.e., $\frac{\partial T}{\partial t}=0$) and the *temperature conservation equation* simplifies to an *elliptic partial differential* equation (i.e., the *Poission equation*).  
+&emsp; In steady state, one assumes that the temperature does not vary over time (i.e., $\frac{\partial T}{\partial t}=0$) and the *temperature equation* simplifies to an *elliptic partial differential* equation (i.e., the *Poission equation*).  
 
 ### Poisson Solution (constant *k*)
 
-For constant thermal parameters the conductive part of the *temperature conservation equation* is given by: 
+For constant thermal parameters the conductive part of the *temperature equation* is given by: 
 
 $$
 \begin{equation}
@@ -426,12 +437,12 @@ $$
 \end{equation}
 $$
 
-For the approximation of the spatial partial derivatives with finite difference expressions, a central finite difference is chosen and equation $(41)$ is then given as: 
+For the approximation of the spatial partial derivatives with finite difference expressions, a central finite difference is chosen and equation $(42)$ is then given as: 
 
 $$
 \begin{equation}
 0 = \left( 
-    \frac{T_{i+1,j} - 2T_{i,j} + T_{i-1,j}}{\Delta x^2} + \frac{T_{i,j+1} - 2T_{i,j} + T_{i,j-1}}{\Delta y^2}
+    \frac{T_{i-1,j} - 2T_{i,j} + T_{i+1,j}}{\Delta x^2} + \frac{T_{i,j-1} - 2T_{i,j} + T_{i,j+1}}{\Delta y^2}
     \right) + \frac{Q}{k},
     \end{equation}
 $$
@@ -440,7 +451,7 @@ where *i* and *j* are the indices for the *x*- and *y*-direction, respectively. 
 
 $$
 \begin{equation} 
-aT_{i-1,j} + bT_{i,j-1} - 2(a+b)T_{i,j} + bT_{i,j+1} + aT_{i+1,j} = -\frac{Q}{k},
+bT_{i,j-1} + aT_{i-1,j} - 2(a+b)T_{i,j} + aT_{i+1,j} + bT_{i,j+1} = -\frac{Q}{k},
 \end{equation} 
 $$
 
@@ -453,14 +464,14 @@ where $a = \frac{1}{\Delta x^2}$ and $b = \frac{1}{\Delta y^2}$.
 *West (i=1)*
 $$
 \begin{equation}
-bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,W}.
+bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,W}.
 \end{equation}
 $$
 
 *East (i=ncx)*
 $$
 \begin{equation}
-aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} + 2aT_{BC,E}.
+aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,E}.
 \end{equation}
 $$
 
@@ -521,11 +532,11 @@ $$
 \end{equation} 
 $$
 
-&emsp;To properly solve equation $(52)$, one needs to apply a conservative finite difference scheme, such that the heat flux $(q_i = k_i\frac{\partial T}{\partial i})$, and thus the thermal conductivity, is defined **between** the centroids and the temperature **on** the centroids (see Figure 1). Considering such a staggered finite difference grid, equation $(52)$ results in a linear system of equations in the form of: 
+&emsp;To properly solve equation $(53)$, one needs to apply a conservative finite difference scheme, such that the heat flux $(q_i = k_i\frac{\partial T}{\partial i})$, and thus the thermal conductivity, is defined **between** the centroids and the temperature **on** the centroids (see Figure 1). Considering such a staggered finite difference grid, equation $(53)$ results in a linear system of equations in the form of: 
 
 $$
 \begin{equation} 
-a k_{x;i,j} T_{i-1,j} + b k_{y;i,j} T_{i,j-1} + c T_{i,j} + b k_{y;i,j+1} T_{i,j+1} + a k_{x;i+1,j} T_{i+1,j} + Q_{i,j} = 0,  
+b k_{y;i,j} T_{i,j-1} + a k_{x;i,j} T_{i-1,j} + c T_{i,j} + a k_{x;i+1,j} T_{i+1,j} + b k_{y;i,j+1} T_{i,j+1} + Q_{i,j} = 0,  
 \end{equation}
 $$
 
