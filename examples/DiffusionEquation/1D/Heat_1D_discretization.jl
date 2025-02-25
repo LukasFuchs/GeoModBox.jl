@@ -43,15 +43,16 @@ xp          =   L/2.0
 @. T.ini    =   Trock + (Tmagma-Trock)*exp(-((xc-xp)/σ)^2)
 # Setting up field memroy ---
 explicit    =   (T = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
-implicit    =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
+implicit    =   (T = zeros(nc), rhs = zeros(nc), ε = zeros(nc))
 dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
                     ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
-cna         =   (T = zeros(nc), T0 = zeros(nc), ε = zeros(nc))
+cna         =   (T = zeros(nc), ε = zeros(nc))
 # Assign initial temperature ---
-explicit.T  .=  T.ini
-implicit.T0 .=  T.ini
-dc.T0       .=  T.ini
-cna.T0      .=  T.ini
+explicit.T              .=  T.ini
+explicit.T_ex[2:end-1]  .=  explicit.T
+implicit.T              .=  T.ini
+dc.T0                   .=  T.ini
+cna.T                   .=  T.ini
 # Analytical solution ---
 @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
@@ -70,7 +71,7 @@ K1          =   ExtendableSparseMatrix(ndof,ndof)
 K2          =   ExtendableSparseMatrix(ndof,ndof)    
 # ----------------------------------------------------------------------- #
 # Animationssettings ---------------------------------------------------- #
-path        =   string("./examples/HeatEquation/1D/Results/")
+path        =   string("./examples/DiffusionEquation/1D/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("1D_comparison")
 save_fig    =   1
@@ -81,9 +82,9 @@ p = plot(xc, explicit.T, label="explicit",
         title="Temperature after $(round(time / day, digits=1)) days
         Δt = $(round(Δt / Δtexp, digits=2))*Δt_{crit}",
         xlim=(0,L),ylim=(0, Tmagma),layout=(1,2))
-plot!(p,xc, implicit.T0,label="implicit",subplot=1)
+plot!(p,xc, implicit.T,label="implicit",subplot=1)
 plot!(p,xc, dc.T0,label="def correction",subplot=1)
-plot!(p,xc, cna.T0,label="cna",subplot=1)
+plot!(p,xc, cna.T,label="cna",subplot=1)
 plot!(p,xc, T.ana, linestyle=:dash, label="analytical",subplot=1)
 plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         title="Error",
@@ -105,7 +106,7 @@ for n=1:nt
     # Explicit, Forward Euler ------------------------------------------- #
     ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     # Implicit, Backward Euler ------------------------------------------ #
-    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC, K )
+    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC, K, implicit.rhs )
     # Defection correction method --------------------------------------- #
     for iter = 1:niter
         # Residual iteration
@@ -125,9 +126,9 @@ for n=1:nt
     CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     # Update temperature ------------------------------------------------ #
     # explicit.T     .=  explicit.T
-    implicit.T0     .=  implicit.T
+    # implicit.T0     .=  implicit.T
     dc.T0           .=  dc.T
-    cna.T0          .=  cna.T
+    #cna.T0          .=  cna.T
     # Update time ------------------------------------------------------- #
     time    =   time + Δt
     # Analytical Solution ----------------------------------------------- #
@@ -135,9 +136,9 @@ for n=1:nt
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
     # Error ------------------------------------------------------------- #
     @. explicit.ε   =   abs((T.ana-explicit.T)/T.ana)*100
-    @. implicit.ε   =   abs((T.ana-implicit.T0)/T.ana)*100
+    @. implicit.ε   =   abs((T.ana-implicit.T)/T.ana)*100
     @. dc.ε         =   abs((T.ana-dc.T0)/T.ana)*100
-    @. cna.ε        =   abs((T.ana-cna.T0)/T.ana)*100
+    @. cna.ε        =   abs((T.ana-cna.T)/T.ana)*100
     # Plot solution ----------------------------------------------------- #
     if n == 1 || n % 5 == 0 || n == nt
         # Subplot 1 ---

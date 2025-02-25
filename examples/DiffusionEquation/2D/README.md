@@ -419,6 +419,8 @@ $$
 
 &emsp; This results in two linear sets of linear system of euqations with coefficient matrices for the left and right hand side of the equations. The corresponding coefficients and right hand side of each linear system of equations needs to be adjusted according to the given boundary conditions, as shown in the CNA, for example. For more details on how this is implemented, see [*ADI.jl*](../../../src/HeatEquation/ADI.jl).
 
+&emsp; For the explicit solver and the defection correction method, we need the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, we assign the current temperature field to the centroids of the extended field to use it as the *old* temperature and calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature. 
+
 ## Steady State Solution 
 
 **Note:** So far, variable thermal parameters are only implemented in the 1-D and 2-D steady state solutions (except for the 2-D defection correction method, which also enables a time-dependent 2-D solution for variable thermal parameters). 

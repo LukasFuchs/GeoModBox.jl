@@ -22,7 +22,6 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
-    explicit.T_ex[2:end-1]  =   explicit.T
     # Define boundary conditions ---------------------------------------- #
     # West ---
     explicit.T_ex[1]    =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - explicit.T_ex[2]) + 
@@ -34,7 +33,8 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
         # Calculate temperature at point i for the new time ---        
         explicit.T[i] =   explicit.T_ex[i+1] + κ * Δt * 
                 (explicit.T_ex[i + 2] - 2.0 * explicit.T_ex[i+1] + explicit.T_ex[i]) / Δx^2
-    end    
+    end
+    explicit.T_ex[2:end-1]  .=  explicit.T
 end
 
 @doc raw"""
@@ -58,8 +58,6 @@ boundary conditions.
 
 """
 function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
-
-    T.T_ex[2:end-1]     =   T.T
     
     if size(Py.k,1) == 1
         k   =   Py.k.*ones(nc+1,1)
@@ -91,6 +89,7 @@ function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
                     a*k[j+1]*T.T_ex[j+2] +
                     H[j]*Δt/cp[j]
     end
+    T.T_ex[2:end-1]     .= T.T
 end
 
 @doc raw"""
@@ -113,7 +112,7 @@ boundary conditions.
     BC          : Tuple for the boundary condition
     K           : Coefficient matrix for linear system of equations
 """
-function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
+function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs)
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -121,7 +120,7 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
     a   =   κ / Δx^2
     b   =   1 / Δt
     # Multiply rhs with 1/Δt ---    
-    implicit.T0  .=   b .* implicit.T0
+    rhs  .=   b .* implicit.T
     # Loop over the grid points ---
     for i = 1:nc  
         # Equation number ---
@@ -142,19 +141,16 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
         if inE K[ii,iE]    = - a end
         K[ii,iC]        =   (2 + DirW + DirE - NeuW - NeuE)*a + b
         if inW K[ii,iW]    = - a end            
-        # Modify right hand side due to boundary conditions ------------- #
-        if inE 
-            # West boundary ---
-            implicit.T0[1]   = implicit.T0[1] + 2*a*BC.val.W * DirW - a*BC.val.W*Δx * NeuW
-                    end
-        if inW
-            # East boundary ---
-            implicit.T0[nc]  = implicit.T0[nc] + 2*a*BC.val.E * DirE + a*BC.val.E*Δx * NeuE
-        end
+        # Modify right hand side due to boundary conditions ------------- #        
+        # West boundary ---
+        rhs[i]  +=  2*a*BC.val.W * DirW - 
+                        a*BC.val.W*Δx * NeuW +
+                        2*a*BC.val.E * DirE + 
+                        a*BC.val.E*Δx * NeuE
     end
     # ------------------------------------------------------------------- #    
     # Calculate temperature at new time step ---------------------------- #
-    implicit.T  .=   K \ implicit.T0
+    implicit.T  .=   K \ rhs
     # ------------------------------------------------------------------- #    
 end
 
@@ -183,7 +179,7 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
-    rhs     = zeros(length(cna.T0))
+    rhs     = zeros(length(cna.T))
     # Define coefficients ---
     a       =   κ / 2 / Δx^2
     b       =   1 / Δt
@@ -217,7 +213,7 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     end
     # ------------------------------------------------------------------- #
     # Berechnung der rechten Seite -------------------------------------- #
-    rhs     .=   K2 * cna.T0 
+    rhs     .=   K2 * cna.T
     # ------------------------------------------------------------------- #        
     # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
     for i = 1:nc        
@@ -227,10 +223,10 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
         DirE   = (i==nc && BC.type.E==:Dirichlet) ? 1. : 0.
         NeuE   = (i==nc && BC.type.E==:Neumann  ) ? 1. : 0.
         # West boundary
-        rhs[1]   = rhs[1] + 4*a*BC.val.W * DirW - 2*a*BC.val.W*Δx * NeuW        
-    
-        # East boundary
-        rhs[nc]  = rhs[nc] + 4*a*BC.val.E * DirE + 2*a*BC.val.E*Δx * NeuE
+        rhs[i]  +=  4*a*BC.val.W * DirW - 
+                        2*a*BC.val.W*Δx * NeuW +
+                        4*a*BC.val.E * DirE + 
+                        2*a*BC.val.E*Δx * NeuE
     end
     # ------------------------------------------------------------------- #    
     # Compute new temperature ------------------------------------------- #

@@ -243,6 +243,7 @@ for i=2:nt
         
         # Interpolate temperature from tracers to grid ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
+        D.T_ex[2:end-1,2:end-1]     .= D.T
     end
     
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
