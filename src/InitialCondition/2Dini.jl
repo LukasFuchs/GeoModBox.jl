@@ -47,9 +47,9 @@ Possible initial temperature conditions are:
                 end
             end
         end    
-        D.Tmax[1]   =   maximum(D.T_ex)
-        D.Tmin[1]   =   minimum(D.T_ex)
-        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+        #D.Tmax[1]   =   maximum(D.T_ex)
+        #D.Tmin[1]   =   minimum(D.T_ex)
+        #D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:gaussian        
         # κ           =   1e-6
         # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
@@ -59,9 +59,9 @@ Possible initial temperature conditions are:
                                     (y.ce[j]/((M.ymin+M.ymax)) - 0.5)^2)/σ^2)
             end
         end        
-        D.Tmax[1]   =   maximum(D.T_ex)
-        D.Tmin[1]   =   minimum(D.T_ex)
-        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+        #D.Tmax[1]   =   maximum(D.T_ex)
+        #D.Tmin[1]   =   minimum(D.T_ex)
+        #D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
         xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
@@ -69,7 +69,7 @@ Possible initial temperature conditions are:
         yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
         yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
         Ta      =   1200
-        D.Tmean[1]  =   (Tb + Ta)/2
+        #D.Tmean[1]  =   (Tb + Ta)/2
         # Anfangstemperatur Verteilung ---
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -80,8 +80,19 @@ Possible initial temperature conditions are:
                 end
             end
         end        
-        D.Tmax[1]   =   maximum(D.T_ex)
+        #D.Tmax[1]   =   maximum(D.T_ex)
+    elseif type==:linear
+        Ttop    =   Tb
+        Tgrad   =   0.5         # [ K/km ]
+        @threads for i = 1:NC.x+2
+            for j = 1:NC.y+2
+                D.T_ex[i,j] = -Tgrad*(y.ce[j]-(M.ymax-M.ymin))/1e3 + Ttop
+            end
+        end
     end
+    D.Tmax[1]   =   maximum(D.T_ex)
+    D.Tmin[1]   =   minimum(D.T_ex)
+    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D
