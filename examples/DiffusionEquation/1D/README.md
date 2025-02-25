@@ -1,6 +1,6 @@
 # General Information
 
-&emsp; This directory provides several examples solving the conductive part of the *temperature conservation equation* (in 1-D) using [different numerical discretization methods.](../../../src/HeatEquation/1Dsolvers.jl).
+&emsp; This directory provides several examples solving the **conductive** part of the *temperature conservation equation* (in 1-D) using [different numerical discretization methods.](../../../src/HeatEquation/1Dsolvers.jl).
 
 [comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!)
 
@@ -35,7 +35,7 @@ $$
   
 where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m<sup>2</sup>/s] and $Q=\rho H$ is the heat production rate per volume [W/m<sup>3</sup>]. Equation $(3)$ is a *parabolic partial differential equation* (PDE) which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
 
-&emsp; First, we would like to discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the forward in time and centered in space (FTCS) method in an *explicit* manner. This finite difference scheme will converge to the exact solution for small $\Delta x$ and $\Delta t$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
+&emsp; First, we would like to discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the **forward in time and centered in space (FTCS)** method in an **explicit** manner. This finite difference scheme will converge to the exact solution for small $\Delta x$ and $\Delta t$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
 
 $$\begin{equation}
 \Delta t < \frac{\Delta x^2}{2 \kappa}.
@@ -52,7 +52,7 @@ Thus, the maximum time step is limited by the model’s resolution.
 &emsp; To numerically solve equation $(3)$ one needs to discretize the numerical domain and assign the parameters to their corresponding nodes. **Note**: Even though the thermal conductivity is  assumed to be constant (for now), we chose a *conservative gridding* for the sake of continuity, that is the temperature $T$ is defined on the centroids and the heat flux $q$ in between. 
 
 <img src="./Figures/1D_Discretization.png" alt="drawing" width="600"/> <br>
-**Figure 1. 1-D Discretization.** *Conservative finite difference grid* to solve the 1-D conductive part of the *temperature conservation equation*. The temperature is defined on the centroids and the heat flux on the vertices. The temperature *ghost nodes* are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
+**Figure 1. 1-D Discretization.** *Conservative finite difference grid* to solve the 1-D conductive part of the *temperature equation*. The temperature is defined on the centroids and the heat flux on the vertices. The temperature *ghost nodes* are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
 <!-- ... *Where would $\rho$ and $Q$ be defined?* -->
 
 ### Explicit, *FTCS* (or Forward Euler Method)
@@ -73,7 +73,7 @@ T_{i}^{n+1} = T_{i}^{n} + a \left(T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n} \right)
 \end{equation}
 $$
 
-where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(5)$ can be solved *iteratively* for every centroid assuming initial and boundary coniditions are defined. For more details on how this is implemented see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
+where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved *iteratively* for every centroid assuming initial and boundary coniditions are defined. For more details on how this is implemented see [*1Dsolvers.jl*](../../../src/HeatEquation/1Dsolvers.jl).
 
 #### Boundary Conditions 
 
@@ -91,7 +91,7 @@ T_{G,E} = 2T_{BC,E} - T_{nc},
 \end{equation}
 $$
 
-where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectrively, and $nc$ is the number of centroids.  
+where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectively, and $nc$ is the number of centroids.  
 
 &emsp;The Neumann boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux *q* through the boundary. The temperature at the *ghost nodes* is then defined as: 
 
@@ -117,7 +117,7 @@ $$
 
 are the constant temperature gradients across the left and right boundary, respectively. 
 
-Now one can solve equation $(5)$ for each centroid using the defined temperature at the *ghost nodes* for a certain boundary condition.
+Now one can solve equation $(6)$ for each centroid using the defined temperature at the *ghost nodes* for a certain boundary condition.
 
 ----------------------------------
 ----------------------------------
@@ -188,7 +188,7 @@ $$
 
 ### Defection Correction Method
 
-&emsp; The defection correction method is an iterative solution, in which the residual of the conductive part of the *temperature equation* for an initial temperature conditions is reduced by a correction term. In case, the system is linear, one iteration is sufficient enough to optain the exact solution. 
+&emsp; The defection correction method is an iterative solution, in which the residual of the conductive part of the *temperature equation* for an initial temperature condition is reduced by a correction term. In case, the system is linear, one iteration is sufficient enough to optain the exact solution. 
 
 *Theory*
 
@@ -200,7 +200,7 @@ $$
 \end{equation}
 $$
 
-where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is an term containing the remaining variables (e.g., the current temperature and the radioactive heat source), and $R$ is the resiual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
+where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is a term containing the remaining variables (e.g., the current temperature and the radioactive heat source), and $R$ is the resiual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
 
 $$
 \begin{equation}
@@ -277,7 +277,7 @@ $$
 
 $$
 \begin{equation}
--aT_{i+1}^{n+1} + \left(b+2a\right)T_{i}^{n+1} - a T_{i-1}^{n+1} = aT_{i+1}^{n} + \left(b-2a\right)T_{i}^{n} + a T_{i-1}^{n},
+-aT_{i-1}^{n+1} + \left(b+2a\right)T_{i}^{n+1} - a T_{i+1}^{n+1} = aT_{i-1}^{n} + \left(b-2a\right)T_{i}^{n} + a T_{i+1}^{n},
 \end{equation}
 $$
 
@@ -356,14 +356,14 @@ $$
 
 ### Gaussian Diffusion ([Heat_1D_discretization.jl](Heat_1D_discretization.jl))
 
-...
+<!-- Information missing! -->...
 
 <img src="./Results/1D_comparison.gif" alt="drawing" width="600"/> <br>
 **Figure ....** Diffusion of an initial Gaussian temperature distribution.... 
 
 ### Geotherms
 
-&emsp;The 1-D temperature profiles of a geotherm are calculated by solving the conductive part of the 1-D *temperature conservation equation* (so far only including a radiogenic heat source) for variable thermal parameters with a proper conserving finite difference scheme. That is, the heat flow is calculated on the vertices and the temperature is defined on the centroids, respectively. The discretization scheme for variable thermal parameters is choosen to solve for a temperature profile of a continental lithosphere with upper, lower crust, and mantle. The 1-D temperature equation is given by: 
+&emsp;The 1-D temperature profiles of a geotherm are calculated by solving the conductive part of the 1-D *temperature equation* (so far only including a radiogenic heat source) for variable thermal parameters with a proper conserving finite difference scheme. That is, the heat flow is calculated on the vertices and the temperature is defined on the centroids, respectively. The discretization scheme for variable thermal parameters is choosen to solve for a temperature profile of a continental lithosphere with upper, lower crust, and mantle. The 1-D temperature equation is given by: 
 
 $$\begin{equation}
 \rho c_{p} \frac{\partial{T}}{\partial{t}} = \frac{\partial{}}{\partial{y}}\left(k \frac{\partial{T}}{\partial{y}}\right) + \rho H,
