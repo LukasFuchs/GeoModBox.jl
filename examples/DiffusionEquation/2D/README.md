@@ -462,6 +462,7 @@ where $a = \frac{1}{\Delta x^2}$ and $b = \frac{1}{\Delta y^2}$.
 **Dirichlet**
 
 *West (i=1)*
+
 $$
 \begin{equation}
 bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,W}.
@@ -469,6 +470,7 @@ bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}}
 $$
 
 *East (i=ncx)*
+
 $$
 \begin{equation}
 aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,E}.
@@ -476,6 +478,7 @@ aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}
 $$
 
 *South (j=1)*
+
 $$
 \begin{equation}
 aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,S}.
@@ -483,6 +486,7 @@ aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}}
 $$
 
 *North (j=ncy)*
+
 $$
 \begin{equation}
 aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,N}.
