@@ -1,5 +1,8 @@
 using ExtendableSparse
 
+@doc raw"""
+    Poisson2Dc
+"""
 function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
 # difference scheme
@@ -62,6 +65,9 @@ function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
     
 end
 
+@doc raw"""
+    Poisson2D
+"""
 function Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
     #  --------------------------------------------- #
     rhs     .=   - reshape(Q, NC.x*NC.y, 1)

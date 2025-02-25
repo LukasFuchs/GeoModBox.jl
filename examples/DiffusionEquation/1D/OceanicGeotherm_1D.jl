@@ -45,8 +45,9 @@ T1  =   (
 )
 T   =   merge(T,T1)
      
-Tini        =   zeros(nc,1)
-Tini        .=   T.T
+Tini                =   zeros(nc,1)
+Tini                .=   T.T
+T.T_ex[2:end-1]     .=   T.T
 # ------------------------------------------------------------------- #
 # Boundary conditions ----------------------------------------------- #
 BC      =   (
@@ -122,7 +123,7 @@ end
 # ------------------------------------------------------------------- #
 # Calculate heaf flow ----------------------------------------------- #
 # South ---
-T.T_ex[2:end-1]     =   T.T
+#T.T_ex[2:end-1]     =   T.T
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
                 (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
 # North ---
@@ -164,8 +165,8 @@ p = plot!(T.q.*1e3,yv./1e3,
         ylim=(-H/1e3,0),
         subplot=2)        
 display(p)
-savefig(p,"./examples/HeatEquation/1D/Results/OceanicGeotherm_1D.png")
-savefig(q,"./examples/HeatEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
+savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
+savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
 end
 

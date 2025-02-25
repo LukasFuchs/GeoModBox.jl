@@ -114,7 +114,7 @@ plot!(p,ST.x, linfit1, color="black", label="",
 
 # Show the plot
 display(p)
-savefig("./examples/HeatEquation/2D/Results/Poisson_ResTest.png")
+savefig("./examples/DiffusionEquation/2D/Results/Poisson_ResTest.png")
 # ----------------------------------------------------------------------- #
 end
 

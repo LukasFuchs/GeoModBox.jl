@@ -1,3 +1,6 @@
+@doc raw"""
+    ForwardEuler2Dc
+"""
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the explicit finite
     # difference scheme
@@ -6,8 +9,6 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     
     sx      = κ * Δt / Δx^2
     sz      = κ * Δt / Δy^2
-
-    # D.T_ex[2:end-1,2:end-1]     .=  D.T
 
     # Temperature at the ghost nodes ------------------------------------ #
     # West boundary ---
@@ -37,6 +38,5 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # ------------------------------------------------------------------- #
     # Update extended temperature --------------------------------------- #
     D.T_ex[2:end-1,2:end-1]     .=  D.T
-    # ------------------------------------------------------------------- #
-    
+    # ------------------------------------------------------------------- #    
 end

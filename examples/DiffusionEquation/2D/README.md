@@ -419,6 +419,8 @@ $$
 
 &emsp; This results in two linear sets of linear system of euqations with coefficient matrices for the left and right hand side of the equations. The corresponding coefficients and right hand side of each linear system of equations needs to be adjusted according to the given boundary conditions, as shown in the CNA, for example. For more details on how this is implemented, see [*ADI.jl*](../../../src/HeatEquation/ADI.jl).
 
+&emsp; For the explicit solver and the defection correction method, we need the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, we assign the current temperature field to the centroids of the extended field to use it as the *old* temperature and calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature. 
+
 ## Steady State Solution 
 
 **Note:** So far, variable thermal parameters are only implemented in the 1-D and 2-D steady state solutions (except for the 2-D defection correction method, which also enables a time-dependent 2-D solution for variable thermal parameters). 
@@ -462,6 +464,7 @@ where $a = \frac{1}{\Delta x^2}$ and $b = \frac{1}{\Delta y^2}$.
 **Dirichlet**
 
 *West (i=1)*
+
 $$
 \begin{equation}
 bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,W}.
@@ -469,6 +472,7 @@ bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}}
 $$
 
 *East (i=ncx)*
+
 $$
 \begin{equation}
 aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{BC,E}.
@@ -476,6 +480,7 @@ aT_{ncx-1,j} + bT_{ncx,j-1} - (3a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}
 $$
 
 *South (j=1)*
+
 $$
 \begin{equation}
 aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,S}.
@@ -483,6 +488,7 @@ aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}}
 $$
 
 *North (j=ncy)*
+
 $$
 \begin{equation}
 aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{BC,N}.
@@ -492,6 +498,7 @@ $$
 **Neumann**
 
 *West (i=1)*
+
 $$
 \begin{equation}
 bT_{1,j-1} - (a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} + ac_W\Delta{x}.
@@ -499,6 +506,7 @@ bT_{1,j-1} - (a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} 
 $$
 
 *East (i=ncx)*
+
 $$
 \begin{equation}
 aT_{ncx-1,j} + bT_{ncx,j-1} - (a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}{k_{i,j}} - ac_E\Delta{x}.
@@ -506,6 +514,7 @@ aT_{ncx-1,j} + bT_{ncx,j-1} - (a + 2b)T_{ncx,j} + bT_{ncx,j+1} = -\frac{Q_{i,j}}
 $$
 
 *South (j=1)*
+
 $$
 \begin{equation}
 aT_{i-1,1} - (2a + b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} + bc_S\Delta{y}.
@@ -513,6 +522,7 @@ aT_{i-1,1} - (2a + b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} 
 $$
 
 *North (j=ncy)*
+
 $$
 \begin{equation}
 aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - bc_N\Delta{y}.

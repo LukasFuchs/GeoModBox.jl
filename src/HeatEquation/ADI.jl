@@ -1,5 +1,7 @@
 using ExtendableSparse
-
+@doc raw"""
+    ADI2Dc
+"""
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
     # implicit finite difference scheme.
@@ -189,5 +191,4 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     T.T[:]  .=  C \ rhs[:]
 
     T.T_ex[2:end-1,2:end-1]     .=    T.T
-
 end
