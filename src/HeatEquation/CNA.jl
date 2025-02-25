@@ -1,5 +1,6 @@
-using Base.Threads
-
+@doc raw"""
+    CNA2Dc
+"""
 function CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
 # ----------------------------------------------------------------------- #
@@ -10,7 +11,7 @@ b       =   κ / 2 / Δy^2
 c       =   1 / Δt
 
 # Loop over the grid points ---
-@threads for i = 1:NC.x
+for i = 1:NC.x
     for j = 1:NC.y
         # Equation number ---
         ii          =   Num.T[i,j]
@@ -62,7 +63,7 @@ end
 rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 # ------------------------------------------------------------------- #        
 # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
-@threads for i = 1:NC.x
+for i = 1:NC.x
     for j = 1:NC.y     
         ii      =   Num.T[i,j]
         # Boundaries         
@@ -90,6 +91,6 @@ end
 # ------------------------------------------------------------------- #    
 # Compute new temperature ------------------------------------------- #
 D.T[:]      .=    K1 \ rhs[:]
+D.T_ex[2:end-1,2:end-1]     .=    D.T
 # ------------------------------------------------------------------- #
-
 end

@@ -27,6 +27,12 @@ using GeoModBox.InitialCondition
 using Base.Threads
 using Printf
 
+@doc raw"""
+    Advection_2D()
+
+...
+
+"""
 function Advection_2D()
 
 @printf("Running on %d thread(s)\n", nthreads())
@@ -192,11 +198,11 @@ if FD.Method.Adv==:tracers
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
             ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
             colorbar=true,layout=(1,2),subplot=1)
-    #quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-    #        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-    #        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-    #                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-    #        color="white",layout=(1,2),subplot=1)
+    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                    D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+            color="white",layout=(1,2),subplot=1)
     heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
             colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
@@ -237,6 +243,7 @@ for i=2:nt
         
         # Interpolate temperature from tracers to grid ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
+        D.T_ex[2:end-1,2:end-1]     .= D.T
     end
     
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
@@ -246,18 +253,18 @@ for i=2:nt
         if FD.Method.Adv==:tracers
             #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
             #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
-            #        markersize=Pl.Msz,legend=false,colorbar=true, 
+            #        markersize=Pl.Msz,legend=false,color bar=true, 
             #        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
             #        layout=(1,2),subplot=1)
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                     ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
                     colorbar=true,layout=(1,2),subplot=1)
-            #quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-            #        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-            #        quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-            #                D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-            #        color="white",layout=(1,2),subplot=1)
+            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+                    color="white",layout=(1,2),subplot=1)
             heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
                     colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",

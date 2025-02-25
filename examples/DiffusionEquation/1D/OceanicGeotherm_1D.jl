@@ -1,52 +1,36 @@
-using Plots
+using Plots, SpecialFunctions
 using GeoModBox.HeatEquation.OneD
 
 @doc raw"""
-    ContinentalGeotherm_1D()
+    OceanicGeotherm_1D()
 
-Function to calculate the 1D geotherm for a continental lithosphere. 
+Function to calculate the 1D geotherm for an oceanic lithosphere. 
 Temperature is calculated by solving the 1-D heat equation assuming
 variable thermal parameters and a radiogenic heat source.
 The equation is solved using a proper conserving finite difference
 scheme.
 
 """
-function ContinentalGeotherm_1D()
+function OceanicGeotherm_1D()
 # ------------------------------------------------------------------- #
-#    LF - 24.10.2024 - julia                                          #
+#    LF - 22.10.2024 - juila                                          #
 # ------------------------------------------------------------------- #
-        
+    
 # Constants --------------------------------------------------------- #
 H           =   200e3               #   Hight of the model [ m ]
-yUC         =   10e3                #   Depth of the upper crust [ m ]
-yLC         =   35e3                #   Depth of the lower crust [ m ]
-        
-nc          =   200                 #   Number of grid points
+nc          =   200                 #   Number of central grid points    
 Δy          =   H/nc                #   Grid resolution
 
-# Depth [m] ---
+# Depth [ m ] ---
 yc          =   LinRange(-H + Δy/2.0,0.0 - Δy/2.0,nc)     
 yv          =   LinRange(-H,0,nc+1)
-        
+    
 Py  =   (
-    # Mantle properties ---
-    ρM      =   3000,               #   Density [ kg/m^3 ]
-    cpM     =   1000,               #   Heat capacity [ J/kg/K ]
-    kM      =   2.3,                #   Conductivity [ W/m/K ]
-    HM      =   2.3e-12,            #   Heat generation rate [W/kg]; Q = ρ*H;2.3e-12
-        
-    # Upper crust properties ---
-    ρUC     =   2700,               # [ kg/m^3 ]
-    kUC     =   3.0,                # [ W/m/K ]
-    HUC     =   617e-12,            # [ W/kg ]
-    cpUC    =   1000,
-        
-    # Lower crust properties ---
-    ρLC     =   2900,               # [ kg/m^3 ]
-    kLC     =   2.0,                # [ W/m/K ]
-    HLC     =   43e-12,             # [ W/kg ]
-    cpLC    =   1000,
-)                
+    ρm      =   3000,               #   Density [ kg/m^3 ]
+    cpm     =   1000,               #   Heat capacity [ J/kg/K ]
+    km      =   3.0,                #   Conductivity [ W/m/K ]
+    HM      =   0,                  #   Heat generation rate [W/kg]; Q = ρ*H0
+)    
 # ------------------------------------------------------------------- #
 # Initial Condition ------------------------------------------------- #
 T   =   (
@@ -60,67 +44,52 @@ T1  =   (
     T       =   T.Tpot .+ abs.(yc./1e3).*T.ΔTadi,   # Initial T-profile [ K ]
 )
 T   =   merge(T,T1)
-
-Tini        =   zeros(nc,1)
-Tini        .=   T.T
+     
+Tini                =   zeros(nc,1)
+Tini                .=   T.T
+T.T_ex[2:end-1]     .=   T.T
 # ------------------------------------------------------------------- #
 # Boundary conditions ----------------------------------------------- #
 BC      =   (
     type    = (N=:Dirichlet, S=:Dirichlet),
-    val     = (N=T.Ttop,S=T.Tbot)
+    val     = (N=T.Ttop[1],S=T.Tbot[1])
 )
 # S      =   -0.03;          # c     =   -k/q -> 90 mW/m^2
 # N      =   -0.0033;        # c     =   -k/q -> 10 mW/m^2
 # ------------------------------------------------------------------- #
 # Time stability criterion ------------------------------------------ #
-fac     =   0.9                 #   Courant criterion
-tmax    =   1000                 #   Lithosphere age [ Ma ]
+fac     =   0.8                 #   Courant criterion
+tmax    =   60                  #   Lithosphere age [ Ma ]
 tsca    =   60*60*24*365.25     #   Seconds per year
 
 age     =   tmax*1e6*tsca        #   Age in seconds    
 # ------------------------------------------------------------------- #
 # Plot Initial condition -------------------------------------------- #
-p = plot(T.T,yc./1e3, 
+plotparam   =   1
+q = plot(Tini,yc./1e3, 
     label="", 
     xlabel="T [ K ]", ylabel="z [ km ]", 
     title="Initial Temperature",
     xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0))
-display(p)
+display(q)
 # ------------------------------------------------------------------- #
-# Setup fields ------------------------------------------------------ #
+# Setup Fields ------------------------------------------------------ #
 Py1     =   (
-    k            =   zeros(nc+1,1),
-    ρ            =   zeros(nc,1),
-    cp           =   zeros(nc,1),
-    H            =   zeros(nc,1),
-    )
-Py  = merge(Py,Py1)
-    
-# Upper Crust ---
-Py.k[yv.>=-yUC]     .=   Py.kUC
-Py.ρ[yc.>=-yUC]     .=   Py.ρUC
-Py.cp[yc.>=-yUC]    .=   Py.cpUC
-Py.H[yc.>=-yUC]     .=   Py.HUC    
-# Lower Crust ---
-Py.k[yv.>=-yLC .&& yv.<-yUC]     .=   Py.kLC
-Py.ρ[yc.>=-yLC .&& yc.<-yUC]     .=   Py.ρLC
-Py.cp[yc.>=-yLC .&& yc.<-yUC]    .=   Py.cpLC
-Py.H[yc.>=-yLC .&& yc.<-yUC]     .=   Py.HLC   
-# Mantle ---
-Py.k[yv.<-yLC]  .=   Py.kM
-Py.ρ[yc.<-yLC]  .=   Py.ρM
-Py.cp[yc.<-yLC] .=   Py.cpM
-Py.H[yc.<-yLC]  .=   Py.HM
-
+    ρ       =   Py.ρm.*ones(nc,1),
+    cp      =   Py.cpm.*ones(nc,1),
+    k       =   Py.km.*ones(nc+1,1),
+    H       =   Py.HM.*ones(nc,1)
+)
+Py  =   merge(Py,Py1)
 Py2     =   (
     # Thermal diffusivity [ m^2/s ] 
     κ       =  maximum(Py.k)/minimum(Py.ρ)/minimum(Py.cp),     
-    )
+)
 Py  =   merge(Py,Py2)
 T2  =   (
     q   =   zeros(nc+1,1),
-    )
-T   =   merge(T,T2)  
+)
+T   =   merge(T,T2)
 # ------------------------------------------------------------------- #
 # Time stability criterion ------------------------------------------ #
 Δtexp   =   Δy^2/2/Py.κ             #   Stability criterion for explicit
@@ -130,7 +99,7 @@ nit     =   ceil(Int64,age/Δt)      #   Number of iterations
 
 time    =   zeros(1,nit)            #   Time array
 # ------------------------------------------------------------------- #
-# Time Loop --------------------------------------------------------- #
+# Calculate 1-D temperature profile --------------------------------- #
 count   =   1
 for i = 1:nit
     if i > 1
@@ -140,21 +109,21 @@ for i = 1:nit
         time[i]     =   time[i-1] + Δt
     end
     ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
-    if i == nit || abs(time[i]/1e6/tsca - count*100.0) < Δt/1e6/tsca        
-        println(string("i = ",i,", time = ", time[i]/1e6/tsca))                    
-        p = plot!(T.T.-T.Ttop,yc./1e3, 
+    if i == nit || abs(time[i]/1e6/tsca - count*5.0) < Δt/1e6/tsca        
+        println(string("i = ",i,", time = ", time[i]/1e6/tsca))        
+        q = plot!(T.T,yc./1e3, 
             label=string("t = ",ceil(time[i]/1e6/tsca),"[Ma]"), 
-            xlabel="T [°C]", ylabel="z [m]", 
-            title="Continental Geotherm",
-            xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0))
-        display(p)
+            xlabel="T [ K ]", ylabel="z [ km ]", 
+            title="Oceanic Geotherm",
+            xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0))
+        display(q)
         count = count + 1
     end
 end
 # ------------------------------------------------------------------- #
 # Calculate heaf flow ----------------------------------------------- #
 # South ---
-T.T_ex[2:end-1]     .=   T.T
+#T.T_ex[2:end-1]     =   T.T
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
                 (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
 # North ---
@@ -166,41 +135,39 @@ if size(Py.k,1)==1
             (T.T_ex[j+1] - T.T_ex[j])/Δy
     end    
 else
-    for j=1:nc+1                        
-        T.q[j]  =   - Py.k[j] * 
+    for j=1:nc+1
+        T.q[j]  =   -Py.k[j] * 
             (T.T_ex[j+1] - T.T_ex[j])/Δy
     end
 end
 # ------------------------------------------------------------------- #
-# Plot profile if requested ----------------------------------------- #
-q = plot(T.T.-T.Ttop,yc./1e3, 
+# Plot -------------------------------------------------------------- #
+if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
+    Tana    =   zeros(nc,1)
+    Tana    .=   Tini .+ (T.Ttop - T.Tpot).*erfc.(-yc./(2*sqrt(age*Py.κ)))
+    Tana[end] =   T.Ttop
+end    
+p = plot(T.T,yc./1e3, 
         label=string("t = ",ceil(maximum(time)/1e6/tsca),"[Ma]"), 
-        xlabel="T [°C]", ylabel="z [m]",
-        title="Continental Geotherm",
-        xlim=(0,T.Tbot-T.Ttop),ylim=(-H/1e3,0),
-        layout=(1,3),subplot=1)    
-q = plot!(T.q.*1e3,yv./1e3, 
+        xlabel="T [ K ]", ylabel="z [ km ]",
+        title="Oceanic Geotherm",
+        xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0),
+        layout=(1,2),subplot=1)        
+if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
+    plot!(p,Tana,yc./1e3, 
+            label="T_HSCM",linestyle=:dash,
+            layout=(1,2),subplot=1)        
+end        
+p = plot!(T.q.*1e3,yv./1e3, 
         label="", 
         xlabel="q [ mW ]", ylabel="z [m]", 
         title="Heat Flux",
         ylim=(-H/1e3,0),
-        subplot=2) 
-q = plot!(Py.k,yv./1e3,label="k [W/m/K]",
-        xlabel="k,ρ,cp,Q", ylabel="z [km]",
-        title="Thermal parameters",
-        subplot=3)       
-q = plot!(Py.cp./1e3,yc./1e3,label="cp [kJ/kg/K]",
-        subplot=3)
-q = plot!(Py.ρ,yc./1e3,label="ρ [kg/m³]",                
-        subplot=3)
-q = plot!(Py.H.*(Py.ρ./1e3),yc./1e3,label="Q [mW/m³]",
-        subplot=3)
-display(q)
-# Save figures ---
-savefig(q,"./examples/HeatEquation/1D/Results/ContinentalGeotherm_1D.png")
-savefig(p,"./examples/HeatEquation/1D/Results/ContinentalGeotherm_1D_evolve.png")
-# ------------------------------------------------------------------- #
+        subplot=2)        
+display(p)
+savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
+savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
+# ======================================================================= #
 end
-    
-ContinentalGeotherm_1D()
-    
+
+OceanicGeotherm_1D()

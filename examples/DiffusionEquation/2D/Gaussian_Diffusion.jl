@@ -53,7 +53,7 @@ for m = 1:ns
         display(string("nx = ",NC.x,", ny = ",NC.y))
         # ------------------------------------------------------------ #
         # Animationssettings ----------------------------------------- #
-        path        =   string("./examples/HeatEquation/2D/Results/")
+        path        =   string("./examples/DiffusionEquation/2D/Results/")
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("Gaussian_Diffusion_",FDSchema,
                             "_nx_",NC.x,"_ny_",NC.y)
@@ -194,13 +194,10 @@ for m = 1:ns
                     ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
                 elseif FDSchema == "implicit"
                     BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K, Num)
-                    # D.T0 .= D.T
                 elseif FDSchema == "CNA"
                     CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
-                    D.T0 .= D.T
                 elseif FDSchema == "ADI"
                     ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
-                    D.T0 .= D.T
                 elseif FDSchema == "dc"
                     for iter = 1:niter
                         # Evaluate residual
@@ -335,7 +332,7 @@ for m = 1:ns
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
-savefig(q,"./examples/HeatEquation/2D/Results/Gaussian_ResTest.png")
+savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
 # --------------------------------------------------------------------- #
 end
 

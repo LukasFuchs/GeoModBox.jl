@@ -1,5 +1,7 @@
-using ExtendableSparse, Base.Threads
-
+using ExtendableSparse
+@doc raw"""
+    ComputeResiduals2D
+"""
 function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. T_ex[2:end-1,2:end-1] = T 
     @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
@@ -13,6 +15,9 @@ function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y  
 end
 
+@doc raw"""
+    AssembleMatrix2D
+"""
 function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     # Linear system of equation
     ndof   = maximum(Num.T)
@@ -21,7 +26,7 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     #############################
     #       Heat equation       #
     #############################
-    @threads for i=1:nc.x
+    for i=1:nc.x
         for j=1:nc.y
             # Equation number
             ii = Num.T[i,j]
@@ -62,7 +67,10 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     return flush!(K)
 end
 
- function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+@doc raw"""
+    BackwardEuler2Dc
+"""
+function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
@@ -73,7 +81,7 @@ c   =   1 / Δt
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 
 # Loop over the grid points ---
-@threads for i = 1:NC.x
+for i = 1:NC.x
     for j = 1:NC.y
         # Equation number ---
         ii          =   Num.T[i,j]
@@ -107,8 +115,7 @@ rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
         if inE K[ii,iE]     = - a end    
         if inN K[ii,iN]     = - b end
         # Modify right hand side due to boundary conditions ------------- #
-        rhs[ii]     = rhs[ii] + 
-                        2*a*BC.val.W[j] * DirW +
+        rhs[ii]     +=  2*a*BC.val.W[j] * DirW +
                         2*a*BC.val.E[j] * DirE +
                         2*b*BC.val.S[i] * DirS +
                         2*b*BC.val.N[i] * DirN -
@@ -121,6 +128,6 @@ end
 # ------------------------------------------------------------------- #    
 # Calculate temperature at new time step ---------------------------- #
 D.T[:]  .=   K \ rhs[:]
+D.T_ex[2:end-1,2:end-1]     .=    D.T
 # ------------------------------------------------------------------- #
-
 end

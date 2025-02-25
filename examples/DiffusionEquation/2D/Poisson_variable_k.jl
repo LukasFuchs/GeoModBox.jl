@@ -103,8 +103,8 @@ heatmap!(q,x.c ./ 1e3, y.v ./ 1e3, D.ky',
 display(p)
 display(q)
 
-savefig(p,"./examples/HeatEquation/2D/Results/Poisson_variable_k_01.png")
-savefig(q,"./examples/HeatEquation/2D/Results/Poisson_variable_k_02.png")
+savefig(p,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_01.png")
+savefig(q,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
 
 
