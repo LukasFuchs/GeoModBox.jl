@@ -8,13 +8,21 @@ M   =   (
 )
 I   =   (
     vₓ₀         =   5/100/31536000,     #   Geschwindigkeit oben [ m/s ]
-    η₀          =   1.0e21,             #   Viscosität [ Pa s ]
+    η₀          =   1.0e21,             #   Viscosität an der Oberseite [ Pa s ]
+    η₁          =   1.0e21,             #   Viskosität an der Unterseite [ Pa s ]
     ∂P∂x        =   -5.0e1,              #   horizontaler Druckgradient [ Pa/m ]
 )
+I1  =   (
+    m           =   I.η₁ / I.η₀,        #   Viskositätsverhältnis
+)
+I   =   merge(I,I1)
 # ----------------------------------------------------------------------- #
 # Numerische Parameter -------------------------------------------------- #
 NC  =   (
     y   =   100,        #   Anzahl der vertikalen Centroids
+)
+NV  =   (
+    y   =   NC.y + 1,
 )
 Δ   =   (
     y   =   (M.ymax-M.ymin)/NC.y,   #   Gitterauflösung
@@ -22,6 +30,7 @@ NC  =   (
 # ----------------------------------------------------------------------- #
 # Speicherzuweisung ----------------------------------------------------- #
 D   =   (
+    η   =   zeros(NC.y+1),
     vₓ  =   zeros(NC...),
     vₓₐ =   zeros(NC...),
     Δvₓ =   zeros(NC...)
@@ -30,12 +39,21 @@ D   =   (
 # Gitter ---------------------------------------------------------------- #
 y   =   (
     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
+    v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
+@. D.η  =   I.η₀ * exp(-log(I.m)* y.v / (M.ymax-M.ymin))
 # ----------------------------------------------------------------------- #
-# Analytische Lösung ---------------------------------------------------- # 
-@. D.vₓₐ    =   1.0/2.0/I.η₀ * I.∂P∂x * 
+# Analytische Lösung ---------------------------------------------------- #
+if I.m  == 1.0
+    @. D.vₓₐ    =   1.0/2.0/I.η₀ * I.∂P∂x * 
                     (y.c^2 + (M.ymax-M.ymin).*y.c) + 
                     I.vₓ₀*y.c/(M.ymax-M.ymin) + I.vₓ₀
+else
+    @. D.vₓₐ    =   -I.∂P∂x * (M.ymax-M.ymin) / I.η₀ / log(I.m) / (I.m-1) * 
+        (-y.c * (I.m^((y.c + (M.ymax-M.ymin))/(M.ymax-M.ymin)) - 
+        I.m^(y.c/(M.ymax-M.ymin))) + (M.ymax-M.ymin)*(I.m^(y.c/(M.ymax-M.ymin)) - 1)) + 
+        I.vₓ₀ / (I.m-1) * (I.m ^ ((y.c+(M.ymax-M.ymin))/(M.ymax-M.ymin)) - 1)
+end
 # ----------------------------------------------------------------------- #
 # Randbedingungen ------------------------------------------------------- #
 VBC     =   (
@@ -50,10 +68,13 @@ K       =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(NC...)
 # ----------------------------------------------------------------------- #
 # Zusammenstellen der Koeffizientenmatrix ------------------------------- #
-a       =     I.η₀ / Δ.y^2.0
-b       =   - 2.0 * I.η₀ / Δ.y^2.0
+#a       =     I.η₀ / Δ.y^2.0
+#b       =   - 2.0 * I.η₀ / Δ.y^2.0
 rhs     .=  I.∂P∂x
 for i = 1:NC.y
+    a   =   D.η[i] / Δ.y^2.0
+    b   =   -(D.η[i]+D.η[i+1]) / Δ.y^2.0
+    c   =   D.η[i+1] / Δ.y^2.0
     # Gleichungsnummer ---
     ii  =   Num.Vx[i]
     # Stempel ---
@@ -70,13 +91,13 @@ for i = 1:NC.y
     DirN   = (i==NC.y && VBC.type.N==:Dirichlet) ? 1. : 0.
     NeuN   = (i==NC.y && VBC.type.N==:Neumann  ) ? 1. : 0.
     if inS K[ii,iS]    = a end
-        K[ii,iC]       =   b + (NeuS + NeuN - DirS - DirN)*a
-    if inN K[ii,iN]    = a end    
+        K[ii,iC]       =   b + (NeuS - DirS)*a + (NeuN - DirN)*c
+    if inN K[ii,iN]    = c end    
     # Änderung der rechten Seite ---
     rhs[i]      +=  a*VBC.val.S*Δ.y * NeuS - 
                         2*a*VBC.val.S * DirS - 
-                        a*VBC.val.N*Δ.y * NeuN - 
-                        2*a*VBC.val.N * DirN
+                        c*VBC.val.N*Δ.y * NeuN - 
+                        2*c*VBC.val.N * DirN
 end
 # ----------------------------------------------------------------------- #
 # Lösung des Gleichungssystems ------------------------------------------ #
@@ -102,97 +123,3 @@ display(q)
 end
 
 Stokes_1D_const()
-
-
-
-
-
-
-
-
-
-
-
-# clear
-# clc
-
-# ## Model Geometry ======================================================= #
-# H       =   -400e3;             # [ m ]
-# vx0     =   2;                  # [ cm/a ]
-# vx0     =   vx0/100/31536000;   # [ m/s ]
-# dPdx    =   -1e2;               # [ Pa/m ]; z.B. -7e1 (Warum negativ?)
-
-# ## Numerische Parameter ================================================= #
-# nz      =   51;
-# dz      =   H/(nz-1);
-
-# # Koordinaten
-# z       =   H:-dz:0;
-# # Index der internen Gitterpunkte
-# indi    =   2:nz-1;
-
-# ## Definition der Vikosität ============================================= #
-# eta0        =   22;                 # Power der Viskosität oben
-# eta1        =   21;                 # Power der Viskosität unten
-# m           =   10^eta1/10^eta0;    # Viskositätsverhältnis
-# # eta         =   10^eta0.*m.^(z'./H);   # Viskositätsprofil
-# eta         =   10.^eta0*exp(log(m).*z'./H);
-
-# ## Analytische Loesung ================================================== #
-# vx_ana      =   -dPdx*H/10^eta0/log(m)/(m-1).*...
-#     (z.*(m.^((-z+H)./H) - m.^(-z./H)) + H.*(m.^(-z./H) - 1)) + ...
-#     vx0/(m-1).*(m.^((-z+H)./H) - 1);
-
-# ## Erstellung der Koeffizientenmatrix A
-# diag        =   zeros(nz,3);
-
-# # Bestimmung der Diagonalen
-# diag(indi-1,1)  =   (eta(indi)+eta(indi-1))/2/dz^2;
-# diag(indi,2)    =   -(eta(indi-1)+2*eta(indi)+eta(indi+1))/2/dz^2;
-# diag(indi+1,3)  =   (eta(indi)+eta(indi+1))/2/dz^2;
-
-# # Randbedingungen - no slip, d.h. konstante Geschwindigkeit
-# diag(1,2)       =   1;
-# diag(nz,2)      =   1;
-
-# A               =   spdiags(diag,[-1 0 1],nz,nz);
-
-# ## Definition der rechten Seite des Gleichungssystems
-# rhs             =   zeros(nz,1);
-
-# rhs(indi)       =   dPdx;
-# rhs(1)          =   0;          # unten
-# rhs(nz)         =   vx0;        # oben
-
-# vx              =   A\rhs;
-
-# ## Darstellung der Daten
-# figure(1)
-# clf
-# subplot(1,2,1)
-# plot(vx,z./1e3,'LineWidth',2)
-# hold on
-# plot(vx_ana,z./1e3,'r--','LineWidth',2)
-# xlabel('v_x [ m/s ]'); ylabel('z [km]'); title('Geschwindigkeitsprofil')
-# set(gca,'FontWeight','Bold','FontSize',15,'LineWidth',2);
-# subplot(1,2,2)
-# plot(eta,z./1e3,'LineWidth',2)
-# xlabel('\eta[ Pa s ]'); ylabel('z [km]'); title('Viskosity')
-# set(gca,'xscale','log','FontWeight','Bold','FontSize',15,'LineWidth',2);
-
-
-# ## ===================================================================== ##
-# # ============================== ENDE =================================== #
-# # ======================================================================= #
-
-
-
-
-
-
-
-
-
-
-
-
