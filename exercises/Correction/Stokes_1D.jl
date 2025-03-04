@@ -1,4 +1,5 @@
 using Plots, ExtendableSparse
+using GeoModBox.MomentumEquation.OneD
 
 function Stokes_1D_const()
 # Model Parameter ------------------------------------------------------- #
@@ -66,42 +67,46 @@ Num     =   (Vx=1:NC.y,)
 ndof    =   maximum(Num.Vx)
 K       =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(NC...)
+
+rhs     .=  I.∂P∂x
+
+D.vₓ    .=   Stokes_1D(D.vₓ,D.η,Δ.y,NC.y,VBC,K,rhs)
 # ----------------------------------------------------------------------- #
 # Zusammenstellen der Koeffizientenmatrix ------------------------------- #
 #a       =     I.η₀ / Δ.y^2.0
 #b       =   - 2.0 * I.η₀ / Δ.y^2.0
-rhs     .=  I.∂P∂x
-for i = 1:NC.y
-    a   =   D.η[i] / Δ.y^2.0
-    b   =   -(D.η[i]+D.η[i+1]) / Δ.y^2.0
-    c   =   D.η[i+1] / Δ.y^2.0
-    # Gleichungsnummer ---
-    ii  =   Num.Vx[i]
-    # Stempel ---
-    iN  =   ii + 1      #   Norden
-    iC  =   ii          #   Zentral
-    iS  =   ii - 1      #   Süden
-    # Ränder ---
-    # Falls ein Süd Index gebrauch wird ---
-    inS    =  i==1    ? false  : true
-    DirS   = (i==1    && VBC.type.S==:Dirichlet) ? 1. : 0.
-    NeuS   = (i==1    && VBC.type.S==:Neumann  ) ? 1. : 0.
-    # If an East index is required ---
-    inN    =  i==NC.y ? false  : true
-    DirN   = (i==NC.y && VBC.type.N==:Dirichlet) ? 1. : 0.
-    NeuN   = (i==NC.y && VBC.type.N==:Neumann  ) ? 1. : 0.
-    if inS K[ii,iS]    = a end
-        K[ii,iC]       =   b + (NeuS - DirS)*a + (NeuN - DirN)*c
-    if inN K[ii,iN]    = c end    
-    # Änderung der rechten Seite ---
-    rhs[i]      +=  a*VBC.val.S*Δ.y * NeuS - 
-                        2*a*VBC.val.S * DirS - 
-                        c*VBC.val.N*Δ.y * NeuN - 
-                        2*c*VBC.val.N * DirN
-end
-# ----------------------------------------------------------------------- #
-# Lösung des Gleichungssystems ------------------------------------------ #
-D.vₓ      .=   K \ rhs
+# rhs     .=  I.∂P∂x
+# for i = 1:NC.y
+#     a   =   D.η[i] / Δ.y^2.0
+#     b   =   -(D.η[i]+D.η[i+1]) / Δ.y^2.0
+#     c   =   D.η[i+1] / Δ.y^2.0
+#     # Gleichungsnummer ---
+#     ii  =   Num.Vx[i]
+#     # Stempel ---
+#     iN  =   ii + 1      #   Norden
+#     iC  =   ii          #   Zentral
+#     iS  =   ii - 1      #   Süden
+#     # Ränder ---
+#     # Falls ein Süd Index gebrauch wird ---
+#     inS    =  i==1    ? false  : true
+#     DirS   = (i==1    && VBC.type.S==:Dirichlet) ? 1. : 0.
+#     NeuS   = (i==1    && VBC.type.S==:Neumann  ) ? 1. : 0.
+#     # If an East index is required ---
+#     inN    =  i==NC.y ? false  : true
+#     DirN   = (i==NC.y && VBC.type.N==:Dirichlet) ? 1. : 0.
+#     NeuN   = (i==NC.y && VBC.type.N==:Neumann  ) ? 1. : 0.
+#     if inS K[ii,iS]    = a end
+#         K[ii,iC]       =   b + (NeuS - DirS)*a + (NeuN - DirN)*c
+#     if inN K[ii,iN]    = c end    
+#     # Änderung der rechten Seite ---
+#     rhs[i]      +=  a*VBC.val.S*Δ.y * NeuS - 
+#                         2*a*VBC.val.S * DirS - 
+#                         c*VBC.val.N*Δ.y * NeuN - 
+#                         2*c*VBC.val.N * DirN
+# end
+# # ----------------------------------------------------------------------- #
+# # Lösung des Gleichungssystems ------------------------------------------ #
+# D.vₓ      .=   K \ rhs
 # ----------------------------------------------------------------------- #
 # Abweichung vom der analytischen Lösung -------------------------------- #
 @. D.Δvₓ    =   ((D.vₓₐ - D.vₓ) / D.vₓₐ) * 100.0

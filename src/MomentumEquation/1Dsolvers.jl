@@ -3,7 +3,7 @@ using ExtendableSparse
 @doc raw"""
     Stokes_1D()
 """
-function Stokes_1D(η,Δy,nc,BC,K,rhs)
+function Stokes_1D(vₓ,η,Δy,nc,BC,K,rhs)
 
     # Zusammenstellen der Koeffizientenmatrix ------------------------------- #
     for i = 1:nc
@@ -22,16 +22,16 @@ function Stokes_1D(η,Δy,nc,BC,K,rhs)
         DirS   = (i==1    && BC.type.S==:Dirichlet) ? 1. : 0.
         NeuS   = (i==1    && BC.type.S==:Neumann  ) ? 1. : 0.
         # If an East index is required ---
-        inN    =  i==NC.y ? false  : true
-        DirN   = (i==NC.y && BC.type.N==:Dirichlet) ? 1. : 0.
-        NeuN   = (i==NC.y && BC.type.N==:Neumann  ) ? 1. : 0.
+        inN    =  i==nc ? false  : true
+        DirN   = (i==nc && BC.type.N==:Dirichlet) ? 1. : 0.
+        NeuN   = (i==nc && BC.type.N==:Neumann  ) ? 1. : 0.
         if inS K[ii,iS]    = a end
             K[ii,iC]       = b + (NeuS - DirS)*a + (NeuN - DirN)*c
         if inN K[ii,iN]    = c end    
         # Änderung der rechten Seite ---
-        rhs[i]      +=  a*BC.val.S*Δ.y * NeuS - 
+        rhs[i]      +=  a*BC.val.S*Δy * NeuS - 
                             2*a*BC.val.S * DirS - 
-                            c*BC.val.N*Δ.y * NeuN - 
+                            c*BC.val.N*Δy * NeuN - 
                             2*c*BC.val.N * DirN
     end
     # ----------------------------------------------------------------------- #

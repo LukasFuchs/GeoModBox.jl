@@ -78,4 +78,12 @@ module GeoModBox
                     FromCtoM, CountMPC, Markers2Cells, AdvectTracer2D
         end
     end
+
+    module MomentumEquation
+        
+        module OneD
+            include("./MomentumEquation/1Dsolvers.jl")
+            export Stokes_1D
+        end
+    end
 end 
