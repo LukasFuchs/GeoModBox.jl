@@ -83,7 +83,8 @@ module GeoModBox
         
         module OneD
             include("./MomentumEquation/1Dsolvers.jl")
-            export Stokes_1D
+            export Stokes_1D_direct, ComputeStokesResiduals1D!, 
+                    AssembleStokesMatrix1D
         end
     end
 end 

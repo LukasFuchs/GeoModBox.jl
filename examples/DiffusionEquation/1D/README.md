@@ -186,7 +186,7 @@ $$
 \end{equation}
 $$
 
-### Defection Correction Method
+### Defect Correction Method
 
 &emsp; The defection correction method is an iterative solution, in which the residual of the conductive part of the *temperature equation* for an initial temperature condition is reduced by a correction term. In case, the system is linear, one iteration is sufficient enough to optain the exact solution. 
 

@@ -88,18 +88,6 @@ $$
 
 Equations $(8)$ and $(9)$ enable us to solve for the three unknowns *v<sub>x</sub>*, *v<sub>z</sub>*, and *P*. 
 
-## Discretization 
-
-&emsp;The conservation equations of *momentum* and *mass* are solved properly in two dimensions (*x* and *y*) using a staggered finite difference grid, where the horizontal and vertical velocity are defined in between the regular grid points, and the pressure within a finite difference cell (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations (8) and (9) for the unknows.  
-
-<img src="./Figures/MomentumGrid.png" alt="drawing" width="600"/> <br>
-**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities are defined in between the vertices (cyan and orange lines, respectively), and the pressure is defined on the centroids. The horizontal and vertical velocities require *ghost nodes* at the north and south and east and west boundary, respectively. 
-
-<!-- 
-- Discretized equations
-- Solving the equations 
--->
-
 ### Equation of State
 
 &emsp;The buoyance term on the right-hand side of equation $(7)$, that is the density term which is temperature dependent (and pressure, but I do neglect this effect here so far), can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
