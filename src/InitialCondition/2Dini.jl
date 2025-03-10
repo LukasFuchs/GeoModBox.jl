@@ -150,3 +150,29 @@ end
     end
     return D
 end
+
+@doc raw"""
+    IniPhase!
+"""
+@views function IniPhase!(type,D,M,x,y,NC;ρ=3200.0)
+
+    if type==:block
+        # Bereich der Anomalie ---
+        xL      =   2/5 * (M.xmax-M.xmin)
+        xR      =   3/5 * (M.xmax-M.xmin)
+        yO      =   0.1 * (M.ymin-M.ymax)
+        yU      =   0.3 * (M.ymin-M.ymax)        
+        
+        # ---
+        for i = 1:NC.x
+            for j = 1:NC.y
+                if y.c[j]>=yU && y.c[j] <= yO && x.c[i]>=xL && x.c[i]<=xR
+                    D.ρ[i,j]    =   ρ[2]    #   anomaly 
+                else
+                    D.ρ[i,j]    =   ρ[1]    #   background
+                end
+            end
+        end        
+    end
+    return D
+end

@@ -61,7 +61,7 @@ module GeoModBox
 
         # Initial Conditions ---
         include("./InitialCondition/2Dini.jl")        
-        export IniVelocity!, IniTemperature!
+        export IniVelocity!, IniTemperature!, IniPhase!
     end
 
     module Tracers
