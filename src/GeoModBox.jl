@@ -86,5 +86,10 @@ module GeoModBox
             export Stokes_1D_direct, ComputeStokesResiduals1D!, 
                     AssembleStokesMatrix1D
         end
+
+        module TwoD
+            include("./MomentumEquation/2Dsolvers.jl")
+            export Assemblyc, updaterhsc
+        end
     end
 end 

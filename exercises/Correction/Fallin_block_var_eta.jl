@@ -57,13 +57,17 @@ function main()
     y   =   merge(y,y1)
     # -------------------------------------------------------------------- #
     # Physics ------------------------------------------------------------ #
-    g       =   9.81
-
-    η₀      =   1.0e21
-
-    ρ₀      =   3200.0          #   Background density
-    ρ₁      =   3300.0          #   Block density
-    ρ       =   [ρ₀,ρ₁] 
+    g       =   9.81            #   Gravitational Acceleration 
+    # Viscosity ---
+    η₀      =   1.0e21          #   Background
+    η₁      =   1.0e23          #   Anomaly
+    η       =   [η₀,η₁]
+    # Density ---
+    ρ₀      =   3200.0          #   Background 
+    ρ₁      =   3300.0          #   Anomaly
+    ρ       =   [ρ₀,ρ₁]    
+    
+    phase   =   [0,1]
     # ------------------------------------------------------------------- #
     # Allocation -------------------------------------------------------- #
     D   =   (
@@ -71,6 +75,7 @@ function main()
         vy  =   zeros(NC.x+2,NV.y),
         Pt  =   zeros(NC...),
         ρ   =   zeros(NC...),
+        ηs  =   (c=zeros(NC...), v=zeros(NV...)),
         vxc =   zeros(NC...),
         vyc =   zeros(NC...),
         vc  =   zeros(NC...),
@@ -78,14 +83,21 @@ function main()
     # ------------------------------------------------------------------- #
     # Initial Condition ------------------------------------------------- #
     type    =:block
-    IniPhase!(type,D,M,x,y,NC;ρ)
+    IniPhase!(type,D,M,x,y,NC;ρ,η)
     p   =   heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                 xlabel="x[km]",ylabel="y[km]",
                 aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                 ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                layout=(3,1),subplot=1)
+                layout=(2,2),subplot=1)
+    heatmap!(p,x.v./1e3,y.v./1e3,log10.(D.ηs.v'),color=reverse(cgrad(:roma)),
+                xlabel="x[km]",ylabel="y[km]",
+                aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+                layout=(2,2),subplot=2)
+    display(p)
+    
+    return
     # ------------------------------------------------------------------- #
-    # System of Equations ----------------------------------------------- #
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -99,27 +111,25 @@ function main()
 
     rhs     =   zeros(maximum(Num.Pt))
     χ       =   zeros(maximum(Num.Pt))
-    # ------------------------------------------------------------------- #
-    # Boundary Conditions ----------------------------------------------- #
+
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
         val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
     )
-    # ------------------------------------------------------------------- #
-    # Assemble Coefficients --------------------------------------------- #
+
     K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
-    # ------------------------------------------------------------------- #
-    # Update RHS -------------------------------------------------------- #
+
     rhs     =   updaterhsc( NC, NV, Δ, η₀, D.ρ, g, VBC, Num, rhs )
-    # ------------------------------------------------------------------- #
-    # Solve System of Equations ----------------------------------------- #
+    
+    # Solution --- 
     χ       =   K \ rhs
-    # ------------------------------------------------------------------- #
-    # Update Unknown Variables ------------------------------------------ #
+
+    # @show size(χ)
+
     D.vx[:,2:end-1]     .=  χ[Num.Vx]
     D.vy[2:end-1,:]     .=  χ[Num.Vy]
     D.Pt                .=  χ[Num.Pt]
-    # ------------------------------------------------------------------- #
+
     # Get the velocity on the centroids ---
     for i = 1:NC.x
         for j = 1:NC.y

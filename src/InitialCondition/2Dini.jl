@@ -154,7 +154,7 @@ end
 @doc raw"""
     IniPhase!
 """
-@views function IniPhase!(type,D,M,x,y,NC;ρ=3200.0)
+@views function IniPhase!(type,D,M,x,y,NC;ρ=3200.0,η=1.0e21)
 
     if type==:block
         # Bereich der Anomalie ---
@@ -163,7 +163,7 @@ end
         yO      =   0.1 * (M.ymin-M.ymax)
         yU      =   0.3 * (M.ymin-M.ymax)        
         
-        # ---
+        # Density ---
         for i = 1:NC.x
             for j = 1:NC.y
                 if y.c[j]>=yU && y.c[j] <= yO && x.c[i]>=xL && x.c[i]<=xR
@@ -172,7 +172,23 @@ end
                     D.ρ[i,j]    =   ρ[1]    #   background
                 end
             end
-        end        
+        end 
+        # Viscosity ---
+        if size(η,1)==2
+            for i = 1:NC.x
+                for j = 1:NC.y
+                    if y.c[j]>=yU && y.c[j] <= yO && x.c[i]>=xL && x.c[i]<=xR
+                        D.ηs.v[i,j] =   η[2]
+                    else
+                        D.ηs.v[i,j] =   η[1]
+                    end
+                end
+            end 
+            @. D.ηs.c = 0.25*(D.ηs.v[1:end-1,1:end-1] + 
+                            D.ηs.v[2:end-0,1:end-1] + 
+                            D.ηs.v[1:end-1,2:end-0] + 
+                            D.ηs.v[2:end-0,2:end-0])
+        end
     end
     return D
 end
