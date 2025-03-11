@@ -3,14 +3,18 @@ using ExtendableSparse
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 
 function main()
-
-    # Plot Settings ----------------------------------------------------- #
+    # Define Initial Condition ========================================== #
+    # Density --- 
+    #   1) block
+    Ini         =   (p=:block,) 
+    # ------------------------------------------------------------------- #
+    # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   5,
         qsc     =   100*(60*60*24*365.25)*1e2
     )
     # ------------------------------------------------------------------- #
-    # Geometry ---------------------------------------------------------- #
+    # Geometry ========================================================== #
     M       =   (
         xmin    =   0.0,
         xmax    =   500.0e3,    # [ m ]
@@ -18,7 +22,7 @@ function main()
         ymax    =   0.0,
     )
     # -------------------------------------------------------------------- #
-    # Grid --------------------------------------------------------------- #
+    # Grid =============================================================== #
     NC      =   (
         x   =   50, 
         y   =   50,
@@ -56,7 +60,7 @@ function main()
     )
     y   =   merge(y,y1)
     # -------------------------------------------------------------------- #
-    # Physics ------------------------------------------------------------ #
+    # Physics ============================================================ #
     g       =   9.81
 
     η₀      =   1.0e21
@@ -65,7 +69,7 @@ function main()
     ρ₁      =   3300.0          #   Block density
     ρ       =   [ρ₀,ρ₁] 
     # ------------------------------------------------------------------- #
-    # Allocation -------------------------------------------------------- #
+    # Allocation ======================================================== #
     D   =   (
         vx  =   zeros(NV.x,NC.y+2),
         vy  =   zeros(NC.x+2,NV.y),
@@ -76,16 +80,16 @@ function main()
         vc  =   zeros(NC...),
     )
     # ------------------------------------------------------------------- #
-    # Initial Condition ------------------------------------------------- #
-    type    =:block
-    IniPhase!(type,D,M,x,y,NC;ρ)
-    p   =   heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
-                xlabel="x[km]",ylabel="y[km]",
-                aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                layout=(3,1),subplot=1)
+    # Boundary Conditions =============================================== #
+    VBC     =   (
+        type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+    )
     # ------------------------------------------------------------------- #
-    # System of Equations ----------------------------------------------- #
+    # Initial Condition ================================================= #
+    IniPhase!(Ini.p,D,M,x,y,NC;ρ)
+    # ------------------------------------------------------------------- #
+    # System of Equations =============================================== #
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -100,22 +104,16 @@ function main()
     rhs     =   zeros(maximum(Num.Pt))
     χ       =   zeros(maximum(Num.Pt))
     # ------------------------------------------------------------------- #
-    # Boundary Conditions ----------------------------------------------- #
-    VBC     =   (
-        type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
-    )
-    # ------------------------------------------------------------------- #
-    # Assemble Coefficients --------------------------------------------- #
+    # Assemble Coefficients ============================================= #
     K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
     # ------------------------------------------------------------------- #
-    # Update RHS -------------------------------------------------------- #
+    # Update RHS ======================================================== #
     rhs     =   updaterhsc( NC, NV, Δ, η₀, D.ρ, g, VBC, Num, rhs )
     # ------------------------------------------------------------------- #
-    # Solve System of Equations ----------------------------------------- #
+    # Solve System of Equations ========================================= #
     χ       =   K \ rhs
     # ------------------------------------------------------------------- #
-    # Update Unknown Variables ------------------------------------------ #
+    # Update Unknown Variables ========================================== #
     D.vx[:,2:end-1]     .=  χ[Num.Vx]
     D.vy[2:end-1,:]     .=  χ[Num.Vy]
     D.Pt                .=  χ[Num.Pt]
@@ -132,21 +130,39 @@ function main()
     @show(minimum(D.vc))
     @show(maximum(D.vc))
 
-    quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-                    D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-            color="white",layout=(3,1),subplot=1)
-    heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',
-                aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                ylims=(M.ymin/1e3, M.ymax/1e3),
-                layout=(3,1),subplot=2)
-    heatmap!(p,x.c./1e3,y.c./1e3,D.vyc',
-                aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                ylims=(M.ymin/1e3, M.ymax/1e3),
-                layout=(3,1),subplot=3)
+    p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
+                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                    title="Density",
+                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                    ylims=(M.ymin/1e3, M.ymax/1e3),
+                    layout=(1,4),subplot=1)
+            quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                        y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                        quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+                                D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
+                        color="white",layout=(1,4),subplot=1)
+            heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',
+                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                            title="V_x",
+                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                            ylims=(M.ymin/1e3, M.ymax/1e3),
+                            layout=(1,4),subplot=2)
+            heatmap!(p,x.c./1e3,y.c./1e3,D.vyc',
+                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                            title="V_y",
+                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                            ylims=(M.ymin/1e3, M.ymax/1e3),
+                            layout=(1,4),subplot=3)
+            heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',
+                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                            title="P_t",
+                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                            ylims=(M.ymin/1e3, M.ymax/1e3),
+                            layout=(1,4),subplot=4)
     display(p)
 
+    savefig(p,string("./examples/StokesEquation/2D/",
+                    "Results/FallingBlock_Instanteneous.png"))
 end
 
 main()

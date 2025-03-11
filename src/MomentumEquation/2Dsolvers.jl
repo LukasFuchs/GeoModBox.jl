@@ -107,6 +107,7 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num, rhs)
     for i = 1:NV.x, j = 1:NC.y
         # Equation Number ---
         ii  =   Num.Vx[i,j] 
+        rhs[ii]     =   0.0
         if i == 1 || i == NV.x
             # East and West boundary ---
             # Free Slip && No Slip: vₓ = 0 
@@ -124,6 +125,7 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num, rhs)
     for i = 1:NC.x, j = 1:NV.y
         # Equation Number ---
         ii  =   Num.Vy[i,j] 
+        rhs[ii]     =   0.0
         if j == 1 || j == NV.y
             # North and South boundary ---
             # Free Slip && No Slip: vy = 0 

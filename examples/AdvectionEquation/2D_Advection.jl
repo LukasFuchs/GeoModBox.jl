@@ -40,7 +40,7 @@ function Advection_2D()
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
@@ -231,13 +231,10 @@ for i=2:nt
 
     # Advection ===
     if FD.Method.Adv==:upwind
-        # upwindc2D!(D,NC,T,Δ)
         upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:slf
-        # slfc2D!(D,NC,T,Δ)   
         slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:semilag
-        # semilagc2D!(D,[],[],x,y,T)
         semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
     elseif FD.Method.Adv==:tracers
         # Advect tracers ---
