@@ -2,6 +2,9 @@ using Plots
 using ExtendableSparse
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD
+using GeoModBox.Tracers.TwoD
+using Base.Threads
+using Printf
 
 function main()
     # Define Numerical Scheme =========================================== #
@@ -74,24 +77,29 @@ function main()
     ρ₀      =   3200.0          #   Background density
     ρ₁      =   3300.0          #   Block density
     ρ       =   [ρ₀,ρ₁] 
+
+    phase   =   [0,1]
     # ------------------------------------------------------------------- #
     # Animationsettings ================================================== #
     path        =   string("./examples/StokesEquation/2D/Results/")
     anim        =   Plots.Animation(path, String[] )
-    filename    =   string("Falling_",Ini.p,"_",FD.Method.Adv)
-    save_fig    =   0
+    filename    =   string("Falling_",Ini.p,"_iso_",FD.Method.Adv)
+    save_fig    =   1
     # -------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D   =   (
-        vx      =   zeros(NV.x,NC.y+2),
-        vy      =   zeros(NC.x+2,NV.y),
-        Pt      =   zeros(NC...),
-        ρ       =   zeros(NC...),
-        ρ_ex    =   zeros(NC.x+2,NC.y+2),
-        ρ_exo   =   zeros(NC.x+2,NC.y+2),
-        vxc     =   zeros(NC...),
-        vyc     =   zeros(NC...),
-        vc      =   zeros(NC...),
+        vx      =   zeros(Float64,NV.x,NC.y+2),
+        vy      =   zeros(Float64,NC.x+2,NV.y),
+        Pt      =   zeros(Float64,NC...),
+        p       =   zeros(Int64,NC...),
+        p_ex    =   zeros(Int64,NC.x+2,NC.y+2),
+        ρ       =   zeros(Float64,NC...),
+        ρ_ex    =   zeros(Float64,NC.x+2,NC.y+2),
+        ρ_exo   =   zeros(Float64,NC.x+2,NC.y+2),
+        vxc     =   zeros(Float64,NC...),
+        vyc     =   zeros(Float64,NC...),
+        vc      =   zeros(Float64,NC...),
+        wt      =   zeros(Float64,(NC.x,NC.y)),
     )
     # ------------------------------------------------------------------- #
     # Boundary Conditions =============================================== #
@@ -102,14 +110,17 @@ function main()
     # ------------------------------------------------------------------- #
     # Initial Condition ================================================= #
     # Phase ---
-    IniPhase!(Ini.p,D,M,x,y,NC;ρ)
+    IniPhase!(Ini.p,D,M,x,y,NC;phase)
+    for i in eachindex(phase)
+        D.ρ[D.p.==phase[i]] .= ρ[i]
+    end
     D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
     D.ρ_ex[1,:]     .=   D.ρ_ex[2,:]
     D.ρ_ex[end,:]   .=   D.ρ_ex[end-1,:]
     D.ρ_ex[:,1]     .=   D.ρ_ex[:,2]
     D.ρ_ex[:,end]   .=   D.ρ_ex[:,end-1]
     # ------------------------------------------------------------------- #
-    # Time =============================================================== #
+    # Time ============================================================== #
     T   =   ( 
         tmax    =   [0.0],  
         Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
@@ -118,7 +129,38 @@ function main()
     )
     T.tmax[1]   =   9.886 * 1e6 * (60*60*24*365.25)   # [ s ]
     nt          =   9999
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------- #
+    # Tracer Advection ================================================== #
+    if FD.Method.Adv==:tracers 
+        # Tracer Initialization ---
+        nmx,nmy     =   3,3
+        noise       =   1
+        nmark       =   nmx*nmy*NC.x*NC.y
+        Aparam      =   :phase
+        MPC         =   (
+            c               =   zeros(Float64,(NC.x,NC.y)),
+            th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),                
+            min             =   zeros(Float64,nt),
+            max             =   zeros(Float64,nt),
+            mean            =   zeros(Float64,nt),
+        )
+        MPC1        = (
+            PG_th   =   [similar(D.p) for _ = 1:nthreads()], # per thread
+            wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
+        )
+        MPC     =   merge(MPC,MPC1)
+        Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+        # RK4 weights ---
+        rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+        rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
+        # Interpolate on centroids ---
+        @threads for k = 1:nmark
+            Ma.phase[k] =   FromCtoM(D.p_ex, k, Ma, x, y, Δ, NC)
+        end
+        # Count marker per cell ---
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
+    end
+    # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
@@ -137,7 +179,7 @@ function main()
     K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
-    for it = 1:60
+    for it = 1:nt
         # Update Time ---
         T.time[1]   =   T.time[2] 
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,T.time[1]/(60*60*24*365.25)/1.0e6)
@@ -160,7 +202,6 @@ function main()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 
-        @show(minimum(D.vc))
         @show(maximum(D.vc))
         @show(minimum(D.Pt))
         @show(maximum(D.Pt))
@@ -169,7 +210,7 @@ function main()
             it = nt
         end
 
-        if mod(it,10) == 0 || it == nt || it == 1
+        if mod(it,2) == 0 || it == nt || it == 1
             p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                     xlabel="x[km]",ylabel="y[km]",colorbar=false,
                     title="Density",
@@ -182,28 +223,31 @@ function main()
                                 D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
                         color="white",layout=(2,2),subplot=1)
             heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',
-                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                            title="V_x",
-                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                            ylims=(M.ymin/1e3, M.ymax/1e3),
-                            layout=(2,2),subplot=3)
+                        xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                        title="V_x",
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3),
+                        layout=(2,2),subplot=3)
             heatmap!(p,x.c./1e3,y.c./1e3,D.vyc',
-                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                            title="V_y",
-                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                            ylims=(M.ymin/1e3, M.ymax/1e3),
-                            layout=(2,2),subplot=4)
+                        xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                        title="V_y",
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3),
+                        layout=(2,2),subplot=4)
             heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',
-                            xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                            title="P_t",
-                            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                            ylims=(M.ymin/1e3, M.ymax/1e3),
-                            layout=(2,2),subplot=2)
+                        xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                        title="P_t",
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3),
+                        layout=(2,2),subplot=2)
             if save_fig == 1
                 Plots.frame(anim)
             elseif save_fig == 0
                 display(p)
             end
+        end
+        if T.time[2] >= T.tmax[1]
+            break
         end
          # Calculate Time Stepping ---
         T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
@@ -227,11 +271,11 @@ function main()
         elseif FD.Method.Adv==:tracers
             # Advect tracers ---
             AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
+            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,it)
           
             # Interpolate temperature from tracers to grid ---
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
-            D.ρ_ex[2:end-1,2:end-1]     .= D.ρ
+            Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
+            D.p_ex[2:end-1,2:end-1]     .= D.p
         end
     end # End Time Loop
     # Save Animation ==================================================== #
