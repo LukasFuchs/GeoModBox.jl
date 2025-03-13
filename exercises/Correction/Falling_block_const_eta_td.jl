@@ -10,7 +10,7 @@ function main()
     # Define Numerical Scheme =========================================== #
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
-    FD          =   (Method     = (Adv=:semilag,),)
+    FD          =   (Method     = (Adv=:upwind,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -81,9 +81,9 @@ function main()
     phase   =   [0,1]
     # ------------------------------------------------------------------- #
     # Animationsettings ================================================== #
-    path        =   string("./examples/StokesEquation/2D/Results/")
+    path        =   string("./exercises/Correction/Results/")
     anim        =   Plots.Animation(path, String[] )
-    filename    =   string("Falling_",Ini.p,"_iso_",FD.Method.Adv)
+    filename    =   string("10_Falling_",Ini.p,"_iso_",FD.Method.Adv)
     save_fig    =   1
     # -------------------------------------------------------------------- #
     # Allocation ======================================================== #
@@ -110,6 +110,8 @@ function main()
     # ------------------------------------------------------------------- #
     # Initial Condition ================================================= #
     # Phase ---
+    # If tracers are used, phases need to be defined on the tracers directly
+    # and are not suppose to be interpolated from the centroids! 
     IniPhase!(Ini.p,D,M,x,y,NC;phase)
     for i in eachindex(phase)
         D.ρ[D.p.==phase[i]] .= ρ[i]

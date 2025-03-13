@@ -87,6 +87,7 @@ function main()
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
+        # type    =   (E=:noslip,W=:noslip,S=:noslip,N=:noslip),
         val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
     )
     # ------------------------------------------------------------------- #
@@ -167,8 +168,7 @@ function main()
                     layout=(2,2),subplot=2)
     display(p)
 
-    savefig(p,string("./examples/StokesEquation/2D/",
-                    "Results/FallingBlock_Instanteneous.png"))
+    savefig(p,string("./exercises/Correction/Results/09_FallingBlock_Instanteneous.png"))
 end
 
 main()

@@ -60,7 +60,7 @@ $$
 \end{equation}
 $$
 
-or in the form of the unknowns *v<sub>x</sub>*, *v<sub>z</sub>*, and *P*:
+or in the form of the unknowns *v<sub>x</sub>*, *v<sub>y</sub>*, and *P*:
 
 $$
 \begin{equation}
@@ -68,7 +68,7 @@ $$
 \end{equation}
 $$
 
-Assuming constant viscosity equation $(7)$ simplifies further to (Stokes equation): 
+Assuming constant viscosity equation $(7)$ simplifies further to: 
 
 $$
 \begin{equation}
@@ -86,7 +86,7 @@ $$
 \end{equation}
 $$
 
-Equations $(8)$ and $(9)$ enable us to solve for the three unknowns *v<sub>x</sub>*, *v<sub>z</sub>*, and *P*. 
+Equations $(8)$ and $(9)$ enable us to solve for the three unknowns *v<sub>x</sub>*, *v<sub>y</sub>*, and *P*. 
 
 ### Equation of State
 

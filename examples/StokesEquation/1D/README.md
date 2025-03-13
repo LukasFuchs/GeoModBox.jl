@@ -203,7 +203,7 @@ $$
 
 ## Examples
 
-- [Channel Flow](./ChannelFlow_1D.jl)
+- [Channel Flow (using the defect correction method)](./ChannelFlow_1D.jl)
 <!-- 
 - 1D case 
 -- Discretized equations

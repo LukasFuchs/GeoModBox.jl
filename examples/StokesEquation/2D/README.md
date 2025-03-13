@@ -1,21 +1,147 @@
 # General Information
 
+To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to discretize the x- and y-component of the **momentum equation** and the **continuum equation**. Here, we assume an incompressible medium, i.e. we use the Bousinesque approximation. 
+
 ---------------------
 ---------------------
 ## Stokes Equation (2D)
 
+The Stokes equation in two dimensions is defined as: 
+
+$$
+\begin{equation}
+0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho \cdot g_i, 
+\end{equation}
+$$
+
+where $P$ is the total pressure,  $\rho$ is the density, $g_i$ the gravitational acceleration, $\frac{\partial}{\partial_i}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor and defined as: 
+
+$$\begin{equation}
+\tau_{ij} = 2\eta \dot{\varepsilon}_{ij}.
+\end{equation}
+$$
+
+The conservation equation of mass is defined as: 
+
+$$\begin{equation}
+div\left(\overrightarrow{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0, 
+\end{equation}
+$$
+
+where $v_i$ is the velocity in the i-th direction. 
+
+To approximate the partial derivative operators using the finite difference formulations, one needs to first define the numerical grid of the domain and the location of the corresponding parameters.
+
+### Discretization 
+
+The conservation equations of *momentum* and *mass* are solved properly in two dimensions (*x* and *y*) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocity are defined in between the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations $(1)$ and $(3)$ for the unknows.  
+
+<img src="./Figures/MomentumGrid_2D.png" alt="drawing" width="600"/> <br>
+**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities require *ghost nodes* at the north and south and east and west boundary, respectively. <!-- What about the pressure ghost nodes? Are they even necessary? -->
+
 ### Constant Viscosity
+
+Let's first assume a special case of the Stokes equation, a **constant viscosity**, which simplifies equation $(1)$ to: 
+
+$$\begin{equation}
+0 = -\frac{\partial{P}}{\partial{x_i}} + 2\eta\frac{\partial^2{v_i}}{\partial{x_i^2}} + \eta\left(\frac{\partial^2{v_i}}{\partial{x_j^2}}+\frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho \cdot g_i. 
+\end{equation}
+$$
+
+Using equation $(3)$ and neglecting a horizontal graviational acceleration, equation $(4)$ can further be simplified to: 
+
+*x-component* 
+
+$$
+\begin{equation}
+0 = -\frac{\partial{P}}{\partial{x}} + \eta\frac{\partial^2{v_x}}{\partial{x^2}} + \eta\frac{\partial^2{v_x}}{\partial{y^2}}, 
+\end{equation}
+$$
+
+*y-component*
+
+$$
+\begin{equation}
+0 = -\frac{\partial{P}}{\partial{y}} + \eta\frac{\partial^2{v_y}}{\partial{y^2}} + \eta\frac{\partial^2{v_y}}{\partial{x^2}}+ \rho g_y. 
+\end{equation}
+$$
+
+For each equation, one can define a so-called numerical stencil which highlights the position of the parameters with respect to a central point $(i,j)$, where *i* and *j* are the indeces in the horizontal and vertical direction, respectively. The central point also corresponds to the number of the equation in the linear system of equations. 
+
+#### Stencil
+
+The stencils for the momentum equation assuming a constant viscosity are shown in Figure 2. 
+
+<img src="./Figures/Stencil_const_eta.png" alt="drawing" width="600"/> <br>
+**Figure 2. Numerical stencils for the momentum equation.** a) *x-component. b) y-component.
+
+Using the finit difference operators equations $(5)$ and $(6)$ are defined as: 
+
+*x-component*
+
+$$\begin{equation}
+0 = -\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}} + \eta\frac{v_{x,(i-1,j)}-2v_{x,(i,j)}+v_{x,(i+1,j)}}{\Delta{x^2}} + \eta\frac{v_{x,(i,j-1)}-2v_{x,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}}
+\end{equation}
+$$
+
+$$
+\begin{equation}
+0 = P_CP_{i,j} + P_WP_{i-1,j} + Sv_{x,(i,j-1)} +  Wv_{x,(i-1,j)} + Cv_{x,(i,j)} + E v_{x,(i+1,j)} + N v_{x,(i,j+1)}, 
+\end{equation}
+$$
+
+where 
+
+$$\begin{equation}
+\begin{split}
+P_C = -\frac{1}{\Delta{x}},  \\
+P_W = \frac{1}{\Delta{x}}, \\
+S = \frac{\eta}{\Delta{y^2}}, \\
+W = \frac{\eta}{\Delta{x^2}}, \\
+C = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
+E = \frac{\eta}{\Delta{x^2}}, \\
+N = \frac{\eta}{\Delta{y^2}}. \\
+\end{split}
+\end{equation}
+$$
+
+*y-component*
+
+$$\begin{equation}
+0 = -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \eta\frac{v_{y,(i,j-1)}-2v_{y,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} + \eta\frac{v_{y,(i-1,j)}-2v_{y,(i,j)}+v_{y,(i+1,j)}}{\Delta{x^2}}
+\end{equation}
+$$
+
+$$
+\begin{equation}
+0 = P_SP_{i,j-1} + P_CP_{i,j} + Sv_{y,(i,j-1)} + Wv_{y,(i-1,j)} + Cv_{y,(i,j)} + E v_{y,(i+1,j)} + N v_{y,(i,j+1)}, 
+\end{equation}
+$$
+
+where 
+
+$$\begin{equation}
+\begin{split}
+P_S = \frac{1}{\Delta{y}},  \\
+P_C = -\frac{1}{\Delta{y}}, \\
+S = \frac{\eta}{\Delta{y^2}}, \\
+W = \frac{\eta}{\Delta{x^2}}, \\
+C = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
+E = \frac{\eta}{\Delta{x^2}}, \\
+N = \frac{\eta}{\Delta{y^2}}. \\
+\end{split}
+\end{equation}
+$$
 
 ### Variable Viscosity
 
-## Discretization 
+#### Stencil
 
-&emsp;The conservation equations of *momentum* and *mass* are solved properly in two dimensions (*x* and *y*) using a staggered finite difference grid, where the horizontal and vertical velocity are defined in between the regular grid points, and the pressure within a finite difference cell (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations (8) and (9) for the unknows.  
+### Continuum Equation 
 
-<img src="./Figures/MomentumGrid_2D.png" alt="drawing" width="600"/> <br>
-**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities are defined in between the vertices (cyan and orange lines, respectively), and the pressure is defined on the centroids. The horizontal and vertical velocities require *ghost nodes* at the north and south and east and west boundary, respectively. 
+#### Stencil
 
-### Stencil
+## Boundary Conditions
 
 ## Solution 
 
@@ -23,7 +149,7 @@
 
 ### Defect Correction
 
-## Boundary Conditions
+
 
 -----------------------
 -----------------------
