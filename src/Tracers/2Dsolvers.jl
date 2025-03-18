@@ -290,6 +290,8 @@ end
     weight  .*=     0.0
     if param==:thermal
         PM  =       copy(Ma.T)
+    elseif param==:phase
+        PM  =       copy(Ma.phase)
     end
     chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
     @sync for chunk in chunks
