@@ -145,7 +145,7 @@ function main()
                     layout=(2,2),subplot=1)
     quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
                 y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-                quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+                quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                         D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
                 color="white",layout=(2,2),subplot=1)
     heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',

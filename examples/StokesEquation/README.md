@@ -6,11 +6,11 @@
 
 $$ 
 \begin{equation}
-\rho \frac{D \overrightarrow{v}}{Dt} = \nabla \cdot \boldsymbol{\sigma} + \rho \boldsymbol{g},
+\rho \frac{D \overrightharpoon{v}}{Dt} = \nabla \cdot \boldsymbol{\sigma} + \rho \boldsymbol{g},
 \end{equation}
 $$
 
-where $\rho$ is the density [kg/m<sup>3</sup>], $\overrightarrow{v}$ is the velocity vector [m/s], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [Pa], $\boldsymbol{g}$ is the gravitational acceleration [m/s<sup>2</sup>], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightarrow{v} \cdot \nabla$. 
+where $\rho$ is the density [kg/m<sup>3</sup>], $\overrightharpoon{v}$ is the velocity vector [m/s], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [Pa], $\boldsymbol{g}$ is the gravitational acceleration [m/s<sup>2</sup>], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightharpoon{v} \cdot \nabla$. 
 
 The *Cauchy stress tensor* is given by: 
 
@@ -60,7 +60,7 @@ $$
 \end{equation}
 $$
 
-or in the form of the unknowns *v<sub>x</sub>*, *v<sub>y</sub>*, and *P*:
+or in the form of the unknowns $v_x$, $v_y$, and $P$:
 
 $$
 \begin{equation}
@@ -68,7 +68,7 @@ $$
 \end{equation}
 $$
 
-Assuming constant viscosity equation $(7)$ simplifies further to: 
+Assuming a constant viscosity further simplifies equation $(7)$ to: 
 
 $$
 \begin{equation}
@@ -78,7 +78,7 @@ $$
 
 ### Continuum Equation
 
-&emsp;Equation $(8)$ provides us two equations for our three unknowns. Thus, one needs to also consider the mass conservation equation (i.e., we do work with a continuum), where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
+&emsp;Equation $(8)$ provides us two equations for our three unknowns. Thus, one needs to also consider the mass conservation equation (we do work with a continuum), where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
 
 $$
 \begin{equation}
@@ -86,7 +86,7 @@ $$
 \end{equation}
 $$
 
-Equations $(8)$ and $(9)$ enable us to solve for the three unknowns *v<sub>x</sub>*, *v<sub>y</sub>*, and *P*. 
+Equations $(8)$ and $(9)$ enable us to solve for the three unknowns $v_x$, $v_y$, and $P$. 
 
 ### Equation of State
 
