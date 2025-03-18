@@ -30,14 +30,12 @@ $$
 
 where $v_i$ is the velocity in the i-th direction. 
 
-To approximate the partial derivative operators using the finite difference formulations, one needs to first define the numerical grid of the domain and the location of the corresponding parameters.
-
 ### Discretization 
 
-The conservation equations of *momentum* and *mass* are solved properly in two dimensions (*x* and *y*) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocity are defined in between the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations $(1)$ and $(3)$ for the unknows.  
+The conservation equations of *momentum* and *mass* are solved properly in two dimensions (*x* and *y*) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocities are defined inbetween the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations $(1)$ and $(3)$ for the unknows.  
 
 <img src="./Figures/MomentumGrid_2D.png" alt="drawing" width="600"/> <br>
-**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities require *ghost nodes* at the north and south and east and west boundary, respectively. <!-- What about the pressure ghost nodes? Are they even necessary? -->
+**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities require *ghost nodes* at the North and South and East and West boundary, respectively. <!-- What about the pressure ghost nodes? Are they even necessary? -->
 
 ### Constant Viscosity
 
@@ -66,11 +64,11 @@ $$
 \end{equation}
 $$
 
-For each equation, one can define a so-called numerical stencil which highlights the position of the parameters with respect to a central point $(i,j)$, where *i* and *j* are the indeces in the horizontal and vertical direction, respectively. The central point corresponds to the number of the equation in the linear system of equations. 
+For each equation, one can define a so-called numerical stencil which highlights the position of the parameters with respect to a central point $(i,j)$, where *i* and *j* are the indices in the horizontal and vertical direction, respectively. The central point corresponds to the number of the equation in the linear system of equations. 
 
 #### Stencil
 
-The stencils for the momentum equation assuming a constant viscosity shows the points required to solve the equation using the finite difference approach (Figure 2). 
+The stencils for the momentum equation assuming a constant viscosity shows the points required to solve the equations for each component of the momentum equation using the finite difference approach (Figure 2). 
 
 <img src="./Figures/Stencil_const_eta.png" alt="drawing" width="600"/> <br>
 **Figure 2. Numerical stencils for the momentum equation.** a) *x-component. b) y-component.
@@ -108,13 +106,13 @@ $$
 *y-component*
 
 $$\begin{equation}
--\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \eta\frac{v_{y,(i,j-1)}-2v_{y,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} + \eta\frac{v_{y,(i-1,j)}-2v_{y,(i,j)}+v_{y,(i+1,j)}}{\Delta{x^2}} = -\rho g_y
+-\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \eta\frac{v_{y,(i,j-1)}-2v_{y,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} + \eta\frac{v_{y,(i-1,j)}-2v_{y,(i,j)}+v_{y,(i+1,j)}}{\Delta{x^2}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y
 \end{equation}
 $$
 
 $$
 \begin{equation}
-P_SP_{i,j-1} + P_CP_{i,j} + Sv_{y,(i,j-1)} + Wv_{y,(i-1,j)} + Cv_{y,(i,j)} + E v_{y,(i+1,j)} + N v_{y,(i,j+1)} = -\rho g_y, 
+P_SP_{i,j-1} + P_CP_{i,j} + Sv_{y,(i,j-1)} + Wv_{y,(i-1,j)} + Cv_{y,(i,j)} + E v_{y,(i+1,j)} + N v_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, 
 \end{equation}
 $$
 
@@ -141,7 +139,7 @@ The most common boundary conditions for the momentum equation are a combination 
 
 **Free slip** 
 
-Free slip boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity**. That is for the lateral boundaries **(E, W)** the conditions are: 
+Free slip boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity** along the boundary. That is for the lateral boundaries **(E, W)** the conditions are: 
 
 $$\begin{equation}
 \begin{split}
@@ -253,7 +251,7 @@ Along the horizontal boundaries $C=1$ and the remaining coefficients are equal t
 
 **No slip** 
 
-No slip boundary conditions fix the fluid along the boundary and sets the horizontal ($v_x$) and vertical ($v_y$) velocity equal to zero.. 
+No slip boundary conditions fix the fluid along the boundary and set the horizontal and vertical velocity equal to zero.. 
 
 That is, for all boundaries **(E, W, S, N)** the conditions are: 
 
@@ -285,11 +283,13 @@ v_{x,(i,GN)} = 2V_{BC,N} - v_{x,(i,ncy)},
 \end{equation}
 $$
 
-where $V_{BC,N}$ is the velocity along the boundary (here 0). Along the lateral boundaries (**E**, **W**) we can simply set the velocity $v_x$ to zero. 
+where $V_{BC,N}$ is the velocity along the boundary (here 0). 
+
+Along the lateral boundaries (**E**, **W**) we can simply set the velocity $v_x$ to zero (as in the *free slip* case). 
 
 *y-component* 
 
-For the vertical velocities $v_y$ one needs to define the velocity for the *ghost nodes* at the left (**W**) and right (**E**) boundary as: 
+For the vertical velocities $v_y$ one needs to define the velocity at the *ghost nodes* for the left (**W**) and right (**E**) boundary as: 
 
 *West* (i = 1)
 
@@ -307,7 +307,9 @@ v_{y,(GE,j)} = 2V_{BC,E} - v_{y,(ncx,j)},
 \end{equation}
 $$
 
-where $V_{BC,E}$ is the velocity along the boundary (here 0). Along the horizontal boundaries (**N**, **S**), we can simply set the velocity $v_y$ to zero. 
+where $V_{BC,E}$ is the velocity along the boundary (here 0). 
+
+Along the horizontal boundaries (**N**, **S**), we can simply set the velocity $v_y$ to zero (as in the *free slip* case). 
 
 Using the equations $(24)$ - $(27)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
 
@@ -338,7 +340,7 @@ Along the lateral boundaries $C=1$ and the remaining coefficients and the right-
 *West* (i = 1)
 
 $$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\rho g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
 \end{equation}
 $$
 
@@ -347,7 +349,7 @@ where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
 *East* (i = ncx)
 
 $$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\rho g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
 \end{equation}
 $$
 
@@ -363,11 +365,116 @@ Along the horizontal boundaries $C=1$ and the remaining coefficients and the rig
 
 ### Continuum Equation 
 
+The continuum equation provides a third equation helping to solve for the third unknown $P$. 
+
 #### Stencil
+
+The corresponding numerical stencil only includes the horizontal and vertical velocities (Fig. 3).
+
+<img src="./Figures/Stencil_continuum.png" alt="drawing" width="250"/> <br>
+**Figure 3. Numerical stencil for the continuum equation.** 
+
+Using the finite difference operators equations $(3)$ is defined as: 
+
+$$\begin{equation}
+\frac{v_{x,(i+1,j)}-v_{x,(i,j)}}{\Delta{x}} + \frac{v_{y,(i,j+1)}-v_{y,(i,j)}}{\Delta{y}} = 0,
+\end{equation}
+$$
+
+$$\begin{equation}
+C_xv_{x,(i,j)} + E_xv_{x,(i+1,j)} + C_yv_{y,(i,j)} + N_yv_{y,(i,j+1)} = 0,
+\end{equation}
+$$
+
+where 
+
+$$\begin{equation}
+\begin{split}
+-C_x = E_x = \frac{1}{\Delta{x}}, \\
+-C_y = N_y = \frac{1}{\Delta{y}}.
+\end{split}
+\end{equation}
+$$
 
 ## Solution 
 
+To solve the linear system of equations, one needs to collect the coefficients for the coefficient matrix $\bold{K}$ and set up the righ-hand side $\overrightharpoon{rhs}$ (at least for the direct solution). 
+
+To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable *node*, corresponding to one equation, respectively. Here, we first the number the equations of each corresponding central reference point $(i,j)$ for the *x-component* of the momentum equation (that is for the unknown $v_x$), followed by its *y-component* (the unknown $v_y$), and at last the equations of the conservation of mass (for the unknown $P$). The numbering for each equation is then defined as: 
+
+*x-compnent (v<sub>x</sub>)* 
+
+$$\begin{equation}
+ii_x = 1\ \textrm{--}\ \left(nv_x \cdot nc_y\right),
+\end{equation}
+$$
+
+*y-component (v<sub>y</sub>)*
+
+$$\begin{equation}
+ii_y = \left(nv_x \cdot nc_y + 1 \right)\ \textrm{--}\ \left(nv_x \cdot nc_y + nc_x \cdot nv_y\right),
+\end{equation}
+$$
+
+*conituum equation (P)*
+
+$$\begin{equation}
+ii_p = \left(nv_x \cdot nc_y + nc_x \cdot nv_y + 1\right)\ \textrm{--}\ \left(nv_x \cdot nc_y + nc_x \cdot nv_y + nc_x \cdot nc_y\right),
+\end{equation}
+$$
+
+where $nc_i$ and $nv_i$ are the numbers of *centroids* and *vertices* in the *i*-th direction, respectively. 
+
+Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation to solve, where the coefficients $K[ii_j,i_k]$ for the unknown variable points in the numerical stencils (Fig. 2) are located in the column of each line (relative to the central point $\left[ii_j,i_c\right]$): 
+
+*x-component*
+
+$$\begin{equation}\begin{split}
+i_S = ii_x - nv_x, \\
+i_W = ii_x - 1, \\
+i_C = ii_x, \\
+i_E = ii_x + 1, \\
+i_N = ii_x + nv_x. 
+\end{split}\end{equation}
+$$
+
+*y-component*
+
+$$\begin{equation}\begin{split}
+i_S = ii_y - nc_x, \\
+i_W = ii_y - 1, \\
+i_C = ii_y, \\
+i_E = ii_y + 1, \\
+i_N = ii_y + nc_x. 
+\end{split}\end{equation}
+$$
+
+*continuum (P)*
+
+$$\begin{equation}\begin{split}
+i_S = ii_y, \\
+i_W = ii_x, \\
+i_C = ii_p, \\
+i_E = ii_x + 1, \\
+i_N = ii_y + nc_x. 
+\end{split}\end{equation}
+$$
+
+This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of: 
+
+<img src="./Figures/CoefficientMatrix.png" alt="drawing" width="500"/> <br>
+**Figure 4. Coefficient matrix.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: v<sub>x</sub> - *x-component* of the momentum equation, v<sub>y</sub> - *y-component* of the momentum equation, *P* - continuum equation. 
+
+The right-hand side vector $\overrightharpoon{rhs}$ is given by the boundary and initial conditions. 
+
 ### Direct 
+
+Using a direct solution method, one simply needs to right divide the coefficient matrix by the right-hand side to obtain the solution vector: 
+
+$$\begin{equation}
+\bold{K} \backslash \overrightharpoon{rhs} = \overrightharpoon{x}.
+\end{equation}
+$$
 
 ### Defect Correction
 
