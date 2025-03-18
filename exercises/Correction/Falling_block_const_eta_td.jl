@@ -10,7 +10,7 @@ function main()
     # Define Numerical Scheme =========================================== #
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
-    FD          =   (Method     = (Adv=:upwind,),)
+    FD          =   (Method     = (Adv=:tracers,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -80,19 +80,19 @@ function main()
 
     phase   =   [0,1]
     # ------------------------------------------------------------------- #
-    # Animationsettings ================================================== #
+    # Animationsettings ================================================= #
     path        =   string("./exercises/Correction/Results/")
     anim        =   Plots.Animation(path, String[] )
     filename    =   string("10_Falling_",Ini.p,"_iso_",FD.Method.Adv)
     save_fig    =   1
-    # -------------------------------------------------------------------- #
+    # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D   =   (
         vx      =   zeros(Float64,NV.x,NC.y+2),
         vy      =   zeros(Float64,NC.x+2,NV.y),
         Pt      =   zeros(Float64,NC...),
-        p       =   zeros(Int64,NC...),
-        p_ex    =   zeros(Int64,NC.x+2,NC.y+2),
+        p       =   zeros(Float64,NC...),
+        p_ex    =   zeros(Float64,NC.x+2,NC.y+2),
         ρ       =   zeros(Float64,NC...),
         ρ_ex    =   zeros(Float64,NC.x+2,NC.y+2),
         ρ_exo   =   zeros(Float64,NC.x+2,NC.y+2),
@@ -107,20 +107,6 @@ function main()
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
         val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
     )
-    # ------------------------------------------------------------------- #
-    # Initial Condition ================================================= #
-    # Phase ---
-    # If tracers are used, phases need to be defined on the tracers directly
-    # and are not suppose to be interpolated from the centroids! 
-    IniPhase!(Ini.p,D,M,x,y,NC;phase)
-    for i in eachindex(phase)
-        D.ρ[D.p.==phase[i]] .= ρ[i]
-    end
-    D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
-    D.ρ_ex[1,:]     .=   D.ρ_ex[2,:]
-    D.ρ_ex[end,:]   .=   D.ρ_ex[end-1,:]
-    D.ρ_ex[:,1]     .=   D.ρ_ex[:,2]
-    D.ρ_ex[:,end]   .=   D.ρ_ex[:,end-1]
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
     T   =   ( 
@@ -147,20 +133,34 @@ function main()
             mean            =   zeros(Float64,nt),
         )
         MPC1        = (
-            PG_th   =   [similar(D.p) for _ = 1:nthreads()], # per thread
+            PG_th   =   [similar(D.ρ) for _ = 1:nthreads()], # per thread
             wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
         )
         MPC     =   merge(MPC,MPC1)
-        Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+        Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
         # RK4 weights ---
         rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
         rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
-        # Interpolate on centroids ---
-        @threads for k = 1:nmark
-            Ma.phase[k] =   FromCtoM(D.p_ex, k, Ma, x, y, Δ, NC)
-        end
         # Count marker per cell ---
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
+        # Interpolate from markers to cell ---
+        Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
+        # D.ρ_ex[2:end-1,2:end-1]     .= D.ρ
+    else
+        # --------------------------------------------------------------- #
+        # Initial Condition ============================================= #
+        # Phase ---
+        # If tracers are used, phases need to be defined on the tracers 
+        # directly and are not suppose to be interpolated from the centroids! 
+        IniPhase!(Ini.p,D,M,x,y,NC;phase)
+        for i in eachindex(phase)
+            D.ρ[D.p.==phase[i]] .= ρ[i]
+        end
+        D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
+        D.ρ_ex[1,:]     .=   D.ρ_ex[2,:]
+        D.ρ_ex[end,:]   .=   D.ρ_ex[end-1,:]
+        D.ρ_ex[:,1]     .=   D.ρ_ex[:,2]
+        D.ρ_ex[:,end]   .=   D.ρ_ex[:,end-1]
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
@@ -275,9 +275,9 @@ function main()
             AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,it)
           
-            # Interpolate temperature from tracers to grid ---
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam)           
-            D.p_ex[2:end-1,2:end-1]     .= D.p
+            # Interpolate phase from tracers to grid ---
+            Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
+            # D.ρ_ex[2:end-1,2:end-1]     .= D.ρ
         end
     end # End Time Loop
     # Save Animation ==================================================== #
