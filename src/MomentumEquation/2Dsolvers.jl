@@ -162,3 +162,158 @@ function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     @. Fm.y[:,2:end-1] = - ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y + g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
     @. FPt             = divV
 end
+
+function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
+
+    # Linear system of equation ---
+    ndof    =   maximum(Num.Pt)
+    K       =   ExtendableSparseMatrix(ndof,ndof)
+    dx,dy   =   Δ.x, Δ.y
+
+    # x momentum equation ----------------------------------------------- #
+    for i = 1:NV.x, j = 1:NC.y
+        # Equation Number ---
+        ii  =   Num.Vx[i,j] 
+        if i == 1 || i == NV.x
+            # East and West boundary ---
+            # Free Slip && No Slip: vₓ = 0 
+            K[ii,ii]    =   1.0
+        else
+            # Stencil, vₓ ---
+            iS  =   ii - NV.x            
+            iW  =   ii - 1 
+            iC  =   ii 
+            iE  =   ii + 1            
+            iN  =   ii + NV.x
+            # --- 
+            iSW =   Num.Vy[i-1,j]
+            iSE =   iSW + 1
+            iNW =   iSW + NC.y
+            iNE =   iSW + NC.y + 1
+            # Pressure ---
+            iPC =   Num.Pt[i,j]
+            iPW =   Num.Pt[i-1,j]
+            # ---
+            inS     =   j==1    ? false  : true  
+            FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
+            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
+            inN     =   j==NC.y ? false  : true   
+            FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
+            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.
+            if inS K[ii,iS] =   ηv[i,j] / dy^2   end
+            K[ii,iSW]   =   ηv[i,j] / dx / dy 
+            K[ii,iSE]   =   - ηv[i,j] / dx / dy
+            K[ii,iW]    =   2* ηc[i-1,j] / dx^2
+            K[ii,iC]    =   -2*ηc[i,j] / dx^2 - 2*ηc[i-1,j] /dx^2 - (1.0-FSN+NSN)*ηv[i,j+1]/dy^2 - (1.0-FSS+NSS)*ηv[i,j]/dy^2
+            K[ii,iE]    =   2 * ηc[i,j] / dx^2
+            K[ii,iNW]   =   - ηv[i,j+1] / dx / dy
+            K[ii,iNE]   =   ηv[i,j+1] / dx / dy
+            if inN K[ii,iN] =   ηv[i,j+1]   end
+            K[ii,iPW]   = 1 / dx
+            K[ii,iPC]   = -1 / dx
+        end
+    end
+    # ------------------------------------------------------------------- #
+    # y momentum equation ----------------------------------------------- #
+    for i = 1:NC.x, j = 1:NV.y
+        # Equation Number ---
+        ii  =   Num.Vy[i,j] 
+        if j == 1 || j == NV.y
+            # East and West boundary ---
+            # Free Slip && No Slip: vₓ = 0 
+            K[ii,ii]    =   1.0
+        else
+            # Stencil, vₓ ---
+            iS  =   ii - NC.x
+            iW  =   ii - 1 
+            iC  =   ii 
+            iE  =   ii + 1
+            iN  =   ii + NC.x
+            # --- 
+            iSW =   Num.Vx[i,j-1]
+            iSE =   iSW + 1
+            iNW =   iSW + NV.x
+            iNE =   iSW + NV.x + 1
+            # Pressure ---
+            iPS =   Num.Pt[i,j-1]   
+            iPC =   Num.Pt[i,j]
+            # ---
+            inW     =   i==1    ? false  : true  
+            FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
+            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
+            inE     =   i==NC.x ? false  : true   
+            FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
+            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            K[ii,iS]    =   2 * ηc[i,j-1] / dy^2
+            K[ii,iSW]   =   ηv[i,j] / dx^2 / dy^2
+            K[ii,iSE]   =   - ηv[i+1,j]
+            if inW K[ii,iW] =   end
+            K[ii,iC]    =   
+            if inE K[ii,iE] =  end
+            K[ii,iNW]   = 
+            K[ii,iNE]   = 
+            K[ii,iN]    =   
+            K[ii,iPS]   =   1 / dy
+            K[ii,iPC]   =   - 1 / dy
+        end
+    end
+    # ------------------------------------------------------------------- #
+    # Continuity equation ----------------------------------------------- #
+    for i = 1:NC.x, j = 1:NC.y
+        # Equation number ---
+        ii  =   Num.Pt[i,j]
+        # Stencil ---
+        iW  =   Num.Vx[i,j]
+        iE  =   Num.Vx[i+1,j]
+        iS  =   Num.Vy[i,j]
+        iN  =   Num.Vy[i,j+1]
+        # Linear system coefficients
+        K[ii,iW]    =   -1 / dx
+        K[ii,iE]    =   1 / dx
+        K[ii,iS]    =   -1 / dy 
+        K[ii,iN]    =   1 / dy
+    end
+    return flush!(K)
+end
+
+function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num, rhs)
+
+    # x momentum equation ----------------------------------------------- #
+    for i = 1:NV.x, j = 1:NC.y
+        # Equation Number ---
+        ii  =   Num.Vx[i,j] 
+        rhs[ii]     =   0.0
+        if i == 1 || i == NV.x
+            # East and West boundary ---
+            # Free Slip && No Slip: vₓ = 0 
+            rhs[ii]     =   0.0
+        else            
+            # ---
+            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
+            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.            
+            # ---
+            rhs[ii] +=  -2.0 * ηv[i,j] * BC.val.S[i] / Δ.y^2 * NSS -
+                        2.0 * ηv[i,j+1] * BC.val.N[i] / Δ.y^2 * NSN
+        end
+    end
+    # y momentum equation ----------------------------------------------- #
+    for i = 1:NC.x, j = 1:NV.y
+        # Equation Number ---
+        ii  =   Num.Vy[i,j] 
+        rhs[ii]     =   0.0
+        if j == 1 || j == NV.y
+            # North and South boundary ---
+            # Free Slip && No Slip: vy = 0 
+            rhs[ii]     =   0.0
+        else            
+            # ---
+            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
+            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            # ---
+            rhs[ii] +=  g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
+                        2.0 * η * BC.val.W[i] / Δ.x^2 * NSW -
+                        2.0 * η * BC.val.E[i] / Δ.x^2 * NSE
+        end
+    end
+    return rhs
+end
