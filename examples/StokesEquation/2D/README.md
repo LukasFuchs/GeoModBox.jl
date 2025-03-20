@@ -487,6 +487,10 @@ $$
 
 ## Examples
 
+### [FallingBlockConstEta_DC()](FallingBlockConstEta_Dc.jl) 
+&emsp; -> A sript, solving the falling block problem assuming a constant viscosity and using the defect correction method. 
+
+
 <!-- 
 - 2D case 
 -- Discretized equations

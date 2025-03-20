@@ -142,3 +142,23 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num, rhs)
     end
     return rhs
 end
+
+@doc """
+    Residuals2Dc!()
+"""
+function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
+    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip)*(2*BC.val.S - D.vx[:,2])
+    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip)*(2*BC.val.N - D.vx[:,end-1])
+    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
+    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip)*(2*BC.val.E - D.vy[end-1,:])
+    @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
+    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
+    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
+    @. ε.xy =   0.5*( (D.vx[:,2:end] - D.vx[:,1:end-1])/Δ.y + (D.vy[2:end,:] - D.vy[1:end-1,:])/Δ.x ) 
+    @. τ.xx =   2.0 * η * ε.xx
+    @. τ.yy =   2.0 * η * ε.yy
+    @. τ.xy =   2.0 * η * ε.xy
+    @. Fm.x[2:end-1,:] = - ((τ.xx[2:end,:]-τ.xx[1:end-1,:])/Δ.x + (τ.xy[2:end-1,2:end]-τ.xy[2:end-1,1:end-1])/Δ.y - (D.Pt[2:end,:]-D.Pt[1:end-1,:])/Δ.x)
+    @. Fm.y[:,2:end-1] = - ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y + g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
+    @. FPt             = divV
+end

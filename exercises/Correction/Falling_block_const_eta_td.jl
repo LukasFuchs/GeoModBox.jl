@@ -272,6 +272,7 @@ function main()
             semilagc2D!(D.ρ,D.ρ_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
         elseif FD.Method.Adv==:tracers
             # Advect tracers ---
+            @printf("Running on %d thread(s)\n", nthreads())  
             AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,it)
           

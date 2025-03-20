@@ -89,7 +89,7 @@ module GeoModBox
 
         module TwoD
             include("./MomentumEquation/2Dsolvers.jl")
-            export Assemblyc, updaterhsc
+            export Assemblyc, updaterhsc, Residuals2Dc!
         end
     end
 end 
