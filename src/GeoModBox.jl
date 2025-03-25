@@ -75,7 +75,8 @@ module GeoModBox
             include("./Tracers/2Dsolvers.jl")
             export TMarkers, Markers, IniTracer2D, 
                     VxFromVxNodes, VyFromVyNodes, VxVyFromPrNodes,
-                    FromCtoM, CountMPC, Markers2Cells, AdvectTracer2D
+                    FromCtoM, CountMPC, Markers2Cells, AdvectTracer2D,
+                    Markers2Vertices
         end
     end
 
@@ -89,7 +90,8 @@ module GeoModBox
 
         module TwoD
             include("./MomentumEquation/2Dsolvers.jl")
-            export Assemblyc, updaterhsc
+            export Assemblyc, updaterhsc, Residuals2Dc!, 
+                    Assembly, updaterhs, Residuals2D!
         end
     end
 end 
