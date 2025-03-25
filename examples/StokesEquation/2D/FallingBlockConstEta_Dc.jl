@@ -195,7 +195,7 @@ function FallingBlockConstEta_Dc()
                     layout=(2,2),subplot=2)
     display(p)
 
-    savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous.png"))
+    savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous_DC.png"))
 end
 
 FallingBlockConstEta_Dc()

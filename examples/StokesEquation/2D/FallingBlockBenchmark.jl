@@ -9,6 +9,7 @@ using Printf
 function FallingBlockBenchmark(td)
     # Benchmark parameter =============================================== #
     ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
+    # ηᵣ      =   1.0
     sv      =   zeros(length(ηᵣ))           #   Sinking Velocity
     tmax    =   [7.115094 7.114844 7.256534 7.377311 7.738412 7.673613 9.886 15.446 19.623 20.569 20.569 20.569 20.589]
     # ------------------------------------------------------------------- #
@@ -84,10 +85,7 @@ function FallingBlockBenchmark(td)
     g       =   9.81                #   Gravitational Acceleration
 
     η₀      =   1.0e21              #   Background Viscosity
-    # η₁      =   η₀ * 10^(ηᵣ[mn])    #   Block Viscosity
-    # η       =   [η₀,η₁]             #   Viscosity for phases
-    # @show η
-
+    
     ρ₀      =   3200.0              #   Background density
     ρ₁      =   3300.0              #   Block density
     ρ       =   [ρ₀,ρ₁]             #   Density for phases
@@ -150,7 +148,7 @@ function FallingBlockBenchmark(td)
         if FD.Method.Adv==:tracers 
             # Tracer Initialization ---
             nmx,nmy     =   3,3
-            noise       =   1
+            noise       =   0
             nmark       =   nmx*nmy*NC.x*NC.y
             Aparam      =   :phase
             MPC         =   (
@@ -368,14 +366,25 @@ function FallingBlockBenchmark(td)
         if ηᵣ[mn] == 0.0 || ηᵣ[mn] == 1.0 || ηᵣ[mn] == 2.0 || 
                         ηᵣ[mn] == 3.0 || ηᵣ[mn] == 4.0 || ηᵣ[mn] == 6.0
             count = count + 1
-            @show count
-            p2  =   scatter!(p2,Ma.x[1:Pl.qinc:end]./1e3,Ma.y[1:Pl.qinc:end]./1e3,
-            ms=1,ma=0.5,mc=Ma.phase[1:Pl.qinc:end],markerstrokewidth=0.0,
-            xlabel="x[km]",ylabel="y[km]",colorbar=false,
-            title=string("tracers, η_r = ",ηᵣ[mn]),label="",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,3),subplot=count)
+            if FD.Method.Adv==:tracers
+                p2  =   scatter!(p2,Ma.x[1:Pl.qinc:end]./1e3,Ma.y[1:Pl.qinc:end]./1e3,
+                    ms=1,ma=0.5,mc=Ma.phase[1:Pl.qinc:end],markerstrokewidth=0.0,
+                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                    title=string("tracers, η_r = ",ηᵣ[mn]),label="",
+                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                    ylims=(M.ymin/1e3, M.ymax/1e3),
+                    layout=(2,3),subplot=count)
+            else
+                p2 = heatmap!(p2,x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
+                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                    title="Phase_c",
+                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                    ylims=(M.ymin/1e3, M.ymax/1e3),
+                    layout=(2,3),subplot=count)
+                # contour!(p2,x.c,y.c,log10.(D.ηc'),
+                #     levels=2,
+                #     layout=(2,3),subplot=count)
+            end
         end
         # Save Animation ---
         if save_fig == 1
@@ -402,7 +411,7 @@ function FallingBlockBenchmark(td)
             display(q)
         end
     else
-        if save_fig == 1
+        if save_fig == -1
             savefig(p2,string("./examples/StokesEquation/2D/Results/FallingBlock_FinalStage",
                                 "_",FD.Method.Adv,".png"))
         else
@@ -413,6 +422,6 @@ end
 # ======================================================================= #
 # Define if the problem is time-dependent (1) or if you want to have the  #
 # steady state (0) solution.                                              #
-td  =   0
+td  =   1
 # ---
 FallingBlockBenchmark(td)
