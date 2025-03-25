@@ -167,7 +167,7 @@ for m = 1:ns # Loop over advection schemes
                 wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
             )
             MPC     =   merge(MPC,MPC1)
-            Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+            Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
             # RK4 weights ---
             rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
             rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
@@ -222,18 +222,18 @@ for m = 1:ns # Loop over advection schemes
             #@printf("Time step: #%04d\n ",i) 
 
             if FD.Method.Adv == "upwind"
-                upwindc2D!(D,NC,T,Δ)
+                upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "slf"
-                slfc2D!(D,NC,T,Δ)   
+                slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "semilag"
-                semilagc2D!(D,[],[],x,y,T)
+                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
             elseif FD.Method.Adv == "tracers"
                 # Advect tracers ---
                 AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
                 
                 # Interpolate temperature from tracers to grid ---
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam)        
+                Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam,0)        
             end
             
             display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))

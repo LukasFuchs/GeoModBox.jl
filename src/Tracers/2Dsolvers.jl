@@ -17,7 +17,7 @@ end
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
-@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise)
+@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -43,13 +43,30 @@ end
             Ma.y[k] += (rand()-0.5)*Δym
         end
     end
+
+    if ini==:block
+        # Geometry of the block anomaly ---
+        xL      =   2/5 * (M.xmax-M.xmin)
+        xR      =   3/5 * (M.xmax-M.xmin)
+        yO      =   0.1 * (M.ymin-M.ymax)
+        yU      =   0.3 * (M.ymin-M.ymax)        
+        
+        # phase ---
+        for k = 1:nmark
+            if ymi[k]>=yU && ymi[k]<=yO && xmi[k]>=xL && xmi[k]<=xR
+                Ma.phase[k]     =   phase[2]    #   anomaly 
+            else
+                Ma.phase[k]     =   phase[1]    #   background
+            end
+        end
+    end
     return Ma
 end
 
 @doc raw"""
     CountMPC()
 """
-@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,it)
+@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
      # Disable markers outside of the domain
      @threads for k=1:nmark
         if (Ma.x[k]<M.xmin || Ma.x[k]>M.xmax || Ma.y[k]<M.ymin || Ma.y[k]>M.ymax) 
@@ -103,11 +120,50 @@ end
         end
     end
 
-    MPC.min[it]         = minimum(MPC.c)
-    MPC.max[it]         = maximum(MPC.c)
-    MPC.mean[it]        = mean(MPC.c)
+    # MPC.min[it]         = minimum(MPC.c)
+    # MPC.max[it]         = maximum(MPC.c)
+    # MPC.mean[it]        = mean(MPC.c)
     #MPC.tot_reseed[it] = nmark_add
-    return Ma
+
+    # Initialize marker per vertex per thread array ---
+    @threads for j = 1:NV.y
+        for i = 1:NV.x
+            for ith=1:nthreads()
+                MPC.thv[ith,i,j] = 0.0
+            end
+        end
+    end
+
+    # Count marker per vertex per thread ---
+    @threads for k=1:nmark
+        if (Ma.phase[k]>=0)
+            # Get the column:
+            dstx = Ma.x[k] - x.v[1]
+            i    = Int64(round(ceil( (dstx/Δ.x) + 0.5)))
+            # Get the line:
+            dsty = Ma.y[k] - y.v[1]
+            j    = Int64(round(ceil( (dsty/Δ.y) + 0.5)))
+            # Increment cell count
+            MPC.thv[threadid(),i,j] += 1.0
+        end
+    end
+
+    @threads for j=1:NV.y
+        for i=1:NV.x
+            for ith=1:nthreads()
+                if ith == 1 
+                    MPC.v[i,j] = 0.0
+                end
+                MPC.v[i,j] += MPC.thv[ith,i,j]
+            end
+        end
+    end
+
+    # MPC.min[it]         = minimum(MPC.cv)
+    # MPC.max[it]         = maximum(MPC.cv)
+    # MPC.mean[it]        = mean(MPC.cv)
+    #MPC.tot_reseed[it] = nmark_add
+    # return Ma
 end
 
 @doc raw"""
@@ -285,40 +341,143 @@ end
 @doc raw"""
     Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
 """
-@views function Markers2Cells(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param)
+@views function Markers2Cells(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
+    PG0     =   copy(PG)
     PG      .*=     0.0
     weight  .*=     0.0
     if param==:thermal
         PM  =       copy(Ma.T)
-    end
-    chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
-    @sync for chunk in chunks
-        @spawn begin
-            tid = threadid()
-            fill!(PG_th[tid], 0)
-            fill!(weight_th[tid], 0)
-            for k in chunk
-                # Get the column:
-                dstx = Ma.x[k] - x.c[1]
-                i = ceil(Int, dstx / Δ.x + 0.5)
-                # Get the line:
-                dsty = Ma.y[k] - y.c[1]
-                j = ceil(Int, dsty /  Δ.y + 0.5)
-                # Relative distances
-                Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
-                Δym = 2.0 * abs(y.c[j] - Ma.y[k])
-                # Increment cell counts
-                area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                PG_th[tid][i, j] += PM[k] * area
-                weight_th[tid][i, j] += area
+        chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+        @sync for chunk in chunks
+            @spawn begin
+                tid = threadid()
+                fill!(PG_th[tid], 0)
+                fill!(weight_th[tid], 0)
+                for k in chunk
+                    # Get the column:
+                    dstx = Ma.x[k] - x.c[1]
+                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    # Get the line:
+                    dsty = Ma.y[k] - y.c[1]
+                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    # Relative distances
+                    Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
+                    Δym = 2.0 * abs(y.c[j] - Ma.y[k])
+                    # Increment cell counts
+                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
+                    PG_th[tid][i, j] += PM[k] * area
+                    weight_th[tid][i, j] += area
+                end
+            end
+        end
+    elseif param==:phase
+        PM  =       copy(Ma.phase)
+        chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+        @sync for chunk in chunks
+            @spawn begin
+                tid = threadid()
+                fill!(PG_th[tid], 0)
+                fill!(weight_th[tid], 0)
+                for k in chunk
+                    # Get the column:
+                    dstx = Ma.x[k] - x.c[1]
+                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    # Get the line:
+                    dsty = Ma.y[k] - y.c[1]
+                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    # Relative distances
+                    Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
+                    Δym = 2.0 * abs(y.c[j] - Ma.y[k])
+                    # Increment cell counts
+                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
+                    PG_th[tid][i, j] += param2[PM[k]+1] * area
+                    weight_th[tid][i, j] += area
+                end
             end
         end
     end
-
+    
     PG      .= reduce(+, PG_th)
     #phase  .= reduce(+, phase_th)
     weight  .= reduce(+, weight_th)
     PG ./= weight
+
+    if sum(isnan.(PG))>0
+        @printf("%i number(s) of cells without markers\n", sum(isnan.(PG)))
+        PG[isnan.(PG)]     .=  PG0[isnan.(PG)]
+    end
+
+    return
+end
+
+@doc raw"""
+    Markers2Vertices(Ma,nmark,PG,weight,x,y,Δ,param)
+"""
+@views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
+    PG0     =   copy(PG)
+    PG      .*=     0.0
+    weight  .*=     0.0
+    if param==:thermal
+        PM  =       copy(Ma.T)
+        chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+        @sync for chunk in chunks
+            @spawn begin
+                tid = threadid()
+                fill!(PG_th[tid], 0)
+                fill!(weight_th[tid], 0)
+                for k in chunk
+                    # Get the column:
+                    dstx = Ma.x[k] - x.v[1]
+                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    # Get the line:
+                    dsty = Ma.y[k] - y.v[1]
+                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    # Relative distances
+                    Δxm = 2.0 * abs(x.v[i] - Ma.x[k])
+                    Δym = 2.0 * abs(y.v[j] - Ma.y[k])
+                    # Increment cell counts
+                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
+                    PG_th[tid][i, j] += PM[k] * area
+                    weight_th[tid][i, j] += area
+                end
+            end
+        end
+    elseif param==:phase
+        PM  =       copy(Ma.phase)
+        chunks = Iterators.partition(1:nmark, nmark ÷ nthreads())
+        @sync for chunk in chunks
+            @spawn begin
+                tid = threadid()
+                fill!(PG_th[tid], 0)
+                fill!(weight_th[tid], 0)
+                for k in chunk
+                    # Get the column:
+                    dstx = Ma.x[k] - x.v[1]
+                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    # Get the line:
+                    dsty = Ma.y[k] - y.v[1]
+                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    # Relative distances
+                    Δxm = 2.0 * abs(x.v[i] - Ma.x[k])
+                    Δym = 2.0 * abs(y.v[j] - Ma.y[k])
+                    # Increment cell counts
+                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
+                    PG_th[tid][i, j] += param2[PM[k]+1] * area
+                    weight_th[tid][i, j] += area
+                end
+            end
+        end
+    end
+    
+    PG      .= reduce(+, PG_th)
+    #phase  .= reduce(+, phase_th)
+    weight  .= reduce(+, weight_th)
+    PG ./= weight
+
+    if sum(isnan.(PG))>0
+        @printf("%i number(s) of vertices without markers\n",sum(isnan.(PG)))
+        PG[isnan.(PG)]     .=  PG0[isnan.(PG)]
+    end
 
     return
 end
