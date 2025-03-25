@@ -6,7 +6,14 @@ using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf
 
-function main()
+function FallingBlockBenchmark(td)
+
+    # Benchmark parameter =============================================== #
+    # ηᵣ  =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
+    ηᵣ  =   0
+    sv  =   zeros(size(ηᵣ))             #   Sinking Velocityf
+    # ------------------------------------------------------------------- #
+    for mn in eachindex(ηᵣ)     #   Loop over ηᵣ
     # Define Numerical Scheme =========================================== #
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
@@ -30,7 +37,6 @@ function main()
         ymin    =   -500.0e3,   # [ m ]
         ymax    =   0.0,
     )
-    # ------------------------------------------------------------------- #
     # Grid ============================================================== #
     NC      =   (
         x   =   50, 
@@ -70,21 +76,24 @@ function main()
     y   =   merge(y,y1)
     # ------------------------------------------------------------------- #
     # Physics =========================================================== #
-    g       =   9.81
+    g       =   9.81                #   Gravitational Acceleration
 
-    η₀      =   1.0e21
+    η₀      =   1.0e21              #   Background Viscosity
+    η₁      =   η₀ * exp(ηᵣ[mn])    #   Block Viscosity
+    η       =   [η₀,η₁]             #   Viscosity for phases
+    @show η
 
-    ρ₀      =   3200.0          #   Background density
-    ρ₁      =   3300.0          #   Block density
-    ρ       =   [ρ₀,ρ₁] 
+    ρ₀      =   3200.0              #   Background density
+    ρ₁      =   3300.0              #   Block density
+    ρ       =   [ρ₀,ρ₁]             #   Density for phases
 
-    phase   =   [0,1]
+    phase   =   [0,1]               #   Phase ID
     # ------------------------------------------------------------------- #
     # Animationsettings ================================================= #
-    path        =   string("./exercises/Correction/Results/")
+    path        =   string("./examples/StokesEquation/2D/Results/")
     anim        =   Plots.Animation(path, String[] )
-    filename    =   string("10_Falling_",Ini.p,"_iso_",FD.Method.Adv)
-    save_fig    =   1
+    filename    =   string("10_Falling_",Ini.p,"_",ηᵣ[mn],"_",FD.Method.Adv)
+    save_fig    =   0
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D   =   (
@@ -100,6 +109,21 @@ function main()
         vyc     =   zeros(Float64,NC...),
         vc      =   zeros(Float64,NC...),
         wt      =   zeros(Float64,(NC.x,NC.y)),
+        wtv     =   zeros(Float64,(NV.x,NV.y)),
+        ηc      =   zeros(Float64,NC...),
+        ηv      =   zeros(Float64,NV...),
+    )
+    # Needed for the defect correction solution ---
+    divV        =   zeros(Float64,NC...)
+    ε           =   (
+        xx      =   zeros(Float64,NC...), 
+        yy      =   zeros(Float64,NC...), 
+        xy      =   zeros(Float64,NV...),
+    )
+    τ           =   (
+        xx      =   zeros(Float64,NC...), 
+        yy      =   zeros(Float64,NC...), 
+        xy      =   zeros(Float64,NV...),
     )
     # ------------------------------------------------------------------- #
     # Boundary Conditions =============================================== #
@@ -116,7 +140,11 @@ function main()
         time    =   [0.0,0.0],
     )
     T.tmax[1]   =   9.886 * 1e6 * (60*60*24*365.25)   # [ s ]
-    nt          =   9999
+    if td == 0
+        nt = 1
+    else
+        nt  =   9999
+    end
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
     if FD.Method.Adv==:tracers 
@@ -126,15 +154,18 @@ function main()
         nmark       =   nmx*nmy*NC.x*NC.y
         Aparam      =   :phase
         MPC         =   (
-            c               =   zeros(Float64,(NC.x,NC.y)),
-            th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),                
-            min             =   zeros(Float64,nt),
-            max             =   zeros(Float64,nt),
-            mean            =   zeros(Float64,nt),
+            c       =   zeros(Float64,(NC.x,NC.y)),
+            th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+            thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+            min     =   zeros(Float64,nt),
+            max     =   zeros(Float64,nt),
+            mean    =   zeros(Float64,nt),
         )
         MPC1        = (
             PG_th   =   [similar(D.ρ) for _ = 1:nthreads()], # per thread
+            PV_th   =   [similar(D.ηv) for _ = 1:nthreads()], # per thread
             wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
+            wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()], # per thread
         )
         MPC     =   merge(MPC,MPC1)
         Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
@@ -145,16 +176,19 @@ function main()
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
         # Interpolate from markers to cell ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-        # D.ρ_ex[2:end-1,2:end-1]     .= D.ρ
+        Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
+                                D.ηv[2:end-0,1:end-1] + 
+                                D.ηv[1:end-1,2:end-0] + 
+                                D.ηv[2:end-0,2:end-0])
     else
         # --------------------------------------------------------------- #
         # Initial Condition ============================================= #
-        # Phase ---
-        # If tracers are used, phases need to be defined on the tracers 
-        # directly and are not suppose to be interpolated from the centroids! 
         IniPhase!(Ini.p,D,M,x,y,NC;phase)
         for i in eachindex(phase)
             D.ρ[D.p.==phase[i]] .= ρ[i]
+            # D.ηv ? Do the other advection methods even work using 
+            # different viscosities? Advect both properties seperately? 
         end
         D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
         D.ρ_ex[1,:]     .=   D.ρ_ex[2,:]
@@ -175,26 +209,39 @@ function main()
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
     )
     # ------------------------------------------------------------------- #
-    # Assemble Coefficients ============================================= #
-    K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
-    # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     for it = 1:nt
-        χ       =   zeros(maximum(Num.Pt))  #   Unknown Vector
-        rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
         # Update Time ---
         T.time[1]   =   T.time[2] 
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,T.time[1]/(60*60*24*365.25)/1.0e6)
         # Momentum Equation ===
-        # Update RHS ---
-        rhs     =   updaterhsc( NC, NV, Δ, η₀, D.ρ, g, VBC, Num )
-        # Solve System of Equations ---
-        χ       =   K \ rhs
-        # Update Unknown Variables ---
-        D.vx[:,2:end-1]     .=  χ[Num.Vx]
-        D.vy[2:end-1,:]     .=  χ[Num.Vy]
-        D.Pt                .=  χ[Num.Pt]
-        # ===
+        # Residuals ---
+        Fm     =    (
+            x       =   zeros(Float64,NV.x, NC.y), 
+            y       =   zeros(Float64,NC.x, NV.y)
+        )
+        FPt     =   zeros(Float64,NC...)
+        # ---
+        F       =   zeros(maximum(Num.Pt))
+        δx      =   zeros(maximum(Num.Pt))
+        # Initial Residual ---------------------------------------------- #
+        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+        F[Num.Vx]   =   Fm.x[:]
+        F[Num.Vy]   =   Fm.y[:]
+        F[Num.Pt]   =   FPt[:]
+        # Assemble Coefficients ========================================= #
+        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+        # --------------------------------------------------------------- #
+        # Solution of the linear system ================================= #
+        δx      =   - K \ F
+        # --------------------------------------------------------------- #
+        # Update Unknown Variables ====================================== #
+        D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+        D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+        D.Pt                .+=  δx[Num.Pt]
+        # Final Residual ================================================ #
+        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+        # --------------------------------------------------------------- #
         # Get the velocity on the centroids ---
         for i = 1:NC.x
             for j = 1:NC.y
@@ -205,6 +252,7 @@ function main()
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 
         @show(maximum(D.vc))
+        sv[mn]  =   maximum(D.vc)
         @show(minimum(D.Pt))
         @show(maximum(D.Pt))
 
@@ -218,30 +266,40 @@ function main()
                     title="Density",
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,2),subplot=1)
+                    layout=(2,3),subplot=1)
             quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
                         y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
                         quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                                 D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-                        color="white",layout=(2,2),subplot=1)
+                        color="white",layout=(2,3),subplot=1)
             heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="V_x",
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
                         ylims=(M.ymin/1e3, M.ymax/1e3),
-                        layout=(2,2),subplot=3)
+                        layout=(2,3),subplot=4)
             heatmap!(p,x.c./1e3,y.c./1e3,D.vyc',
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="V_y",
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
                         ylims=(M.ymin/1e3, M.ymax/1e3),
-                        layout=(2,2),subplot=4)
+                        layout=(2,3),subplot=5)
             heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="P_t",
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
                         ylims=(M.ymin/1e3, M.ymax/1e3),
-                        layout=(2,2),subplot=2)
+                        layout=(2,3),subplot=2)
+            heatmap!(p,x.v./1e3,y.v./1e3,log10.(D.ηv'),color=reverse(cgrad(:roma)),
+                        xlabel="x[km]",ylabel="y[km]",title="η_v",
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=false,
+                        layout=(2,3),subplot=3)
+            heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
+                        xlabel="x[km]",ylabel="y[km]",title="η_c",
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=false,
+                        layout=(2,3),subplot=6)
             if save_fig == 1
                 Plots.frame(anim)
             elseif save_fig == 0
@@ -278,16 +336,27 @@ function main()
           
             # Interpolate phase from tracers to grid ---
             Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-            # D.ρ_ex[2:end-1,2:end-1]     .= D.ρ
+            # Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+            # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
+            #                     D.ηv[2:end-0,1:end-1] + 
+            #                     D.ηv[1:end-1,2:end-0] + 
+            #                     D.ηv[2:end-0,2:end-0])
         end
     end # End Time Loop
-    # Save Animation ==================================================== #
-    if save_fig == 1
-        # Write the frames to a GIF file
-        Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-        foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+    end # End ηᵣ Loop
+    q = scatter(ηᵣ,sv,marker=4,
+                    ylabel="block velocity [m/s]",
+                    xlabel="log_{10}(η_{block}/η_{medium})",
+                    label=false,
+                    ylims=(0.2e-9,1.5e-9),
+                    xlims=(-6,6))
+    if savefig == 1
+        savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlock_SinkingVeloc.png"))
+    else
+        # display(q)
     end
-    # ------------------------------------------------------------------- #
 end
 
-main()
+td  =   1
+
+FallingBlockBenchmark(td)
