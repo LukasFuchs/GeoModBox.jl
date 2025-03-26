@@ -8,14 +8,17 @@ using Printf
 
 function FallingBlockBenchmark(td)
     # Benchmark parameter =============================================== #
-    ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
-    # ηᵣ      =   1.0
+    # ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
+    ηᵣ      =   6.0
     sv      =   zeros(length(ηᵣ))           #   Sinking Velocity
-    tmax    =   [7.115094 7.114844 7.256534 7.377311 7.738412 7.673613 9.886 15.446 19.623 20.569 20.569 20.569 20.589]
+    tmax    =   [7.115094, 7.114844, 7.256534, 7.377311, 7.738412, 
+                    7.673613, 9.886, 15.446, 19.623, 20.569, 20.569,
+                    20.569, 20.589]
     # ------------------------------------------------------------------- #
     # Define Numerical Scheme =========================================== #
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
+    #   Attention: Tracers are the only method that work well.
     FD          =   (Method     = (Adv=:tracers,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
@@ -25,14 +28,14 @@ function FallingBlockBenchmark(td)
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
     path        =   string("./examples/StokesEquation/2D/Results/")
-    save_fig    =   1
+    save_fig    =   0
     p2          =   plot(0,0,layout=(2,3))
     count       =   Int64(0)
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   1,
-        qsc     =   100*(60*60*24*365.25)*1e0
+        qsc     =   100*(60*60*24*365.25)*5e1
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
@@ -156,9 +159,6 @@ function FallingBlockBenchmark(td)
                 v       =   zeros(Float64,(NV.x,NV.y)),
                 th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
                 thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
-                # min     =   zeros(Float64,nt),
-                # max     =   zeros(Float64,nt),
-                # mean    =   zeros(Float64,nt),
             )
             MPC1        = (
                 PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
@@ -191,17 +191,19 @@ function FallingBlockBenchmark(td)
             end
             # Density ---
             D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
-            D.ρ_ex[1,:]     .=   D.ρ_ex[2,:]
-            D.ρ_ex[end,:]   .=   D.ρ_ex[end-1,:]
-            D.ρ_ex[:,1]     .=   D.ρ_ex[:,2]
-            D.ρ_ex[:,end]   .=   D.ρ_ex[:,end-1]
+            D.ρ_ex[1,:]     .=  D.ρ_ex[2,:]
+            D.ρ_ex[end,:]   .=  D.ρ_ex[end-1,:]
+            D.ρ_ex[:,1]     .=  D.ρ_ex[:,2]
+            D.ρ_ex[:,end]   .=  D.ρ_ex[:,end-1]
+            D.ρ_exo         .=  D.ρ_ex
             # Viscosity ---
             # --- Centroids -
             D.η_ex[2:end-1,2:end-1]     .=  D.ηc
-            D.η_ex[1,:]     .=   D.η_ex[2,:]
-            D.η_ex[end,:]   .=   D.η_ex[end-1,:]
-            D.η_ex[:,1]     .=   D.η_ex[:,2]
-            D.η_ex[:,end]   .=   D.η_ex[:,end-1]
+            D.η_ex[1,:]     .=  D.η_ex[2,:]
+            D.η_ex[end,:]   .=  D.η_ex[end-1,:]
+            D.η_ex[:,1]     .=  D.η_ex[:,2]
+            D.η_ex[:,end]   .=  D.η_ex[:,end-1]
+            D.η_exo         .=  D.η_ex
             # --- Vertices -
             @. D.ηv     =   0.25 * (D.η_ex[1:end-1,1:end-1] + 
                                     D.η_ex[2:end-0,1:end-1] + 
@@ -231,7 +233,7 @@ function FallingBlockBenchmark(td)
                         T.time[1]/(60*60*24*365.25)/1.0e6)
             # Momentum Equation =======
             # Update K ---
-            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            K       =   Assembly( NC, NV, Δ, D.ηc, D.ηv, VBC, Num )
             # Update RHS ---
             rhs     =   updaterhs( NC, NV, Δ, D.ηc, D.ηv, D.ρ, g, VBC, Num )
             # Solve System of Equations ---
@@ -303,7 +305,7 @@ function FallingBlockBenchmark(td)
                             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
                             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-                            color="white",layout=(1,3),subplot=3)
+                            la=0.5,color="white",layout=(1,3),subplot=3)
                 heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
                             xlabel="x[km]",ylabel="y[km]",title="η_c",
                             clims=(15,27),
@@ -381,9 +383,6 @@ function FallingBlockBenchmark(td)
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),
                     layout=(2,3),subplot=count)
-                # contour!(p2,x.c,y.c,log10.(D.ηc'),
-                #     levels=2,
-                #     layout=(2,3),subplot=count)
             end
         end
         # Save Animation ---
