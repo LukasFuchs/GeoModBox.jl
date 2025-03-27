@@ -491,10 +491,10 @@ $$
 &emsp; -> A sript, solving the falling block benchmark for a viscosity range from -6 to 6 order of magnitude. The script stores the [sinking velocity](./Results/FallingBlock_SinkingVeloc_tracers.png) of the block at the initial configuration and the [final marker distribution](./Results/FallingBlock_FinalStage_tracers.png) for models with a viscosity ration over and equal 0. 
 
 ### [FallingBlockConstEta_DC()](./FallingBlockConstEta_Dc.jl) 
-&emsp; -> A sript, solving the falling block problem assuming a constant viscosity and using the defect correction method. 
+&emsp; -> A sript, solving the falling block problem assuming a constant viscosity and using the defect correction method.  
 
 ### [FallingBlockVarEta_DC()](./FallingBlockVarEta_DC.jl)
-&emsp; -> A sript, solving the falling block problem assuming a variable viscosity and using the defect correction method. 
+&emsp; -> A sript, solving the falling block problem assuming a variable viscosity and using the defect correction method. The advection is only provided with tracers
 
 
 <!-- 

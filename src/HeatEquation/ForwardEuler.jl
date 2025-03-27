@@ -32,7 +32,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             D.T[i,j] = D.T_ex[i1,j1] + 
                 sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
                 sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
-                D.Q[i,j] * Δt / ρ / cp
+                D.Q[i,j] * Δt / ρ[i,j] / cp
         end
     end
     # ------------------------------------------------------------------- #
