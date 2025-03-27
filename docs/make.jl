@@ -1,6 +1,5 @@
 using Documenter
-push!(LOAD_PATH,"../src/")
-using .GeoModBox
+using GeoModBox
 
 
 GMB_root_dir = dirname(@__DIR__)
