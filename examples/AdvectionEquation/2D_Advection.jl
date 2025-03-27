@@ -31,6 +31,8 @@ function Advection_2D()
 
 @printf("Running on %d thread(s)\n", nthreads())
 
+save_fig    =   1
+
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
@@ -104,7 +106,6 @@ path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
 filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
                         "_",FD.Method.Adv)
-save_fig    =   1
 # -------------------------------------------------------------------- #
 # Initialize Array =================================================== #
 D       =   (
@@ -117,6 +118,7 @@ D       =   (
     vyc     =   zeros(Float64,(NC.x,NC.y)),
     vc      =   zeros(Float64,(NC.x,NC.y)),
     wt      =   zeros(Float64,(NC.x,NC.y)),
+    wtv     =   zeros(Float64,(NV...)),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
     Tmean   =   [0.0],
@@ -158,15 +160,16 @@ if FD.Method.Adv==:tracers
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :thermal
     MPC         =   (
-        c               =   zeros(Float64,(NC.x,NC.y)),
-        th              =   zeros(Float64,(nthreads(),NC.x,NC.y)),                
-        min             =   zeros(Float64,nt),
-        max             =   zeros(Float64,nt),
-        mean            =   zeros(Float64,nt),
+        c       =   zeros(Float64,(NC.x,NC.y)),
+        v       =   zeros(Float64,(NV.x,NV.y)),
+        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
     )
     MPC1        = (
-        PG_th   =   [similar(D.T) for _ = 1:nthreads()], # per thread
-        wt_th   =   [similar(D.wt) for _ = 1:nthreads()], # per thread
+        PG_th   =   [similar(D.T) for _ = 1:nthreads()],    # per thread
+        PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
+        wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
     MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
@@ -178,16 +181,11 @@ if FD.Method.Adv==:tracers
         Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
     end
     # Count marker per cell ---
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,1)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 end
 # -------------------------------------------------------------------- #
 # Visualize initial condition ======================================== #
 if FD.Method.Adv==:tracers
-    #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
-    #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
-    #        markersize=Pl.Msz,legend=false,colorbar=true, 
-    #        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-    #        layout=(1,2),subplot=1)
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
             ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
@@ -233,7 +231,8 @@ for i=2:nt
     elseif FD.Method.Adv==:tracers
         # Advect tracers ---
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
+        # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
         
         # Interpolate temperature from tracers to grid ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam,0)           
@@ -245,11 +244,6 @@ for i=2:nt
     # Plot Solution ---
     if mod(i,10) == 0 || i == nt
         if FD.Method.Adv==:tracers
-            #p = scatter(Ma.x[1:Pl.Minc:end],Ma.y[1:Pl.Minc:end], 
-            #        zcolor=Ma.T[1:Pl.Minc:end],color=:thermal,
-            #        markersize=Pl.Msz,legend=false,color bar=true, 
-            #        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-            #        layout=(1,2),subplot=1)
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                     ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),

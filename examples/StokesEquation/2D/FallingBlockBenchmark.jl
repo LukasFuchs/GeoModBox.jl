@@ -8,8 +8,8 @@ using Printf
 
 function FallingBlockBenchmark(td)
     # Benchmark parameter =============================================== #
-    # ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
-    ηᵣ      =   6.0
+    ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
+    # ηᵣ      =   6.0
     sv      =   zeros(length(ηᵣ))           #   Sinking Velocity
     tmax    =   [7.115094, 7.114844, 7.256534, 7.377311, 7.738412, 
                     7.673613, 9.886, 15.446, 19.623, 20.569, 20.569,
@@ -28,7 +28,7 @@ function FallingBlockBenchmark(td)
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
     path        =   string("./examples/StokesEquation/2D/Results/")
-    save_fig    =   0
+    save_fig    =   -1
     p2          =   plot(0,0,layout=(2,3))
     count       =   Int64(0)
     # ------------------------------------------------------------------- #
