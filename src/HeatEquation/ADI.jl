@@ -1,5 +1,4 @@
 using ExtendableSparse
-using UnicodePlots
 @doc raw"""
     ADI2Dc
 """

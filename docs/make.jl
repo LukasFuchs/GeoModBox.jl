@@ -1,16 +1,18 @@
 using Documenter
-using GeoModBox
+push!(LOAD_PATH,"../src/")
+using .GeoModBox
 
 
 GMB_root_dir = dirname(@__DIR__)
 
-license = read(joinpath(GBM_root_dir, "LICENSE.md"), String)
+license = read(joinpath(GMB_root_dir, "LICENSE"), String)
 write(joinpath(@__DIR__, "src", "man", "license.md"), license)
 
 
 makedocs(
     sitename = "GeoModBox",
     format = Documenter.HTML(),
+    warnonly = [:missing_docs],
     modules = [GeoModBox],
     pages = [
         "Home" => "index.md",
@@ -19,6 +21,7 @@ makedocs(
                 "Diffusion" => "man/DiffMain.md",
             ]
         ],
+        "List of functions" => "man/listoffunctions.md"
     ]
 )
 
