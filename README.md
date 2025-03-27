@@ -1,10 +1,12 @@
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://lukasfuchs.github.io/GeoModBox.jl/)
+
 # GeoModBox.jl
 The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for teaching purposes. The package provides different finite difference, staggered, discretization schemes to numerically solve the governing equations for a two-dimensional geodynamic problem. The governing equations are the conservation equations of 
 1) [**energy**](/examples/HeatEquation/README.md), 
 2) [**momentum**](/examples/...), 
 3)  [**mass** and **compositon**](/examples/AdvectionEquation/README.md). 
 
-&emsp; The ```GeoModBox.jl``` includes a series of [exercises](./exercises/) and [examples](./examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. Most of the theoretical background is given in the corresponding README.md files and in the documentation. <!-- documentation needs to be done!-->
+&emsp; The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [examples](/examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. Most of the theoretical background is given in the corresponding README.md files and in the documentation. <!-- documentation needs to be done!-->
 
 <!-- I will add some question directly here for the time beeing: I would like to add similar informations to this package as I did in my [FDCSGm repository](https://github.com/LukasFuchs/FDCSGm). However, I am not familiar with the doc option in github yet, that's why I added all the information in a README.md file for each module etc. I guess the doc option would be more suitable to add the details and simply add some figures and general information in the README.md. Have you ever worked with doc in github? -->
 
