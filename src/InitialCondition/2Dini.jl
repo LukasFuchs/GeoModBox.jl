@@ -47,9 +47,6 @@ Possible initial temperature conditions are:
                 end
             end
         end    
-        #D.Tmax[1]   =   maximum(D.T_ex)
-        #D.Tmin[1]   =   minimum(D.T_ex)
-        #D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:gaussian        
         # κ           =   1e-6
         # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
@@ -59,17 +56,16 @@ Possible initial temperature conditions are:
                                     (y.ce[j]/((M.ymin+M.ymax)) - 0.5)^2)/σ^2)
             end
         end        
-        #D.Tmax[1]   =   maximum(D.T_ex)
-        #D.Tmin[1]   =   minimum(D.T_ex)
-        #D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
-        xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        Ta      =   1200
-        #D.Tmean[1]  =   (Tb + Ta)/2
+        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        xTr     =   xTl + (M.xmax-M.xmin)/10.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0  # (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 #(abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        # xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        # xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        # yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        # yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
         # Anfangstemperatur Verteilung ---
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -80,13 +76,37 @@ Possible initial temperature conditions are:
                 end
             end
         end        
-        #D.Tmax[1]   =   maximum(D.T_ex)
     elseif type==:linear
-        Ttop    =   Tb
-        Tgrad   =   0.5         # [ K/km ]
+        Ttop    =   Ta
+        Tbot    =   Tb
+        Tgrad   =   (Tbot-Ttop)/(M.ymax-M.ymin)         # [ K/m ]
+        @show Tgrad
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
-                D.T_ex[i,j] = -Tgrad*(y.ce[j]-(M.ymax-M.ymin))/1e3 + Ttop
+                D.T_ex[i,j] = -Tgrad*(y.ce[j]) + Ttop
+            end
+        end
+    elseif type==:lineara
+        # Bereich der Anomalie ---       
+        ri          =   .3
+        xc          =   (M.xmin+M.xmax)/4
+        yc          =   (M.ymin+M.ymax)/2
+        α           =   0.0
+        a_ell       =   .6*(M.ymin+M.ymax)
+        b_ell       =   .2*(M.ymin+M.ymax)
+        # Linear with a gaussian anomaly
+        Ttop    =   Ta
+        Tbot    =   Tb
+        Tgrad   =   (Tbot-Ttop)/(M.ymax-M.ymin)         # [ K/m ]
+        @threads for i = 1:NC.x+2
+            for j = 1:NC.y+2
+                x_ell   =  x.ce[i]*cosd(α) + y.ce[j]*sind(α)
+                y_ell   =  -x.ce[i]*sind(α) + y.ce[j]*cosd(α)
+                Elli    =   ((x_ell - xc)/ a_ell)^2 + ((y_ell-yc)/ b_ell)^2
+                D.T_ex[i,j] = -Tgrad*(y.ce[j]) + Ttop
+                if Elli <= ri
+                    D.T_ex[i,j]    +=   0.2*D.T_ex[i,j]
+                end
             end
         end
     end
@@ -163,7 +183,7 @@ end
         yO      =   0.1 * (M.ymin-M.ymax)
         yU      =   0.3 * (M.ymin-M.ymax)        
         
-        # Density ---
+        # Phase ---
         for i = 1:NC.x
             for j = 1:NC.y
                 if y.c[j]>=yU && y.c[j] <= yO && x.c[i]>=xL && x.c[i]<=xR

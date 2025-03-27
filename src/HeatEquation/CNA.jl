@@ -60,7 +60,9 @@ for i = 1:NC.x
 end
 # ------------------------------------------------------------------- #
 # Berechnung der rechten Seite -------------------------------------- #
-rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
+# rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
+rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ 
+                reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
 # ------------------------------------------------------------------- #        
 # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
 for i = 1:NC.x

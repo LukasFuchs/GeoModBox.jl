@@ -77,8 +77,11 @@ function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
 a   =   κ / Δx^2
 b   =   κ / Δy^2
 c   =   1 / Δt
+# temp    =   copy(rhs)
 # Multiply rhs with 1/Δt and add Q/ρ/cp ---    
-rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
+# rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
+rhs  .= reshape(D.T,NC.x*NC.y).*c .+ 
+            reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
 
 # Loop over the grid points ---
 for i = 1:NC.x
