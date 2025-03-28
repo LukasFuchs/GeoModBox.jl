@@ -1,21 +1,16 @@
-<!-- # General Information
+# General Information
 
 &emsp; This directory provides several examples solving the **conductive** part of the *temperature conservation equation* (in 1-D) using [different numerical discretization methods.](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
-<!-- [comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!) -->
-
-<!-- ---------------------------------- -->
-<!-- ---------------------------------- -->
+[comment]: <> (Function for variable thermal parameters needed. Exlicit function available needs to be implemente here!)
 
 # Temperature Equation (1D)
 
 &emsp; In one dimension, the conductive part of the *temperature conservation equation*, or *temperature equation* is described by (assuming only radiogenic heat sources):
 
-$ 
-\begin{equation}
+$\begin{equation}
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H,
-\end{equation}
-$ 
+\end{equation}$ 
 
 or including Fourier’s law (assuming variable thermal parameters):
 
@@ -51,7 +46,7 @@ Thus, the maximum time step is limited by the model’s resolution.
 
 &emsp; To numerically solve equation $(3)$ one needs to discretize the numerical domain and assign the parameters to their corresponding nodes. **Note**: Even though the thermal conductivity is  assumed to be constant (for now), we chose a *conservative gridding* for the sake of continuity, that is the temperature $T$ is defined on the centroids and the heat flux $q$ in between. 
 
-<img src="https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Figures/1D_Discretization.png" alt="drawing" width="600"/> <br>
+<img src="../assets/Diff_1D_Discretization.png" alt="drawing" width="600"/> <br>
 **Figure 1. 1-D Discretization.** *Conservative finite difference grid* to solve the 1-D conductive part of the *temperature equation*. The temperature is defined on the centroids and the heat flux on the vertices. The temperature *ghost nodes* are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
 <!-- ... *Where would $\rho$ and $Q$ be defined?* -->
 
