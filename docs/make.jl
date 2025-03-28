@@ -7,7 +7,6 @@ GMB_root_dir = dirname(@__DIR__)
 license = read(joinpath(GMB_root_dir, "LICENSE"), String)
 write(joinpath(@__DIR__, "src", "man", "license.md"), license)
 
-
 makedocs(
     sitename = "GeoModBox",
     format = Documenter.HTML(),
@@ -43,8 +42,10 @@ makedocs(
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
-deploydocs(
-    repo = "https://lukasfuchs.github.io/GeoModBox.jl",
-    devbranch = "main",
-    push_preview = true
-)
+withenv("GITHUB_REPOSITORY" => "LukasFuchs/GeoModBox.jl") do
+    deploydocs(
+        repo = "https://lukasfuchs.github.io/GeoModBox.jl",
+        devbranch = "main",
+        push_preview = true
+    )
+end
