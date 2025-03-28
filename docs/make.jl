@@ -28,7 +28,7 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "https://lukasfuchs.github.io/GeoModBox.jl/",
+    repo = "https://lukasfuchs.github.io/GeoModBox.jl",
     devbranch = "main",
     push_preview = true
 )
