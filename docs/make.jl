@@ -15,12 +15,28 @@ makedocs(
     modules = [GeoModBox],
     pages = [
         "Home" => "index.md",
-        "Equation" => Any[
-            "Energy Conservation" => Any[
-                "Diffusion" => "man/DiffMain.md",
-            ]
+        "Governing Equation" => Any[
+            "Solution" => "man/GESolution.md",
+            "Heat Diffusion Equation" => Any[
+                "General" => "man/DiffMain.md",
+                "1D" => "man/DiffOneD.md",
+                # "2D" => "man/DiffTwoD.md",
+            ],
+            # "Advection Equation" => Any[
+            #     "General" => "man/AdvMain.md",
+            #     "1D" => "man/AdvOneD.md",
+            #     "2D" => "man/AdvTwoD.md",
+            # ],
+            # "Momentum Equation" => Any[
+            #     "General" => "man/MomMain.md",
+            #     "1D" => "man/MomOneD.md",
+            #     "2D" => "man/MomTwoD.md",
+            # ]
         ],
-        "List of functions" => "man/listoffunctions.md"
+        # "Examples" => any[
+
+        # ],
+        "List of functions" => "man/listoffunctions.md",
     ]
 )
 
