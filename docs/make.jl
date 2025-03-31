@@ -1,7 +1,6 @@
 using Documenter
 using GeoModBox
 
-
 GMB_root_dir = dirname(@__DIR__)
 
 license = read(joinpath(GMB_root_dir, "LICENSE"), String)
