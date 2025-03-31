@@ -45,7 +45,7 @@ makedocs(
 withenv("GITHUB_REPOSITORY" => "LukasFuchs/GeoModBox.jl") do
     deploydocs(
         # repo = "https://lukasfuchs.github.io/GeoModBox.jl",
-        repo = "https://github.com/LukasFuchs/GeoModBox.jl",
+        repo = "github.com/LukasFuchs/GeoModBox.jl",
         devbranch = "main",
         push_preview = true
     )
