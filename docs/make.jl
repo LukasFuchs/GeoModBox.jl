@@ -8,7 +8,7 @@ license = read(joinpath(GMB_root_dir, "LICENSE"), String)
 write(joinpath(@__DIR__, "src", "man", "license.md"), license)
 
 makedocs(
-    sitename = "GeoModBox",
+    sitename = "GeoModBox.jl",
     format = Documenter.HTML(),
     warnonly = [:missing_docs],
     modules = [GeoModBox],
@@ -44,7 +44,8 @@ makedocs(
 # for more information.
 withenv("GITHUB_REPOSITORY" => "LukasFuchs/GeoModBox.jl") do
     deploydocs(
-        repo = "https://lukasfuchs.github.io/GeoModBox.jl",
+        # repo = "https://lukasfuchs.github.io/GeoModBox.jl",
+        repo = "https://github.com/LukasFuchs/GeoModBox.jl",
         devbranch = "main",
         push_preview = true
     )
