@@ -18,7 +18,7 @@ makedocs(
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md",
                 "1D" => "man/DiffOneD.md",
-                # "2D" => "man/DiffTwoD.md",
+                "2D" => "man/DiffTwoD.md",
             ],
             # "Advection Equation" => Any[
             #     "General" => "man/AdvMain.md",
@@ -26,14 +26,12 @@ makedocs(
             #     "2D" => "man/AdvTwoD.md",
             # ],
             # "Momentum Equation" => Any[
-            #     "General" => "man/MomMain.md",
-            #     "1D" => "man/MomOneD.md",
-            #     "2D" => "man/MomTwoD.md",
-            # ]
+            #      "General" => "man/MomentumMain.md",
+            #      "1D" => "man/MomentumOneD.md",
+            #      "2D" => "man/MomentumTwoD.md",
+            # ],
         ],
-        # "Examples" => any[
-
-        # ],
+        # "Examples" => "man/Examples.md",
         "List of functions" => "man/listoffunctions.md",
     ]
 )

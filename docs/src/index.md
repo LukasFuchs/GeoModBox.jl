@@ -104,6 +104,6 @@ The exercises include a:
 
 ![FBFinalStage](./assets/FallingBlock_FinalStage_tracers.png)
 
-**Figure 6. Falling Block Benchmark.** Final tracers distribution for specific cases with $\eta_r \ge 0$. 
+**Figure 6. Falling Block Benchmark.** Final tracers distribution for specific cases with $\eta_r \ge 0 $. 
 
 ------------------
