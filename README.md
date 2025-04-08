@@ -7,7 +7,7 @@ The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for 
 2) [**momentum**](./docs/src/man/MomentumMain.md), 
 3)  [**mass** and **compositon**](./docs/src/man/AdvectMain.md). 
 
-The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [examples](/examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. The theoretical background and detailed explenations of the examples and functions are mainly given in the [documentation](https://lukasfuchs.github.io/GeoModBox.jl/).
+The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [examples](/examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. The solutions of the exercises are available upon request. The goal of the course is to teach the students the advantages and disadvantages of certain finite difference scheme, to combine different solution techniques and to finally build a two-dimensional, thermal convection model. The theoretical background and detailed explenations of the examples and functions are mainly given in the [documentation](https://geosci-ffm.github.io/GeoModBox.jl/).
 
 <!-- 
 - Different properties can be advected! 
@@ -28,28 +28,27 @@ The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [exampl
 - Defect correction
 -->
 
-## Structure
+<!-- ## Structure
 
-<!-- The ```GeoModBox.jl``` is  -->
+The ```GeoModBox.jl``` is a two-dimensional, staggered, finite difference code to solve the governing equations for certain geodynamical problems (so far, only for linear viscous problems). One can use the solvers for the *temperature*, *momentum*, and *mass* equations seperately or couple them using a so-called *operator splitting* method. 
 
-<!-- ## Initial Conditions  -->
+In any case, first, one needs to setup the specific model parameters, that is the geometry (xmin,xmax,ymin,ymax), the grid (e.g., nc, nv, $\Delta$), and the physical constants (e.g., $\rho$, $\eta$).
 
-<!---
-- Set Up, Geometry, Grid, etc. 
-- IniTemperature, IniVelocity, IniPhase,
-- Tracer Initialization
-- Solution of Stokes equation, Diffusion equation, Advection Equation, 
-- ...
--->
+Second, one needs to allocate the array of each needed variable. Third, one needs to define the boundary conditions and the initial time stepping. Before the time loop, one also needs to initialize the tracers and the parameters for the system of equations. Some initial conditions (temperature, density, velocity) can be setup, either via the marker funktion ```IniTracer2D()``` or the functions located in 2Dini.jl.
 
+Within the time loop, one first solves the *momentum* equation, followed by the reevaluation of the time step. Second, one solves the *advection* part of the *temperature equation*, followed by its *diffusion* part. All figures can either be stored for certain time steps or as *gif* animations of the entire problem. 
+
+For more details on how to use the different functions, please see the [examples](./examples/), [exercises](./exercises/), and [documentation](https://geosci-ffm.github.io/GeoModBox.jl/).
+ -->
 <!-- ## Scaling -->
-
 
 ## [Benchmarks and Examples](./examples/)
 
+In the following, some highlights of the ```GeoModBox.jl``` are shown. For more details on the examples and benchmarks, please see the [documentation](https://geosci-ffm.github.io/GeoModBox.jl/). 
+
 ### [Gaussian Temperature Diffusion](./examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 <img src="./examples/DiffusionEquation/2D/Results/Gaussian_Diffusion_CNA_nx_100_ny_100.gif" alt="drawing" width="600"/> <br>
-**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly using the [Crank-Nicholson approach](./src/HeatEquation/CNA.jl) in comparison to its analytical solution. Top Left: 2-D temperature field of the numerical solution and isotherms lines of the numerical (solid black) and analytical (dashed yellow) solution. Top Right: Total deviation to the analytical solution. Bottom Left: 1-D y-profile along x=0. Bottom Right: Root Mean Square total devation of the temperature over time. 
+**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly using the [Crank-Nicholson approach](./src/HeatEquation/2Dsolvers.jl) in comparison to its analytical solution. Top Left: 2-D temperature field of the numerical solution and isotherms lines of the numerical (solid black) and analytical (dashed yellow) solution. Top Right: Total deviation to the analytical solution. Bottom Left: 1-D y-profile along x=0. Bottom Right: Root Mean Square total devation of the temperature over time. 
 
 <img src="./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png" alt="drawing" width="600"/> <br>
 **Figure 2. Resolution test.** Maximum *RMS* $\varepsilon$, maximum, and mean temperature for each **FD**-scheme and multiple resolutions. 
@@ -61,7 +60,7 @@ The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [exampl
 <img src="./examples/AdvectionEquation/Results/2D_advection_circle_RigidBody_tracers_100_100_nth_1.gif" alt="drawing" width="300"/> 
 <br>
 
-**Figure 3. Rigid-Body-Rotation.** Time-dependent solution of a rotating circular temperature anomaly using the **upwind (first)**, **semi-lagrangian (second)**, and **tracer (third)** method. Within a circular area of our model domain the velocity is set to the velocity of a rigid rotation and outside euqal to zero. The temperature is scaled by the maximum temperature of the anomaly. 
+**Figure 3. Rigid-Body-Rotation.** Time-dependent solution of a rotating circular temperature anomaly using the **upwind (first)**, **semi-lagrangian (second)**, and **tracer (third)** method. Within a circular area of our model domain the velocity is set to the velocity of a rigid rotation and outside euqal to zero. The temperature is scaled by the maximum temperature of the anomaly. Empty cells are not refilled with markers.
 
 ### [Falling Block](./examples/StokesEquation/2D/FallingBlockBenchmark.jl)
 
@@ -79,8 +78,8 @@ The ```GeoModBox.jl``` includes a series of [exercises](/exercises/) and [exampl
 
 <!--
 - Blanckenbach
-- Channel Flow
-- Falling Block
+- Channel Flow (2D)
+- Falling Block, check! 
 - Gauss Diffusion, check! 
 - RTI 
 - Rigid Body Rotation, check! 
