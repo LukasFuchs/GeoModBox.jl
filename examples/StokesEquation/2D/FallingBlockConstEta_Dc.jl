@@ -15,7 +15,7 @@ function FallingBlockConstEta_Dc()
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   5,
-        qsc     =   100*(60*60*24*365.25)*1e2
+        qsc     =   100*(60*60*24*365.25)*5e1
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
@@ -160,39 +160,40 @@ function FallingBlockConstEta_Dc()
         end
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-
+    # ---
     @show(minimum(D.vc))
     @show(maximum(D.vc))
-
+    # ---
     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
-                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                    title="Density",
-                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                    ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,2),subplot=1)
+            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+            title="Density",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(2,2),subplot=1)
     quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-                y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-                quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-                        D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-                color="white",layout=(2,2),subplot=1)
+            y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+            quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+            D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc), 
+            la=0.5,
+            color="white",layout=(2,2),subplot=1)
     heatmap!(p,x.c./1e3,y.c./1e3,D.vxc',
-                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                    title="V_x",
-                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                    ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,2),subplot=3)
+            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+            title="V_x",color=cgrad(:batlow),
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(2,2),subplot=3)
     heatmap!(p,x.c./1e3,y.c./1e3,D.vyc',
-                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                    title="V_y",
-                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                    ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,2),subplot=4)
+            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+            title="V_y",color=cgrad(:batlow),
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(2,2),subplot=4)
     heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',
-                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                    title="P_t",
-                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                    ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,2),subplot=2)
+            xlabel="x[km]",ylabel="y[km]",colorbar=false,
+            title="P_t",color=cgrad(:lipari),
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(2,2),subplot=2)
     display(p)
 
     savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous_DC.png"))

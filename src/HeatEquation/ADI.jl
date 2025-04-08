@@ -12,7 +12,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Gleichungssystem fuer ADI Solver:
     Num     = (Th = reshape(1:NC.x*NC.y,NC.x,NC.y),
                 Tv = reshape(1:NC.x*NC.y,NC.y,NC.x)')
-    
     # Linear System of Equations -------------------------------------------- #
     ndof    =   maximum(Num.Th)
     A       =   ExtendableSparseMatrix(ndof,ndof)
@@ -20,19 +19,17 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     C       =   ExtendableSparseMatrix(ndof,ndof)
     D       =   ExtendableSparseMatrix(ndof,ndof)
     rhs     =   zeros(ndof)
-
+    temp    =   zeros(ndof)
     # Setup coefficient matrices ---------------------------------------- #
     a       =   κ / Δx^2
     b       =   κ / Δy^2
     c       =   1.0 / (Δt / 2.0)
-
     # First ADI step, vertical running scheme ---
     # Erster ADI Schritt: A*T^(l+1/2) = B*T^l -> vertical running scheme
     for i = 1:NC.x
         for j=1:NC.y
             # Equation number ---
             ii      =   Num.Tv[i,j]
-            # println(ii)
             # Stencil ---
             iW      =   ii - NC.y
             iS      =   ii - 1
@@ -72,9 +69,10 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             end        
         end
     end
-
-    rhs[:]  .=   B * T.T[:] .+ T.Q[:]./ρ./cp
     
+    rhs  .=   B * reshape(T.T',(NC.y*NC.x,1)) .+ 
+                    reshape(T.Q',(NC.y*NC.x,1))./reshape(ρ',(NC.y*NC.x,1))./cp
+
     # Update rhs from the boundary conditions ---
     for i = 1:NC.x
         for j = 1:NC.y
@@ -91,8 +89,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             # If an North index is required 
             DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-        
-            #rhs[ii]     =   rhs[ii] + 
             rhs[ii]     +=  2*a*BC.val.W[j] * DirW + 
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
@@ -103,9 +99,10 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
                             b*BC.val.N[i] * NeuN    
         end
     end
-
     # Temperature at Δt/2 ---
-    T.T[:]  .=  A \ rhs[:]
+    temp    .=  A \ rhs
+
+    T.T     .=   reshape(temp,(NC.y,NC.x))'
 
     # Second ADI step, horizontal running scheme ---
     # Zweiter ADI Schritt: C*T^(l+1) = D*T^(l+1/2) -> horizontal running scheme
@@ -113,7 +110,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
         for i=1:NC.x
             # Equation number ---
             ii      =   Num.Th[i,j]
-            # println(ii)
             # Stencil ---
             iS      =   ii - NC.x
             iW      =   ii - 1        
@@ -137,7 +133,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             inN    =  j==NC.y   ? false  : true
             DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-            
             if inN
                 D[ii,iN]   =  b
             end
@@ -156,12 +151,15 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     end
 
     # Update rhs to T^{n+1/2} --- 
-    rhs[:]  .=   D * T.T[:] .+ T.Q[:]./ρ./cp
+    rhs  .=   D * reshape(T.T,(NC.y*NC.x,1)) .+ 
+                    reshape(T.Q,(NC.y*NC.x,1))./reshape(ρ,(NC.y*NC.x,1))./cp
+    # rhs  .=   D * temp .+ 
+    #                 reshape(T.Q,(NC.y*NC.x,1))./reshape(ρ,(NC.y*NC.x,1))./cp
     
     # Update rhs from the boundary conditions ---
-    for i = 1:NC.x
-        for j = 1:NC.y
-            ii  =   Num.Tv[i,j]
+    for j = 1:NC.y
+        for i = 1:NC.x
+            ii  =   Num.Th[i,j]
             # If an West index is required ---
             DirW   = (i==1    && BC.type.W==:Dirichlet) ? 1. : 0.
             NeuW   = (i==1    && BC.type.W==:Neumann  ) ? 1. : 0.
@@ -174,9 +172,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             # If an North index is required 
             DirN   = (j==NC.y   && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==NC.y   && BC.type.N==:Neumann  ) ? 1. : 0.
-        
-            rhs[ii]     =   rhs[ii] + 
-                            2*a*BC.val.W[j] * DirW + 
+            rhs[ii]     +=  2*a*BC.val.W[j] * DirW + 
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
                             2*b*BC.val.N[i] * DirN -
@@ -188,7 +184,9 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     end
 
     # Temperature at Δt ---
-    T.T[:]  .=  C \ rhs[:]
+    temp    .=  C \ rhs
+
+    T.T     .=   reshape(temp,(NC.x,NC.y))
 
     T.T_ex[2:end-1,2:end-1]     .=    T.T
 end

@@ -4,9 +4,10 @@ using Statistics, Printf, LinearAlgebra
 function Gaussian_Diffusion()
 
 Schema  =   ["explicit","implicit","CNA","ADI","dc"]
-ns      =   size(Schema,1)
-nrnxny  =   10
-
+# Schema      =   ["ADI"]
+ns          =   size(Schema,1)
+nrnxny      =   6
+save_fig    =   -1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -57,7 +58,6 @@ for m = 1:ns
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("Gaussian_Diffusion_",FDSchema,
                             "_nx_",NC.x,"_ny_",NC.y)
-        save_fig    =   -1
         # ------------------------------------------------------------ #        
         # Grid coordinates ------------------------------------------- #
         x       = (
@@ -99,6 +99,7 @@ for m = 1:ns
             ρ           =   zeros(NC...),
             cp          =   zeros(NC...)            
         )
+        @. D.ρ  =   P.ρ
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana                   =   D.T
@@ -191,13 +192,13 @@ for m = 1:ns
         for n = 1:nt
             if n>1
                 if FDSchema == "explicit"
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
                 elseif FDSchema == "implicit"
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K, Num)
+                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
                 elseif FDSchema == "CNA"
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
                 elseif FDSchema == "ADI"
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], P.ρ, P.cp, NC, BC)
+                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
                 elseif FDSchema == "dc"
                     for iter = 1:niter
                         # Evaluate residual
@@ -320,9 +321,6 @@ for m = 1:ns
                 xaxis=:log,
                 xlabel="1/nx/ny",ylabel="T_{max}",
                 subplot=2)
-    #plot!(q,1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]),
-    #        St.Tanamax .* ones(1,length(1/maximum(St.nxny[1,:]):1e-4:1/minimum(St.nxny[1,:]))),
-    #        linecolor=:black,linestyle=:dash)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,
@@ -332,7 +330,9 @@ for m = 1:ns
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
-savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
+if save_fig == -1
+    savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
+end
 # --------------------------------------------------------------------- #
 end
 

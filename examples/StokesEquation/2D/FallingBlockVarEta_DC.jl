@@ -13,8 +13,9 @@ function FallingBlockVarEta_Dc()
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
-        qinc    =   1,
-        qsc     =   100*(60*60*24*365.25)*1e2
+        qinc    =   4,
+        mainc   =   2,
+        qsc     =   100*(60*60*24*365.25)*5e1
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
@@ -231,8 +232,8 @@ function FallingBlockVarEta_Dc()
                         title="ρ",
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             ylims=(M.ymin/1e3, M.ymax/1e3),
                         layout=(2,2),subplot=1)
-            scatter!(p,Ma.x[1:Pl.qinc:end]./1e3,Ma.y[1:Pl.qinc:end]./1e3,
-                        ms=1,ma=0.5,mc=Ma.phase[1:Pl.qinc:end],markerstrokewidth=0.0,
+            scatter!(p,Ma.x[1:Pl.mainc:end]./1e3,Ma.y[1:Pl.mainc:end]./1e3,
+                        ms=1,ma=0.5,mc=Ma.phase[1:Pl.mainc:end],markerstrokewidth=0.0,
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="tracers",label="",
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
@@ -248,7 +249,7 @@ function FallingBlockVarEta_Dc()
                         y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
                         quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                                 D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-                        color="white",layout=(1,3),subplot=3)
+                        la=0.5,color="white",layout=(2,2),subplot=4)
             heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
                         xlabel="x[km]",ylabel="y[km]",title="η_c",
                         clims=(15,27),

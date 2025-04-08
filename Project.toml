@@ -6,6 +6,8 @@ version = "0.1.0"
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Dierckx = "39dd38d3-220a-591b-8e3c-4c3a8c710a94"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
 ExactFieldSolutions = "2a6b1ac7-2de5-4354-bffb-bf009f6a4bef"
 ExtendableSparse = "95c220a8-a1cf-11e9-0c77-dbfce5f500b3"
 GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
@@ -16,3 +18,8 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+Documenter = "1.9.0"
+DocumenterTools = "0.1.20"
+
