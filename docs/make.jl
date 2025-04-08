@@ -39,10 +39,10 @@ makedocs(
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
-withenv("GITHUB_REPOSITORY" => "LukasFuchs/GeoModBox.jl") do
+withenv("GITHUB_REPOSITORY" => "GeoSci-FFM/GeoModBox.jl") do
     deploydocs(
         # repo = "https://lukasfuchs.github.io/GeoModBox.jl",
-        repo = "github.com/LukasFuchs/GeoModBox.jl",
+        repo = "github.com/GeoSci-FFM/GeoModBox.jl",
         devbranch = "main",
         push_preview = true
     )
