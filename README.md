@@ -1,4 +1,4 @@
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://lukasfuchs.github.io/GeoModBox.jl/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://geosci-ffm.github.io/GeoModBox.jl/)
 
 # GeoModBox.jl
 The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for teaching purposes. The package provides different finite difference, staggered, discretization schemes to numerically solve the governing equations for a two-dimensional geodynamic problem. The governing equations are the conservation equations of 
