@@ -6,7 +6,7 @@ $\begin{equation}
 \left(\frac{\partial E}{\partial t} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla} E\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
 \end{equation}$
 
-where the energy is described as $E=c_{p} \rho T$, and $c_{p}$ is the specific heat capacity [ $J/kg/K$ ], $\rho$ is a reference density [ $kg/m^{3}$ ], $T$ is the temperature [ $K$ ], $t$ is the time [ $s$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $q_{i}$ [ $W/m^{2}$ ] is the heat flux in direction of $i$, $\frac{\partial}{\partial{x_i}}$ is a directional derivative in direction of $i$, and $H$ the heat production rate per mass [ $W/kg$ ]. The repeated index means a summation of derivatives. This conservation law contains the variation of the heat flux in a certain direction, where the heat flux is defined by the Fourier’s law as followed: 
+where the energy is described as $E=c_{p} \rho T$, and $c_{p}$ is the specific heat capacity [ $J/kg/K$ ], $\rho$ is a reference density [ $kg/m^{3}$ ], $T$ is the temperature [ $K$ ], $t$ is the time [ $s$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $q_{i}$  is the heat flux [ $W/m^{2}$ ] in direction of $i$, $\frac{\partial}{\partial{x_i}}$ is a directional derivative in direction of $i$, and $H$ the heat production rate per mass [ $W/kg$ ]. The repeated index means a summation of derivatives. This conservation law contains the variation of the heat flux in a certain direction, where the heat flux is defined by the Fourier’s law as followed: 
 
 $\begin{equation}
 \overrightharpoon{q} = - k \overrightharpoon{\nabla} T,
@@ -29,7 +29,9 @@ The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to 
 - Crank-Nicholson approach, and 
 - Alternating-Direction Implicit (ADI).
 
-For more details regarding each FD-scheme see the documentation of the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers, respectively. Currently, only *Dirichlet* and *Neumann* thermal boundary conditions are available and most functions assume constant thermal parameters (except for the 1-D and some 2-D solvers). For more details on the implementation of the solvers see the [src/HeatEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) directory. 
+For more details regarding each FD-scheme see the documentation of the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers, respectively. 
+
+Currently, only *Dirichlet* and *Neumann* thermal boundary conditions are available and most functions assume constant thermal parameters (except for the 1-D and some 2-D solvers). For more details on the implementation of the solvers see the [src/HeatEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) directory. 
 
 The examples of solving the *heat diffusion equation* include, amongst others: 
 - the determination of an [oceanic](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) and [continental](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl) 1-D geotherm, 
@@ -53,13 +55,15 @@ To solve the *advective part* of the *temperature equation*, the ```GeoModBox.jl
 - the semi-lagrangian advection scheme, and
 - passive tracers/markers. 
 
-For more details regarding each advection scheme see the [documentation](./AdvectMain.md). The routines are structured in such a way, that any property can be advected with the first **three** advection methods listed above, as long as the property is defined on the *centroids* including *ghost nodes* on all boundaries. The velocity to advect the property also needs to be defined at the *centroids*. Using passive tracers, one can, so far, choose to either advect the (absolut) temperature or the phase ID. In case of advecting the phase ID, one must define a certain rheology ($\eta$) and/or density ($\rho$) associated to each phase. The phase ID is used to interpolate the corresponding property from the tracers to the *centroids* or the *vertices* (e.g., in the case of the viscosity). The tracers can be initialized with a certain random perturbation for their initial position and are advected using Runge-Kutta 4th order. For the tracer advection one can use the staggered velocity grid. 
+For more details regarding each advection scheme see the [documentation](./AdvectMain.md). 
 
-For more details on the implementation of the tracer advection see [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) or [here](./AdvectMain.md). The solvers for the tracer advection method are located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), where the remaining advection routines are located in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/). 
+The routines are structured in such a way, that any property can be advected with the first **three** advection schemes listed above, as long as the property is defined on the *centroids* including *ghost nodes* on all boundaries. The velocity to advect the property also needs to be defined at the *centroids*. 
 
-A key aspect for the advection is the **amplitude** and the **shape** of an advected property. For example, in case of a rigid body rotation, none of them should change. Depending on the method, however, numerical diffusion or interpolation effects can lead to strong deviations. Thus, care needs to be taken with respect to solving the *advection equation*. 
+Using passive tracers, one can, so far, choose to either advect the (absolut) temperature or the phase ID. In case of advecting the phase ID, one must define a certain rheology ($\eta$) and/or density ($\rho$) associated to each phase. The phase ID is used to interpolate the corresponding property from the tracers to the *centroids* or the *vertices* (e.g., in the case of the viscosity). The tracers can be initialized with a certain random perturbation for their initial position and are advected using Runge-Kutta 4th order. For the tracer advection one can use the staggered velocity grid. 
 
-The ```GeoModBox.jl``` contains several [routines](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/InitialCondition/2Dini.jl) to setup a certain initial anomaly, either for properties defined on their correspondig grid (i.e., temperature, velocity, or phase) or for tracers. Within the examples and the exercise one can choose different initial temperature and velocity conditions. See [here](./Ini.md) for a more detailed explenation of the initial condition setup. 
+For more details on the implementation of the tracer advection see the [solvers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) or the [documentaion](./AdvectMain.md). The solvers for the tracer advection method are located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), where the remaining advection routines are located in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/). 
+
+A key aspect for advection is the **amplitude** and the **shape** of the advected property. For example, in case of a rigid body rotation, none of them should change. Depending on the method, however, numerical diffusion or interpolation effects can lead to strong deviations. Thus, care needs to be taken with respect to solving the *advection equation*. 
 
 The examples for a two dimensional advection problem include:
 - [a 2-D advection, assuming a constant velocity field (e.g., a rigid body rotation)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl), and

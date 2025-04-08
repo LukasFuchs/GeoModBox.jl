@@ -18,7 +18,7 @@ $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q}{\rho c_p},
 \end{equation}$
   
-where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2$ ] and $Q=\rho H$ is the heat production rate per volume [ $W/m^3$ ]. In case of an explicit 2-D finite difference approach, the heat diffusion stability criterion is defined as 
+where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2$ ] and $Q=\rho H$ is the heat production rate per volume [ $W/m^3$ ]. In case of an explicit 2-D finite difference approach, the *heat diffusion stability criterion* is defined as 
 
 $\begin{equation}
 \Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
@@ -101,11 +101,11 @@ $\begin{equation}
 
 are the constant heat fluxes along the left, right, bottom, and top boundary, respectively. 
 
-Now, one can solve equation $(6)$ for the temperature on the centroids at the next time step using the defined temperature at the *ghost nodes* where necessary.  
+Now, one can solve equation $(6)$ for the temperature on the *centroids* at the next time step using the defined temperature at the *ghost nodes* where necessary.  
 
 ## Numerical Schemes
 
-Within the example code [Gaussian_Diffusion.jl](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl) different numerical schemes are used to solve the *conductive* part of the *temperature equation* (i.e., *explicit*, *implicit*, *Crank-Nicholson Approach*, and *defection correction*) and the results are compared with the analytical solution. In the following, each discretization scheme is briefly described. 
+Within the example code [Gaussian_Diffusion.jl](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl) different numerical schemes are used to solve the *conductive* part of the *temperature equation* (i.e., *explicit*, *implicit*, *Crank-Nicholson Approach*, and *defect correction*) and the results are compared with the analytical solution. In the following, each discretization scheme is briefly described. 
 
 ### Implicit (or Backward Euler Method)
 
@@ -133,7 +133,7 @@ where $a = \frac{\kappa}{\Delta{x^2}}$, $b = \frac{\kappa}{\Delta{y^2}}$, and $c
 
 #### Boundary Conditions
 
-The temperature on the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(7)-(14)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the centroids adjacent to the boundary and the corresponding right-hand side, such that the equations are defined as:  
+The temperature on the *ghost nodes* to solve the equations on the *centroids* adjacent to the boundary are defined as before (equations $(7)-(14)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients of the *centroids* adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet**
 
@@ -194,7 +194,7 @@ $\begin{equation}
 c T_{i,ncy}^{n} + b c_N \Delta{y} + \frac{Q_{i,j}}{\rho c_p}, 
 \end{equation}$
 
-### Defection Correction Method
+### Defect Correction Method
 
 The coefficients of the matrix can be derived, for example, via: 
 
@@ -224,7 +224,7 @@ b = \frac{\kappa}{\Delta{y}^2},\
 \ \textrm{and} \ c = \frac{1}{\Delta{t}}, 
 \end{equation}$
 
-For more details on the theory of the defect correction see [here](./DiffOneD.md) and on how this is implemented, see [*BackwardEuler.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/BackwardEuler.jl).
+For more details on the theory of the defect correction see the [1-D example](./DiffOneD.md) and on how this is implemented, see the [source code](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Cranck-Nicolson Approach (CNA)
 
@@ -242,7 +242,7 @@ $\begin{equation}
 -b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n}
 \end{equation}$
 
-Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the centroids adjacent to the boundaries are defined as: 
+Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the *centroids* adjacent to the boundaries are defined as: 
 
 **Dirichlet**
 
@@ -310,9 +310,9 @@ $\begin{equation}
 b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 2 b c_N \Delta{y}
 \end{equation}$
 
-For more details on how this is implemented, see [here](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+For more details on how this is implemented, see the [source code](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-### Alternating Direction Implicit
+### Alternating-Direction Implicit
 In 2-D, equation $(3)$ for the ADI approach for each half-step in time is given as: 
 
 $\begin{equation}
@@ -333,15 +333,17 @@ $\begin{equation}
     \right)
 \end{equation}$
 
-This results in two linear sets of linear system of euqations with coefficient matrices for the left and right hand side of the equations. The corresponding coefficients and right hand side of each linear system of equations needs to be adjusted according to the given boundary conditions, as shown in the *CNA*, for example. For more details on how this is implemented, see [here](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+This results in two sets of linear system of equations with coefficient matrices for the left- and right-hand side of the equations. The corresponding coefficients and right-hand side of each linear system of equations needs to be adjusted according to the given boundary conditions, as shown in the *CNA*, for example. For more details on how this is implemented, see the [source code](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, the current temperature is assigned to the known righ-hand side vector, and one needs to collect the coefficients for each matrix to solve for the unknown temperature. 
+### Variable Thermal Parameters 
+
+...
+
+For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, the current temperature at the *centroids* is assigned to the known righ-hand side vector, and one needs to collect the coefficients for each matrix to solve for the unknown temperature. 
 
 ## Steady State Solution 
 
-**Note:** So far, variable thermal parameters are only implemented in the 1-D and 2-D steady state solutions (except for the 2-D defect correction method, which also enables a time-dependent 2-D solution for variable thermal parameters). 
-
-In steady state, one assumes that the temperature does not vary over time (i.e., $\frac{\partial T}{\partial t}=0$) and the *temperature equation* simplifies to an *elliptic partial differential* equation (i.e., the *Poission equation*).  
+**Note:** So far, variable thermal parameters are only implemented in the 1-D time-dependent and 2-D steady state solutions (except for the 2-D defect correction method, which also enables a time-dependent 2-D solution for variable thermal parameters). In steady state, one assumes that the temperature does not vary over time (i.e., $\frac{\partial T}{\partial t}=0$) and the *temperature equation* simplifies to an *elliptic partial differential* equation (i.e., the *Poission equation*).  
 
 ### Poisson Solution (constant *k*)
 
@@ -369,7 +371,7 @@ bT_{i,j-1} + aT_{i-1,j} - 2(a+b)T_{i,j} + aT_{i+1,j} + bT_{i,j+1} = -\frac{Q}{k}
 
 where $a = \frac{1}{\Delta x^2}$ and $b = \frac{1}{\Delta y^2}$. 
 
-Here, one can again assume *Dirichlet* or *Neumann* boundary conditions, where one can use the temperature on the *ghost nodes* to properly implement the corresponding boundary conditions. Thereby, one needs to modify the coefficient matrix **and** the right hand side of the linear system of equations accordingly. 
+Here, one can again assume *Dirichlet* or *Neumann* boundary conditions, where one can use the temperature at the *ghost nodes* to properly implement the corresponding boundary conditions. Thereby, one needs to modify the coefficient matrix **and** the right hand side of the linear system of equations accordingly. 
 
 **Dirichlet**
 
@@ -423,7 +425,7 @@ $\begin{equation}
 aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - bc_N\Delta{y}.
 \end{equation}$
 
-For more details on how this is implemented see [here](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+For more details on how this is implemented see the [source code](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Poisson Solution (variable *k*)
 
@@ -434,7 +436,7 @@ $\begin{equation}
 \frac{\partial}{\partial y}\left(k_y\frac{\partial T}{\partial y}\right) + Q_{i,j} 
 \end{equation}$
 
-To properly solve equation $(53)$, one needs to apply a conservative finite difference scheme, such that the heat flux $(q_i = k_i\frac{\partial T}{\partial i})$, and thus the thermal conductivity, is defined **between** the centroids and the temperature **on** the *centroids* (see Figure 1). Considering such a staggered finite difference grid, equation $(53)$ results in a linear system of equations in the form of: 
+To properly solve equation $(53)$, one needs to apply a conservative finite difference scheme, such that the heat flux $(q_i = k_i\frac{\partial T}{\partial i})$, and thus the thermal conductivity, is defined **between** the centroids and the temperature **at** the *centroids* (see Figure 1). Considering such a staggered finite difference grid, equation $(53)$ results in a linear system of equations in the form of: 
 
 $\begin{equation} 
 b k_{y;i,j} T_{i,j-1} + a k_{x;i,j} T_{i-1,j} + c T_{i,j} + a k_{x;i+1,j} T_{i+1,j} + b k_{y;i,j+1} T_{i,j+1} + Q_{i,j} = 0,  
@@ -446,4 +448,4 @@ $a = \frac{1}{\Delta{x^2}},
 b = \frac{1}{\Delta{y^2}}, \textrm{and} \ 
 c = -a\left(k_{x;i+1,j}+k_{x;i,j}\right) - b\left(k_{y;i,j+1}+k_{y;i,j}\right).$
 
-For more details on how this is implemented see [here](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+For more details on how this is implemented see the [source code](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).

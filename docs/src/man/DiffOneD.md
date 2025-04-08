@@ -20,7 +20,7 @@ $\begin{equation}
   
 where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2/s$ ] and $Q=\rho H$ is the heat production rate per volume [ $W/m^3$ ]. Equation $(3)$ is a *parabolic partial differential equation* (PDE) which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
 
-First, let us discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the **forward in time and centered in space (FTCS)** method in an **explicit** manner. This finite difference scheme will converge to the exact solution for small $\Delta{x}$ and $\Delta{t}$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
+First, let's discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the **forward in time and centered in space (FTCS)** method in an **explicit** manner. This finite difference scheme will converge to the exact solution for small $\Delta{x}$ and $\Delta{t}$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
 
 $\begin{equation}
 \Delta t < \frac{\Delta x^2}{2 \kappa}.
@@ -38,7 +38,7 @@ To numerically solve equation $(3)$ one needs to discretize the numerical domain
 
 ### Explicit, *FTCS* (or Forward Euler Method)
 
-Using an *FTCS* explicit finite difference scheme to approximate the partial derivatives from equation $(3)$ results in:
+Using a *FTCS* explicit finite difference scheme to approximate the partial derivatives from equation $(3)$ results in:
 
 $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n} }{\Delta t} = \kappa \frac{T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n}}{\Delta{x^2}} + \frac{Q_{i}^n}{\rho c_p},
@@ -54,7 +54,9 @@ where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved *i
 
 #### Boundary Conditions 
 
-Different thermal boundary conditions can be set for which one utilizes the *ghost nodes*. Here, let us focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider each boundary condition to solve the equations, one needs to define the temperature at the *ghost nodes*. The Dirichlet boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (**west**) and right (**east**) *ghost nodes* are defined as:
+Different thermal boundary conditions can be set for which one utilizes the *ghost nodes*. Here, let's focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider each boundary condition to solve the equations, one needs to define the temperature at the *ghost nodes*. 
+
+The *Dirichlet* boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (**West**) and right (**East**) *ghost nodes* are defined as:
 
 $\begin{equation}
 T_{G,W} = 2T_{BC,W} - T_{1},
@@ -66,7 +68,7 @@ T_{G,E} = 2T_{BC,E} - T_{nc},
 
 where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectively, and $nc$ is the number of centroids.  
 
-The Neumann boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux $q$ through the boundary. The temperature at the *ghost nodes* is then defined as: 
+The *Neumann* boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux $q$ through the boundary. The temperature at the *ghost nodes* is then defined as: 
 
 $\begin{equation}
 T_{G,W} = T_{1} - c_{W} \Delta{x},
@@ -104,7 +106,7 @@ $\begin{equation}
 -a T_{i-1}^{n+1} + \left(2a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} = b T_{i}^n + \frac{Q_{i}^n}{\rho c_p},
 \end{equation}$
 
-where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a linear system of equation in the form of $\boldsymbol{A}\cdot \overrightharpoon{x} = \overrightharpoon{rhs}$, where $\boldsymbol{A}$ is a coefficient matrix (here with three non-zero diagonals), $\overrightharpoon{x}$ the unknown vector, and $\overrightharpoon{rhs}$ the known right-hand side. We choose to distribute the coefficients in such a way and kept the time step on the right-hand side of the euqation to ensure that the coefficient matrix is the same as used in the *defect correction* method. 
+where $a = \frac{\kappa}{\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. This is a linear system of equation in the form of $\boldsymbol{A}\cdot \overrightharpoon{x} = \overrightharpoon{rhs}$, where $\boldsymbol{A}$ is a coefficient matrix (here with three non-zero diagonals), $\overrightharpoon{x}$ the unknown vector, and $\overrightharpoon{rhs}$ the known right-hand side. We choose to distribute the coefficients in such a way and to keep the time step on the right-hand side of the equation to ensure that the coefficient matrix is the same as used in the *defect correction* method. 
 
 The main advantage of the implicit method is that there are no restrictions on the time step. However, this does not mean that it is more accurate. Taking too large time steps may result in an inaccurate solution for features with small spatial scales.
 
@@ -246,11 +248,11 @@ $\begin{equation}
 
 However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see [*1Dsolvers.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
-For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the centroids of the extended field to use it as the *old* temperature and calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature.
+For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature at the *centroids* to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature.
 
 ### Variable Thermal Parameters 
 
-To sove the *conductive* part of the 1-D *temperature equation* assuming variable thermal parameters one needs a proper conserving finite difference scheme. That is, the heat flow is calculated on the *vertices* and the temperature is defined on the *centroids*, respectively. The 1-D temperature equation is then given by: 
+To solve the *conductive* part of the 1-D *temperature equation* assuming variable thermal parameters one needs a proper conserving finite difference scheme. That is, the heat flow is calculated on the *vertices* and the temperature is defined on the *centroids*, respectively. The 1-D temperature equation is then given by: 
 
 $\begin{equation}
 \rho c_{p} \frac{\partial{T}}{\partial{t}} = \frac{\partial{}}{\partial{y}}\left(k \frac{\partial{T}}{\partial{y}}\right) + \rho H,
@@ -258,7 +260,7 @@ $\begin{equation}
 
 where $\rho, c_{p}, T, t, k, H,$ and $y$ are the density [ $kg/m^3$ ], the specific heat capacity [ $J/kg/K$ ], the temperature [ $K$ ], the time [ $s$ ], the thermal conductivity [ $W/m/K$ ], the heat generation rate per mass [ $W/kg$ ], and the depth [ $m$ ], respectively.
 
-A proper conservative finite difference scheme means that the 1-D vertical heat flux $q_y$ and the thermal conductivity $k$ are defined on the vertices, where $q_x$ is defined as:
+A proper conservative finite difference scheme means that the 1-D vertical heat flux $q_y$ and the thermal conductivity $k$ are defined on the vertices, where $q_y$ is defined as:
 
 $\begin{equation}
 \left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
