@@ -3,7 +3,7 @@
 The Stokes equation (the **conservation equation of momentum**) in two dimensions is defined as: 
 
 $\begin{equation}
-0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho \cdot g_i, 
+0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho g_i, 
 \end{equation}$
 
 where $P$ is the total pressure,  $\rho$ is the density, $g_i$ the gravitational acceleration, $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor and defined as: 
@@ -22,7 +22,7 @@ where $v_i$ is the velocity in the $i$-th direction.
 
 ## Discretization 
 
-The conservation equations of *momentum* and *mass* are solved properly in two dimensions ($x$ and $y$) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocities are defined inbetween the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and one can solve equations $(1)$ and $(3)$ for the unknows.  
+The conservation equations of *momentum* and *mass* are solved properly in two dimensions ($x$ and $y$) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocities are defined inbetween the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points.  
 
 ![MomentumGrid](../assets/MomentumGrid.png)
 

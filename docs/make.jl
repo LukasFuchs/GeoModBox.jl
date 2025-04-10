@@ -25,11 +25,11 @@ makedocs(
             #     "1D" => "man/AdvOneD.md",
             #     "2D" => "man/AdvTwoD.md",
             # ],
-            # "Momentum Equation" => Any[
-            #      "General" => "man/MomentumMain.md",
-            #      "1D" => "man/MomentumOneD.md",
-            #      "2D" => "man/MomentumTwoD.md",
-            # ],
+            "Momentum Equation" => Any[
+                 "General" => "man/MomentumMain.md",
+                #  "1D" => "man/MomentumOneD.md",
+                #  "2D" => "man/MomentumTwoD.md",
+            ],
         ],
         # "Examples" => "man/Examples.md",
         "List of functions" => "man/listoffunctions.md",

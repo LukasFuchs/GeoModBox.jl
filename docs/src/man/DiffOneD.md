@@ -30,11 +30,11 @@ Thus, the maximum time step is limited by the model’s resolution.
 
 ## Discretization
 
-To numerically solve equation $(3)$ one needs to discretize the numerical domain and assign the parameters to their corresponding nodes. **Note**: Even though the thermal conductivity is  assumed to be constant (for now), we chose a *conservative gridding* for the sake of continuity, that is the temperature $T$ is defined on the centroids and the heat flux $q$ in between. 
+To numerically solve equation $(3)$ one needs to discretize the numerical domain and assign the parameters to their corresponding nodes. **Note**: Even though the thermal conductivity is  assumed to be constant (for now), we chose a *conservative gridding* for the sake of continuity, that is the temperature $T$ is defined on the *centroids* and the heat flux $q$ in between. 
 
 ![1DDiscretization](../assets/Diff_1D_Discretization.png)
 
-**Figure 1. 1-D Discretization.** *Conservative finite difference grid* to solve the 1-D conductive part of the *temperature equation*. The temperature is defined on the centroids and the heat flux on the vertices. The temperature *ghost nodes* are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
+**Figure 1. 1-D Discretization.** *Conservative finite difference grid* to solve the 1-D conductive part of the *temperature equation*. The temperature is defined on the *centroids* and the heat flux on the *vertices*. The temperature *ghost nodes* are used to properly implement *Dirichlet* and *Neumann* thermal boundary conditions.  
 
 ### Explicit, *FTCS* (or Forward Euler Method)
 
@@ -50,13 +50,13 @@ $\begin{equation}
 T_{i}^{n+1} = T_{i}^{n} + a \left(T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n} \right) + \frac{Q_{i}^n \Delta t}{\rho c_p}, 
 \end{equation}$
 
-where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved *iteratively* for every centroid assuming initial and boundary coniditions are defined. For more details on how this is implemented see [*1Dsolvers.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved, for example in a loop, for every *centroid* assuming initial and boundary coniditions are defined. For more details on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
 #### Boundary Conditions 
 
 Different thermal boundary conditions can be set for which one utilizes the *ghost nodes*. Here, let's focus on two fundamental conditions, the *Dirichlet* and *Neumann* boundary conditions. To consider each boundary condition to solve the equations, one needs to define the temperature at the *ghost nodes*. 
 
-The *Dirichlet* boundary condition defines a constant temperature along the boundary, such that the temperatures at the left (**West**) and right (**East**) *ghost nodes* are defined as:
+The *Dirichlet* boundary condition defines a constant temperature at the boundary, such that the temperatures at the left (**West**) and right (**East**) *ghost nodes* are defined as:
 
 $\begin{equation}
 T_{G,W} = 2T_{BC,W} - T_{1},
@@ -66,7 +66,7 @@ $\begin{equation}
 T_{G,E} = 2T_{BC,E} - T_{nc},
 \end{equation}$
 
-where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectively, and $nc$ is the number of centroids.  
+where $T_{G,W}$, $T_{G,E}$ and $T_{BC,W}$, $T_{BC,E}$ are the temperature at the left and right *ghost nodes* and the constant temperatures at the left and right boundary, respectively, and $nc$ is the number of *centroids*.  
 
 The *Neumann* boundary condition defines that the variation of a certain parameter does not change across the boundary, that is, for example, the temperature across the boundary or thermal heat flux $q$ through the boundary. The temperature at the *ghost nodes* is then defined as: 
 
@@ -86,13 +86,13 @@ $\begin{equation}
 
 are the constant temperature gradients across the left (**West**) and right (**East**) boundary, respectively. 
 
-Now one can solve equation $(6)$ for each centroid using the defined temperature at the *ghost nodes* for a certain boundary condition.
+Now one can solve equation $(6)$ for each *centroid* using the defined temperature at the *ghost nodes* for a certain boundary condition.
 
 ## Numerical schemes
 
-Within the example code [Heat_1D_discretization.jl](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) different numerical schemes are used to solve the conductive part of the *temperature equation* (i.e., *explicit*, *implicit*, *Crank-Nicholson Approach*, and *defect correction*). In the following, we will briefly describe those well-know numerical schemes to solve the conductive part of the *temperature equation* and briefly discuss their advantages and disadvantages.
+Within the example code [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) different numerical schemes are used to solve the *conductive* part of the *temperature equation* (i.e., *explicit*, *implicit*, *Crank-Nicholson Approach*, and *defect correction*). In the following, we will briefly describe those well-know numerical schemes to solve the *conductive* part of the *temperature equation* and briefly discuss their advantages and disadvantages.
 
-### Implicit, FTCS (or Backward Euler Method)
+### Implicit, *FTCS* (or Backward Euler Method)
 
 The fully implicit finite difference scheme is unconditionally stable and one can use time steps larger than the diffusion stability criterion. In 1-D, the *temperature equation* is then given as: 
 
@@ -112,7 +112,7 @@ The main advantage of the implicit method is that there are no restrictions on t
 
 #### Boundary Conditions
 
-The temperature at the *ghost nodes* to solve the equations on the centroids adjacent to the boundary are defined as before (equations $(7)-(10)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the centroids adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
+The temperature at the *ghost nodes* to solve the equations on the *centroids* adjacent to the boundary are defined as before (equations $(7)-(10)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the *centroids* adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet**
 
@@ -178,6 +178,8 @@ $\begin{equation}
 \delta{T} = -\boldsymbol{K}^{-1} R_i. 
 \end{equation}$
 
+In this way, one only needs to calculate the correction term out of the coefficient matrix, an initial guess, and the initial residual. The correction is then added to the initial guess. In case the system is linear, this results in the solution of the problem. In case the system is non-linear, one needs to iterate until the residual is small enough. 
+
 The coefficients of the matrix can be derived, for example, via: 
 
 $\begin{equation}
@@ -198,11 +200,11 @@ $\begin{equation}
 a = \frac{\kappa}{\Delta{x}^2},\ \textrm{and} \ b = \frac{1}{\Delta{t}}. 
 \end{equation}$
 
-Similar to the implicit *FTCS* method, one needs to adjust the coefficients for the centroids adjacent to the boundaries (see equations $(14)-(17)$ ), however, no adjustment needs to be made on the right-hand side.
+Similar to the implicit *FTCS* method, one needs to adjust the coefficients for the *centroids* adjacent to the boundaries (see equations $(14)-(17)$ ), however, no adjustment needs to be made on the right-hand side.
 
 ### Crank-Nicolson approach (CNA)
 
-The fully implicit FTCS method works well, but is only first order accurate in time. A way to modify this is to employ a Crank-Nicolson time step discretization, which is implicit and, thus, second order accurate in time. In 1-D, equation $(5)$ is then described as: 
+The fully implicit *FTCS* method works well, but is only first order accurate in time. A way to modify this is to employ a Crank-Nicolson time step discretization, which is implicit and, thus, second order accurate in time. In 1-D, equation $(5)$ is then described as: 
 
 $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta x^2}. 
@@ -216,7 +218,7 @@ $\begin{equation}
 
 where $a = \frac{\kappa}{2\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. 
 
-Similar to the implicit FTCS method, we need to modify the coefficients of the matrix **and** the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the centroids adjacent to the boundaries are defined as: 
+Similar to the implicit *FTCS* method, we need to modify the coefficients of the matrix **and** the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the *centroids* adjacent to the boundaries are defined as: 
 
 **Dirichlet**
 
@@ -246,13 +248,13 @@ $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
 \end{equation}$
 
-However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see [*1Dsolvers.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
-For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature at the *centroids* to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature.
+For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature at the *centroids* to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature at the new time step.
 
 ### Variable Thermal Parameters 
 
-To solve the *conductive* part of the 1-D *temperature equation* assuming variable thermal parameters one needs a proper conserving finite difference scheme. That is, the heat flow is calculated on the *vertices* and the temperature is defined on the *centroids*, respectively. The 1-D temperature equation is then given by: 
+To solve the *conductive* part of the 1-D *temperature equation* assuming variable thermal parameters one needs a proper conserving finite difference scheme. That is, the heat flow is calculated on the *vertices* and the temperature is defined on the *centroids*, respectively (see Figure 1). The 1-D temperature equation is then given by: 
 
 $\begin{equation}
 \rho c_{p} \frac{\partial{T}}{\partial{t}} = \frac{\partial{}}{\partial{y}}\left(k \frac{\partial{T}}{\partial{y}}\right) + \rho H,
@@ -260,23 +262,23 @@ $\begin{equation}
 
 where $\rho, c_{p}, T, t, k, H,$ and $y$ are the density [ $kg/m^3$ ], the specific heat capacity [ $J/kg/K$ ], the temperature [ $K$ ], the time [ $s$ ], the thermal conductivity [ $W/m/K$ ], the heat generation rate per mass [ $W/kg$ ], and the depth [ $m$ ], respectively.
 
-A proper conservative finite difference scheme means that the 1-D vertical heat flux $q_y$ and the thermal conductivity $k$ are defined on the vertices, where $q_y$ is defined as:
+A proper conservative finite difference scheme means that the 1-D vertical heat flux $q_y$ and the thermal conductivity $k$ are defined on the *vertices*, where $q_y$ is defined as:
 
 $\begin{equation}
 \left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
 \end{equation}$
 
-where $nv$ is the number of vertices. 
+where $nv$ is the number of *vertices*. 
 
 #### *Solving the equation*
 
-Following the discretization as described above, one needs to solve the following equation for each centroid (in an [explicit finite difference formulation](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl)):
+Following the discretization as described above, one needs to solve the following equation for each centroid (in an [explicit finite difference formulation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl)):
 
 $\begin{equation}
 \rho_j c_{p,j} \frac{T_{j}^{n+1} - T_{j}^{n}}{\Delta{t}} = -\frac{q_{y,j+1}^{n} - q_{y,j}^{n} }{\Delta{y}} + \rho_j H_j,\ \textrm{for}\ j = 1:nc, 
 \end{equation}$
 
-where $T$ is defined on the centroids, $q_y$ and $k$ are defined on the vertices, $\Delta{t}$ is the time step length, and $\Delta{y}$ is the grid resolution. Further replacing $q_y$ results in: 
+where $T$ is defined on the *centroids*, $q_y$ and $k$ are defined on the *vertices*, $\Delta{t}$ is the time step length, and $\Delta{y}$ is the grid resolution. Further replacing $q_y$ results in: 
 
 $\begin{equation}
 \rho_j c_{p,j} \frac{T_{j}^{n+1} - T_{j}^{n}}{\Delta{t}} = \frac{ k_{j+1} \frac{T_{j+1}^{n} - T_{j}^{n}}{\Delta{y}} - k_{j} \frac{T_{j}^{n} - T_{j-1}^{n}}{\Delta{y}} }{\Delta{y}} + \rho_j H_j
@@ -295,4 +297,4 @@ a = \frac{\Delta{t}}{\Delta{y^2} \rho c_{p_{j}}}.
 \end{equation}$
 
 
-For the centroids adjacent to the boundaries one needs to use the *ghost nodes* and their correspondingly calculated temperatures, depending on the choosen thermal boundary condition (see equations $(7)-(10)$).
+For the *centroids* adjacent to the boundaries one needs to use the *ghost nodes* and their correspondingly calculated temperatures, depending on the choosen thermal boundary condition (see equations $(7)-(10)$).

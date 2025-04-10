@@ -6,7 +6,7 @@ $\begin{equation}
 \rho \frac{D \overrightharpoon{v}}{Dt} = \overrightharpoon{\nabla} \cdot \boldsymbol{\sigma} + \rho \boldsymbol{g},
 \end{equation}$
 
-where $\rho$ is the density [ $kg/m^3$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [ $Pa$ ], $\boldsymbol{g}$ is the gravitational acceleration [ $m/s^2$ ], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla}$. 
+where $\rho$ is the density [ $kg/m^3$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [ $Pa$ ], $\boldsymbol{g}$ is the gravitational acceleration vector [ $m/s^2$ ], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla}$. 
 
 The *Cauchy stress tensor* is given by: 
 
@@ -16,7 +16,7 @@ $\begin{equation}
 
 where $P$ is the total pressure ($P = P_{dynamic} + P_{hydrostatic}$) and $\boldsymbol{\tau}$ the *deviatoric stress tensor*. 
 
-In Eulerian form, equation $(1)$ is given by (**Navier-Stokes equation**):
+In Eulerian form, equation $(1)$ is given by (i.e., the **Navier-Stokes equation**):
 
 $\begin{equation}
 \rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{v_{i}}{\partial{x_{j}}}\right) = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
@@ -26,7 +26,7 @@ where summation over repeated indices is implied.
 
 # Constitutive Relation
 
-To solve equation $(3)$, one needs to define a rheology which, for a purely viscous medium, can be given by a constitutive relationship between stress and strain rate in the form of, e.g.:
+To solve equation $(3)$, one needs to define a rheology which, for a purely viscous medium, can be given by a constitutive relationship between stress and strain rate in the form of:
 
 $\begin{equation}
 \tau_{ij} = 2 \eta \cdot \dot{\varepsilon}_{ij},
@@ -35,7 +35,7 @@ $\begin{equation}
 where $\eta$ is the dynamic viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ the *strain rate tensor* in [ $1/s$ ] and given by: 
 
 $\begin{equation}
-\dot{\varepsilon}_{ij} = \frac{1}{2} \left(\frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}}\right),
+\dot{\varepsilon}_{ij} = \frac{1}{2} \left(\frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}}\right).
 \end{equation}$
 
 # Stokes Equation
@@ -58,7 +58,7 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_{i}}} + \eta \left(\frac{\partial^2{v_i}}{\partial{x_j^2}} + \frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho g_{i}.
 \end{equation}$
 
-To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to discretize the $x-$ and $y$-*component* of the **momentum equation** and the **continuum equation**. Here, we assume an incompressible medium, i.e. we use the so called Boussinesq-approximation. 
+To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to discretize the $x-$ and $y$-*component* of the **momentum equation** and the **continuum equation**.
 
 # Continuum Equation
 
@@ -72,7 +72,7 @@ Equations $(8)$ and $(9)$ enable us to solve for the three unknowns $v_x$, $v_y$
 
 # Equation of State
 
-The buoyance term on the right-hand side of equation $(7)$, that is the density term which is temperature dependent (and pressure, but I do neglect this effect here so far), can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
+In case of a thermal convection the density is considered to be temperature dependen. Thus, the buoyance term on the right-hand side of equation $(7)$ is temperature dependent (and pressure, but I do neglect this effect here so far) and can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
 
 $\begin{equation}
 \rho = \rho_0 (1-\alpha T),
