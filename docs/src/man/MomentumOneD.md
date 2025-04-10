@@ -1,5 +1,7 @@
 # Stokes Equation (1D)
 
+The Stokes equation in one dimension (e.g., for a channel flow problem) is defined as (e.g., in the $x$-direction): 
+
 *$x$-component*
 
 $\begin{equation}
