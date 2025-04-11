@@ -33,7 +33,7 @@ function ThermalConvection()
     anim        =   Plots.Animation(path, String[] )
     filename    =   string("11_ThermalConvection_",Ini.T,"_",
                             "_",FD.Method.Adv,"_",FD.Method.Diff)
-    save_fig    =   1
+    save_fig    =   0
     # ------------------------------------------------------------------- #
     # Define model geometry constants =================================== #
     M   =   (
@@ -191,7 +191,7 @@ function ThermalConvection()
         Δ       =   [0.0],
         Δc      =   [0.0],              #   Courant time step
         Δd      =   [0.0],              #   Diffusion time stability criterion
-        itmax   =   1500,               #   Maximum iterations
+        itmax   =   100,               #   Maximum iterations
     )
     T.tmax[1]   =   T.tmax[1]*1e6*T.year    #   [ s ]
     T.Δc[1]     =   T.Δfacc * minimum((Δ.x,Δ.y)) / 

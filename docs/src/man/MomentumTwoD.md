@@ -1,42 +1,51 @@
 # Stokes Equation (2D)
 
-The Stokes equation (the **conservation equation of momentum**) in two dimensions is defined as: 
+The Stokes equation (the *conservation equation of momentum*) in two dimensions is defined as: 
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho g_i, 
 \end{equation}$
 
-where $P$ is the total pressure,  $\rho$ is the density, $g_i$ the gravitational acceleration, $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor and defined as: 
+where $P$ is the total pressure [ $Pa$ ],  $\rho$ is the density [ $kg/m^3$ ], $g_i$ the gravitational acceleration [ $m/s^2$ ], $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor [ $Pa$ ] and defined as: 
 
 $\begin{equation}
-\tau_{ij} = 2\eta \dot{\varepsilon}_{ij}.
+\tau_{ij} = 2\eta \dot{\varepsilon}_{ij}, 
 \end{equation}$
 
-The **conservation equation of mass** is defined as: 
+where $\eta$ is the dynamic viscosity [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor and given as: 
 
 $\begin{equation}
-div\left(\overrightharpoon{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0, 
+\dot{\varepsilon}_{ij} = \frac{1}{2} \left( \frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}} \right),
 \end{equation}$
 
-where $v_i$ is the velocity in the $i$-th direction. 
+where $v_i$ is the velocity [ $m/s$ ] in the $i$-th direction. The stokes equation provides two equations for three unknowns, $v_x$, $v_y$, and $P$. Thus, to solve for the third unknown one needs an additional equation, the *mass conservation equation*. 
+
+The *conservation equation of mass* is defined as (assuming an incompressible medium): 
+
+$\begin{equation}
+div\left(\overrightharpoon{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0.
+\end{equation}$ 
 
 ## Discretization 
 
-The conservation equations of *momentum* and *mass* are solved properly in two dimensions ($x$ and $y$) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocities are defined inbetween the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points.  
+The conservation equations of *momentum* and *mass* are solved properly in two dimensions ($x$ and $y$) using a staggered finite difference grid, where the horizontal (*cyan dashes*) and vertical (*orange dashes*) velocities are defined inbetween the regular grid points or *vertices*, and the pressure (*red circles*) within a finite difference cells or *centroids* (Figure 1). A staggered grid enables the conservation of the stress between adjacent grid points and care needs to be taken where the corresponding parameters are defined. 
 
 ![MomentumGrid](../assets/MomentumGrid.png)
 
-**Figure 1. Staggered finite difference grid.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities require *ghost nodes* at the **North** and **South** and **East** and **West** boundary, respectively. <!-- What about the pressure ghost nodes? Are they even necessary? -->
+**Figure 1. Staggered finite difference grid for the momentum equation.** Discretization of the conservation equations of momemtum and mass. The horizontal and vertical velocities require *ghost nodes* at the **North**, **South**, **East**, and **West** boundary, respectively.
+
+---------------------
+---------------------
 
 ### Constant Viscosity
 
 Let's first assume a special case of the Stokes equation, a **constant viscosity**, which simplifies equation $(1)$ to: 
 
 $\begin{equation}
-0 = -\frac{\partial{P}}{\partial{x_i}} + 2\eta\frac{\partial^2{v_i}}{\partial{x_i^2}} + \eta\left(\frac{\partial^2{v_i}}{\partial{x_j^2}}+\frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho \cdot g_i. 
+0 = -\frac{\partial{P}}{\partial{x_i}} + 2\eta\frac{\partial^2{v_i}}{\partial{x_i^2}} + \eta\left(\frac{\partial^2{v_i}}{\partial{x_j^2}}+\frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho g_i. 
 \end{equation}$
 
-Using equation $(3)$ and neglecting a horizontal graviational acceleration, equation $(4)$ can further be simplified to: 
+Using equation $(4)$ and neglecting a horizontal graviational acceleration, equation $(5)$ can further be simplified to: 
 
 *$x$-component* 
 
@@ -54,19 +63,21 @@ For each equation, one can define a so-called numerical stencil which highlights
 
 #### Stencil
 
-The stencils for the momentum equation assuming a constant viscosity shows the points required to solve the equations for each component of the momentum equation using the finite difference approach (Figure 2). 
+The stencils for the *momentum equation* assuming a constant viscosity shows the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
 
 ![StencilConstEta](../assets/Stencil_const_eta.png)
 
 **Figure 2. Numerical stencils for the momentum equation.** a) *$x$-component*. b) *$y$-component*.
 
-Using the finite difference operators, equations $(5)$ and $(6)$ are defined as: 
+Using the finite difference approximations for the partial derivatives, equations $(6)$ and $(7)$ are defined as: 
 
 *$x$-component*
 
 $\begin{equation}
--\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}} + \eta\frac{v_{x,(i-1,j)}-2v_{x,(i,j)}+v_{x,(i+1,j)}}{\Delta{x^2}} + \eta\frac{v_{x,(i,j-1)}-2v_{x,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} = 0
+-\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}} + \eta\frac{v_{x,(i-1,j)}-2v_{x,(i,j)}+v_{x,(i+1,j)}}{\Delta{x^2}} + \eta\frac{v_{x,(i,j-1)}-2v_{x,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} = 0.
 \end{equation}$
+
+Rearranging and sorting the variables results in: 
 
 $\begin{equation}
 P_CP_{i,j} + P_WP_{i-1,j} + Sv_{x,(i,j-1)} +  Wv_{x,(i-1,j)} + Cv_{x,(i,j)} + E v_{x,(i+1,j)} + N v_{x,(i,j+1)} = 0, 
@@ -89,8 +100,10 @@ N = \frac{\eta}{\Delta{y^2}}. \\
 *$y$-component*
 
 $\begin{equation}
--\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \eta\frac{v_{y,(i,j-1)}-2v_{y,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} + \eta\frac{v_{y,(i-1,j)}-2v_{y,(i,j)}+v_{y,(i+1,j)}}{\Delta{x^2}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y
+-\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \eta\frac{v_{y,(i,j-1)}-2v_{y,(i,j)}+v_{x,(i,j+1)}}{\Delta{y^2}} + \eta\frac{v_{y,(i-1,j)}-2v_{y,(i,j)}+v_{y,(i+1,j)}}{\Delta{x^2}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y.
 \end{equation}$
+
+Rearranging and sorting the variables results in: 
 
 $\begin{equation}
 P_SP_{i,j-1} + P_CP_{i,j} + Sv_{y,(i,j-1)} + Wv_{y,(i-1,j)} + Cv_{y,(i,j)} + E v_{y,(i+1,j)} + N v_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, 
@@ -118,7 +131,7 @@ The most common boundary conditions for the momentum equation are a combination 
 
 **Free slip** 
 
-*Free slip* boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity** along the boundary. That is for the lateral boundaries **(E, W)** the conditions are: 
+*Free slip* boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity** along the boundary. That is for the lateral boundaries **(East, West)** the conditions are: 
 
 $\begin{equation}
 \begin{split}
@@ -127,7 +140,7 @@ v_x = 0, \\
 \end{split}
 \end{equation}$
 
-and for the horizontal bounaries **(N, S)** the conditions are: 
+and for the horizontal bounaries **(North, South)** the conditions are: 
 
 $\begin{equation}
 \begin{split}
@@ -140,7 +153,7 @@ Solving the system of equations using a direct solution, one needs to modify the
 
 *$x$-component*
 
-For *free slip* boundary conditions one needs to define the horizontal velocity $v_x$ for the *ghost nodes* at the upper (**N**) and lower (**S**) boundary which are defined as (see equation $(14)$ ): 
+For *free slip* boundary conditions one needs to define the horizontal velocity $v_x$ for the *ghost nodes* at the upper (**North**) and lower (**South**) boundary which are defined as (see equation $(15)$ ): 
 
 *South* ($j = 1$)
 
@@ -154,11 +167,11 @@ $\begin{equation}
 v_{x,(i,GN)} = v_{x,(i,ncy)}.
 \end{equation}$
 
-Along the lateral boundaries (**E**, **W**) we can simply set the velocities to zero (see equation $(13)$ ).
+Along the lateral boundaries (**East**, **West**) we can simply set the velocities to zero (see equation $(14)$ ).
 
 *$y$-component*
 
-For the vertical velocity $v_y$ one needs to define the velocity at the *ghost nodes* for the left (**W**) and right (**E**) boundary as (see equation $(13)$ ): 
+For the vertical velocity $v_y$ one needs to define the velocity at the *ghost nodes* for the left (**West**) and right (**East**) boundary as (see equation $(14)$ ): 
 
 *West* ($i = 1$)
 
@@ -172,9 +185,9 @@ $\begin{equation}
 v_{y,(GE,j)} = v_{y,(ncx,j)}.
 \end{equation}$
 
-Along the horizontal boundaries (**N**, **S**), we can simply set the velocity $v_y$ to zero (see equation $(14)$ ). 
+Along the horizontal boundaries (**North**, **South**), we can simply set the velocity $v_y$ to zero (see equation $(15)$ ). 
 
-Using the equations $(15)$ - $(18)$ the coefficients of the equations adjacent to the corresponding boundaries changes (the right-hand side actually does not change for *free slip* boundary conditions) to: 
+Using the equations $(16)$ - $(19)$ the coefficients of the equations adjacent to the corresponding boundaries changes (the right-hand side actually does not change for *free slip* boundary conditions) to: 
 
 *$x$-component* 
 
@@ -194,7 +207,7 @@ P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)
 
 where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
 
-Along the lateral boundaries (**E**, **W**), $C=1$ and the remaining coefficients are equal to zero.
+Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients are equal to zero.
 
 *$y$-component* 
 
@@ -214,15 +227,15 @@ P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)
 
 where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
 
-Along the horizontal boundaries (**N**, **S**), $C=1$ and the remaining coefficients are equal to zero.
+Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining coefficients are equal to zero.
 
 --------------
 
 **No slip** 
 
-*No slip* boundary conditions fix the fluid along the boundary and set the horizontal and vertical velocity equal to zero.. 
+*No slip* boundary conditions fix the fluid along the boundary and set the horizontal and vertical velocity equal to zero. 
 
-That is, for all boundaries (**E**, **W**, **S**, **N**) the conditions are: 
+That is, for all boundaries (**East**, **West**, **South**, **North**) the conditions are: 
 
 $\begin{equation}
 \begin{split}
@@ -233,7 +246,7 @@ v_y = 0.
 
 *$x$-component*
 
-One needs the velocity at the *ghost nodes* for the horizontal velocity at the lower (**S**) and upper (**N**) boundary which are defined as: 
+One needs the velocity at the *ghost nodes* for the horizontal velocity $v_x$ at the lower (**South**) and upper (**North**) boundary which are defined as: 
 
 *South* ($j = 1$)
 
@@ -251,11 +264,11 @@ v_{x,(i,GN)} = 2V_{BC,N} - v_{x,(i,ncy)},
 
 where $V_{BC,N}$ is the velocity along the boundary (here 0). 
 
-Along the lateral boundaries (**E**, **W**) we can simply set the velocity to zero (as in the *free slip* case). 
+Along the lateral boundaries (**East**, **West**) we can simply set the horizontal velocity to zero (as in the *free slip* case). 
 
 *$y$-component* 
 
-For the vertical velocity one needs to define the velocity at the *ghost nodes* for the left (**W**) and right (**E**) boundary as: 
+For the vertical velocity $v_y$ one needs to define the velocity at the *ghost nodes* for the left (**West**) and right (**East**) boundary as: 
 
 *West* ($i = 1$)
 
@@ -273,9 +286,9 @@ v_{y,(GE,j)} = 2V_{BC,E} - v_{y,(ncx,j)},
 
 where $V_{BC,E}$ is the velocity along the boundary (here 0). 
 
-Along the horizontal boundaries (**N**, **S**), we can simply set the velocity to zero (as in the *free slip* case). 
+Along the horizontal boundaries (**North**, **South**), we can simply set the vertical velocity to zero (as in the *free slip* case). 
 
-Using the equations $(24)$ - $(27)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
+Using the equations $(25)$ - $(28)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
 
 *$x$-component* 
 
@@ -295,7 +308,7 @@ P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)
 
 where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
 
-Along the lateral boundaries (**E**, **W**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
 *$y$-component* 
 
@@ -315,16 +328,172 @@ P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)
 
 where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
 
-Along the horizontal boundaries (**E**, **W**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
+-------------
 -------------
 
 ### Variable Viscosity
 
+In case of a variable viscosity, equation $(1)$ is given in the form of the unknown parameters as: 
+
+*$x$-component*
+
+$\begin{equation}
+-\frac{\partial{P}}{\partial{x}} + \frac{\partial{}}{\partial{x}}\left(2\eta_c\frac{\partial{v_x}}{\partial{x}}\right)+\frac{\partial{}}{\partial{y}}\left( \eta_v\left(\frac{\partial{v_x}}{\partial{y}} + \frac{\partial{v_y}}{\partial{x}}\right)\right) = 0,
+\end{equation}$
+
+and
+
+*$y$-component*
+
+$\begin{equation}
+-\frac{\partial{P}}{\partial{y}} + \frac{\partial{}}{\partial{y}}\left(2\eta_c\frac{\partial{v_y}}{\partial{y}}\right)+\frac{\partial{}}{\partial{x}}\left( \eta_v\left(\frac{\partial{v_y}}{\partial{x}} + \frac{\partial{v_x}}{\partial{y}}\right)\right) = -\frac{\rho_{i,j}+\rho{i+1,j}}{2}g_y,
+\end{equation}$
+
+where $\eta_c$ is the viscosity at the *centroids* and $\eta_v$ the viscosity at the *vertices. 
+
 #### Stencil
+
+The stencils for the *momentum equation* assuming a constant viscosity shows the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 3).
+
+![]
+
+**Note**: In the following, the index $(i,j)$ for each parameter $\left(v_x, v_y, P, \eta_c,\ \textrm{and}\  \eta_v\right)$ is always referring to the central point of the stencil of each parameter grid. 
+
+Using the finite difference approximations for the partial derivatives, equations $(33)$ and $(34)$ are defined as: 
+
+*$x$-component*
+
+$\begin{equation}
+-\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}}+\frac{2\eta_{c,(i,j)}\frac{\partial{v_x}}{\partial{x}}\vert_{i,j} -2\eta_{c,(i-1,j)}\frac{\partial{v_x}}{\partial{x}}\vert_{i-1,j}}{\Delta{x}} + \frac{\eta_{v,(i,j+1)}\left(\frac{\partial{v_x}}{\partial{y}}\vert_{i,j+1}+\frac{\partial{v_y}}{\partial{x}}\vert_{i,j+1}\right)-\eta_{v,(i,j)}\left(\frac{\partial{v_x}}{\partial{y}}\vert_{i,j}+\frac{\partial{v_y}}{\partial{x}}\vert_{i,j}\right)}{\Delta{y}} = 0,
+\end{equation}$
+
+and in the form of the unknowns: 
+
+$\begin{equation}\begin{gather*}
+& -\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}}+\frac{2\eta_{c,(i,j)}}{\Delta{x}}\left(\frac{v_{x,(i+1,j)}-v_{x,(i,j)}}{\Delta{x}}\right) - \frac{2\eta_{c,(i-1,j)}}{\Delta{x}}\left(\frac{v_{x,(i,j)}-v_{x,(i-1,j)}}{\Delta{x}}\right)+ \\ & \frac{\eta_{v,(i,j+1)}}{\Delta{y}}\left(\frac{v_{x,(i,j+1)}-v_{x,(i,j)}}{\Delta{y}} + \frac{v_{y,(i,j+1)}-v_{y,(i-1,j+1)}}{\Delta{x}}\right) - \frac{\eta_{v,(i,j)}}{\Delta{y}}\left(\frac{v_{x,(i,j)}-v_{x,(i,j-1)}}{\Delta{y}} + \frac{v_{y,(i,j)}-v_{y,(i-1,j)}}{\Delta{x}}\right) = 0.
+\end{gather*}\end{equation}$
+
+Rearranging and sorting the variables results in: 
+
+$\begin{equation}\begin{gather*}
+& P_WP_{i-1,j}+P_CP_{i,j} + \\ & Sv_{x,(i,j-1)}+SWv_{y,(i-1,j)}+SEv_{y,(i,j)}+Wv_{x,(i-1,j)}+ \\ & Cv_{x,(i,j)} + \\ & Ev_{x,(i+1,j)} + NWv_{y,(i-1,j+1)} + NEv_{y,(i,j+1)} + Nv_{x,(i,j+1)} = 0, 
+\end{gather*}\end{equation}$
+
+where
+
+$\begin{equation}\begin{split}
+P_W & = \frac{1}{\Delta{x}} \\
+P_C & = -\frac{1}{\Delta{x}} \\
+S & = \frac{\eta_{v,(i,j)}}{\Delta{y^2}}\\
+SW & = \frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}}\\
+SE & = -\frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}}\\
+W & = \frac{2\eta_{c,(i-1,j)}}{\Delta{x^2}}\\
+C & = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{1}{\Delta{y^2}}\left(\eta_{v,(i,j+1)} + \eta_{v,(i,j)} \right) \\
+E & = \frac{2\eta_{c,(i,j)}}{\Delta{x^2}}\\
+NW & = -\frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}}\\
+NE & = \frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}}\\
+N & = \frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}\\
+\end{split}\end{equation}$
+
+*$y$-component*
 
 #### Boundary Conditions
 
+-------------
+
+**Free Slip**
+
+The velocities for the *ghost nodes* are the same as described above. Using the equations $(16)$ - $(19)$ the coefficients of the equations adjacent to the corresponding boundaries changes (the right-hand side actually does not change for *free slip* boundary conditions) to: 
+
+*$x$-component* 
+
+*South* ($j = 1$)
+
+$\begin{equation}
+P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = 0,
+\end{equation}$
+
+where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+
+*North* ($j = ncy$)
+
+$\begin{equation}
+P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = 0,
+\end{equation}$
+
+where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+
+Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients are equal to zero.
+
+*$y$-component* 
+
+*West* ($i = 1$)
+
+$\begin{equation}
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
+\end{equation}$
+
+where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+
+*East* ($i = ncx$)
+
+$\begin{equation}
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
+\end{equation}$
+
+where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+
+Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining coefficients are equal to zero.
+
+-------------
+
+**No Slip**
+
+Using the equations $(25)$ - $(28)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
+
+*$x$-component* 
+
+*South* ($j = 1$)
+
+$\begin{equation}
+P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,S},
+\end{equation}$
+
+where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+
+*North* ($j = ncy$)
+
+$\begin{equation}
+P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,N},
+\end{equation}$
+
+where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+
+Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+
+*$y$-component* 
+
+*West* ($i = 1$)
+
+$\begin{equation}
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
+\end{equation}$
+
+where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+
+*East* ($i = ncx$)
+
+$\begin{equation}
+P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
+\end{equation}$
+
+where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+
+Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+
+-------------
 -------------
 
 ### Continuum Equation 
