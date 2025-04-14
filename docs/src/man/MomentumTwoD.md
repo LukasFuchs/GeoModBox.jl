@@ -63,11 +63,11 @@ For each equation, one can define a so-called numerical stencil which highlights
 
 #### Stencil
 
-The stencils for the *momentum equation* assuming a constant viscosity shows the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
+The stencils for the *momentum equation* assuming a constant viscosity show the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
 
 ![StencilConstEta](../assets/Stencil_const_eta.png)
 
-**Figure 2. Numerical stencils for the momentum equation.** a) *$x$-component*. b) *$y$-component*.
+**Figure 2. Numerical stencils for a constant viscosity.** a) *$x$-component*. b) *$y$-component*.
 
 Using the finite difference approximations for the partial derivatives, equations $(6)$ and $(7)$ are defined as: 
 
@@ -87,13 +87,13 @@ where
 
 $\begin{equation}
 \begin{split}
-P_C = -\frac{1}{\Delta{x}},  \\
-P_W = \frac{1}{\Delta{x}}, \\
-S = \frac{\eta}{\Delta{y^2}}, \\
-W = \frac{\eta}{\Delta{x^2}}, \\
-C = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
-E = \frac{\eta}{\Delta{x^2}}, \\
-N = \frac{\eta}{\Delta{y^2}}. \\
+P_C & = -\frac{1}{\Delta{x}},  \\
+P_W & = \frac{1}{\Delta{x}}, \\
+S & = \frac{\eta}{\Delta{y^2}}, \\
+W & = \frac{\eta}{\Delta{x^2}}, \\
+C & = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
+E & = \frac{\eta}{\Delta{x^2}}, \\
+N & = \frac{\eta}{\Delta{y^2}}. \\
 \end{split}
 \end{equation}$
 
@@ -113,13 +113,13 @@ where
 
 $\begin{equation}
 \begin{split}
-P_S = \frac{1}{\Delta{y}},  \\
-P_C = -\frac{1}{\Delta{y}}, \\
-S = \frac{\eta}{\Delta{y^2}}, \\
-W = \frac{\eta}{\Delta{x^2}}, \\
-C = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
-E = \frac{\eta}{\Delta{x^2}}, \\
-N = \frac{\eta}{\Delta{y^2}}. \\
+P_S & = \frac{1}{\Delta{y}},  \\
+P_C & = -\frac{1}{\Delta{y}}, \\
+S & = \frac{\eta}{\Delta{y^2}}, \\
+W & = \frac{\eta}{\Delta{x^2}}, \\
+C & = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
+E & = \frac{\eta}{\Delta{x^2}}, \\
+N & = \frac{\eta}{\Delta{y^2}}. \\
 \end{split}
 \end{equation}$
 
@@ -330,6 +330,8 @@ where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
 
 Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
+For more details on how this is implemented, please see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/2Dsolvers.jl).
+
 -------------
 -------------
 
@@ -348,18 +350,20 @@ and
 *$y$-component*
 
 $\begin{equation}
--\frac{\partial{P}}{\partial{y}} + \frac{\partial{}}{\partial{y}}\left(2\eta_c\frac{\partial{v_y}}{\partial{y}}\right)+\frac{\partial{}}{\partial{x}}\left( \eta_v\left(\frac{\partial{v_y}}{\partial{x}} + \frac{\partial{v_x}}{\partial{y}}\right)\right) = -\frac{\rho_{i,j}+\rho{i+1,j}}{2}g_y,
+-\frac{\partial{P}}{\partial{y}} + \frac{\partial{}}{\partial{y}}\left(2\eta_c\frac{\partial{v_y}}{\partial{y}}\right)+\frac{\partial{}}{\partial{x}}\left( \eta_v\left(\frac{\partial{v_y}}{\partial{x}} + \frac{\partial{v_x}}{\partial{y}}\right)\right) = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2}g_y,
 \end{equation}$
 
-where $\eta_c$ is the viscosity at the *centroids* and $\eta_v$ the viscosity at the *vertices. 
+where $\eta_c$ is the viscosity at the *centroids* and $\eta_v$ the viscosity at the *vertices*. 
 
 #### Stencil
 
-The stencils for the *momentum equation* assuming a constant viscosity shows the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 3).
+The stencils for the *momentum equation* assuming a variable viscosity show the points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 3).
 
-![]
+![Stencil_vary_eta](../assets/Stencil_vary_eta.png)
 
-**Note**: In the following, the index $(i,j)$ for each parameter $\left(v_x, v_y, P, \eta_c,\ \textrm{and}\  \eta_v\right)$ is always referring to the central point of the stencil of each parameter grid. 
+**Figure 3.** **Numerical stencils for a variable viscosity.** a) *$x$-component*, b) *$y$-component*.  
+
+**Note**: In the following, the index $(i,j)$ for each parameter $\left(v_x, v_y, P, \eta_c,\ \textrm{and}\  \eta_v\right)$ is always referring to the central point of the stencil of each parameter grid (see Figure 3). 
 
 Using the finite difference approximations for the partial derivatives, equations $(33)$ and $(34)$ are defined as: 
 
@@ -384,46 +388,84 @@ $\begin{equation}\begin{gather*}
 where
 
 $\begin{equation}\begin{split}
-P_W & = \frac{1}{\Delta{x}} \\
-P_C & = -\frac{1}{\Delta{x}} \\
-S & = \frac{\eta_{v,(i,j)}}{\Delta{y^2}}\\
-SW & = \frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}}\\
-SE & = -\frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}}\\
-W & = \frac{2\eta_{c,(i-1,j)}}{\Delta{x^2}}\\
-C & = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{1}{\Delta{y^2}}\left(\eta_{v,(i,j+1)} + \eta_{v,(i,j)} \right) \\
-E & = \frac{2\eta_{c,(i,j)}}{\Delta{x^2}}\\
-NW & = -\frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}}\\
-NE & = \frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}}\\
-N & = \frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}\\
+P_W & = \frac{1}{\Delta{x}} ,\\
+P_C & = -\frac{1}{\Delta{x}}, \\
+S & = \frac{\eta_{v,(i,j)}}{\Delta{y^2}},\\
+SW & = \frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}},\\
+SE & = -\frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}},\\
+W & = \frac{2\eta_{c,(i-1,j)}}{\Delta{x^2}},\\
+C & = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{1}{\Delta{y^2}}\left(\eta_{v,(i,j+1)} + \eta_{v,(i,j)} \right), \\
+E & = \frac{2\eta_{c,(i,j)}}{\Delta{x^2}},\\
+NW & = -\frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}},\\
+NE & = \frac{\eta_{v,(i,j+1)}}{\Delta{x}\Delta{y}},\\
+N & = \frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}.\\
 \end{split}\end{equation}$
 
 *$y$-component*
 
+$\begin{equation}\begin{gather*}
+ & -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j} -2\eta_{c,(i,j-1)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j-1}}{\Delta{y}} + \\ & \frac{\eta_{v,(i+1,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i+1,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i+1,j}\right)-\eta_{v,(i,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i,j}\right)}{\Delta{x}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
+\end{gather*}\end{equation}$
+
+and in the form of the unknowns: 
+
+$\begin{equation}\begin{gather*}
+& -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}}{\Delta{y}}\left(\frac{v_{y,(i,j+1)}-v_{y,(i,j)}}{\Delta{y}}\right) - \frac{2\eta_{c,(i,j-1)}}{\Delta{y}}\left(\frac{v_{y,(i,j)}-v_{y,(i,j-1)}}{\Delta{y}}\right)+ \\ & \frac{\eta_{v,(i+1,j)}}{\Delta{x}}\left(\frac{v_{y,(i+1,j)}-v_{y,(i,j)}}{\Delta{x}} + \frac{v_{x,(i+1,j)}-v_{x,(i+1,j-1)}}{\Delta{y}}\right) - \frac{\eta_{v,(i,j)}}{\Delta{x}}\left(\frac{v_{y,(i,j)}-v_{y,(i-1,j)}}{\Delta{x}} + \frac{v_{x,(i,j)}-v_{x,(i,j-1)}}{\Delta{y}}\right) = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y.
+\end{gather*}\end{equation}$
+
+Rearranging and sorting the variables results in: 
+
+$\begin{equation}\begin{gather*}
+& P_CP_{i,j}+P_SP_{i,j-1} + \\ & Sv_{y,(i,j-1)}+SWv_{x,(i,j-1)}+SEv_{x,(i+1,j-1)}+Wv_{y,(i-1,j)}+ \\ & Cv_{y,(i,j)} + \\ & Ev_{y,(i+1,j)} + NWv_{x,(i,j)} + NEv_{x,(i+1,j)} + Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, 
+\end{gather*}\end{equation}$
+
+where
+
+$\begin{equation}\begin{split}
+P_S & = \frac{1}{\Delta{y}}, \\
+P_C & = -\frac{1}{\Delta{y}}, \\
+S & = \frac{2\eta_{c,(i,j-1)}}{\Delta{y^2}},\\
+SW & = \frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}},\\
+SE & = -\frac{\eta_{v,(i+1,j)}}{\Delta{x}\Delta{y}},\\
+W & = \frac{\eta_{v,(i,j)}}{\Delta{x^2}},\\
+C & = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{1}{\Delta{x^2}}\left(\eta_{v,(i+1,j)} + \eta_{v,(i,j)} \right), \\
+E & = \frac{\eta_{v,(i+1,j)}}{\Delta{x^2}},\\
+NW & = -\frac{\eta_{v,(i,j)}}{\Delta{x}\Delta{y}},\\
+NE & = \frac{\eta_{v,(i+1,j)}}{\Delta{x}\Delta{y}},\\
+N & = \frac{2\eta_{c,(i,j)}}{\Delta{y^2}}.\\
+\end{split}\end{equation}$
+
 #### Boundary Conditions
+
+The velocities for the *ghost nodes* to define the different velocity boundary conditions are the same as described for the constant viscosity case.
 
 -------------
 
 **Free Slip**
 
-The velocities for the *ghost nodes* are the same as described above. Using the equations $(16)$ - $(19)$ the coefficients of the equations adjacent to the corresponding boundaries changes (the right-hand side actually does not change for *free slip* boundary conditions) to: 
+Using the equations $(16)$ - $(19)$ the coefficients of the equations adjacent to the corresponding boundaries changes (the right-hand side actually does not change for *free slip* boundary conditions) to: 
 
 *$x$-component* 
 
 *South* ($j = 1$)
 
-$\begin{equation}
-P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = 0,
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_WP_{i-1,j}+P_CP_{i,j} +\\ & SWv_{y,(i-1,j)}+SEv_{y,(i,j)}+Wv_{x,(i-1,j)}+\\ & Cv_{x,(i,j)}+\\ & Ev_{x,(i+1,j)}+NWv_{y,(i-1,j+1)}+NEv_{y,(i,j+1)}+Nv_{x,(i,j+1)} = 0,
+\end{gather*}\end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{x^2}} \left( \eta_{c,(i,j)} + \eta_{c,(i-1,j)} \right) - \frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}.\end{equation}$
 
 *North* ($j = ncy$)
 
-$\begin{equation}
-P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = 0,
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_WP_{i-1,j}+P_CP_{i,j}+\\ & Sv_{x,(i,j-1)}+SWv_{y,(i-1,j)}+SEv_{y,(i,j)}+Wv_{x,(i-1,j)}+\\ & Cv_{x,(i,j)}+ \\ & Ev_{x,(i+1,j)}+NWv_{y,(i-1,j+1)}+NEv_{y,(i,j+1)} = 0,
+\end{gather*}\end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{\eta_{v,(i,j)}}{\Delta{y^2}}.\end{equation}$
 
 Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients are equal to zero.
 
@@ -431,19 +473,23 @@ Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coeff
 
 *West* ($i = 1$)
 
-$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_CP_{i,j}+P_SP_{i,j-1} + \\ & Sv_{y,(i,j-1)} + SWv_{x,(i,j-1)} + SEv_{x,(i+1,j-1)} + \\ & Cv_{y,(i,j)} + \\ & Ev_{y,(i+1,j)} + NWv_{x,(i,j)} + NEv_{x,(i+1,j)} + Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, 
+\end{gather*}\end{equation}$
 
-where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{\eta_{v,(i+1,j)}}{\Delta{x^2}}.\end{equation}$
 
 *East* ($i = ncx$)
 
-$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_CP_{i,j} + P_SP_{i,j-1} + \\ & Sv_{y,(i,j-1)} + SWv_{x,(i,j-1)} + SEv_{x,(i+1,j-1)} + Wv_{y,(i-1,j)} + \\ & Cv_{y,(i,j)} + \\ & NWv_{x,(i,j)} + NEv_{x,(i+1,j)} + Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, 
+\end{gather*}\end{equation}$
 
-where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{\eta_{v,(i,j)}}{\Delta{x^2}}.\end{equation}$
 
 Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining coefficients are equal to zero.
 
@@ -457,19 +503,23 @@ Using the equations $(25)$ - $(28)$ the coefficients of the equations adjacent t
 
 *South* ($j = 1$)
 
-$\begin{equation}
-P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,S},
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_WP_{i-1,j}+P_CP_{i,j}+ \\ & SWv_{y,(i-1,j)}+SEv_{y,(i,j)}+Wv_{x,(i-1,j)}+ \\ & Cv_{x,(i,j)}+ \\ & Ev_{x,(i+1,j)}+NWv_{y,(i-1,j+1)}+NEv_{y,(i,j+1)}+Nv_{x,(i,j+1)} = -2\frac{\eta_{v,(i,j)}}{\Delta{y^2}}V_{BC,S},
+\end{gather*}\end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}-\frac{2\eta_{v,(i,j)}}{\Delta{y^2}}.\end{equation}$
 
 *North* ($j = ncy$)
 
-$\begin{equation}
-P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,N},
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_WP_{i-1,j}+P_CP_{i,j}+ \\ & Sv_{x,(i,j-1)}+SWv_{y,(i-1,j)}+SEv_{y,(i,j)}+Wv_{x,(i-1,j)}+ \\ & Cv_{x,(i,j)}+ \\ & Ev_{x,(i+1,j)}+NWv_{y,(i-1,j+1)}+NEv_{y,(i,j+1)} = -2\frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}V_{BC,N},
+\end{gather*}\end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{x^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i-1,j)}\right)-\frac{2\eta_{v,(i,j+1)}}{\Delta{y^2}}-\frac{\eta_{v,(i,j)}}{\Delta{y^2}}.\end{equation}$
 
 Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
@@ -477,21 +527,27 @@ Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coeff
 
 *West* ($i = 1$)
 
-$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_CP_{i,j} + P_SP_{i,j-1} + \\ & Sv_{y,(i,j-1)} + SWv_{x,(i,j-1)} + SEv_{x,(i+1,j-1)} + \\ & Cv_{y,(i,j)} + \\ & Ev_{y,(i+1,j)} + NWv_{x,(i,j)} + NEv_{x,(i+1,j)} + Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y - 2\frac{\eta_{v,(i,j)}}{\Delta{x^2}}V_{BC,W}, 
+\end{gather*}\end{equation}$
 
-where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{\eta_{v,(i+1,j)}}{\Delta{x^2}}-2\frac{\eta_{v,(i,j)}}{\Delta{x^2}}.\end{equation}$
 
 *East* ($i = ncx$)
 
-$\begin{equation}
-P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& P_CP_{i,j} + P_SP_{i,j-1} + \\ & Sv_{y,(i,j-1)} + SWv_{x,(i,j-1)} + SEv_{x,(i+1,j-1)} + Wv_{y,(i-1,j)} + \\ & Cv_{y,(i,j)} + \\ & NWv_{x,(i,j)} + NEv_{x,(i+1,j)} + Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y -2\frac{\eta_{v,(i+1,j)}}{\Delta{x^2}}V_{BC,E}, 
+\end{gather*}\end{equation}$
 
-where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{2\eta_{v,(i+1,j)}}{\Delta{x^2}}-\frac{\eta_{v,(i,j)}}{\Delta{x^2}}.\end{equation}$
 
 Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+
+For more details on how this is implemented, please see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/2Dsolvers.jl).
 
 -------------
 -------------
@@ -502,11 +558,11 @@ The continuum equation provides a third equation helping to solve for the third 
 
 #### Stencil
 
-The corresponding numerical stencil only includes the horizontal and vertical velocities (Fig. 3).
+The corresponding numerical stencil only includes the horizontal and vertical velocities (Fig. 4).
 
 ![StencilContinuum](../assets/Stencil_continuum.png)
 
-**Figure 3. Numerical stencil for the continuum equation.** 
+**Figure 4. Numerical stencil for the continuum equation.** 
 
 Using the finite difference operators equations $(3)$ is defined as: 
 
@@ -531,7 +587,9 @@ $\begin{equation}
 
 To solve the linear system of equations, one needs to collect the coefficients for the coefficient matrix $\bold{K}$ and set up the righ-hand side $\overrightharpoon{rhs}$ (at least for the direct solution). 
 
-To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable *node*, corresponding to one equation. Here, we first the number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the momentum equation (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the conservation of mass (for the unknown $P$). The numbering for each equation is then defined as: 
+To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable *node*, corresponding to one equation. Here, we first the number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the momentum equation (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the conservation of mass (for the unknown $P$). 
+
+The numbering for each equation is then defined as: 
 
 *$x$-compnent* ($v_x$) 
 
@@ -553,7 +611,9 @@ ii_p = \left(nv_x \cdot nc_y + nc_x \cdot nv_y + 1\right)\ \textrm{--}\ \left(nv
 
 where $nc_i$ and $nv_i$ are the numbers of *centroids* and *vertices* in the $i$-th direction, respectively. 
 
-Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation, where the coefficients $K[ii_j,i_k]$ for the unknown variable points in the numerical stencils (Fig. 2) are located in the corresponding columns of each line (relative to the central point $\left[ii_j,i_c\right]$): 
+Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation, where the coefficients $K[ii_j,i_k]$ for the unknown variable points in the numerical stencils (Fig. 2-4) are located in the corresponding columns of each line (relative to the central point $\left[ii_j,i_c\right]$): 
+
+*Constant Viscosity*
 
 *$x$-component*
 
@@ -575,6 +635,12 @@ i_E = ii_y + 1, \\
 i_N = ii_y + nc_x. 
 \end{split}\end{equation}$
 
+*Variable Viscosity*
+
+*$x$-component*
+
+*$y$-component*
+
 *continuum (P)*
 
 $\begin{equation}\begin{split}
@@ -589,7 +655,11 @@ This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of:
 
 ![CoefficientMatrix](../assets/CoefficientMatrix.png)
 
-**Figure 4. Coefficient matrix.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
+**Figure 5. Coefficient matrix, constant viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
+
+![CoefficientMatrix](../assets/CoefficientMatrix.png)
+
+**Figure 6. Coefficient matrix, variable viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
 
 The right-hand side vector $\overrightharpoon{rhs}$ is given by the boundary and initial conditions (see equations $(13)$ - $(31)$ ). 
 

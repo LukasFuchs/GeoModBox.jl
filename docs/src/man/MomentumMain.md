@@ -70,6 +70,25 @@ $\begin{equation}
 
 Equations $(8)$ and $(9)$ enable us to solve for the three unknowns $v_x$, $v_y$, and $P$. 
 
+The examples for a pure stokes equation problem include: 
+- [a 1-D channel flow problem for constant and depth-dependent viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)
+
+- [a 2-D falling block benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl)
+
+- [a 2-D falling block example with constant viscosity using the defect correction method](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockConstEta_DC.jl)
+
+- [a 2-D falling block example with variable viscosity using the defect correction method](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl)
+
+- [a 2-D viscous inclusion problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl), and
+
+- [a 2-D Rayleigh-Taylor instability benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/RTI.jl)
+
+The exercises include: 
+
+- [a steady state, isoviscous 2-D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)
+
+- [a time-dependen, isoviscous 2-D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block_td.ipynb)
+
 # Equation of State
 
 In case of a thermal convection the density is considered to be temperature dependen. Thus, the buoyance term on the right-hand side of equation $(7)$ is temperature dependent (and pressure, but I do neglect this effect here so far) and can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
@@ -79,3 +98,21 @@ $\begin{equation}
 \end{equation}$
 
 where $ρ_0$ is the reference density and $\alpha$ the thermal expansion coefficient [ $1/K$ ]. 
+
+# Scaling 
+
+... *tba* ...
+
+# Further applications
+
+The examples include models of different [mixed heated convection system](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/) to highlight the coupling between the *temperature* and *momentum equation* using the *operator splitting method*. Within these examples all methods to solve each equation can be applied. 
+
+The exercises include an example to solve [an isovisous, 2-D thermal convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/11_2D_Thermal_convection.ipynb) as well as [a scaled version thereof](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_convection_scaled.ipynb). 
+
+The final exercises fo complete the course is to complete the [Blankenbach benchmark including a resolution test](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/13_Blankenbach_Benchmark.ipynb). 
+
+
+
+
+
+
