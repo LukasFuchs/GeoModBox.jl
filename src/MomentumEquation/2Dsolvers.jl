@@ -48,10 +48,10 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
         ii  =   Num.Vy[i,j] 
         if j == 1 || j == NV.y
             # East and West boundary ---
-            # Free Slip && No Slip: vₓ = 0 
+            # Free Slip && No Slip: vy = 0 
             K[ii,ii]    =   1.0
         else
-            # Stencil, vₓ ---
+            # Stencil, vy ---
             iS  =   ii - NC.x
             iW  =   ii - 1 
             iC  =   ii 
@@ -181,8 +181,10 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             # --- 
             iSW =   Num.Vy[i-1,j]
             iSE =   iSW + 1
-            iNW =   iSW + NC.y
-            iNE =   iSW + NC.y + 1
+            iNW =   iSW + NC.x
+            iNE =   iSW + NC.x + 1
+            # iNW =   iSW + NC.y
+            # iNE =   iSW + NC.y + 1
             # Pressure ---
             iPC =   Num.Pt[i,j]
             iPW =   Num.Pt[i-1,j]
