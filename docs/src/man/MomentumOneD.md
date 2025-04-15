@@ -1,6 +1,6 @@
 # Stokes Equation (1D)
 
-Before solving the Stokes equation in two dimensions, let's first start with a rather simple, one-dimensional problem: an uniaxial Stokes flow in a horizontal channel and a known pressure gradient. A flow like this is a very good, first order approximation of a flow in a magma or subduction channel. The Stokes equation in one dimension is defined as (e.g., in the $x$-direction):  
+Before solving the Stokes equation in two dimensions, let's first start with a simpler, one-dimensional problem: an uniaxial Stokes flow in a horizontal channel assuming a known horizontal pressure gradient. A flow like this is a very good, first order approximation of a flow in a magma or subduction channel. The Stokes equation in one dimension is defined as (e.g., in the $x$-direction):  
 
 *$x$-component*
 
@@ -8,13 +8,13 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}},
 \end{equation}$
 
-where $P$ is the pressure [ $Pa$ ], $\frac{\partial}{\partial{x_i}}$ is the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress [ $Pa$ ] and given by: 
+where $P$ is the pressure in [ $Pa$ ], $\frac{\partial}{\partial{x_i}}$ is the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress in [ $Pa$ ] and given by: 
 
 $\begin{equation}
 \tau_{xy} = 2 \eta \dot{\varepsilon}_{xy},
 \end{equation}$
 
-where $\eta$ is the viscosity [ $Pa s$ ] and $\dot{\varepsilon}_{xy}$ is the shear strain-rate and given by: 
+where $\eta$ is the viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{xy}$ is the shear strain-rate in [ $m/s$ ] and given by: 
 
 $\begin{equation}
 \dot{\varepsilon}_{xy} = \frac{1}{2} \frac{\partial{v_x}}{\partial{y}}.
@@ -39,7 +39,7 @@ $\begin{equation}
 Using the finite difference approximations for the partial derivatives (second derivative, central differences) equation $(4)$ is given as (assuming the horizontal pressure gradient is constant and known): 
 
 $\begin{equation}
-\frac{\partial{P}}{\partial{x}} = \eta \left( \frac{v_{x,j-1} - 2v_{x,j} + v_{x,j+1}}{\Delta{x^2}} \right),
+\frac{\partial{P}}{\partial{x}} = \eta \left( \frac{v_{x,j-1} - 2v_{x,j} + v_{x,j+1}}{\Delta{y^2}} \right),
 \end{equation}$
 
 which can be simplified to: 
@@ -52,7 +52,7 @@ where
 
 $a = c = \frac{\eta}{\Delta{y^2}},\ \textrm{and}\ b = -\frac{2\eta}{\Delta{y^2}}.$
 
-This is a linear system of equations in the form of $\bold{K} \cdot \overrightharpoon{v_x} = \overrightharpoon{rhs}$ with a three-diagonal coefficient matrix $\bold{K}$. The pressure gradient and the velocities at the boundaries define the known right-hand side and the horizontal velocity inbetween the *vertices* are the unknown vector. For the sake of simplicity, no additional solver for the constant velocity case is included in the ```GeoModBox.jl```, thus the viscosity needs to be treated numerically as an array and not as a scalar. For more information on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
+This is a linear system of equations in the form of $\bold{K} \cdot \overrightharpoon{v_x} = \overrightharpoon{rhs}$ with a three-diagonal coefficient matrix $\bold{K}$. The pressure gradient and the velocities at the boundaries define the known right-hand side and the horizontal velocity in between the *vertices* are the unknown vector. For the sake of simplicity, no additional solver for the constant velocity case is included in the ```GeoModBox.jl```, thus the viscosity needs to be treated numerically as an array and not as a scalar. For more information on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
 ***Variable Viscosity***
 
@@ -67,6 +67,12 @@ The partial difference operators in Equation $(7)$ are approximated using centra
 Using central difference for the shear stress, Equation $(7)$ is given by: 
 
 $\begin{equation}
+\frac{\partial{P}}{\partial{x}}=\frac{\tau_{xy,j+1}-\tau_{xy,j}}{\Delta{y}},\ \textrm{for}\ j = 1:nc, 
+\end{equation}$
+
+or in form of the unknowns: 
+
+$\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\eta_{j+1}\frac{\partial{v_x}}{\partial{y}}\vert_{j+1}-\eta_{j}\frac{\partial{v_x}}{\partial{y}}\vert_{j}}{\Delta{y}},\ \textrm{for}\ j = 1:nc.
 \end{equation}$
 
@@ -76,7 +82,7 @@ $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\eta_{j+1}\frac{v_{x,j+1}-v_{x,j}}{\Delta{y}}-\eta_{j}\frac{v_{x,j}-v_{x,j-1}}{\Delta{y}}\vert_{j}}{\Delta{y}}.
 \end{equation}$
 
-**Note**: The index $j$ goes from $1$ to $nc$, but the viscosity is defined on the *vertices* and the velocity on the *centroids*! In terms of the unknown velocity, equation $(9)$ can be rewritten as: 
+**Note**: The index $j$ goes from $1$ to $nc$, but the viscosity is defined on the *vertices* and the velocity on the *centroids*! In terms of the unknown velocity, equation $(10)$ can be rewritten as: 
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=av_{x,j-1}+bv_{x,j}+cv_{x,j+1}, 
@@ -92,7 +98,7 @@ Again, this is a linear system of equations with a three-diagonal coefficient ma
 
 ### Boundary Conditions
 
-To solve the equations, one needs to define boundary conditions. To properly implement *Dirichlet* and *Neumann* boundary conditions, one needs to describe the velocity at the *ghost nodes* again. Similar to the thermal boundary conditions, the value for the velocity at the *ghost nodes* can be defined assuming a constant velocity at the boundary (i.e., *Dirichlet*) or a constant velocity gradient across the boundary (i.e., *Neumann*). The velocites are then defined as: 
+To solve the equations, one needs to define the boundary conditions. To properly implement *Dirichlet* and *Neumann* boundary conditions, one needs to describe the velocity at the *ghost nodes* again. Similar to the thermal boundary conditions, the value for the velocity at the *ghost nodes* can be defined assuming a constant velocity at the boundary (i.e., *Dirichlet*) or a constant velocity gradient across the boundary (i.e., *Neumann*). The velocites are then defined as: 
 
 **Dirichlet**
 
@@ -160,9 +166,9 @@ av_{x,nc-1}+\left(b+c\right)v_{x,nx} = \frac{∂P}{∂x} - cc_NΔy
 
 ### Solution 
 
-There are different ways to solve the linear system of equations. The most convinient one would be a direct solution using the right division of the coefficient matrix by the right-hand side. 
+There are different ways to solve the linear system of equations. The most convenient one would be a direct solution using the right division of the coefficient matrix by the right-hand side. 
 
-#### Direct
+**Direct**
 
 $\begin{equation}
 v_x = \bold{K} ∖ rhs
@@ -170,7 +176,7 @@ v_x = \bold{K} ∖ rhs
 
 Similar to the thermal problem, one can also solve the linear system of equations using the defect correction method. This is very helpful, once the system is non-linear and one can simply iterate to reduce the residual. 
 
-#### Defect Correction 
+**Defect Correction**
 
 Here, one first calculates the residual of the governing equations: 
 
@@ -190,7 +196,7 @@ $\begin{equation}
 R_i = -\frac{∂P}{∂x} + \bold{K_i} \cdot v_{x,i}.
 \end{equation}$
 
-Let's assume that the initial guess leads to the exact solution, i.e. the residual is zero, by adding a correction term $\delta{v_x}$. with a little algebra one finds: 
+Let's assume that the initial guess leads to the exact solution, i.e. the residual is zero, by adding a correction term $\delta{v_x}$. With a little algebra one finds: 
 
 $\begin{equation}
 0 = -\frac{∂P}{∂x} + \bold{K}\left(v_{x,i}+ \delta{v_x} \right) = \bold{K}\cdot v_{x,i} -\frac{∂P}{∂x} + \bold{K}\cdot \delta{v_x} = R_i + \bold{K} \cdot \delta{v_x}.
@@ -216,6 +222,6 @@ v_x^n = v_{x,i} + \delta{v_x}.
 
 In case the system is linear, this would be the solution for the problem. For a non-linear problem, one needs to iterate over the equation until the residual is small enough. For more information on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
-How to solve the channel flow problem using the defect correctio method is given within the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl). 
+How to solve the channel flow problem using the defect correction method is given within the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl). 
 
 Solving the same issue using the direct solution is part of the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/08_1D_Stokes.ipynb).

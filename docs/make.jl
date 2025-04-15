@@ -28,7 +28,7 @@ makedocs(
             "Momentum Equation" => Any[
                 "General" => "man/MomentumMain.md",
                 "1D" => "man/MomentumOneD.md",
-                #  "2D" => "man/MomentumTwoD.md",
+                "2D" => "man/MomentumTwoD.md",
             ],
         ],
         # "Examples" => "man/Examples.md",

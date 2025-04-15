@@ -26,7 +26,7 @@ where summation over repeated indices is implied.
 
 # Constitutive Relation
 
-To solve equation $(3)$, one needs to define a rheology which, for a purely viscous medium, can be given by a constitutive relationship between stress and strain rate in the form of:
+To solve equation $(3)$, one needs to define a rheology which describes how a material deforms under certain applied forces. For a purely viscous medium, one can be define a constitutive relationship between stress and strain rate in the form of:
 
 $\begin{equation}
 \tau_{ij} = 2 \eta \cdot \dot{\varepsilon}_{ij},
@@ -40,7 +40,7 @@ $\begin{equation}
 
 # Stokes Equation
 
-Assuming that the inertia forces are negligible in comparison to the gravitational forces, one can further simplify equation $(3)$ to:
+Assuming that the inertia forces are negligible in comparison to the gravitational forces, which is generally the case for a high viscous medium like the Earth's mantle, one can further simplify equation $(3)$ to:
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
@@ -62,7 +62,7 @@ To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to d
 
 # Continuum Equation
 
-Equation $(8)$ provides us two equations for our three unknowns. Thus, one needs to also consider the mass conservation equation (we do work with a continuum), where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
+Equation $(8)$ provides us two equations for our three unknowns. Thus, one also needs to consider the *mass conservation equation*, where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
 
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
@@ -87,11 +87,11 @@ The exercises include:
 
 - [a steady state, isoviscous 2-D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)
 
-- [a time-dependen, isoviscous 2-D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block_td.ipynb)
+- [a time-dependent, isoviscous 2-D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block_td.ipynb)
 
 # Equation of State
 
-In case of a thermal convection the density is considered to be temperature dependen. Thus, the buoyance term on the right-hand side of equation $(7)$ is temperature dependent (and pressure, but I do neglect this effect here so far) and can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
+In case of a thermal convection the density is considered to be temperature dependent. Thus, the buoyance term on the right-hand side of equation $(7)$ is temperature dependent (and pressure, but one can neglect this effect here so far) and can be approximated with the so-called *equation of state* for the density. Here, its is a linear approximation of the change of density due to temperature variations and can be defined as:
 
 $\begin{equation}
 \rho = \rho_0 (1-\alpha T),

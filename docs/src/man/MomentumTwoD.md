@@ -1,24 +1,26 @@
 # Stokes Equation (2D)
 
-The Stokes equation (the *conservation equation of momentum*) in two dimensions is defined as: 
+The Stokes equation in two dimensions is defined as: 
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho g_i, 
 \end{equation}$
 
-where $P$ is the total pressure [ $Pa$ ],  $\rho$ is the density [ $kg/m^3$ ], $g_i$ the gravitational acceleration [ $m/s^2$ ], $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor [ $Pa$ ] and defined as: 
+where $P$ is the total pressure in [ $Pa$ ],  $\rho$ is the density in [ $kg/m^3$ ], $g_i$ the gravitational acceleration vector in [ $m/s^2$ ], $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor in [ $Pa$ ] and defined as: 
 
 $\begin{equation}
 \tau_{ij} = 2\eta \dot{\varepsilon}_{ij}, 
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor and given as: 
+where $\eta$ is the dynamic viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor in [ $m/s$ ] and given as: 
 
 $\begin{equation}
 \dot{\varepsilon}_{ij} = \frac{1}{2} \left( \frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}} \right),
 \end{equation}$
 
-where $v_i$ is the velocity [ $m/s$ ] in the $i$-th direction. The stokes equation provides two equations for three unknowns, $v_x$, $v_y$, and $P$. Thus, to solve for the third unknown one needs an additional equation, the *mass conservation equation*. 
+where $v_i$ is the velocity in [ $m/s$ ] in the $i$-th direction. 
+
+The stokes equation provides two equations for three unknowns, $v_x$, $v_y$, and $P$. Thus, to solve for the third unknown one needs an additional equation, the *mass conservation equation*. 
 
 The *conservation equation of mass* is defined as (assuming an incompressible medium): 
 
@@ -59,11 +61,11 @@ $\begin{equation}
 -\frac{\partial{P}}{\partial{y}} + \eta\frac{\partial^2{v_y}}{\partial{y^2}} + \eta\frac{\partial^2{v_y}}{\partial{x^2}} = - \rho g_y. 
 \end{equation}$
 
-For each equation, one can define a so-called numerical stencil which highlights the position of the required parameters with respect to the central point $(i,j)$, where $i$ and $j$ are the indices in the horizontal and vertical direction, respectively. The central point corresponds to the number of the equation in the linear system of equations. 
+For each equation, one can define a so-called numerical stencil which highlights the position of the required parameters with respect to a central point $(i,j)$, where $i$ and $j$ are the indices in the horizontal and vertical direction, respectively, for each parameter dimension. The central point also corresponds to the number of the equation in the linear system of equations. 
 
 #### Stencil
 
-The stencils for the *momentum equation* assuming a constant viscosity show the points required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
+The stencils for the *momentum equation* assuming a constant viscosity show the points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
 
 ![StencilConstEta](../assets/Stencil_const_eta.png)
 
@@ -167,7 +169,7 @@ $\begin{equation}
 v_{x,(i,GN)} = v_{x,(i,ncy)}.
 \end{equation}$
 
-Along the lateral boundaries (**East**, **West**) we can simply set the velocities to zero (see equation $(14)$ ).
+Along the lateral boundaries (**East**, **West**) we can simply set the velocity $v_x$ to zero (see equation $(14)$ ).
 
 *$y$-component*
 
@@ -197,7 +199,9 @@ $\begin{equation}
 P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = 0,
 \end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}.\end{equation}$
 
 *North* ($j = ncy$)
 
@@ -205,7 +209,9 @@ $\begin{equation}
 P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = 0,
 \end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}.\end{equation}$
 
 Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients are equal to zero.
 
@@ -217,7 +223,9 @@ $\begin{equation}
 P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
 \end{equation}$
 
-where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end{equation}$
 
 *East* ($i = ncx$)
 
@@ -225,7 +233,9 @@ $\begin{equation}
 P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
 \end{equation}$
 
-where $C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end{equation}$
 
 Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining coefficients are equal to zero.
 
@@ -264,7 +274,7 @@ v_{x,(i,GN)} = 2V_{BC,N} - v_{x,(i,ncy)},
 
 where $V_{BC,N}$ is the velocity along the boundary (here 0). 
 
-Along the lateral boundaries (**East**, **West**) we can simply set the horizontal velocity to zero (as in the *free slip* case). 
+Along the lateral boundaries (**East**, **West**) we can simply set the horizontal velocity $v_x$ to zero (as in the *free slip* case). 
 
 *$y$-component* 
 
@@ -288,7 +298,7 @@ where $V_{BC,E}$ is the velocity along the boundary (here 0).
 
 Along the horizontal boundaries (**North**, **South**), we can simply set the vertical velocity to zero (as in the *free slip* case). 
 
-Using the equations $(25)$ - $(28)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
+Using the equations $(29)$ - $(32)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
 
 *$x$-component* 
 
@@ -298,7 +308,9 @@ $\begin{equation}
 P_WP_{i-1,j}+P_CP_{i,j}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)}+Nv_{x,(i,j+1)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,S},
 \end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}.\end{equation}$
 
 *North* ($j = ncy$)
 
@@ -306,7 +318,9 @@ $\begin{equation}
 P_WP_{i-1,j}+P_CP_{i,j}+Sv_{x,(i,j-1)}+Wv_{x,(i-1,j)}+Cv_{x,(i,j)}+Ev_{x,(i+1,j)} = -2\frac{\eta}{\Delta{y^2}}V_{BC,N},
 \end{equation}$
 
-where $C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}.\end{equation}$
 
 Along the lateral boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
@@ -318,7 +332,9 @@ $\begin{equation}
 P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Cv_{y,(i,j)}+Ev_{y,(i+1,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
 \end{equation}$
 
-where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end{equation}$
 
 *East* ($i = ncx$)
 
@@ -326,7 +342,9 @@ $\begin{equation}
 P_SP_{i,j-1}+P_CP_{i,j}+Sv_{y,(i,j-1)}+Wv_{y,(i-1,j)}+Cv_{y,(i,j)}+Nv_{y,(i,j+1)} = -\frac{\rho_{i,j} + \rho_{i+1,j}}{2} g_y - 2\frac{\eta}{\Delta{x^2}}V_{BC,W},
 \end{equation}$
 
-where $C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}$.
+where 
+
+$\begin{equation}C = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end{equation}$
 
 Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
@@ -337,7 +355,7 @@ For more details on how this is implemented, please see the [source code](https:
 
 ### Variable Viscosity
 
-In case of a variable viscosity, equation $(1)$ is given in the form of the unknown parameters as: 
+In case of a variable viscosity, equation $(1)$ is given in the form of the unknowns as: 
 
 *$x$-component*
 
@@ -365,9 +383,15 @@ The stencils for the *momentum equation* assuming a variable viscosity show the 
 
 **Note**: In the following, the index $(i,j)$ for each parameter $\left(v_x, v_y, P, \eta_c,\ \textrm{and}\  \eta_v\right)$ is always referring to the central point of the stencil of each parameter grid (see Figure 3). 
 
-Using the finite difference approximations for the partial derivatives, equations $(33)$ and $(34)$ are defined as: 
+Using the finite difference approximations for the partial derivatives, equations $(41)$ and $(42)$ are defined as: 
 
 *$x$-component*
+
+$\begin{equation}
+-\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}}+\frac{\tau_{xx,(i,j)} -\tau_{xx,(i-1,j)}}{\Delta{x}} + \frac{\tau_{xy,(i,j+1)}-\tau_{xy,(i,j)}}{\Delta{y}} = 0,
+\end{equation}$
+
+or
 
 $\begin{equation}
 -\frac{P_{i,j}-P_{i-1,j}}{\Delta{x}}+\frac{2\eta_{c,(i,j)}\frac{\partial{v_x}}{\partial{x}}\vert_{i,j} -2\eta_{c,(i-1,j)}\frac{\partial{v_x}}{\partial{x}}\vert_{i-1,j}}{\Delta{x}} + \frac{\eta_{v,(i,j+1)}\left(\frac{\partial{v_x}}{\partial{y}}\vert_{i,j+1}+\frac{\partial{v_y}}{\partial{x}}\vert_{i,j+1}\right)-\eta_{v,(i,j)}\left(\frac{\partial{v_x}}{\partial{y}}\vert_{i,j}+\frac{\partial{v_y}}{\partial{x}}\vert_{i,j}\right)}{\Delta{y}} = 0,
@@ -403,14 +427,20 @@ N & = \frac{\eta_{v,(i,j+1)}}{\Delta{y^2}}.\\
 
 *$y$-component*
 
+$\begin{equation}
+-\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{\tau_{yy,(i,j)} - \tau_{yy,(i,j-1)}}{\Delta{y}} + \frac{\tau_{yx,(i+1,j)}-\tau_{yx,(i,j)}}{\Delta{x}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
+\end{equation}$
+
+or 
+
 $\begin{equation}\begin{gather*}
- & -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j} -2\eta_{c,(i,j-1)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j-1}}{\Delta{y}} + \\ & \frac{\eta_{v,(i+1,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i+1,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i+1,j}\right)-\eta_{v,(i,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i,j}\right)}{\Delta{x}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
+& -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j} -2\eta_{c,(i,j-1)}\frac{\partial{v_y}}{\partial{y}}\vert_{i,j-1}}{\Delta{y}} + \\ & \frac{\eta_{v,(i+1,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i+1,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i+1,j}\right)-\eta_{v,(i,j)}\left(\frac{\partial{v_y}}{\partial{x}}\vert_{i,j}+\frac{\partial{v_x}}{\partial{y}}\vert_{i,j}\right)}{\Delta{x}} = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y,
 \end{gather*}\end{equation}$
 
 and in the form of the unknowns: 
 
 $\begin{equation}\begin{gather*}
-& -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}}{\Delta{y}}\left(\frac{v_{y,(i,j+1)}-v_{y,(i,j)}}{\Delta{y}}\right) - \frac{2\eta_{c,(i,j-1)}}{\Delta{y}}\left(\frac{v_{y,(i,j)}-v_{y,(i,j-1)}}{\Delta{y}}\right)+ \\ & \frac{\eta_{v,(i+1,j)}}{\Delta{x}}\left(\frac{v_{y,(i+1,j)}-v_{y,(i,j)}}{\Delta{x}} + \frac{v_{x,(i+1,j)}-v_{x,(i+1,j-1)}}{\Delta{y}}\right) - \frac{\eta_{v,(i,j)}}{\Delta{x}}\left(\frac{v_{y,(i,j)}-v_{y,(i-1,j)}}{\Delta{x}} + \frac{v_{x,(i,j)}-v_{x,(i,j-1)}}{\Delta{y}}\right) = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y.
+& -\frac{P_{i,j}-P_{i,j-1}}{\Delta{y}}+\frac{2\eta_{c,(i,j)}}{\Delta{y}}\left(\frac{v_{y,(i,j+1)}-v_{y,(i,j)}}{\Delta{y}}\right) - \frac{2\eta_{c,(i,j-1)}}{\Delta{y}}\left(\frac{v_{y,(i,j)}-v_{y,(i,j-1)}}{\Delta{y}}\right)+ \\ & \frac{\eta_{v,(i+1,j)}}{\Delta{x}}\left(\frac{v_{y,(i+1,j)}-v_{y,(i,j)}}{\Delta{x}} + \frac{v_{x,(i+1,j)}-v_{x,(i+1,j-1)}}{\Delta{y}}\right) - \\ & \frac{\eta_{v,(i,j)}}{\Delta{x}}\left(\frac{v_{y,(i,j)}-v_{y,(i-1,j)}}{\Delta{x}} + \frac{v_{x,(i,j)}-v_{x,(i,j-1)}}{\Delta{y}}\right) = -\frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y.
 \end{gather*}\end{equation}$
 
 Rearranging and sorting the variables results in: 
@@ -497,7 +527,7 @@ Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining 
 
 **No Slip**
 
-Using the equations $(25)$ - $(28)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
+Using the equations $(29)$ - $(32)$ the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side changes to: 
 
 *$x$-component* 
 
@@ -545,7 +575,7 @@ where
 
 $\begin{equation}C = -\frac{2}{\Delta{y^2}}\left(\eta_{c,(i,j)}+\eta_{c,(i,j-1)}\right)-\frac{2\eta_{v,(i+1,j)}}{\Delta{x^2}}-\frac{\eta_{v,(i,j)}}{\Delta{x^2}}.\end{equation}$
 
-Along the horizontal boundaries (**East**, **West**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
+Along the horizontal boundaries (**North**, **South**), $C=1$ and the remaining coefficients and the right-hand side are equal to zero.
 
 For more details on how this is implemented, please see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/2Dsolvers.jl).
 
@@ -558,7 +588,7 @@ The continuum equation provides a third equation helping to solve for the third 
 
 #### Stencil
 
-The corresponding numerical stencil only includes the horizontal and vertical velocities (Fig. 4).
+The corresponding numerical stencil only includes the horizontal and vertical velocity (Fig. 4).
 
 ![StencilContinuum](../assets/Stencil_continuum.png)
 
@@ -587,7 +617,7 @@ $\begin{equation}
 
 To solve the linear system of equations, one needs to collect the coefficients for the coefficient matrix $\bold{K}$ and set up the righ-hand side $\overrightharpoon{rhs}$ (at least for the direct solution). 
 
-To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable *node*, corresponding to one equation. Here, we first the number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the momentum equation (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the conservation of mass (for the unknown $P$). 
+To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable grid point (or *node*), corresponding to one equation. Here, we first number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the momentum equation (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the conservation of mass (for the unknown $P$). 
 
 The numbering for each equation is then defined as: 
 
@@ -611,44 +641,70 @@ ii_p = \left(nv_x \cdot nc_y + nc_x \cdot nv_y + 1\right)\ \textrm{--}\ \left(nv
 
 where $nc_i$ and $nv_i$ are the numbers of *centroids* and *vertices* in the $i$-th direction, respectively. 
 
-Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation, where the coefficients $K[ii_j,i_k]$ for the unknown variable points in the numerical stencils (Fig. 2-4) are located in the corresponding columns of each line (relative to the central point $\left[ii_j,i_c\right]$): 
+Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation. The coefficients $K[ii_j,i_k]$ for the unknown variable points in the numerical stencils (Fig. 2-4) are located in the corresponding columns of each line (relative to the central point $\left[ii_j,i_c\right]$). The numbering of the coefficients remains the same independent of the state of the viscosity, however, if the viscosity is variable additional coefficients for the *momentum conservation equation* are added to the matrix: 
 
 *Constant Viscosity*
 
 *$x$-component*
 
 $\begin{equation}\begin{split}
-i_S = ii_x - nv_x, \\
-i_W = ii_x - 1, \\
-i_C = ii_x, \\
-i_E = ii_x + 1, \\
-i_N = ii_x + nv_x. 
+i_S & = ii_x - nv_x, \\
+i_W & = ii_x - 1, \\
+i_C & = ii_x, \\
+i_E & = ii_x + 1, \\
+i_N & = ii_x + nv_x. 
 \end{split}\end{equation}$
 
 *$y$-component*
 
 $\begin{equation}\begin{split}
-i_S = ii_y - nc_x, \\
-i_W = ii_y - 1, \\
-i_C = ii_y, \\
-i_E = ii_y + 1, \\
-i_N = ii_y + nc_x. 
+i_S & = ii_y - nc_x, \\
+i_W & = ii_y - 1, \\
+i_C & = ii_y, \\
+i_E & = ii_y + 1, \\
+i_N & = ii_y + nc_x. 
 \end{split}\end{equation}$
 
 *Variable Viscosity*
 
 *$x$-component*
 
+$\begin{equation}\begin{split}
+i_S & = ii_x - nv_x, \\
+i_{SW} & = ii_y - 1, \\
+i_{SE} & = ii_y, \\
+i_W & = ii_x - 1, \\
+i_C & = ii_x, \\
+i_E & = ii_x + 1, \\
+i_{NW} & = ii_y + nc_x, \\
+i_{NE} & = ii_y + nc_x + 1, \\
+i_N & = ii_x + nv_x. 
+\end{split}\end{equation}$
+
 *$y$-component*
+
+$\begin{equation}\begin{split}
+i_S & = ii_y - nc_x, \\
+i_{SW} & = ii_x - nv_x, \\
+i_{SE} & = ii_x - nv_x + 1, \\
+i_W & = ii_y - 1, \\
+i_C & = ii_y, \\
+i_E & = ii_y + 1, \\
+i_{NW} & = ii_x, \\
+i_{NE} & = ii_x + 1, \\
+i_N & = ii_y + nc_x. 
+\end{split}\end{equation}$
+
+The coefficients for the *conservation of mass* remain the same independent of the state of the viscosity. 
 
 *continuum (P)*
 
 $\begin{equation}\begin{split}
-i_S = ii_y, \\
-i_W = ii_x, \\
-i_C = ii_p, \\
-i_E = ii_x + 1, \\
-i_N = ii_y + nc_x. 
+i_S & = ii_y, \\
+i_W & = ii_x, \\
+i_C & = ii_p, \\
+i_E & = ii_x + 1, \\
+i_N & = ii_y + nc_x. 
 \end{split}\end{equation}$
 
 This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of: 
@@ -657,7 +713,7 @@ This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of:
 
 **Figure 5. Coefficient matrix, constant viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
 
-![CoefficientMatrix](../assets/CoefficientMatrix.png)
+![CoefficientMatrix_vary]()
 
 **Figure 6. Coefficient matrix, variable viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a constant viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
 
@@ -673,4 +729,42 @@ $\begin{equation}
 
 ### Defect Correction
 
------------------------
+The defect correction method is very helpful, in case the system is non-linear. First, one needs to calculate the residual for each equation, where the unknowns are given by an initial guess (usually all equal to zero): 
+
+*Residual calculation* 
+
+$\begin{equation}\begin{split}
+R_x & = \frac{\partial{\tau_{xx}}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}} - \frac{\partial{P}}{\partial{x}}, \\
+R_y & = \frac{\partial{\tau_{yy}}}{\partial{y}} + \frac{\partial{\tau_{yx}}}{\partial{x}} - \frac{\partial{P}}{\partial{y}} + \rho g_y, \\
+R_p & = \frac{\partial{v_x}}{\partial{x}} + \frac{\partial{v_y}}{\partial{y}},
+\end{split}\end{equation}$
+
+and in form of the finite difference operators: 
+
+$\begin{equation}\begin{split}
+R_x & = \frac{\tau_{xx,(i,j)}-\tau_{xx,(i-1,j)}}{\Delta{x}} + \frac{\tau_{xy,(i,j+1)}-\tau_{xy,(i,j)}}{\Delta{y}} - \frac{P_{i,j}-P_{i-1,j}}{\Delta{x}}, \\
+R_y & = \frac{\tau_{yy,(i,j)}-\tau_{yy,(i,j-1)}}{\Delta{y}} + \frac{\tau_{yx,(i+1,j)}-\tau_{yx,(i,j)}}{\Delta{x}} - \frac{P_{i,j}-P_{i,j-1}}{\Delta{y}} + \frac{\rho_{i,j}+\rho_{i+1,j}}{2} g_y, \\
+R_p & = \frac{v_{x,(i+1,j)}-v_{x,(i,j)}}{\Delta{x}} + \frac{v_{y,(i,j+1)}-v_{y,(i,j)}}{\Delta{y}}.
+\end{split}\end{equation}$
+
+If the velocities do not lie directly on the boundaries, they can be calculated via equations $(16)$ - $(19)$ for *free slip* and via equations $(29)$ - $(32)$ for *no slip* boundary condtions. The stresses are either calculated via the viscosity at the *vertices* or the *centroids*. Similar to the direct method, the residuals are stored in a vector with the numbering of each equation as shown in equations $(75)$ - $(79)$. The coefficient matrix $\bold{K}$ is the same as described before. 
+
+The correction term is calculated via the residual and the coefficient matrix as: 
+
+$\begin{equation}
+\delta=- \bold{K} \backslash R.
+\end{equation}$
+
+$\delta$ is a vector with the dimensions $\left(nv_x \cdot nc_y + nc_x \cdot nv_y + nc_x \cdot nc_y\right)$, that is for the total number of equations of all unknowns $\left(v_x, v_y, P\right)$. Finally one needs to update the inital guess by the correction term: 
+
+$\begin{equation}\begin{split}
+v_x & = v_{x,i} + \delta{v_x}, \\
+v_y & = v_{y,i} + \delta{v_y}, \\
+P & = P_{i} + \delta{P},
+\end{split}\end{equation}$
+
+where the indices of the vector $\delta$ correspond to the indices of the unknowns $\left(v_x, v_y, P\right)$ as shown in equations $(72)$ - $(74)$.
+
+**Note:** To updated the array of the unknowns, one need to assign the elements of the one-dimensional vectors to the two-dimensional array following the numbering shown in equations $(72)$ -$(74)$.
+
+For more information on how both methods are implemented see the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/).
