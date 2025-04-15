@@ -14,7 +14,10 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Governing Equation" => Any[
-            # "Solution" => "man/GESolution.md",
+            # "Solution" => Any[
+            #    "General" => "man/GESolution.md",
+            #    "Initial Condition" => "man/Ini.md",
+            # ],
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md",
                 "1D" => "man/DiffOneD.md",
