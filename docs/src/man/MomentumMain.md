@@ -58,11 +58,11 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_{i}}} + \eta \left(\frac{\partial^2{v_i}}{\partial{x_j^2}} + \frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho g_{i}.
 \end{equation}$
 
-To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to discretize the $x-$ and $y$-*component* of the **momentum equation** and the **continuum equation**.
+To numerically solve for the three unknows $v_x$, $v_y$, and $P$, one needs to discretize the $x$- and $y$*-component* of the **momentum equation** and the **continuum equation**. For more details on how this is done, please see the [1-D](./MomentumOneD.md) and [2-D](./MomentumTwoD.md) documentations of the momentum equation. 
 
 # Continuum Equation
 
-Equation $(8)$ provides us two equations for our three unknowns. Thus, one also needs to consider the *mass conservation equation*, where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
+Equation $(8)$ provides us two equations for three unknowns. Thus, one also needs to consider the *mass conservation equation*, where one can further simplify the problem by assuming an incompressible fluid (i.e., Boussinesq-approximation):
 
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
@@ -70,7 +70,7 @@ $\begin{equation}
 
 Equations $(8)$ and $(9)$ enable us to solve for the three unknowns $v_x$, $v_y$, and $P$. 
 
-The examples for a pure stokes equation problem include: 
+The examples for a pure *stokes equation* problem include: 
 - [a 1-D channel flow problem for constant and depth-dependent viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)
 
 - [a 2-D falling block benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl)
