@@ -230,17 +230,17 @@ For more details on the theory of the defect correction see the [1-D example](./
 
 In 2-D, equation $(3)$ is described in a finite difference form as: 
 
-$\begin{equation}
-\frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta t} = 
-\frac{\kappa}{2}\frac{(T_{i-1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i+1,j}^{n+1})+(T_{i-1,j}^{n}-2T_{i,j}^{n}+T_{i+1,j}^{n})}{\Delta x^2} + 
+$\begin{equation}\begin{gather*}
+& \frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta t} = \\ &
+\frac{\kappa}{2}\frac{(T_{i-1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i+1,j}^{n+1})+(T_{i-1,j}^{n}-2T_{i,j}^{n}+T_{i+1,j}^{n})}{\Delta x^2} + \\ &
 \frac{\kappa}{2}\frac{(T_{i,j-1}^{n+1}-2T_{i,j}^{n+1}+T_{i,j+1}^{n+1})+(T_{i,j-1}^{n}-2T_{i,j}^{n}+T_{i,j+1}^{n})}{\Delta y^2}
-\end{equation}$
+\end{gather*}\end{equation}$
 
 Rearranging equation $(30)$ into known and unknown variables, one obtains a linear system of equations in the form of: 
 
-$\begin{equation}
--b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n}
-\end{equation}$
+$\begin{equation}\begin{gather*}
+& -b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = \\ &b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n}
+\end{gather*}\end{equation}$
 
 Similar to the implicit method, we need to modify the coefficients and the right-hand side using different boundary conditions to obtain a symmetric coefficient matrix. Thus, the equations for the *centroids* adjacent to the boundaries are defined as: 
 
@@ -248,67 +248,67 @@ Similar to the implicit method, we need to modify the coefficients and the right
 
 *West* ($i=1$)
 
-$\begin{equation}
--b T_{1,j-1}^{n+1} +
+$\begin{equation}\begin{gather*}
+& -b T_{1,j-1}^{n+1} +
 \left(3a + 2b + c \right) T_{1,j}^{n+1} 
--a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = 
+-a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = \\ &
 b T_{1,j-1}^{n} - \left( 3a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} + 4 a T_{BC,W},
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *East* ($i = ncx$)
 
-$\begin{equation}
--b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} +
+$\begin{equation}\begin{gather*}
+& -b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} +
 \left(3a + 2b + c \right) T_{ncx,j}^{n+1} 
--b T_{ncx,j+1}^{n+1} = 
+-b T_{ncx,j+1}^{n+1} = \\ & 
 b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} -
 \left( 3a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 4 a T_{BC,E},
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *South* ($j = 1$)
 
-$\begin{equation}
--a T_{i-1,1}^{n+1} +
-\left(2a + 3b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -a T_{i-1,1}^{n+1} +
+\left(2a + 3b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = \\ & 
 a T_{i-1,1}^{n} - \left( 2a + 3b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} + 4 b T_{BC,S},
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *North* ($j = ncy$)
 
-$\begin{equation}
--b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + 3b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + 3b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = \\ &
 b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + 3b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 4 b T_{BC,N}.
-\end{equation}$
+\end{gather*}\end{equation}$
 
 **Neumann**
 
 *West* ($i=1$)
 
-$\begin{equation}
--b T_{1,j-1}^{n+1} + \left(a + 2b + c \right) T_{1,j}^{n+1} - a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -b T_{1,j-1}^{n+1} + \left(a + 2b + c \right) T_{1,j}^{n+1} - a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = \\ &
 b T_{1,j-1}^{n} - \left( a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} - 2 a c_W \Delta{x},
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *East* ($i = ncx$)
 
-$\begin{equation}
--b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} + \left(a + 2b + c \right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} + \left(a + 2b + c \right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = \\ &
 b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} - \left( a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 2 a c_E \Delta{x},
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *South* ($j = 1$)
 
-$\begin{equation}
--a T_{i-1,1}^{n+1} + \left(2a + b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -a T_{i-1,1}^{n+1} + \left(2a + b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = \\ &
 a T_{i-1,1}^{n} - \left( 2a + b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} - 2 b c_S \Delta{y}
-\end{equation}$
+\end{gather*}\end{equation}$
 
 *North* ($j = ncy$)
 
-$\begin{equation}
--b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = 
+$\begin{equation}\begin{gather*}
+& -b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = \\ &
 b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 2 b c_N \Delta{y}
-\end{equation}$
+\end{gather*}\end{equation}$
 
 For more details on how this is implemented, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
