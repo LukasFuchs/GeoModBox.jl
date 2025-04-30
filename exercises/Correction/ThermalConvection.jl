@@ -10,9 +10,17 @@ function ThermalConvection()
     # Define numerical methods ========================================== #
     # Advection Scheme ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
+    #       --- slf not working ---
     # Diffusion Scheme --- 
     #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
-    FD          =   (Method     = (Adv=:semilag,Diff=:CNA),)
+    #       dc - source term missing!
+    # Momentum Equation --- 
+    #   1) direct, 2) dc 
+    FD          =   (Method     = (
+        Adv=:semilag,
+        Diff=:CNA,
+        Mom=:direct),
+    )
     # Define Initial Condition ---
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block, 4) linear, 5) lineara
@@ -24,28 +32,25 @@ function ThermalConvection()
     # Plot Einstellungen ================================================ #
     Pl  =   (
         qinc        =   5,
-        qsc         =   10.0*(100*(60*60*24*365.15)),        
-        mainc       =   1, 
-        Msz         =   0.2,
+        qsc         =   2e2*(100*(60*60*24*365.15)),
     )
     # Animationssettings ================================================ #
+    k           =   scatter()
     path        =   string("./exercises/Correction/Results/")
     anim        =   Plots.Animation(path, String[] )
-    filename    =   string("11_ThermalConvection_",Ini.T,"_",
-                            "_",FD.Method.Adv,"_",FD.Method.Diff)
-    save_fig    =   0
+    save_fig    =   1
     # ------------------------------------------------------------------- #
     # Define model geometry constants =================================== #
     M   =   (
         xmin    =   0.0,            #   [ m ] 
-        xmax    =   2600e3,         #   [ m ]
-        ymin    =   -650e3,         #   [ m ]
+        xmax    =   8700e3,         #   [ m ]
+        ymin    =   -2900e3,        #   [ m ]
         ymax    =   0.0,    
     )
     # ------------------------------------------------------------------- #
     # Grid ============================================================== #
     NC  =   (
-        x   =   200,    #   horizontal grid resolution
+        x   =   150,    #   horizontal grid resolution
         y   =   50,     #   vertical grid resolution
     )
     NV      =   (
@@ -83,25 +88,28 @@ function ThermalConvection()
     # ------------------------------------------------------------------- #
     # Define physical constants ========================================= #
     P   =   (
-        g   =   9.81,       #   Schwerebeschleunigung [m/s^2]
-        ρ₀  =   3300.0,     #   Hintergunddichte [kg/m^3]
-        k   =   3.0,        #   Thermische Leitfaehigkeit [ W/m/K ]
-        cp  =   1000.0,     #   Heat capacity [ J/kg/K ]
-        α   =   5.0e-5,     #   Thermischer Expnasionskoef. [ K^-1 ]
-        Q₀  =   [0.0],      #   Waermeproduktionsrate pro Volumen [W/m^3]
-        η₀  =   [1.0e21],   #   Viskositaet [ Pa*s ]
+        g   =   9.81,                   #   Schwerebeschleunigung [m/s^2]
+        ρ₀  =   3300.0,                 #   Hintergunddichte [kg/m^3]
+        k   =   4.125,                  #   Thermische Leitfaehigkeit [ W/m/K ]
+        cp  =   1250.0,                 #   Heat capacity [ J/kg/K ]
+        α   =   2.0e-5,                 #   Thermischer Expnasionskoef. [ K^-1 ]
+        Q₀  =   [0.0],                  #   Waermeproduktionsrate pro Volumen [W/m^3]
+        η₀  =   [3.947725485e23],       #   Viskositaet [ Pa*s ] [1.778087025e21]
     )
     P1  =   (
         κ       =   P.k/P.ρ₀/P.cp,      # 	Thermische Diffusivitaet [ m^2/s ]
-        Q₀      =   P.Q₀[1]/P.ρ₀,       #   Waermeproduktionsrate pro Masse [W/kg]
-        ΔT      =   1000.0,             #   Temperaturdifferenz
+        # Q₀      =   P.Q₀[1]/P.ρ₀,       #   Waermeproduktionsrate pro Masse [W/kg]
+        ΔT      =   2500.0,             #   Temperaturdifferenz
         # Falls Ra < 0 gesetzt ist, dann wird Ra aus den obigen Parametern
         # berechnet. Falls Ra gegeben ist, dann wird die Referenzviskositaet so
         # angepasst, dass die Skalierungsparameter die gegebene Rayleigh-Zahl
         # ergeben.
-        Ra      =   [-999.0],       #   Rayleigh number
+        Ra      =   [1.0e5],       #   Rayleigh number
     )
     P   =   merge(P,P1)
+    filename    =   string("11_ThermalConvection_",P.Ra[1],
+                        "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,
+                        "_",FD.Method.Mom)
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D       =   (
@@ -126,6 +134,25 @@ function ThermalConvection()
         Tmin    =   [0.0],
         Tmean   =   [0.0],
     )
+    tmp     =   zeros(Float64,(NC...))
+    # Needed for the defect correction solution ---
+    divV        =   zeros(Float64,NC...)
+    ε           =   (
+        xx      =   zeros(Float64,NC...), 
+        yy      =   zeros(Float64,NC...), 
+        xy      =   zeros(Float64,NV...),
+    )
+    τ           =   (
+        xx      =   zeros(Float64,NC...), 
+        yy      =   zeros(Float64,NC...), 
+        xy      =   zeros(Float64,NV...),
+    )
+    # Residuals ---
+    Fm     =    (
+        x       =   zeros(Float64,NV.x, NC.y), 
+        y       =   zeros(Float64,NC.x, NV.y)
+    )
+    FPt         =   zeros(Float64,NC...)
     # ------------------------------------------------------------------- #
     # Anfangsbedingungen ================================================ #
     # Temperature ------
@@ -166,9 +193,11 @@ function ThermalConvection()
         end
     end
     # Heat production rate ------
-    @. D.Q          = P.Q₀
-    # Equation of State ------
-    @. D.ρ      =   P.ρ₀*(1.0 - P.α*(D.T-D.T[1,1]))
+    @. D.Q      = P.Q₀
+    # Density ------
+    # Since we have a Boussinesq approximation, density is the reference 
+    # density
+    @. D.ρ      =   P.ρ₀
     # ------------------------------------------------------------------- #
     # Boundary Conditions =============================================== #
     # Temperature ------
@@ -185,13 +214,13 @@ function ThermalConvection()
     # Time ============================================================== #
     T   =   (
         year    =   365.25*3600*24,     #   Seconds per year
-        tmax    =   [4600.0],           #   [ Ma ]
+        tmax    =   [100000.0],         #   [ Ma ]
         Δfacc   =   1.0,                #   Courant time factor
-        Δfacd   =   1.0,                #   Diffusion time factor
+        Δfacd   =   0.9,                #   Diffusion time factor
         Δ       =   [0.0],
         Δc      =   [0.0],              #   Courant time step
         Δd      =   [0.0],              #   Diffusion time stability criterion
-        itmax   =   100,               #   Maximum iterations
+        itmax   =   20000,              #   Maximum iterations
     )
     T.tmax[1]   =   T.tmax[1]*1e6*T.year    #   [ s ]
     T.Δc[1]     =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -203,6 +232,7 @@ function ThermalConvection()
     Nus         =   zeros(T.itmax)
     meanV       =   zeros(T.itmax)
     meanT       =   zeros(T.itmax,NC.y+2)
+    find        =   0
     # ------------------------------------------------------------------- #
     # Rayleigh number conditions ======================================== #
     if P.Ra[1] < 0
@@ -257,22 +287,44 @@ function ThermalConvection()
         if it>1
             Time[it]  =   Time[it-1] + T.Δ[1]
         end
-        @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
+        @printf("Time step: #%04d, Time [Myr]: %04e\n",it,
                         Time[it]/(60*60*24*365.25)/1.0e6)
-        # Momentum Equation(ME) =======
+        # # Momentum Equation(ME) =======
         D.vx    .=  0.0
         D.vy    .=  0.0 
         D.Pt    .=  0.0
-        # Update K ---
-        KM      =   Assemblyc(NC, NV, Δ, P.η₀[1], VBC, Num)
-        # Update RHS ---
-        rhsM    =   updaterhsc( NC, NV, Δ, P.η₀[1], D.ρ, P.g, VBC, Num )
-        # Solve System of Equations ---
-        χ       =   KM \ rhsM
-        # Update Unknown Variables ---
-        D.vx[:,2:end-1]     .=  χ[Num.Vx]
-        D.vy[2:end-1,:]     .=  χ[Num.Vy]
-        D.Pt                .=  χ[Num.Pt]
+        if FD.Method.Mom==:direct
+            # Update K ---
+            KM      =   Assemblyc(NC, NV, Δ, P.η₀[1], VBC, Num)
+            # Update RHS ---
+            # rhs term defined by the Boussinesq approximation
+            rhsM    =   updaterhsc( NC, NV, Δ, P.η₀[1], -P.ρ₀*P.α.*D.T, -P.g, VBC, Num )
+            # Solve System of Equations ---
+            χ       =   KM \ rhsM
+            # Update Unknown Variables ---
+            D.vx[:,2:end-1]     .=  χ[Num.Vx]
+            D.vy[2:end-1,:]     .=  χ[Num.Vy]
+            D.Pt                .=  χ[Num.Pt]
+        elseif FD.Method.Mom==:dc
+            # Initial Residual -------------------------------------------------- #
+            @. D.ρ  =   -P.ρ₀*P.α*D.T
+            Residuals2Dc!(D,VBC,ε,τ,divV,Δ,P.η₀[1],P.g,Fm,FPt)
+            rhsM[Num.Vx]    =   Fm.x[:]
+            rhsM[Num.Vy]    =   Fm.y[:]
+            rhsM[Num.Pt]    =   FPt[:]
+            # ------------------------------------------------------------------- #
+            # Assemble Coefficients ============================================= #
+            K       =   Assemblyc(NC, NV, Δ,P. η₀[1], VBC, Num)
+            # ------------------------------------------------------------------- #
+            # Solution of the linear system ===================================== #
+            χ      =   - K \ rhsM
+            # ------------------------------------------------------------------- #
+            # Update Unknown Variables ========================================== #
+            D.vx[:,2:end-1]     .+=  χ[Num.Vx]
+            D.vy[2:end-1,:]     .+=  χ[Num.Vy]
+            D.Pt                .+=  χ[Num.Pt]
+            @. D.ρ  =   P.ρ₀
+        end
         # ======
         # Get the velocity on the centroids ------
         for i = 1:NC.x
@@ -310,9 +362,9 @@ function ThermalConvection()
                         D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
                 la=0.5,color="white",
                 layout=(2,1),subplot=1)
-            heatmap!(p,x.c./1e3,y.c./1e3,D.ρ',color=:glasgow,
+            heatmap!(p,x.c./1e3,y.c./1e3,D.vc',color=:imola,
                 xlabel="x[km]",ylabel="y[km]",colorbar=true,
-                title="Density",
+                title="Velocity",aspect_ratio=:equal,
                 xlims=(M.xmin/1e3, M.xmax/1e3), 
                 ylims=(M.ymin/1e3, M.ymax/1e3),
                 layout=(2,1),subplot=2)
@@ -366,75 +418,93 @@ function ThermalConvection()
             end        
         end
         # --------------------------------------------------------------- #
-        @printf("\n")
         # Heat flow at the surface ====================================== #
-        @. D.ΔTtop  =   (D.T_ex[2:end-1,1]-D.T_ex[2:end-1,2]) / Δ.y
-        @. D.ΔTbot  =   (D.T_ex[2:end-1,end]-D.T_ex[2:end-1,end-1]) / Δ.y
-        #     D.Nus(it)       =   trapz(M.x,D.dTtop).*abs(M.H)/M.L;
+        @. D.ΔTbot  =   
+                (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
+                ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
+        @. D.ΔTtop  =   
+                (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
+                ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
         Nus[it]     =   mean(D.ΔTtop)
         meanT[it,:] =   mean(D.T_ex,dims=1)
         meanV[it]   =   mean(D.vc)
         # --------------------------------------------------------------- #
-        # Equation of State update ====================================== #
-        @. D.ρ      =   P.ρ₀*(1.0 - P.α*(D.T-D.T[1,1]))
-        # --------------------------------------------------------------- #
         # Check break =================================================== #
-#     [answer,T]      =   CheckBreakCriteria(it,T,D,M,Pl,ID,Py);
-#     switch answer
-#         case 'yes'
-#             break
-#     end
-        if Time[it] >= T.tmax[1]
-            break
+        # If the maximum time is reached or if the models reaches steady, 
+        # state the time loop is stoped! 
+        if Time[it]/1e6/T.year > 50     # [ Ma ]
+            epsC    =   1e-16; 
+            ind     =   findfirst(Time./1e6/T.year .> 
+                            (Time[it]/1e6/T.year - 50))
+            epsV    =   std(meanV[ind:it])
+            # @show epsV1, epsV
+            if save_fig == 1
+                @show it,log10((epsV))
+                plot!(k,(Time[it]/1e6/T.year,log10((epsV))),
+                    xlabel="it",ylabel="log₁₀(εᵥ)",label="",
+                    markershape=:circle,markercolor=:black)
+            end
+            find    =   it
+            @printf("ε_V = %g, ε_C = %g \n",epsV,epsC)
+            if Time[it] >= T.tmax[1]
+                @printf("Maximum time reached!\n")
+                find    =   it
+                break
+            elseif (epsV <= epsC)
+                @printf("Convection reaches steady state!\n")
+                find    =   it
+                break
+            end
         end
         # --------------------------------------------------------------- #
         @printf("\n")
     end
-if save_fig == 1
-    # Write the frames to a GIF file
-    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-    foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
-end
-# Save final figure ===================================================== #
-p2 = heatmap(x.c./1e3,y.c./1e3,D.T',
-        xlabel="x[km]",ylabel="y[km]",colorbar=true,
-        title="Temperature",color=cgrad(:lajolla),
-        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-        ylims=(M.ymin/1e3, M.ymax/1e3),
-        layout=(2,1),subplot=1)
-    quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-                    D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-            la=0.5,color="white",
-            layout=(2,1),subplot=1)
-    heatmap!(p2,x.c./1e3,y.c./1e3,D.ρ',color=:glasgow,
+    if save_fig == 1
+        # Write the frames to a GIF file
+        Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+        foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+    end
+    # Save final figure ===================================================== #
+    p2 = heatmap(x.c./1e3,y.c./1e3,D.T',
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Density",
-            xlims=(M.xmin/1e3, M.xmax/1e3), 
+            title="Temperature",color=cgrad(:lajolla),
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
             ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,1),subplot=2)
-if save_fig == 1
-    savefig(p2,string("./exercises/Correction/Results/11_ThermalConvection_Final_Stage",
-                        Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,".png"))
-else
-    display(p2)
-end
-# ----------------------------------------------------------------------- #
-# Plot time serieses ==================================================== #
-# PlotTimeSerieses(Py,T,D,M,N)
-q2  =   plot(Time./1e6/T.year,Nus,
-                xlabel="Time [ Ma ]", ylabel="Nus",
-                layout=(2,1),suplot=1)
-plot!(q2,Time./1e6/T.year,meanV,
-            xlabel="Time [ Ma ]", ylabel="Nus",
-            layout=(2,1),subplot=2)
-if save_fig == 1
-    savefig(q2,string("./exercises/Correction/Results/11_TimeSeries",
-                        Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,".png"))
-else
-    display(q2)
-end
+            layout=(2,1),subplot=1)
+        quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+                        D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
+                la=0.5,color="white",
+                layout=(2,1),subplot=1)
+        heatmap!(p2,x.c./1e3,y.c./1e3,D.vc',color=:imola,
+                xlabel="x[km]",ylabel="y[km]",colorbar=true,
+                title="Velocity",aspect_ratio=:equal,
+                xlims=(M.xmin/1e3, M.xmax/1e3), 
+                ylims=(M.ymin/1e3, M.ymax/1e3),
+                layout=(2,1),subplot=2)
+    if save_fig == 1
+        savefig(k,string("./exercises/Correction/Results/11_ThermalConvection_iterations_",P.Ra[1],
+            "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
+        savefig(p2,string("./exercises/Correction/Results/11_ThermalConvection_",P.Ra[1],
+            "_Final_Stage_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
+    else
+        display(p2)
+    end
+    # ----------------------------------------------------------------------- #
+    # Plot time serieses ==================================================== #
+    q2  =   plot(Time[1:find]./1e6/T.year,Nus[1:find],
+                    xlabel="Time [ Ma ]", ylabel="Nus",label="",
+                    layout=(2,1),suplot=1)
+    plot!(q2,Time[1:find]./1e6/T.year,meanV[1:find],
+                xlabel="Time [ Ma ]", ylabel="V_{RMS}",label="",
+                layout=(2,1),subplot=2)
+    if save_fig == 1
+        savefig(q2,string("./exercises/Correction/Results/11_TimeSeries_",P.Ra[1],"_",
+                            Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
+    else
+        display(q2)
+    end
 # ======================================================================= #
 end
 

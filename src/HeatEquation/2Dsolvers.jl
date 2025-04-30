@@ -123,7 +123,6 @@ b   =   κ / Δy^2
 c   =   1 / Δt
 # temp    =   copy(rhs)
 # Multiply rhs with 1/Δt and add Q/ρ/cp ---    
-# rhs  .= reshape(D.T,NC.x*NC.y).*c .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ 
             reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
 
@@ -241,7 +240,6 @@ for i = 1:NC.x
 end
 # ------------------------------------------------------------------- #
 # Berechnung der rechten Seite -------------------------------------- #
-# rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ reshape(D.Q,NC.x*NC.y)./ρ./cp
 rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ 
                 reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
 # ------------------------------------------------------------------- #        
@@ -432,8 +430,6 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Update rhs to T^{n+1/2} --- 
     rhs  .=   D * reshape(T.T,(NC.y*NC.x,1)) .+ 
                     reshape(T.Q,(NC.y*NC.x,1))./reshape(ρ,(NC.y*NC.x,1))./cp
-    # rhs  .=   D * temp .+ 
-    #                 reshape(T.Q,(NC.y*NC.x,1))./reshape(ρ,(NC.y*NC.x,1))./cp
     
     # Update rhs from the boundary conditions ---
     for j = 1:NC.y

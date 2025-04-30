@@ -65,7 +65,7 @@ For each equation, one can define a so-called numerical stencil which highlights
 
 ### Stencil
 
-The stencils for the *momentum equation* assuming a constant viscosity show the points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
+The stencils for the *momentum equation* assuming a constant viscosity show the grid points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 2). 
 
 ![StencilConstEta](../assets/Stencil_const_eta.png)
 
@@ -133,7 +133,7 @@ The most common boundary conditions for the *momentum equation* are a combinatio
 
 **Free slip** 
 
-*Free slip* boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity** along the boundary. That is for the lateral boundaries **(East, West)** the conditions are: 
+*Free slip* boundary conditions allow the fluid to move along the boundary assuming **no shear stress** and **no orthogonal velocity** along the boundary. That is, for the lateral boundaries **(East, West)** the conditions are: 
 
 $\begin{equation}
 \begin{split}
@@ -375,7 +375,7 @@ where $\eta_c$ is the viscosity at the *centroids* and $\eta_v$ the viscosity at
 
 ### Stencil
 
-The stencils for the *momentum equation* assuming a variable viscosity show the points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 3).
+The stencils for the *momentum equation* assuming a variable viscosity show the grid points (parameter) required to solve the equations for each component of the *momentum equation* using the finite difference approach (Figure 3).
 
 ![Stencil_vary_eta](../assets/Stencil_vary_eta.png)
 
@@ -617,7 +617,7 @@ $\begin{equation}
 
 To solve the linear system of equations, one needs to collect the coefficients for the coefficient matrix $\bold{K}$ and set up the righ-hand side $\overrightharpoon{rhs}$ (at least for the direct solution). 
 
-To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable grid point (or *node*), corresponding to one equation. Here, we first number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the *momentum equation* (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the *conservation of mass* (for the unknown $P$). 
+To set up the coefficient matrix $\bold{K}$, one needs to use a consecutive numbering for each unknown variable grid point, corresponding to one equation. Here, we first number the equations of each corresponding central reference point $(i,j)$ for the *$x$-component* of the *momentum equation* (that is for the unknown $v_x$), followed by its *$y$-component* (the unknown $v_y$), and at last the equations of the *conservation of mass* (for the unknown $P$). 
 
 The numbering for each equation is then defined as: 
 
@@ -641,7 +641,7 @@ ii_p = \left(nv_x \cdot nc_y + nc_x \cdot nv_y + 1\right)\ \textrm{--}\ \left(nv
 
 where $nc_i$ and $nv_i$ are the numbers of *centroids* and *vertices* in the $i$-th direction, respectively. 
 
-Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation. The coefficients $K[ii_j,i_k]$ for the points of the unknown variables in the numerical stencils (Fig. 2-4) are located in the corresponding columns $i_k$ of each line (relative to the central point $\left[ii_j,i_c\right]$). The numbering of the coefficients remains the same independent of the state of the viscosity, however, if the viscosity is variable additional coefficients for the *momentum equation* are added to the matrix: 
+Each *line* $(ii)$ of the coefficient matrix $\bold{K}$ belongs to an equation. The coefficients $K[ii_j,i_k]$ for the grid points of the unknown variables in the numerical stencils (Fig. 2-4) are located in the corresponding columns $i_k$ of each line (relative to the central point $\left[ii_j,i_c\right]$). The numbering of the coefficients remains the same independent of the state of the viscosity, however, if the viscosity is variable additional coefficients for the *momentum equation* are added to the matrix.
 
 *Constant Viscosity*
 
@@ -729,7 +729,7 @@ $\begin{equation}
 
 ### Defect Correction
 
-The defect correction method is very helpful, in case the system is non-linear. First, one needs to calculate the residual for each equation, where the unknowns are given by an initial guess (usually all equal to zero): 
+The defect correction method is very helpful, in case the system is non-linear. First, one needs to calculate the residual for each equation, where the unknowns are given by an initial guess (usually all equal to zero and the boundary conditions): 
 
 *Residual calculation* 
 
@@ -755,7 +755,7 @@ $\begin{equation}
 \delta=- \bold{K} \backslash R.
 \end{equation}$
 
-$\delta$ is a vector with the dimensions $\left(nv_x \cdot nc_y + nc_x \cdot nv_y + nc_x \cdot nc_y\right)$, that is for the total number of equations of all unknowns $\left(v_x, v_y, P\right)$. Finally one needs to update the inital guess by the correction term: 
+$\delta$ is a vector with the dimensions $\left(nv_x \cdot nc_y + nc_x \cdot nv_y + nc_x \cdot nc_y\right)$, that is the total number of equations of all unknowns $\left(v_x, v_y, P\right)$. Finally one needs to update the inital guess by the correction term: 
 
 $\begin{equation}\begin{split}
 v_x & = v_{x,i} + \delta{v_x}, \\
