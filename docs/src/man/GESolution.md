@@ -4,13 +4,13 @@ Ordinary and partial differential equations (ODEs and PDEs) can be solved throug
 
 The ```GeoModBox.jl``` framework primarily employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
-In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below<sup>[1](#fn1)</sup>.
+In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below[^1].
 
 ## Staggered Finite Difference
 
 To solve differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
 
-However, in many cases, certain limitations or physical constraints require a different arrangement of variable locations to ensure numerical stability and the conservation of physical properties. For instance, solving the *momentum equation* with **variable viscosity** typically requires a *fully staggered grid* to correctly preserve stress continuity across adjacent grid points<sup>[2](#fn1)</sup>. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
+However, in many cases, certain limitations or physical constraints require a different arrangement of variable locations to ensure numerical stability and the conservation of physical properties. For instance, solving the *momentum equation* with **variable viscosity** typically requires a *fully staggered grid* to correctly preserve stress continuity across adjacent grid points[^2]. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
 
 Staggered grids also offer advantages in implementing boundary conditions. For example, with *Neumann* thermal boundary conditions, the heat flux across a boundary can be naturally evaluated at staggered points using so-called *ghost points*. These ghost points can also be employed to impose *Dirichlet* boundary conditions. This approach helps maintain consistent accuracy and order of the finite difference scheme both at internal and boundary points. 
 
@@ -176,6 +176,6 @@ For an implementation example, see the [thermal convection examples](https://git
 
 # References
 
-<a name="fn1">[1]</a> Smith, G. D. *Numerical Solution of Partial Differential Equations: Finite Difference Methods*. Oxford University Press, 1985.
+[^1]: Smith, G. D. *Numerical Solution of Partial Differential Equations: Finite Difference Methods*. Oxford University Press, 1985.
 
-<a name=fn1>[2]</a> Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+[^2] Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
