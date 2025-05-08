@@ -15,28 +15,6 @@ module GeoModBox
             export ComputeResiduals2D!, AssembleMatrix2D, BackwardEuler2Dc!, 
                 ForwardEuler2Dc!, CNA2Dc!, ADI2Dc!,
                 Poisson2Dc!, Poisson2D!
-
-            # # Implicit solver ---
-            # include("./HeatEquation/BackwardEuler.jl")
-            # export ComputeResiduals2D!, AssembleMatrix2D, 
-            #         BackwardEuler2Dc!
-
-            # # Poisson solver ---
-            # include("./HeatEquation/PoissonSolvers.jl")
-            # export Poisson2Dc!, Poisson2D!
-
-            # # Explicit solver ---
-            # include("./HeatEquation/ForwardEuler.jl")
-            # export ForwardEuler2Dc!
-
-            # # Cranck-Nicolson Approach ---
-            # include("./HeatEquation/CNA.jl")
-            # export CNA2Dc! 
-
-            # # Alternate Direct Implicit Method ---
-            # include("./HeatEquation/ADI.jl")
-            # export ADI2Dc!
-
         end
 
         module OneD

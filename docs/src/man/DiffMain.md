@@ -1,76 +1,97 @@
 # Energy Conservation Equation
 
-The conservation of energy is a fundamental principle in physics and defines that the loss and generation of energy needs to be equal within a closed system. In terms of a geodynamical problem, energy is described by temperature, which is transported mainly through *conductive* and *convective* processes, such that a general energy equation is defined as followed (assuming only radioactive heat sources):
+The conservation of energy is a fundamental physical principle, stating that energy cannot be created or destroyed—only transformed. In geodynamical modeling, this is commonly expressed in terms of **temperature**, which is transported through **conductive** and **convective** processes. Assuming only radioactive heat sources, the general energy equation is defined as:
 
 $\begin{equation}
 \left(\frac{\partial E}{\partial t} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla} E\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
 \end{equation}$
 
-where the energy is described as $E=c_{p} \rho T$, and $c_{p}$ is the specific heat capacity [ $J/kg/K$ ], $\rho$ is a reference density [ $kg/m^{3}$ ], $T$ is the temperature [ $K$ ], $t$ is the time [ $s$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $q_{i}$  is the heat flux [ $W/m^{2}$ ] in direction of $i$, $\frac{\partial}{\partial{x_i}}$ is a directional derivative in direction of $i$, and $H$ the heat production rate per mass [ $W/kg$ ]. The repeated index means a summation of derivatives. This conservation law contains the variation of the heat flux in a certain direction, where the heat flux is defined by the Fourier’s law as followed: 
+where energy is defined as $E = c_p \rho T$. Here:
+- $c_p$ is the specific heat capacity [J/kg/K],
+- $\rho$ is the density [kg/m³],
+- $T$ is temperature [K],
+- $t$ is time [s],
+- $\overrightharpoon{v}$ is the velocity vector [m/s],
+- $q_i$ is the heat flux [W/m²] in direction $i$,
+- $\partial/\partial x_i$ is a directional derivative in $i$,
+- $H$ is the internal heat production per unit mass [W/kg].
+
+Repeated indices imply summation.
+
+The heat flux $\overrightharpoon{q}$ is described by **Fourier’s law**:
 
 $\begin{equation}
 \overrightharpoon{q} = - k \overrightharpoon{\nabla} T,
 \end{equation}$
 
-where $k$ is the thermal conductivity [ $W/m/K$ ]. The heat flux is the amount of heat that passes through a unit surface area, per unit time and is positive in the direction of decreasing temperature, that is in the case when the temperature gradient is negative. The *temperature conservation equation*, or *temperature equation*, in an Eulerian form can then be written as: 
+where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to the temperature gradient and represents the amount of heat passing through a unit surface per unit time.
+
+Substituting into the energy equation, the **temperature conservation equation** in Eulerian form becomes: 
 
 $\begin{equation}
 \rho c_p \left(\frac{\partial T}{\partial t} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla} T\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
 \end{equation}$
 
-This form of the *temperature equation* describes the variation of temperature due to a *conductive* (right-hand side of the equation) and *convective* (left-hand side of the equation) process. For a matter of simplicity, one can consider those terms in a separate manner and solve the *temperature equation* using an *operator splitting* method, that is one first solves the *convective* part, followed by the *conductive* part.
+This equation captures temperature changes due to **conduction** (right-hand side) and **advection** (left-hand side). For simplicity, these processes can be split using an *operator splitting* technique, solving the advection and conduction steps sequentially.
 
 ## Heat Diffusion Equation
 
-The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to solve the *diffusive part* of the time-dependent or steady-state *temperature equation* including radioactive heating, in [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). The solvers include: 
+```GeoModBox.jl``` includes various finite difference (FD) schemes to solve the **diffusive** component of the time-dependent or steady-state temperature equation (with optional radioactive heating) in [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
 
-- forward Euler, 
-- backward Euler, 
-- Crank-Nicholson approach, and 
-- Alternating-Direction Implicit (ADI).
+- Forward Euler  
+- Backward Euler  
+- Crank–Nicolson  
+- Alternating Direction Implicit (ADI)
 
-For more details regarding each FD-scheme see the documentation of the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers, respectively. 
+See the documentation for [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
 
-Currently, only *Dirichlet* and *Neumann* thermal boundary conditions are available and most functions assume constant thermal parameters (except for the 1-D and some 2-D solvers). For more details on the implementation of the solvers see the [src/HeatEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) directory. 
+Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, with exceptions in some 1-D and 2-D solvers. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
-The examples of solving the *heat diffusion equation* include, amongst others: 
-- the determination of an [oceanic](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) and [continental](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl) 1-D geotherm, 
-- [a comparison of the different **FD**-schemes applied on a 1-D gaussian temperature anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl), 
-- [a resolution test for each **FD**-scheme using a 2-D gaussian temperature anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl), and
-- [a resolution test for a 2-D poisson problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_ResTest.jl). 
+**Example applications include:**
 
-For detailed information and explenations of the examples see the [documentation](./Examples.md) and for additional examples see the [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
+- [1-D oceanic geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl)  
+- [1-D continental geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl)  
+- [Comparison of FD schemes on a Gaussian anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl)  
+- [2-D resolution test with Gaussian anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)  
+- [2-D Poisson equation resolution test](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_ResTest.jl)
 
-The [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/) include
-- [the forward](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/02_1D_Heat_explicit.ipynb) and [backward](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit.ipynb) Euler method to solve the 1-D diffusion equation, 
-- [a 2-D poisson problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary.ipynb), and
-- a time-dependent temperature distribution within the lithosphere assuming a [plume](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Plume.ipynb) or [sill](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Sill.ipynb).
+For explanations, see the [examples documentation](./Examples.md) and the full [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
+
+**Exercises include:**
+
+- [1-D forward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/02_1D_Heat_explicit.ipynb)  
+- [1-D backward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit.ipynb)  
+- [2-D Poisson equation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary.ipynb)  
+- [2-D transient plume heating](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Plume.ipynb)  
+- [2-D transient sill heating](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Sill.ipynb)
 
 ## Heat Advection Equation
 
-To solve the *advective part* of the *temperature equation*, the ```GeoModBox.jl``` provides the following different methods: 
+To solve the **advective** component of the temperature equation, `GeoModBox.jl` offers several schemes:
 
-- the upwind scheme,
-- the staggered-leaped frog scheme, 
-- the semi-lagrangian advection scheme, and
-- passive tracers/markers. 
+- Upwind scheme  
+- Staggered leapfrog scheme  
+- Semi-Lagrangian scheme  
+- Passive tracers/markers
 
-For more details regarding each advection scheme see the [documentation](./AdvectMain.md). 
+See the [advection documentation](./AdvectMain.md) for method-specific details.
 
-The routines are structured in such a way, that any property can be advected with the first **three** advection schemes listed above, as long as the property is defined on the *centroids* including *ghost nodes* on all boundaries. The velocity to advect the property also needs to be defined at the *centroids*. 
+The first three schemes work for any scalar field defined at **centroids**, including ghost nodes, and use centroid-defined velocity fields.
 
-Using passive tracers, one can, so far, choose to either advect the (absolute) temperature or the phase ID. In case of advecting the phase ID, one must define a certain rheology ($\eta$) and/or density ($\rho$) associated to each phase. The phase ID is used to interpolate the corresponding property from the tracers to the *centroids* or the *vertices* (e.g., in the case of the viscosity). The tracers can be initialized with a certain random perturbation for their initial position and are advected using Runge-Kutta 4th order. For the tracer advection one can use the staggered velocity grid. 
+**Passive tracers** can be used to advect temperature or phase IDs. When using phase IDs, the tracer data must include rheological and/or density parameters. These values are interpolated to either centroids or vertices, depending on the property (e.g., viscosity at vertices). Tracers are advected using a fourth-order Runge–Kutta method, with velocities from a staggered grid.
 
-For more details on the implementation of the tracer advection see the [solvers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) or the [documentaion](./AdvectMain.md). The solvers for the tracer advection method are located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), where the remaining advection routines are located in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/). 
+See the tracer [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) and [documentation](./AdvectMain.md). Tracer code resides in [`src/Tracers`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [`src/AdvectionEquation`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
-A key aspect for advection is the **amplitude** and the **shape** of the advected property (in case there is a gradient or sharp boundary). For example, in case of a rigid body rotation, none of them should change. Depending on the method, however, numerical diffusion or interpolation effects can lead to strong deviations. Thus, care needs to be taken with respect to solving the *advection equation*. 
+A key aspect of advection is the **preservation of amplitude and shape**, especially in cases like rigid body rotation. Numerical diffusion or interpolation can introduce significant artifacts depending on the scheme used, so method choice is critical.
 
-The examples for a two dimensional advection problem include:
-- [a 2-D advection, assuming a constant velocity field (e.g., a rigid body rotation)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl), and
-- [a resolution test of the same advection example](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl). 
+**Advection examples:**
 
-For detailed information and explenations of the examples see the [documentation](./Examples.md).
+- [2-D advection with constant velocity field](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)  
+- [Resolution test of 2-D advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 
-The exercises include a
-- [1-D advection of a gaussian or block anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb), and
-- [a 2-D advection coupled with the solution of the diffusion equation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb).
+See the [examples documentation](./Examples.md) for further details.
+
+**Advection exercises include:**
+
+- [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
+- [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
