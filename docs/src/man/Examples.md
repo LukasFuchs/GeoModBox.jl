@@ -65,6 +65,12 @@ where $nv$ is the number of vertices.
 
 ## Advection Equation
 
+### [2D Advection of an anomaly](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)
+-> ...
+
+### [Resolution test of the 2-D advection](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
+-> ...
+
 ## Momentum Equation
 
 ### [Channel Flow](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)
@@ -108,3 +114,9 @@ $v_{x,ana} = -\frac{\partial P}{\partial x} \frac{H}{\eta_0 log(m)} (\frac{m^{-\
 
 ### [FallingBlockVarEta_DC()](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl)
 -> A sript, solving the falling block problem assuming a variable viscosity and using the defect correction method. The advection is only provided with tracers
+
+### [RTI](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/RTI.jl)
+-> To be added (*tba*)
+
+### [Viscous Inclusion](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)
+
