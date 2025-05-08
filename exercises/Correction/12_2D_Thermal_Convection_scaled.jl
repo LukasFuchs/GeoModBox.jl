@@ -281,6 +281,14 @@ elseif FD.Method.Diff==:dc
     q           =   (x=zeros(NC.x+1, NC.y), y=zeros(NC.x, NC.y+1))
 end
 # ------------------------------------------------------------------- #
+# Scaling =========================================================== # 
+# Scaling constants ---
+hsc     =   (M.ymax-M.ymin)             #   Length scale [ m ]
+tsc     =   hsc^2 / P.κ                 #   Time scale [ s ]
+vsc     =   P.κ / hsc                   #   Velocity scale [ m/s ]
+τsc     =   (P.η₀[1] * P.κ)/hsc         #   Stress scale [ Pa ]
+Tsc     =   P.ΔT                        #   Temperature scale [ K ]
+Qsc     =   (P.ΔT*P.κ*P.ρ₀*P.cp)/hsc^2  #   Heat source scale [ w/m³ ]
 # Time Loop ========================================================= #
 for it = 1:T.itmax
     χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector ME
