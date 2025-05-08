@@ -15,8 +15,8 @@ makedocs(
         "Home" => "index.md",
         "Governing Equation" => Any[
             "Solution" => Any[
-               "General" => "man/GESolution.md",
-            #   "Initial Condition" => "man/Ini.md",
+                "General" => "man/GESolution.md",
+            #    "Initial Condition" => "man/Ini.md",
             ],
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md",
