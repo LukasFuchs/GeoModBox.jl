@@ -4,7 +4,7 @@ Ordinary and partial differential equations (ODEs and PDEs) can be solved throug
 
 The ```GeoModBox.jl``` framework primarily employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
-In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below [^1].
+In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below[^1].
 
 ## Staggered Finite Difference
 
@@ -179,3 +179,4 @@ For an implementation example, see the [thermal convection examples](https://git
 [^1]: Smith, G. D. *Numerical Solution of Partial Differential Equations: Finite Difference Methods*. Oxford University Press, 1985.
 
 [^2]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+
