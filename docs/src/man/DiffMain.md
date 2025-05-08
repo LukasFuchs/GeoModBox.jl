@@ -7,14 +7,15 @@ $\begin{equation}
 \end{equation}$
 
 where energy is defined as $E = c_p \rho T$. Here:
-- $c_p$ is the specific heat capacity [J/kg/K],
-- $\rho$ is the density [kg/m³],
-- $T$ is temperature [K],
-- $t$ is time [s],
-- $\overrightharpoon{v}$ is the velocity vector [m/s],
-- $q_i$ is the heat flux [W/m²] in direction $i$,
-- $\partial/\partial x_i$ is a directional derivative in $i$,
-- $H$ is the internal heat production per unit mass [W/kg].
+
+$c_p$ is the specific heat capacity [J/kg/K],
+$\rho$ is the density [kg/m³],
+$T$ is temperature [K],
+$t$ is time [s],
+$\overrightharpoon{v}$ is the velocity vector [m/s],
+$q_i$ is the heat flux [W/m²] in direction $i$,
+$\partial/\partial x_i$ is a directional derivative in $i$,
+$H$ is the internal heat production per unit mass [W/kg].
 
 Repeated indices imply summation.
 
