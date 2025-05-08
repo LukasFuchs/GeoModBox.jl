@@ -23,7 +23,7 @@ where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2/s$ ] and $Q=\rho 
 First, let's discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the **forward in time and centered in space (FTCS)** method in an **explicit** manner. This finite difference scheme will converge to the exact solution for small $\Delta{x}$ and $\Delta{t}$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
 
 $\begin{equation}
-\Delta t < \frac{\Delta x^2}{2 \kappa}.
+\Delta t < \frac{\Delta{x^2}}{2 \kappa}.
 \end{equation}$ 
 
 Thus, the maximum time step is limited by the model’s resolution. 
@@ -44,13 +44,13 @@ $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n} }{\Delta t} = \kappa \frac{T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n}}{\Delta{x^2}} + \frac{Q_{i}^n}{\rho c_p},
 \end{equation}$ 
 
-where $i$ is the horizontal index of the numerical finite difference grid, $n$ is the time step index, $\Delta{t}$ is the time step, and $\Delta{x}$ the width of the grid in horizontal direction. Equation $(5)$ contains know and unknow parameters and one can rearrange them to solve the equation for the unknowns as:
+where $i$ is the horizontal index of the numerical finite difference grid, $n$ is the time step index, $\Delta{t}$ is the time step, and $\Delta{x}$ the width of the grid in horizontal direction. Equation $(5)$ contains known and unknown parameters and one can rearrange them to solve the equation for the unknowns as:
 
 $\begin{equation}
 T_{i}^{n+1} = T_{i}^{n} + a \left(T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n} \right) + \frac{Q_{i}^n \Delta t}{\rho c_p}, 
 \end{equation}$
 
-where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved, for example in a loop, for every *centroid* assuming initial and boundary coniditions are defined. For more details on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+where $a = \frac{\kappa \Delta t}{\Delta{x^2}}$. Equation $(6)$ can be solved, for example in a loop, for every *centroid* assuming initial and boundary conditions are defined. For more details on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
 #### Boundary Conditions 
 
@@ -97,7 +97,7 @@ Within the example code [Heat_1D_discretization.jl](https://github.com/GeoSci-FF
 The fully implicit finite difference scheme is unconditionally stable and one can use time steps larger than the diffusion stability criterion. In 1-D, the *temperature equation* is then given as: 
 
 $\begin{equation}
-\frac{T_{i}^{n+1}-T_{i}^n}{\Delta t} = \kappa \frac{T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1}}{\Delta x^2} + \frac{Q_{i}^n}{\rho c_p},
+\frac{T_{i}^{n+1}-T_{i}^n}{\Delta t} = \kappa \frac{T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1}}{\Delta{x^2}} + \frac{Q_{i}^n}{\rho c_p},
 \end{equation}$
 
 where $n$ is the current and $n+1$ the next time step, $\Delta{t}$ is the time step length, $\Delta{x}$ is the horizontal grid spacing, and $i$ is the horizontal index, respectively. Rearranging equation $(12)$ into known and unknown variables, one obtains a linear system of equations in the form of: 
@@ -112,7 +112,7 @@ The main advantage of the implicit method is that there are no restrictions on t
 
 #### Boundary Conditions
 
-The temperature at the *ghost nodes* to solve the equations on the *centroids* adjacent to the boundary are defined as before (equations $(7)-(10)$ ). To obtain a symmetric coefficient matrix to solve the linear system of euqations, however, one needs to modify the coefficients for the *centroids* adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
+The temperature at the *ghost nodes* to solve the equations on the *centroids* adjacent to the boundary are defined as before (equations $(7)-(10)$ ). To obtain a symmetric coefficient matrix to solve the linear system of equations, however, one needs to modify the coefficients for the *centroids* adjacent to the boundary **and** the corresponding right-hand side, such that the equations are defined as:  
 
 **Dirichlet**
 
@@ -154,7 +154,7 @@ $\begin{equation}
 \boldsymbol{K} \cdot T - b = R, 
 \end{equation}$
 
-where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is a term containing the remaining variables (e.g., the current temperature and the radioactive heat source), and $R$ is the resiual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
+where $\boldsymbol{K}$ is the coefficient matrix, $T$ is the temperature at the new time step, $b$ is a term containing the remaining variables (e.g., the current temperature and the radioactive heat source), and $R$ is the residual. Assuming an initial temperature guess $T_i$, the initial residual $R_i$ is given by: 
 
 $\begin{equation}
 R_i = \boldsymbol{K} \cdot T_i - b.
@@ -207,7 +207,7 @@ Similar to the implicit *FTCS* method, one needs to adjust the coefficients for 
 The fully implicit *FTCS* method works well, but is only first order accurate in time. A way to modify this is to employ a Crank-Nicolson time step discretization, which is implicit and, thus, second order accurate in time. In 1-D, equation $(5)$ is then described as: 
 
 $\begin{equation}
-\frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta x^2}. 
+\frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta{x^2}}. 
 \end{equation}$
 
 Rearranging the parameters in knowns and unknows results in a linear system of equations as followed: 
@@ -248,9 +248,11 @@ $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
 \end{equation}$
 
-However, the band-width of the coefficient matrix increases as in the fully implicit case. Thus, the method becomes memory intensiv for models with a high resoltuion. For more details on how this is implemented, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+The coefficient matrix remains tridiagonal, but memory demands increase due to larger system sizes in high-resolution models. Thus, the method becomes memory intensive for models with a high resoltuion. For more details on how this is implemented, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
-For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature at the *centroids* to the known righ-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature at the new time step.
+For the explicit solver and the defect correction method, one needs the extended temperature field, which includes the *ghost nodes*, to solve the *temperature equation*. Thereby, the current temperature field is assigned to the *centroids* of the extended field to use it as the *old* temperature and to calculate the temperature at the new time step. For the remaining solvers, we assign the current temperature at the *centroids* to the known right-hand side vector, collect the coefficients for each matrix and solve for the unknown temperature at the new time step.
+
+In summary, while the explicit FTCS scheme is simple and efficient for small time steps, implicit schemes such as Backward Euler and Crank-Nicolson offer improved stability, with Crank-Nicolson also providing second-order accuracy in time. The defect correction method allows for iterative refinement and is especially advantageous for non-linear extensions of the problem.
 
 ### Variable Thermal Parameters 
 
@@ -297,4 +299,4 @@ a = \frac{\Delta{t}}{\Delta{y^2} \rho c_{p_{j}}}.
 \end{equation}$
 
 
-For the *centroids* adjacent to the boundaries one needs to use the *ghost nodes* and their correspondingly calculated temperatures, depending on the choosen thermal boundary condition (see equations $(7)-(10)$).
+For the *centroids* adjacent to the boundaries one needs to use the *ghost nodes* and their correspondingly calculated temperatures, depending on the chosen thermal boundary condition (see equations $(7)-(10)$).
