@@ -178,4 +178,5 @@ For an implementation example, see the [thermal convection examples](https://git
 
 [^1]: Smith, G. D. *Numerical Solution of Partial Differential Equations: Finite Difference Methods*. Oxford University Press, 1985.
 
-[^2] Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+[^2]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+
