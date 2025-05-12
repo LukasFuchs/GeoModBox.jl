@@ -1,3 +1,15 @@
 # Initial Conditions
 
 The ```GeoModBox.jl``` contains several [routines](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/InitialCondition/2Dini.jl) to setup a certain initial anomaly, either for properties defined on their correspondig grid (i.e., temperature, velocity, or phase) or for tracers. Within the examples and the exercise one can choose different initial temperature and velocity conditions.  
+
+## Initialize Grid Points
+
+### Initial Temperature
+
+### Initial Velocity
+
+### Initial ?Phase?
+
+## Initialize Tracers
+
+### Initial Phase
