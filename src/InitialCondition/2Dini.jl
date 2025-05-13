@@ -1,7 +1,7 @@
 using Base.Threads 
 
 @doc raw""" 
-    IniTemperature!(type,M,NC,Δ,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
+    IniTemperature!(type,M,NC,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
 
 Function to setup an initial temperature condition for a two dimensional 
 problem. The temperature is defined on the centroids of a regular finite 
@@ -25,16 +25,16 @@ Possible initial temperature conditions are:
     2) Gaussian anomaly
     3) Block anomaly
 """
-@views function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
+@views function IniTemperature!(type,M,NC,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
     if type==:circle 
         # Circle shaped anomaly ---
         # Bereich der Anomalie ---       
         ri          =   .2
-        xc          =   (M.xmin[1]+M.xmax[1])/4
-        yc          =   (M.ymin[1]+M.ymax[1])/2
+        xc          =   (M.xmin+M.xmax)/4
+        yc          =   (M.ymin+M.ymax)/2
         α           =   0.0
-        a_ell       =   .2*(M.ymin[1]+M.ymax[1])
-        b_ell       =   .2*(M.ymin[1]+M.ymax[1])
+        a_ell       =   .2*(M.ymin+M.ymax)
+        b_ell       =   .2*(M.ymin+M.ymax)
         @threads for i = 1:NC.x+2 
             for j = 1:NC.y+2
                 x_ell   =  x.ce[i]*cosd(α) + y.ce[j]*sind(α)
@@ -52,20 +52,20 @@ Possible initial temperature conditions are:
         # AnalyticalSolution2D!(D.T, x.c, y.c, 0.0, (T0=Ampl,K=κ,σ=σ))
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
-                D.T_ex[i,j]    =   Tb + Ta*exp(-((x.ce[i]/((M.ymin[1]+M.ymax[1])) - 0.20)^2 + 
-                                    (y.ce[j]/((M.ymin[1]+M.ymax[1])) - 0.5)^2)/σ^2)
+                D.T_ex[i,j]    =   Tb + Ta*exp(-((x.ce[i]/((M.ymin+M.ymax)) - 0.20)^2 + 
+                                    (y.ce[j]/((M.ymin+M.ymax)) - 0.5)^2)/σ^2)
             end
         end        
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
-        xTl     =   M.xmin[1] + (M.xmax[1]-M.xmin[1])/8.0 # (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/4 - (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/10
-        xTr     =   xTl + (M.xmax[1]-M.xmin[1])/10.0 # (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/4 + (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/10
-        yTu     =   M.ymin[1] + (M.ymax[1]-M.ymin[1])/2.0 - (M.ymax[1]-M.ymin[1])/10.0  # (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/2 - (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/10
-        yTo     =   M.ymin[1] + (M.ymax[1]-M.ymin[1])/2.0 + (M.ymax[1]-M.ymin[1])/10.0 #(abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/2 + (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/10
-        # xTl     =   (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/4 - (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/10
-        # xTr     =   (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/4 + (abs(M.xmin[1]-Δ.x/2)+abs(M.xmax[1]+Δ.x/2))/10
-        # yTu     =   (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/2 - (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/10
-        # yTo     =   (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/2 + (abs(M.ymin[1]-Δ.y/2)+abs(M.ymax[1]+Δ.y/2))/10
+        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        xTr     =   xTl + (M.xmax-M.xmin)/10.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0  # (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 #(abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        # xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        # xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
+        # yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        # yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
         # Anfangstemperatur Verteilung ---
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -79,7 +79,7 @@ Possible initial temperature conditions are:
     elseif type==:linear
         Ttop    =   Ta
         Tbot    =   Tb
-        Tgrad   =   (Tbot-Ttop)/(M.ymax[1]-M.ymin[1])         # [ K/m ]
+        Tgrad   =   (Tbot-Ttop)/(M.ymax-M.ymin)         # [ K/m ]
         @show Tgrad
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -89,15 +89,15 @@ Possible initial temperature conditions are:
     elseif type==:lineara
         # Bereich der Anomalie ---       
         ri          =   .3
-        xc          =   (M.xmin[1]+M.xmax[1])/4
-        yc          =   (M.ymin[1]+M.ymax[1])/2
+        xc          =   (M.xmin+M.xmax)/4
+        yc          =   (M.ymin+M.ymax)/2
         α           =   0.0
-        a_ell       =   .6*(M.ymin[1]+M.ymax[1])
-        b_ell       =   .2*(M.ymin[1]+M.ymax[1])
+        a_ell       =   .6*(M.ymin+M.ymax)
+        b_ell       =   .2*(M.ymin+M.ymax)
         # Linear with a gaussian anomaly
         Ttop    =   Ta
         Tbot    =   Tb
-        Tgrad   =   (Tbot-Ttop)/(M.ymax[1]-M.ymin[1])         # [ K/m ]
+        Tgrad   =   (Tbot-Ttop)/(M.ymax-M.ymin)         # [ K/m ]
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
                 x_ell   =  x.ce[i]*cosd(α) + y.ce[j]*sind(α)
@@ -110,9 +110,9 @@ Possible initial temperature conditions are:
             end
         end
     end
-    D.Tmax[1]   =   maximum(D.T_ex)
-    D.Tmin[1]   =   minimum(D.T_ex)
-    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+    D.Tmax   =   maximum(D.T_ex)
+    D.Tmin   =   minimum(D.T_ex)
+    D.Tmean  =   (D.Tmax+D.Tmin)/2
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D
@@ -130,23 +130,23 @@ end
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
         @threads for i = 1:NV.x
             for j = 1:NV.y+1
-                D.vx[i,j]  =    ((y.ce[j]-(M.ymax[1]-M.ymin[1])/2))/(M.ymax[1]-M.ymin[1])
+                D.vx[i,j]  =    ((y.ce[j]-(M.ymax-M.ymin)/2))/(M.ymax-M.ymin)
             end
         end
         @threads for i = 1:NV.x+1
             for j = 1:NV.y
-                D.vy[i,j]  =   -((x.ce[i]-(M.xmax[1]-M.xmin[1])/2))/(M.ymax[1]-M.ymin[1])
+                D.vy[i,j]  =   -((x.ce[i]-(M.xmax-M.xmin)/2))/(M.ymax-M.ymin)
             end
         end
         
         Radx        =   zeros(size(D.vx))
         Rady        =   zeros(size(D.vy))
 
-        @. Radx     =   sqrt((x.vx2d-(M.xmax[1]-M.xmin[1])/2)^2 + (y.vx2d-(M.ymax[1]-M.ymin[1])/2)^2)
-        @. Rady     =   sqrt((x.vy2d-(M.xmax[1]-M.xmin[1])/2)^2 + (y.vy2d-(M.ymax[1]-M.ymin[1])/2)^2)
+        @. Radx     =   sqrt((x.vx2d-(M.xmax-M.xmin)/2)^2 + (y.vx2d-(M.ymax-M.ymin)/2)^2)
+        @. Rady     =   sqrt((x.vy2d-(M.xmax-M.xmin)/2)^2 + (y.vy2d-(M.ymax-M.ymin)/2)^2)
 
-        @. D.vx[Radx>(M.xmax[1]-M.xmin[1])/2-1*Δ.x]     =   0
-        @. D.vy[Rady>(M.xmax[1]-M.xmin[1])/2-1*Δ.x]     =   0
+        @. D.vx[Radx>(M.xmax-M.xmin)/2-1*Δ.x]     =   0
+        @. D.vy[Rady>(M.xmax-M.xmin)/2-1*Δ.x]     =   0
 
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
@@ -155,14 +155,14 @@ end
         # Convection Cell with a Shear Deformation --- (REF?!)
         @threads for i = 1:NV.x 
             for j = 1:NV.y+1
-                D.vx[i,j]   =   -sin(π*(x.v[i]/(M.xmax[1]-M.xmin[1])))*
-                                    cos(π*y.ce[j]/(M.ymax[1]-M.ymin[1]))
+                D.vx[i,j]   =   -sin(π*(x.v[i]/(M.xmax-M.xmin)))*
+                                    cos(π*y.ce[j]/(M.ymax-M.ymin))
             end
         end
         @threads for i = 1:NV.x+1 
             for j = 1:NV.y
-                D.vy[i,j]   =   cos(π*x.ce[i]/(M.xmax[1]-M.xmin[1]))*
-                                    sin(π*y.v[j]/(M.ymax[1]-M.ymin[1]))
+                D.vy[i,j]   =   cos(π*x.ce[i]/(M.xmax-M.xmin))*
+                                    sin(π*y.v[j]/(M.ymax-M.ymin))
             end
         end
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
@@ -178,10 +178,10 @@ end
 
     if type==:block
         # Bereich der Anomalie ---
-        xL      =   2/5 * (M.xmax[1]-M.xmin[1])
-        xR      =   3/5 * (M.xmax[1]-M.xmin[1])
-        yO      =   0.1 * (M.ymin[1]-M.ymax[1])
-        yU      =   0.3 * (M.ymin[1]-M.ymax[1])        
+        xL      =   2/5 * (M.xmax-M.xmin)
+        xR      =   3/5 * (M.xmax-M.xmin)
+        yO      =   0.1 * (M.ymin-M.ymax)
+        yU      =   0.3 * (M.ymin-M.ymax)        
         
         # Phase ---
         for i = 1:NC.x

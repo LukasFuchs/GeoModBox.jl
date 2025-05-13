@@ -1,6 +1,7 @@
-using Plots, ExtendableSparse
+using Plots, ExtendableSparse, GeoModBox
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
+using GeoModBox.Scaling
 # using GeoModBox.Tracers.TwoD
 # using Base.Threads
 using Statistics, LinearAlgebra
@@ -32,60 +33,45 @@ Ini         =   (T=:lineara,)
 # Plot Einstellungen ================================================ #
 Pl  =   (
     qinc        =   5,
-    qsc         =   1.0 # 2e2*(100*(60*60*24*365.15)),
+    qsc         =   1.0e-3
 )
 # Animationssettings ================================================ #
 k           =   scatter()
-path        =   string("./Results/")
+path        =   string("./exercises/Correction/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   0
+save_fig    =   1
 # ------------------------------------------------------------------- #
 # Modellgeometrie Konstanten ======================================== #
-M   =   (
-    xmin    =   [0.0],              #   [ m ] 
-    xmax    =   [8700e3],           #   [ m ]
-    ymin    =   [-2900e3],          #   [ m ]
-    ymax    =   [0.0],              #   [ m ]
+M   =   Geometry(
+    xmin    =   0.0,                #   [ m ] 
+    xmax    =   8700e3,             #   [ m ]
+    ymin    =   -2900e3,            #   [ m ]
+    ymax    =   0.0,                #   [ m ]
 )
 # ------------------------------------------------------------------- #
 # Referenzparameter ================================================= #
-P   =   (
-    g   =   9.81,                   #   Schwerebeschleunigung [m/s^2]
-    ρ₀  =   3300.0,                 #   Hintergunddichte [kg/m^3]
-    k   =   4.125,                  #   Thermische Leitfaehigkeit [ W/m/K ]
-    cp  =   1250.0,                 #   Heat capacity [ J/kg/K ]
-    α   =   2.0e-5,                 #   Thermischer Expnasionskoef. [ K^-1 ]
-    Q₀  =   [0.0],                  #   Waermeproduktionsrate pro Volumen [W/m^3]
-    η₀  =   [3.947725485e23],       #   Viskositaet [ Pa*s ] [1.778087025e21]
-)
-P1  =   (
-    κ       =   P.k/P.ρ₀/P.cp,      # 	Thermische Diffusivitaet [ m^2/s ]
+P   =   Physics(
+    g       =   9.81,               #   Schwerebeschleunigung [m/s^2]
+    ρ₀      =   3300.0,             #   Hintergunddichte [kg/m^3]
+    k       =   4.125,              #   Thermische Leitfaehigkeit [ W/m/K ]
+    cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
+    α       =   2.0e-5,             #   Thermischer Expnasionskoef. [ K^-1 ]
+    Q₀      =   0.0,                #   Waermeproduktionsrate pro Volumen [W/m^3]
+    η₀      =   3.947725485e23,     #   Viskositaet [ Pa*s ] [1.778087025e21]
     ΔT      =   2500.0,             #   Temperaturdifferenz
     # Falls Ra < 0 gesetzt ist, dann wird Ra aus den obigen Parametern
     # berechnet. Falls Ra gegeben ist, dann wird die Referenzviskositaet so
     # angepasst, dass die Skalierungsparameter die gegebene Rayleigh-Zahl
     # ergeben.
-    Ra      =   [1.0e4],       #   Rayleigh number
+    Ra      =   1.0e5,              #   Rayleigh number
+    Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
-P2  =   (
-    Ttop    =   [273.15],           #   Temperatur an der Oberfläche [ K ]
-    Tbot    =   [273.15 + P1.ΔT],   #   Temperatur an der Unterseite [ K ]
-)
-P   =   merge(P,P1,P2)
-filename    =   string("11_ThermalConvection_",P.Ra[1],
+filename    =   string("12_ThermalConvection_Scaled_",P.Ra,
                         "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,
                         "_",FD.Method.Mom)
 # ------------------------------------------------------------------- #
 # Scaling =========================================================== # 
-# Scaling constants ---
-S   =   (
-    hsc =   (M.ymax[1]-M.ymin[1]),                          #   Length scale [ m ]
-    tsc =   (M.ymax[1]-M.ymin[1])^2 / P.κ,                  #   Time scale [ s ]
-    vsc =   P.κ / (M.ymax[1]-M.ymin[1]),                    #   Velocity scale [ m/s ]
-    τsc =   (P.η₀[1] * P.κ)/(M.ymax[1]-M.ymin[1]),          #   Stress scale [ Pa ]
-    Tsc =   P.ΔT,                                           #   Temperature scale [ K ]
-    Qsc =   (P.ΔT*P.κ*P.ρ₀*P.cp)/(M.ymax[1]-M.ymin[1])^2,   #   Heat source scale [ w/m³ ]
-)
+S   =   ScalingConstants!(M,P)
 # ------------------------------------------------------------------- #
 # Grid ============================================================== #
 NC  =   (
@@ -96,13 +82,13 @@ NV      =   (
     x   =   NC.x + 1,
     y   =   NC.y + 1,
 )
-Δ       =   (
-    x   =   [(M.xmax[1] - M.xmin[1])/NC.x],
-    y   =   [(M.ymax[1] - M.ymin[1])/NC.y],
+Δ       =   GridSpacing(
+    x   =   (M.xmax - M.xmin)/NC.x,
+    y   =   (M.ymax - M.ymin)/NC.y,
 )
 # ------------------------------------------------------------------- #
 # Allocation ======================================================== #
-D       =   (
+D       =   DataFields(
     Q       =   zeros(Float64,(NC...)),
     T       =   zeros(Float64,(NC...)),
     T0      =   zeros(Float64,(NC...)),
@@ -120,9 +106,9 @@ D       =   (
     wtv     =   zeros(Float64,(NV...)),
     ΔTtop   =   zeros(Float64,NC.x),
     ΔTbot   =   zeros(Float64,NC.x),
-    Tmax    =   [0.0],
-    Tmin    =   [0.0],
-    Tmean   =   [0.0],
+    Tmax    =   0.0,
+    Tmin    =   0.0,
+    Tmean   =   0.0,
 )
 # Heat production rate ------
 @. D.Q      =   P.Q₀
@@ -147,22 +133,18 @@ Fm     =    (
 FPt         =   zeros(Float64,NC...)
 # ------------------------------------------------------------------- #
 # Time ============================================================== #
-T   =   (
-    year    =   365.25*3600*24,     #   Seconds per year
-    tmax    =   [1000000.0],           #   [ Ma ]
+T   =   TimeParameter(
+    tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    Δ       =   [0.0],
-    Δc      =   [0.0],              #   Courant time step
-    Δd      =   [0.0],              #   Diffusion time stability criterion
-    itmax   =   8000,              #   Maximum iterations; 30000
+    itmax   =   8000,               #   Maximum iterations; 30000
 )
-T.tmax[1]   =   T.tmax[1]*1e6*T.year    #   [ s ]
-T.Δc[1]     =   T.Δfacc * minimum((Δ.x[1],Δ.y[1])) / 
+T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
+T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                     (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-T.Δd[1]     =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x[1]^2 + 1/Δ.y[1]^2)))
+T.Δd        =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
 
-T.Δ[1]      =   minimum([T.Δd[1],T.Δc[1]])
+T.Δ         =   minimum([T.Δd,T.Δc])
 
 Time        =   zeros(T.itmax)
 Nus         =   zeros(T.itmax)
@@ -171,35 +153,18 @@ meanT       =   zeros(T.itmax,NC.y+2)
 find        =   0
 # ------------------------------------------------------------------- #
 # Scaling laws ====================================================== #
-# Geometry ---
-M.xmin[1]   /=  S.hsc
-M.xmax[1]   /=  S.hsc
-M.ymin[1]   /=  S.hsc
-M.ymax[1]   /=  S.hsc
-Δ.x[1]      /=  S.hsc
-Δ.y[1]      /=  S.hsc         
-# Time --- 
-T.tmax[1]   /=  S.tsc
-T.Δc[1]     /=  S.tsc
-T.Δd[1]     /=  S.tsc
-T.Δ[1]      /=  S.tsc
-# Temperature etc. ---
-P.Ttop[1]   =   (P.Ttop[1] - 273.15)/S.Tsc
-P.Tbot[1]   =   (P.Tbot[1] - 273.15)/S.Tsc
-@. D.Q      /=  S.Qsc
-# # Viscosity ---
-# @. D.η      /=  P.η₀[1]
+ScaleParameters!(S,M,Δ,T,P,D)
 # ------------------------------------------------------------------- #
 # Coordinates ======================================================= #
 x       =   (
-    c   =   LinRange(M.xmin[1]+Δ.x[1]/2,M.xmax[1]-Δ.x[1]/2,NC.x),
-    ce  =   LinRange(M.xmin[1] - Δ.x[1]/2.0, M.xmax[1] + Δ.x[1]/2.0, NC.x+2),
-    v   =   LinRange(M.xmin[1],M.xmax[1],NV.x),
+    c   =   LinRange(M.xmin+Δ.x/2,M.xmax-Δ.x/2,NC.x),
+    ce  =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+    v   =   LinRange(M.xmin,M.xmax,NV.x),
 )
 y       =   (
-    c   =   LinRange(M.ymin[1]+Δ.y[1]/2,M.ymax[1]-Δ.y[1]/2,NC.y),
-    ce  =   LinRange(M.ymin[1] - Δ.x[1]/2.0, M.ymax[1] + Δ.x[1]/2.0, NC.y+2),
-    v   =   LinRange(M.ymin[1],M.ymax[1],NV.y),
+    c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
+    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
 x1      =   (
     c2d     =   x.c .+ 0*y.c',
@@ -218,8 +183,6 @@ y   =   merge(y,y1)
 # ------------------------------------------------------------------- #
 # Anfangsbedingungen ================================================ #
 # Temperatur ------
-# Ttop    =   273.15
-# Tbot    =   Ttop + P.ΔT
 if FD.Method.Adv==:tracers 
     # Tracer Initialization ---
     # Need to implement incremental marker update first! 
@@ -249,7 +212,7 @@ if FD.Method.Adv==:tracers
     # Interpolate from markers to cell ---
     Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
 else
-    IniTemperature!(Ini.T,M,NC,Δ,D,x,y;Tb=P.Tbot[1],Ta=P.Ttop[1])
+    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
     if FD.Method.Adv==:slf
         D.T_exo    .=  D.T_ex
     end
@@ -260,7 +223,7 @@ end
 TBC     = (
     type    = (W=:Neumann, E=:Neumann,N=:Dirichlet,S=:Dirichlet),
     val     = (W=zeros(NC.y),E=zeros(NC.y),
-                    N=P.Ttop[1].*ones(NC.x),S=P.Tbot[1].*ones(NC.x)))
+                    N=P.Ttop.*ones(NC.x),S=P.Tbot.*ones(NC.x)))
 # Velocity ------
 VBC     =   (
     type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
@@ -268,21 +231,21 @@ VBC     =   (
 )
 # ------------------------------------------------------------------- # 
 # Rayleigh Zahl Bedingungen ========================================= #
-if P.Ra[1] < 0
+if P.Ra < 0
     # Falls die Rayleigh Zahl nicht explizit angegeben wird, dann 
     # wird sie hier berechnet
-    P.Ra[1]     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.η₀[1]/P.κ
+    P.Ra     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.η₀/P.κ
 else
     # Falls die Rayleigh Zahl explizit angegeben ist, dann wird hier 
     # die Referenzviskositaet η₀ angepasst. 
-    P.η₀[1]     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra[1]/P.κ
+    P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
 end
 # =================================================================== #
 # Linear Equations ================================================== #
 # Momentum Equation ======
 off    = [  NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
-            NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
+            NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
 
 Num    =    (
     Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
@@ -315,7 +278,7 @@ for it = 1:T.itmax
     χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector ME
     rhsM    =   zeros(maximum(Num.Pt))      #   Right-hand Side ME
     if it>1
-        Time[it]  =   Time[it-1] + T.Δ[1]
+        Time[it]  =   Time[it-1] + T.Δ
     end
     @printf("Time step: #%04d, Time [non-dim]: %04e\n ",it,
                     Time[it])
@@ -328,7 +291,7 @@ for it = 1:T.itmax
         KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
         # Update RHS ---
         # rhs term defined by the Boussinesq approximation
-        rhsM    =   updaterhsc( NC, NV, Δ, 1.0, -P.Ra[1]*D.T, -1.0, VBC, Num )
+        rhsM    =   updaterhsc( NC, NV, Δ, 1.0, -P.Ra*D.T, -1.0, VBC, Num )
         # Solve System of Equations ---
         χ       =   KM \ rhsM
         # Update Unknown Variables ---
@@ -337,7 +300,7 @@ for it = 1:T.itmax
         D.Pt                .=  χ[Num.Pt]
     elseif FD.Method.Mom==:dc
         # Initial Residual -------------------------------------------------- #
-        @. D.ρ  =   -P.Ra[1]*D.T
+        @. D.ρ  =   -P.Ra*D.T
         Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
         rhsM[Num.Vx]    =   Fm.x[:]
         rhsM[Num.Vy]    =   Fm.y[:]
@@ -369,13 +332,13 @@ for it = 1:T.itmax
     @show(minimum(D.Pt))
     @show(maximum(D.Pt))
     # Calculate time stepping ======================================= #
-    T.Δc[1]     =   T.Δfacc * minimum((Δ.x[1],Δ.y[1])) / 
+    T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-    T.Δd[1]     =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x[1]^2 + 1/Δ.y[1]^2)))
-    T.Δ[1]      =   minimum([T.Δd[1],T.Δc[1]])
-    if Time[it] > T.tmax[1] 
-        T.Δ[1]      =   T.tmax[1] - Time[it-1]
-        Time[it]    =   Time[it-1] + T.Δ[1]
+    T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
+    T.Δ         =   minimum([T.Δd,T.Δc])
+    if Time[it] > T.tmax
+        T.Δ         =   T.tmax - Time[it-1]
+        Time[it]    =   Time[it-1] + T.Δ
         it          =   T.itmax
     end
     # Plot ========================================================== #
@@ -383,14 +346,14 @@ for it = 1:T.itmax
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
-                aspect_ratio=:equal,xlims=(M.xmin[1], M.xmax[1]),
-                ylims=(M.ymin[1], M.ymax[1]),
+                aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+                ylims=(M.ymin, M.ymax),
                 layout=(2,1),subplot=1)
         heatmap!(p,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin[1], M.xmax[1]), 
-            ylims=(M.ymin[1], M.ymax[1]),
+            xlims=(M.xmin, M.xmax), 
+            ylims=(M.ymin, M.ymax),
             layout=(2,1),subplot=2)
         quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
@@ -407,15 +370,15 @@ for it = 1:T.itmax
     # --------------------------------------------------------------- #
     # Advection ===================================================== #
     if FD.Method.Adv==:upwind
-        upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x[1],Δ.y[1])            
+        upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ,Δ.x,Δ.y)            
     elseif FD.Method.Adv==:slf
-        slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x[1],Δ.y[1])
+        slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ,Δ.x,Δ.y)
     elseif FD.Method.Adv==:semilag
-        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
+        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
     elseif FD.Method.Adv==:tracers
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv,1)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
@@ -423,22 +386,22 @@ for it = 1:T.itmax
     # --------------------------------------------------------------- #
     # Diffusion ===================================================== #
     if FD.Method.Diff==:explicit
-        ForwardEuler2Dc!(D, 1.0, Δ.x[1], Δ.y[1], T.Δ[1], D.ρ, 1.0, NC, TBC)
+        ForwardEuler2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC)
     elseif FD.Method.Diff==:implicit
-        BackwardEuler2Dc!(D, 1.0, Δ.x[1], Δ.y[1], T.Δ[1], D.ρ, 1.0, NC, TBC, rhs, K, Num)
+        BackwardEuler2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K, Num)
     elseif FD.Method.Diff==:CNA
-        CNA2Dc!(D, 1.0, Δ.x[1], Δ.y[1], T.Δ[1], D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
+        CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
     elseif FD.Method.Diff==:ADI
-        ADI2Dc!(D, 1.0, Δ.x[1], Δ.y[1], T.Δ[1], D.ρ, 1.0, NC, TBC)
+        ADI2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC)
     elseif FD.Method.Diff==:dc
         D.T0    .=  D.T
         for iter = 1:niter
             # Evaluate residual
-            ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, TBC, Δ, T.Δ[1])
+            ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, TBC, Δ, T.Δ)
             # @printf("||R|| = %1.4e\n", norm(R)/length(R))
             norm(R)/length(R) < ϵ ? break : nothing
             # Assemble linear system
-            K  = AssembleMatrix2D(D.ρ, D.cp, k, TBC, Num, NC, Δ, T.Δ[1])
+            K  = AssembleMatrix2D(D.ρ, D.cp, k, TBC, Num, NC, Δ, T.Δ)
             # Solve for temperature correction: Cholesky factorisation
             Kc = cholesky(K.cscmatrix)
             # Solve for temperature correction: Back substitutions
@@ -448,14 +411,13 @@ for it = 1:T.itmax
         end        
     end
     # --------------------------------------------------------------- #
-    @printf("\n")
     # Heat flow at the surface ====================================== #
     @. D.ΔTbot  =   
          (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
-        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y[1]
+        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
     @. D.ΔTtop  =   
         (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
-        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y[1]
+        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
     Nus[it]     =   mean(D.ΔTtop)
     meanT[it,:] =   mean(D.T_ex,dims=1)
     meanV[it]   =   mean(D.vc)
@@ -464,20 +426,18 @@ for it = 1:T.itmax
     # If the maximum time is reached or if the models reaches steady, 
     # state the time loop is stoped! 
     if Time[it] > 0.001
-        epsC    =   1e-16; 
+        epsC    =   1e-2; 
         ind     =   findfirst(Time .> 
-                        (Time[it] - 0.001))
+                        (Time[it] - 0.05))
         epsV    =   std(meanV[ind:it])
-        # @show epsV1, epsV
         if save_fig == 1
-            @show it,log10((epsV))
             plot!(k,(it,log10((epsV))),
                 xlabel="it",ylabel="log₁₀(εᵥ)",label="",
                 markershape=:circle,markercolor=:black)
         end
         find    =   it
         @printf("ε_V = %g, ε_C = %g \n",epsV,epsC)
-        if Time[it] >= T.tmax[1]
+        if Time[it] >= T.tmax
             @printf("Maximum time reached!\n")
             find    =   it
             break
@@ -499,14 +459,14 @@ end
 p2 = heatmap(x.c,y.c,D.T',
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Temperature",color=cgrad(:lajolla),
-            aspect_ratio=:equal,xlims=(M.xmin[1], M.xmax[1]),
-            ylims=(M.ymin[1], M.ymax[1]),
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+            ylims=(M.ymin, M.ymax),
             layout=(2,1),subplot=1)
     heatmap!(p2,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin[1], M.xmax[1]), 
-            ylims=(M.ymin[1], M.ymax[1]),
+            xlims=(M.xmin, M.xmax), 
+            ylims=(M.ymin, M.ymax),
             layout=(2,1),subplot=2)
     quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
@@ -515,9 +475,9 @@ p2 = heatmap(x.c,y.c,D.T',
             la=0.5,color="black",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(k,string("./Results/11_ThermalConvection_iterations_",P.Ra[1],
+    savefig(k,string("./exercises/Correction/Results/12_ThermalConvection_Scaled_iterations_",P.Ra,
             "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
-    savefig(p2,string("./Results/11_ThermalConvection_Final_Stage_",P.Ra[1],"_it_",find,"_",
+    savefig(p2,string("./exercises/Correction/Results/12_ThermalConvection_Scaled_Final_Stage_",P.Ra,"_it_",find,"_",
                         Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
 elseif save_fig == 0
     display(p2)
@@ -531,7 +491,7 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string("./Results/11_ThermalConvectionTimeSeries",P.Ra[1],"_",
+    savefig(q2,string("./exercises/Correction/Results/12_ThermalConvectionTimeSeries_Scaled_",P.Ra,"_",
                         Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
 elseif save_fig == 0
     display(q2)
