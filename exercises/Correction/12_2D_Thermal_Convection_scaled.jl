@@ -1,4 +1,5 @@
-using Plots, ExtendableSparse, GeoModBox
+using Plots, ExtendableSparse
+using GeoModBox
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
 using GeoModBox.Scaling
@@ -9,12 +10,12 @@ using Printf
 
 function ThermalConvection_scaled()
 # Define numerical methods ========================================== #
-# Advection Scheme ---
-#   1) upwind, 2) slf, 3) semilag, 4) tracers
-#       --- slf instable , tracers need to be modified ---
 # Diffusion Scheme --- 
 #   1) explicit, 2) implicit, 3) CNA, 4) ADI, 5) dc
 #       dc - source term missing!
+# Advection Scheme ---
+#   1) upwind, 2) slf, 3) semilag, 4) tracers
+#       --- slf instable , tracers need to be modified ---
 # Momentum Equation --- 
 #   1) direct, 2) dc 
 FD          =   (Method     = (
@@ -26,8 +27,6 @@ FD          =   (Method     = (
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block, 4) linear, 5) lineara
 # !!! Gaussian is not working!!! 
-# Velocity - 
-#   1) RigidBody, 2) ShearCell
 Ini         =   (T=:lineara,)
 # ------------------------------------------------------------------- #
 # Plot Einstellungen ================================================ #
@@ -66,17 +65,14 @@ P   =   Physics(
     Ra      =   1.0e5,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
-filename    =   string("12_ThermalConvection_Scaled_",P.Ra,
-                        "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,
-                        "_",FD.Method.Mom)
 # ------------------------------------------------------------------- #
-# Scaling =========================================================== # 
+# Definiere Skalierungskonstanten =================================== # 
 S   =   ScalingConstants!(M,P)
 # ------------------------------------------------------------------- #
-# Grid ============================================================== #
+# Gittereinstellungen =============================================== #
 NC  =   (
-    x   =   150,    #   horizontal grid resolution
-    y   =   50,    #   vertical grid resolution
+    x   =   150,
+    y   =   50,
 )
 NV      =   (
     x   =   NC.x + 1,
@@ -87,7 +83,7 @@ NV      =   (
     y   =   (M.ymax - M.ymin)/NC.y,
 )
 # ------------------------------------------------------------------- #
-# Allocation ======================================================== #
+# Initialisierung der Datenfelder =================================== #
 D       =   DataFields(
     Q       =   zeros(Float64,(NC...)),
     T       =   zeros(Float64,(NC...)),
@@ -110,7 +106,7 @@ D       =   DataFields(
     Tmin    =   0.0,
     Tmean   =   0.0,
 )
-# Heat production rate ------
+# Wärmeproduktionsrate ------
 @. D.Q      =   P.Q₀
 # ------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
@@ -132,7 +128,7 @@ Fm     =    (
 )
 FPt         =   zeros(Float64,NC...)
 # ------------------------------------------------------------------- #
-# Time ============================================================== #
+# Zeitparameter ===================================================== #
 T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
@@ -152,10 +148,10 @@ meanV       =   zeros(T.itmax)
 meanT       =   zeros(T.itmax,NC.y+2)
 find        =   0
 # ------------------------------------------------------------------- #
-# Scaling laws ====================================================== #
+# Skalierungsgesetze ================================================ #
 ScaleParameters!(S,M,Δ,T,P,D)
 # ------------------------------------------------------------------- #
-# Coordinates ======================================================= #
+# Koordinaten ======================================================= #
 x       =   (
     c   =   LinRange(M.xmin+Δ.x/2,M.xmax-Δ.x/2,NC.x),
     ce  =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
@@ -218,13 +214,13 @@ else
     end
 end
 # ------------------------------------------------------------------- #
-# Boundary Conditions =============================================== #
-# Temperature ------
+# Randbedingungen =================================================== #
+# Temperatur ------
 TBC     = (
     type    = (W=:Neumann, E=:Neumann,N=:Dirichlet,S=:Dirichlet),
     val     = (W=zeros(NC.y),E=zeros(NC.y),
                     N=P.Ttop.*ones(NC.x),S=P.Tbot.*ones(NC.x)))
-# Velocity ------
+# Geschwindigkeit ------
 VBC     =   (
     type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
     val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
@@ -241,8 +237,8 @@ else
     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
 end
 # =================================================================== #
-# Linear Equations ================================================== #
-# Momentum Equation ======
+# Lineares Gleichungssystem ========================================= #
+# Impulserhaltung (IEG) ------
 off    = [  NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
             NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
@@ -254,7 +250,7 @@ Num    =    (
     T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
 )
 ndof    =   maximum(Num.T)        
-# Temperature Equation ======
+# Energieerhaltung (EEG) ------
 if FD.Method.Diff==:implicit || FD.Method.Diff==:CNA
     if FD.Method.Diff==:CNA
         K1      =   ExtendableSparseMatrix(ndof,ndof)
@@ -273,16 +269,16 @@ elseif FD.Method.Diff==:dc
     q           =   (x=zeros(NC.x+1, NC.y), y=zeros(NC.x, NC.y+1))
 end
 # ------------------------------------------------------------------- #
-# Time Loop ========================================================= #
+# Zeitschleife ====================================================== #
 for it = 1:T.itmax
-    χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector ME
-    rhsM    =   zeros(maximum(Num.Pt))      #   Right-hand Side ME
+    χ       =   zeros(maximum(Num.Pt))      #   Unbekannten Vektor IEG
+    rhsM    =   zeros(maximum(Num.Pt))      #   Rechte Seite IEG
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
     @printf("Time step: #%04d, Time [non-dim]: %04e\n ",it,
                     Time[it])
-    # Momentum Equation(ME) =======
+    # IEG ------
     D.vx    .=  0.0
     D.vy    .=  0.0 
     D.Pt    .=  0.0
@@ -290,36 +286,33 @@ for it = 1:T.itmax
         # Update K ---
         KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
         # Update RHS ---
-        # rhs term defined by the Boussinesq approximation
+        # rechte Seite definiert durch die Boussinesq Annäherung
         rhsM    =   updaterhsc( NC, NV, Δ, 1.0, -P.Ra*D.T, -1.0, VBC, Num )
-        # Solve System of Equations ---
+        # Lösen des linearen Gleichungssystems ---
         χ       =   KM \ rhsM
-        # Update Unknown Variables ---
+        # Update unbekannte Variablen ---
         D.vx[:,2:end-1]     .=  χ[Num.Vx]
         D.vy[2:end-1,:]     .=  χ[Num.Vy]
         D.Pt                .=  χ[Num.Pt]
     elseif FD.Method.Mom==:dc
-        # Initial Residual -------------------------------------------------- #
+        # Anfangsresiduum ------
         @. D.ρ  =   -P.Ra*D.T
         Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
         rhsM[Num.Vx]    =   Fm.x[:]
         rhsM[Num.Vy]    =   Fm.y[:]
         rhsM[Num.Pt]    =   FPt[:]
-        # ------------------------------------------------------------------- #
-        # Assemble Coefficients ============================================= #
+        # Update K ------
         K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
-        # ------------------------------------------------------------------- #
-        # Solution of the linear system ===================================== #
+        # Lösen des lineare Gleichungssystems ------
         χ      =   - K \ rhsM
-        # ------------------------------------------------------------------- #
-        # Update Unknown Variables ========================================== #
+        # Update unbekante Variablen ------
         D.vx[:,2:end-1]     .+=  χ[Num.Vx]
         D.vy[2:end-1,:]     .+=  χ[Num.Vy]
         D.Pt                .+=  χ[Num.Pt]
         @. D.ρ  =   ones(NC...)
     end
     # ======
-    # Get the velocity on the centroids ------
+    # Berechnung der Geschwindikeit auf den Centroids ------
     for i = 1:NC.x
         for j = 1:NC.y
             D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -331,7 +324,7 @@ for it = 1:T.itmax
     @show(maximum(D.vc))
     @show(minimum(D.Pt))
     @show(maximum(D.Pt))
-    # Calculate time stepping ======================================= #
+    # Berechnung der Zeitschrittlänge =============================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
@@ -368,7 +361,7 @@ for it = 1:T.itmax
         end
     end
     # --------------------------------------------------------------- #
-    # Advection ===================================================== #
+    # Advektion ===================================================== #
     if FD.Method.Adv==:upwind
         upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ,Δ.x,Δ.y)            
     elseif FD.Method.Adv==:slf
@@ -411,7 +404,7 @@ for it = 1:T.itmax
         end        
     end
     # --------------------------------------------------------------- #
-    # Heat flow at the surface ====================================== #
+    # Wärmefluss an der Oberfläche ================================== #
     @. D.ΔTbot  =   
          (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
         ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
@@ -423,12 +416,12 @@ for it = 1:T.itmax
     meanV[it]   =   mean(D.vc)
     # --------------------------------------------------------------- #
     # Check break =================================================== #
-    # If the maximum time is reached or if the models reaches steady, 
+    # If the maximum time is reached or if the models reaches steady 
     # state the time loop is stoped! 
-    if Time[it] > 0.001
+    if Time[it] > 0.0038
         epsC    =   1e-2; 
         ind     =   findfirst(Time .> 
-                        (Time[it] - 0.05))
+                        (Time[it] - 0.0038))
         epsV    =   std(meanV[ind:it])
         if save_fig == 1
             plot!(k,(it,log10((epsV))),
@@ -476,9 +469,11 @@ p2 = heatmap(x.c,y.c,D.T',
             layout=(2,1),subplot=2)
 if save_fig == 1
     savefig(k,string("./exercises/Correction/Results/12_ThermalConvection_Scaled_iterations_",P.Ra,
+            "_",NC.x,"_",NC.y,
             "_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
-    savefig(p2,string("./exercises/Correction/Results/12_ThermalConvection_Scaled_Final_Stage_",P.Ra,"_it_",find,"_",
-                        Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
+    savefig(p2,string("./exercises/Correction/Results/12_ThermalConvection_Scaled_Final_Stage_",P.Ra,
+            "_",NC.x,"_",NC.y,"_it_",find,"_",
+            Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
 elseif save_fig == 0
     display(p2)
 end
@@ -491,8 +486,8 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string("./exercises/Correction/Results/12_ThermalConvectionTimeSeries_Scaled_",P.Ra,"_",
-                        Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
+    savefig(q2,string("./exercises/Correction/Results/12_ThermalConvectionTimeSeries_Scaled_",P.Ra,
+                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",FD.Method.Adv,"_",FD.Method.Diff,"_",FD.Method.Mom,".png"))
 elseif save_fig == 0
     display(q2)
 end
