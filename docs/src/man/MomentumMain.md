@@ -6,7 +6,7 @@ $\begin{equation}
 \rho \frac{D \overrightharpoon{v}}{Dt} = \overrightharpoon{\nabla} \cdot \boldsymbol{\sigma} + \rho \boldsymbol{g},
 \end{equation}$
 
-where $\rho$ is the density [ $kg/m^3$ ], $\overrightharpoon{v}$ is the velocity vector [ $m/s$ ], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [ $Pa$ ], $\boldsymbol{g}$ is the gravitational acceleration vector [ $m/s^2$ ], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla}$. 
+where $\rho$ is the density [kg/m³], $\overrightharpoon{v}$ is the velocity vector [m/s], $\boldsymbol{\sigma}$ is the *Cauchy stress tensor* [Pa], $\boldsymbol{g}$ is the gravitational acceleration vector [m/s²], and the term on the left-hand side is the Lagrangian time derivative which is in Eulerian form $\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla}$. 
 
 The *Cauchy stress tensor* is given by: 
 
@@ -32,7 +32,7 @@ $\begin{equation}
 \tau_{ij} = 2 \eta \cdot \dot{\varepsilon}_{ij},
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ the *strain rate tensor* in [ $1/s$ ] and given by: 
+where $\eta$ is the dynamic viscosity in [Pa s] and $\dot{\varepsilon}_{ij}$ the *strain rate tensor* in [1/s] and given by: 
 
 $\begin{equation}
 \dot{\varepsilon}_{ij} = \frac{1}{2} \left(\frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}}\right).
@@ -93,7 +93,7 @@ The exercises include:
 
 The examples include models of different [mixed heated convection system](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/) to highlight the coupling between the *temperature* and *momentum equation* using the *operator splitting method*. Within these examples all methods to solve each equation can be applied. 
 
-The exercises include an example to solve [an isovisous, 2-D thermal convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/11_2D_Thermal_convection.ipynb) as well as [a scaled version thereof](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_convection_scaled.ipynb). 
+The exercises include an example to solve [an isovisous, 2-D thermal convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/11_2D_Thermal_Convection.ipynb) as well as [a scaled version thereof](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_Convection_scaled.ipynb). 
 
 The final exercises fo complete the course is to complete the [Blankenbach benchmark including a resolution test](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/13_Blankenbach_Benchmark.ipynb). 
 

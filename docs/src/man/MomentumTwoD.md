@@ -6,19 +6,19 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial}{\partial{x_j}}\tau_{ij} + \rho g_i, 
 \end{equation}$
 
-where $P$ is the total pressure in [ $Pa$ ],  $\rho$ is the density in [ $kg/m^3$ ], $g_i$ the gravitational acceleration vector in [ $m/s^2$ ], $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor in [ $Pa$ ] and defined as: 
+where $P$ is the total pressure in [Pa],  $\rho$ is the density in [kg/m³], $g_i$ the gravitational acceleration vector in [m/s²], $\frac{\partial}{\partial{x_i}}$ the spatial derivative in the direction of $x_i$, and $\tau_{ij}$ is the deviatoric stress tensor in [Pa] and defined as: 
 
 $\begin{equation}
 \tau_{ij} = 2\eta \dot{\varepsilon}_{ij}, 
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor in [ $1/s$ ] and given as: 
+where $\eta$ is the dynamic viscosity in [Pa s] and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor in [1/s] and given as: 
 
 $\begin{equation}
 \dot{\varepsilon}_{ij} = \frac{1}{2} \left( \frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}} \right),
 \end{equation}$
 
-where $v_i$ is the velocity in [ $m/s$ ] in the $i$-th direction. 
+where $v_i$ is the velocity in [m/s] in the $i$-th direction. 
 
 The stokes equation provides two equations for three unknowns, $v_x$, $v_y$, and $P$. Thus, to solve for the third unknown one needs an additional equation, the *mass conservation equation*. 
 

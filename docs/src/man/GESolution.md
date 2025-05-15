@@ -143,7 +143,7 @@ $\begin{equation}
 -\frac{\partial{P'}}{\partial{x'}}+2\frac{\partial}{\partial{x'}}\eta'\frac{\partial{v_x'}}{\partial{x'}}+\frac{\partial}{\partial{y'}}\eta'\left(\frac{\partial{v_x'}}{\partial{y'}}+\frac{\partial{v_y'}}{\partial{x'}}\right) = 0.
 \end{equation}$
 
-*$y$-compnent*
+*$y$-component*
 
 $\begin{equation}
 -\frac{\partial{P'}}{\partial{y'}}+\frac{\partial{\tau_{yj}'}}{\partial{x_j'}} = Ra T',

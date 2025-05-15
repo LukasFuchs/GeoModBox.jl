@@ -18,7 +18,7 @@ $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \frac{\partial^2 T}{\partial x^2} + \frac{Q}{\rho c_p},
 \end{equation}$
   
-where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2/s$ ] and $Q=\rho H$ is the heat production rate per volume [ $W/m^3$ ]. Equation $(3)$ is a *parabolic partial differential equation* (PDE) which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
+where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m²/s] and $Q=\rho H$ is the heat production rate per volume [W/m³]. Equation $(3)$ is a *parabolic partial differential equation* (PDE) which can be solved numerically in different manners, assuming initial and boundary conditions are defined. 
 
 First, let's discuss a simple, but effective, finite difference method to discretize and solve the equation, that is the **forward in time and centered in space (FTCS)** method in an **explicit** manner. This finite difference scheme will converge to the exact solution for small $\Delta{x}$ and $\Delta{t}$. The advantage of an explicit description is that it is **simple** to derive and rather **fast** computationally. However, it is only numerically stable as long as the *heat diffusion stability criterion* is fulfilled. The stability criterion can be determined by a *Von Neumann* stability analysis, which analyzes the growth of an eigenmode perturbation for a certain finite difference approach. In case of an **explicit 1-D finite difference approach**, the *heat diffusion stability criterion* is defined as (assuming equal grid spacing):
 

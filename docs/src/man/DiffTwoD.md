@@ -18,7 +18,7 @@ $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q}{\rho c_p},
 \end{equation}$
   
-where $\kappa = k/\rho /c_p$ is the thermal diffusivity [ $m^2$ ] and $Q=\rho H$ is the heat production rate per volume [ $W/m^3$ ]. In case of an explicit 2-D finite difference approach, the *heat diffusion stability criterion* is defined as 
+where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m²/s] and $Q=\rho H$ is the heat production rate per volume [W/m³]. In case of an explicit 2-D finite difference approach, the *heat diffusion stability criterion* is defined as 
 
 $\begin{equation}
 \Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}

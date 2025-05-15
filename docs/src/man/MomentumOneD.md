@@ -8,13 +8,13 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}},
 \end{equation}$
 
-where $P$ is the pressure in [ $Pa$ ], $\frac{\partial}{\partial{x_i}}$ is the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress in [ $Pa$ ] and given by: 
+where $P$ is the pressure in [Pa], $\frac{\partial}{\partial{x_i}}$ is the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress in [Pa] and given by: 
 
 $\begin{equation}
 \tau_{xy} = 2 \eta \dot{\varepsilon}_{xy},
 \end{equation}$
 
-where $\eta$ is the viscosity in [ $Pa s$ ] and $\dot{\varepsilon}_{xy}$ is the shear strain-rate in [ $m/s$ ] and given by: 
+where $\eta$ is the viscosity in [Pa s] and $\dot{\varepsilon}_{xy}$ is the shear strain-rate in [1/s] and given by: 
 
 $\begin{equation}
 \dot{\varepsilon}_{xy} = \frac{1}{2} \frac{\partial{v_x}}{\partial{y}}.
