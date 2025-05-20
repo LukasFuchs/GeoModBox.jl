@@ -120,3 +120,10 @@ $v_{x,ana} = -\frac{\partial P}{\partial x} \frac{H}{\eta_0 log(m)} (\frac{m^{-\
 
 ### [Viscous Inclusion](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)
 
+## [Thermal Convection] 
+
+### [Bottom Heated Convection]()
+
+### [Internally Heated Convection]()
+
+### [Mixed Heated Convection]()

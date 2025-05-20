@@ -1,30 +1,44 @@
 # Temperature Equation (2D)
 
-In two dimesions ($x$ and $y$), the *conductive* part of the *temperature equation* is described by (assuming only radiogenic heating):
+In two spatial dimensions ($x$ and $y$), the conductive component of the temperature equation, assuming only radiogenic heat production, is given by:
 
 $\begin{equation}
 \rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} -\frac{\partial q_y}{\partial y} + \rho H, 
 \end{equation}$
 
-or including Fourier’s law (assuming variable thermal parameters):
+where 
+$\rho$ is the density [kg/m³],
+$c_p$ is the specific heat capacity [J/(kg·K)],
+$T$ is the temperature [K],
+$t$ is time [s],
+$q_x$ and $q_y$ are the heat flux components in the $x$ and $y$ directions [W/m²], and
+$H$ is the volumetric heat production rate per unit mass [W/kg].
+
+By applying Fourier’s law and allowing for spatially variable thermal conductivity $k$, the equation becomes:
 
 $\begin{equation}
 \rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x} k \frac{\partial T}{\partial x} + \frac{\partial}{\partial y} k \frac{\partial T}{\partial y} + \rho H.
 \end{equation}$
 
-Assuming that the thermal parameters are constant, equation $(2)$ simplifies to: 
+If thermal parameters are assumed constant, this simplifies to:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q}{\rho c_p},
 \end{equation}$
   
-where $\kappa = k/\rho /c_p$ is the thermal diffusivity [m²/s] and $Q=\rho H$ is the heat production rate per volume [W/m³]. In case of an explicit 2-D finite difference approach, the *heat diffusion stability criterion* is defined as 
+where 
+$\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s] and
+$Q = \rho H$ is the volumetric heat production rate [W/m³].
+
+For an explicit finite difference discretization, the numerical stability criterion (heat diffusion condition) is given by:
 
 $\begin{equation}
 \Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
 \end{equation}$
 
-(assuming equal grid spacing in $x$- and $y$-direction).
+where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit time integration scheme.
+
+<!-- ende edit here -->
 
 ## Discretization 
 
