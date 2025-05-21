@@ -115,7 +115,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   1.0,                #   Courant time factor
     Δfacd   =   1.0,                #   Diffusion time factor
-    itmax   =   3000,              #   Maximum iterations; 30000
+    itmax   =   6000,              #   Maximum iterations; 30000
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -354,10 +354,10 @@ p2 = heatmap(x.c,y.c,D.T',
             la=0.5,color="black",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(k,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_",P.Ra,
+    savefig(k,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_Iterations",P.Ra,
             "_",NC.x,"_",NC.y,
             "_",Ini.T,".png"))
-    savefig(p2,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_Final_Stage_",P.Ra,
+    savefig(p2,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_Final_Stage",P.Ra,
             "_",NC.x,"_",NC.y,"_it_",find,"_",
             Ini.T,"_",".png"))
 elseif save_fig == 0
@@ -372,7 +372,7 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string(".//examples/MixedHeatedConvection/Results/Bottom_Heated_",P.Ra,
+    savefig(q2,string(".//examples/MixedHeatedConvection/Results/Bottom_Heated_TimeSeries",P.Ra,
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
