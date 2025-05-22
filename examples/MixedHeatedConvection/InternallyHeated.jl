@@ -115,7 +115,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   1.0,                #   Courant time factor
     Δfacd   =   1.0,                #   Diffusion time factor
-    itmax   =   100,              #   Maximum iterations; 30000
+    itmax   =   6000,              #   Maximum iterations; 30000
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
