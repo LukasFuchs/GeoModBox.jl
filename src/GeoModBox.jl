@@ -3,6 +3,18 @@ module GeoModBox
     using Statistics: mean
     using ExtendableSparse, LinearAlgebra
 
+    include("./Structures.jl")
+    export Geometry, Physics, 
+            GridSpacing,
+            DataFields, TimeParameter
+
+    module Scaling
+   
+        include("./Scaling.jl")
+        export Constants, ScalingConstants!, ScaleParameters!
+
+    end
+
     module HeatEquation            
 
         module TwoD
@@ -78,4 +90,5 @@ module GeoModBox
                     Assembly, updaterhs, Residuals2D!
         end
     end
+
 end 

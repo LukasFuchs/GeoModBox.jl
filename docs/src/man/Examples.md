@@ -1,18 +1,22 @@
 # Examples
 
-## Diffusion Equation
+# Diffusion Equation
 
-### Geotherm (1D)
+The 1-D temperature profiles of a geotherm can be calculated by solving the conductive part of the 1-D *temperature equation* (so far only including a radiogenic heat source) using variable thermal parameters with a proper conserving finite difference scheme. That is, the heat flow is calculated on the vertices and the temperature is defined on the centroids, respectively. 
 
-The 1-D temperature profiles of a geotherm are calculated by solving the conductive part of the 1-D *temperature equation* (so far only including a radiogenic heat source) using variable thermal parameters with a proper conserving finite difference scheme. That is, the heat flow is calculated on the vertices and the temperature is defined on the centroids, respectively. The discretization scheme for variable thermal parameters is choosen to solve for a temperature profile of a continental lithosphere with upper, lower crust, and mantle. The 1-D temperature equation is given by: 
+The discretization scheme for variable thermal parameters is choosen to solve for a temperature profile of a continental lithosphere with upper, lower crust, and mantle. 
+
+The 1-D temperature equation is given by: 
 
 $\begin{equation}
 \rho c_{p} \frac{\partial{T}}{\partial{t}} = \frac{\partial{}}{\partial{y}}\left(k \frac{\partial{T}}{\partial{y}}\right) + \rho H,
 \end{equation}$ 
 
-where $\rho, c_{p}, T, t, k, H,$ and $y$ are the density [ $kg/m^3$ ], the specific heat capacity [ $J/kg/K$ ], the temperature [ $K$ ], the time [ $s$ ], the thermal conductivity [ $W/m/K$ ], the heat generation rate per mass [ $W/kg$ ], and the depth [ $m$ ] respectively. For values and references of the given thermal parameters see [*OceanicGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) and [*ContinentalGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl).
+where $\rho, c_{p}, T, t, k, H,$ and $y$ are the density [kg/m³], the specific heat capacity [J/kg/K], the temperature [K], the time [s], the thermal conductivity [W/m/K], the heat generation rate per mass [W/kg], and the depth [m], respectively. 
 
-A proper conservative finite difference scheme means that the 1-D vertical heat flux and the thermal conductivity *k* are defined on the vertices and *q* is defined as:
+For values and references of the given thermal parameters see [*OceanicGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) and [*ContinentalGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl).
+
+A proper conservative finite difference scheme means that the 1-D vertical heat flux and the thermal conductivity $k$ are defined on the vertices and $q$ is defined as:
 
 $\begin{equation}
 \left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
@@ -20,7 +24,10 @@ $\begin{equation}
 
 where $nv$ is the number of vertices. 
 
-#### Oceanic
+## [Oceanic Geotherm (1D)](./OceanicGeotherm.md)
+
+For values and references of the given thermal parameters see [*OceanicGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) and [*ContinentalGeotherm_1D.jl*](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl).
+
 
 ![OceanicGeotherm](../assets/OceanicGeotherm_1D_evolve.png)
 
@@ -30,7 +37,7 @@ where $nv$ is the number of vertices.
 
 **Figure 2. Oceanic Lithosphere.** LEFT: Temperature profile [K]  for an oceanic lithosphere of 60 Ma of age and constant thermal boundary conditions at the top and bottom. The blue line shows the initial temperature profile. The yellow dashed line shows the solution for a half-space cooling model. RIGHT: Heat flux $q_y$ [ $mW/m^2$ ] with depth. The parameters of this model are defined as the default values in the routine [OceanicGeotherm_1D.jl](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl). 
 
-#### Continental
+## [Continental Geotherm (1D)]
 
 ![ContinentalGeotherm](../assets/ContinentalGeotherm_1D_evolve.png)
 
@@ -48,6 +55,8 @@ where $nv$ is the number of vertices.
 
 **Figure 5.** Diffusion of an initial Gaussian temperature distribution.... 
 
+## 2D
+
 ### [Backward Euler](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/HeatEquation/2D/BackwardEuler.jl)
 -> A gaussian diffusion using the defection correction method. The results are compared to the analytical solution.  
 
@@ -63,15 +72,17 @@ where $nv$ is the number of vertices.
 ### [Poisson Variable Parameters](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/HeatEquation/2D/Poisson_variable_k.jl) 
 -> 2-D Poisson Problem with variable thermal parameters.
 
-## Advection Equation
+# Advection Equation
 
-### [2D Advection of an anomaly](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)
+## [2D Advection of an anomaly](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)
 -> ...
 
 ### [Resolution test of the 2-D advection](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 -> ...
 
-## Momentum Equation
+# Momentum Equation
+
+## 1D
 
 ### [Channel Flow](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)
 <!--
@@ -106,6 +117,8 @@ $v_{x,ana} = -\frac{\partial P}{\partial x} \frac{H}{\eta_0 log(m)} (\frac{m^{-\
 
 &emsp;The numerical solution is calculated using fixed boundary velocities, which are defined by the analytical solution of the horizontal velocity as defined in equations (5) and (6) and I simply flip the analytical solution so that it fits to the downward point coordinate system I use in the code. -->
 
+## 2D
+
 ### [FallingBlockBenchmark()](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl)
 -> A sript, solving the falling block benchmark for a viscosity range from -6 to 6 order of magnitude. The script stores the [sinking velocity](../assets/FallingBlock_SinkingVeloc_tracers.png) of the block at the initial configuration and the [final marker distribution](../assets/FallingBlock_FinalStage_tracers.png) for models with a viscosity ration over and equal 0. 
 
@@ -119,4 +132,19 @@ $v_{x,ana} = -\frac{\partial P}{\partial x} \frac{H}{\eta_0 log(m)} (\frac{m^{-\
 -> To be added (*tba*)
 
 ### [Viscous Inclusion](https://github.com/LukasFuchs/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)
+-> To be added (*tba*)
+
+# Thermal 
+-> To be added (*tba*)
+
+## [Bottom Heated Convection]()
+-> To be added (*tba*)
+
+## [Internally Heated Convection]()
+-> To be added (*tba*)
+
+## [Mixed Heated Convection]()
+-> To be added (*tba*)
+
+
 

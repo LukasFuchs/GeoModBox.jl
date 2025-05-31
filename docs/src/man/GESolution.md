@@ -1,16 +1,60 @@
 # Solving Differential Equations
 
+## Governing Equations
+
+The general governing equations for solving a geodynamical problem, neglecting adiabatic effects and assuming only radioactive heat source, are the conservation equations of 
+
+**Momentum**
+
+$\begin{equation}
+\rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{\partial{v_{i}}}{\partial{x_{j}}}\right) = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
+\end{equation}
+$
+
+where 
+$\rho$ is the density [kg/m³], 
+$v_i$ is the velocity in the $i$-th direction [m/s],
+$t$ is time [s],
+$\partial/\partial{t}$ is the time derivative, 
+$\partial/\partial x_i$ is a directional derivative in $i$, 
+$P$ the total pressure [Pa], 
+$\tau_{ij}$ is the deviatoric stress tensor [Pa], and 
+$\boldsymbol{g}$ is the gravitational acceleration vector [m/s²]. 
+
+**Energy**
+
+$\begin{equation}
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H,
+\end{equation}$
+
+where 
+$c_p$ is the specific heat capacity [J/kg/K],
+$T$ is temperature [K],
+$q_i$ is the heat flux [W/m²] in direction $i$,
+$H$ is the internal heat production per unit mass [W/kg]. 
+
+**Mass**
+
+$\begin{equation}
+\frac{\partial{v_i}}{\partial{x_i}} = 0.
+\end{equation}
+$
+
+Repeated indices imply summation.
+
+---
+
 Ordinary and partial differential equations (ODEs and PDEs) can be solved through various approaches—occasionally *analytically*, but more commonly *numerically* due to their inherent complexity. Among numerical methods, prominent techniques include *integral*-based methods, such as the *finite element* and *spectral* methods, as well as the *finite difference* method.
 
 The ```GeoModBox.jl``` framework primarily employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
-In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below[^1].
+In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below.
 
 ## Staggered Finite Difference
 
 To solve differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
 
-However, in many cases, certain limitations or physical constraints require a different arrangement of variable locations to ensure numerical stability and the conservation of physical properties. For instance, solving the *momentum equation* with **variable viscosity** typically requires a *fully staggered grid* to correctly preserve stress continuity across adjacent grid points[^2]. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
+However, in many cases, certain limitations or physical constraints require a different arrangement of variable locations to ensure numerical stability and the conservation of physical properties. For instance, solving the *momentum equation* with **variable viscosity** typically requires a *fully staggered grid* to correctly preserve stress continuity across adjacent grid points. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
 
 Staggered grids also offer advantages in implementing boundary conditions. For example, with *Neumann* thermal boundary conditions, the heat flux across a boundary can be naturally evaluated at staggered points using so-called *ghost points*. These ghost points can also be employed to impose *Dirichlet* boundary conditions. This approach helps maintain consistent accuracy and order of the finite difference scheme both at internal and boundary points. 
 
@@ -86,7 +130,7 @@ $\begin{equation}
 
 # Scaling
 
-In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations $(4)$–$(7)$, we introduce *scaling constants* and derive the associated *scaling laws*.
+In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (7)–(10), we introduce *scaling constants* and derive the associated *scaling laws*.
 
 ### Scaling Constants
 
@@ -143,7 +187,7 @@ $\begin{equation}
 -\frac{\partial{P'}}{\partial{x'}}+2\frac{\partial}{\partial{x'}}\eta'\frac{\partial{v_x'}}{\partial{x'}}+\frac{\partial}{\partial{y'}}\eta'\left(\frac{\partial{v_x'}}{\partial{y'}}+\frac{\partial{v_y'}}{\partial{x'}}\right) = 0.
 \end{equation}$
 
-*$y$-compnent*
+*$y$-component*
 
 $\begin{equation}
 -\frac{\partial{P'}}{\partial{y'}}+\frac{\partial{\tau_{yj}'}}{\partial{x_j'}} = Ra T',
@@ -154,7 +198,6 @@ Or in terms of velocity:
 $\begin{equation}
 -\frac{\partial{P'}}{\partial{y'}}+2\frac{\partial}{\partial{y'}}\eta'\frac{\partial{v_{y}'}}{\partial{y'}} +\frac{\partial}{\partial{x'}}\eta'\left(\frac{\partial{v_{y}'}}{\partial{x'}} + \frac{\partial{v_{x}'}}{\partial{y'}}\right) = Ra T'.
 \end{equation}$
-
 
 **Temperature equation**
 
@@ -173,9 +216,3 @@ When interpreting or analyzing non-dimensional models, it is essential to keep t
 Compared to the dimensional equations, the non-dimensional (scaled) forms differ only slightly in structure. As a result, the same numerical solver can be used for both dimensional and non-dimensional formulations, requiring only minimal modifications when specifying the parameters. 
 
 For an implementation example, see the [thermal convection examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/).
-
-# References
-
-[^1]: Smith, G. D. *Numerical Solution of Partial Differential Equations: Finite Difference Methods*. Oxford University Press, 1985.
-
-[^2]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.

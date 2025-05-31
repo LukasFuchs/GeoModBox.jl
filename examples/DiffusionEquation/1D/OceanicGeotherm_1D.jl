@@ -123,23 +123,22 @@ end
 # ------------------------------------------------------------------- #
 # Calculate heaf flow ----------------------------------------------- #
 # South ---
-#T.T_ex[2:end-1]     =   T.T
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
                 (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
 # North ---
 T.T_ex[end] =   (BC.type.N==:Dirichlet) * (2 * BC.val.N - T.T_ex[nc+1]) +
                 (BC.type.N==:Neumann) * (T.T_ex[nc+1] + BC.val.N*Δy)
-if size(Py.k,1)==1
-    for j=1:nc+1
-        T.q[j]  =   -Py.k * 
-            (T.T_ex[j+1] - T.T_ex[j])/Δy
-    end    
-else
+# if size(Py.k,1)==1
+#     for j=1:nc+1
+#         T.q[j]  =   -Py.k * 
+#             (T.T_ex[j+1] - T.T_ex[j])/Δy
+#     end    
+# else
     for j=1:nc+1
         T.q[j]  =   -Py.k[j] * 
             (T.T_ex[j+1] - T.T_ex[j])/Δy
     end
-end
+# end
 # ------------------------------------------------------------------- #
 # Plot -------------------------------------------------------------- #
 if BC.type.N==:Dirichlet && BC.type.S==:Dirichlet
@@ -165,8 +164,8 @@ p = plot!(T.q.*1e3,yv./1e3,
         ylim=(-H/1e3,0),
         subplot=2)        
 display(p)
-savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
-savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
+# savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
+# savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
 end
 
