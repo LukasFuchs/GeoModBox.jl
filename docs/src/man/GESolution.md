@@ -19,3 +19,15 @@ $\partial/\partial x_i$ is a directional derivative in $i$,
 $P$ the total pressure [Pa], 
 $\tau_{ij}$ is the deviatoric stress tensor [Pa], and 
 $\boldsymbol{g}$ is the gravitational acceleration vector [m/s²]. 
+
+**Energy**
+
+$\begin{equation}
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H,
+\end{equation}$
+
+where 
+$c_p$ is the specific heat capacity [J/kg/K],
+$T$ is temperature [K],
+$q_i$ is the heat flux [W/m²] in direction $i$,
+$H$ is the internal heat production per unit mass [W/kg]. 
