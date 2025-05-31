@@ -208,3 +208,9 @@ $\begin{equation}
 $\begin{equation}
 \frac{\partial{v'_x}}{\partial{x}} + \frac{\partial{v'_y}}{\partial{y'}} = 0.
 \end{equation}$
+
+When interpreting or analyzing non-dimensional models, it is essential to keep track of the scaling constants and reference values used in the transformation.
+
+Compared to the dimensional equations, the non-dimensional (scaled) forms differ only slightly in structure. As a result, the same numerical solver can be used for both dimensional and non-dimensional formulations, requiring only minimal modifications when specifying the parameters. 
+
+For an implementation example, see the [thermal convection examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/).
