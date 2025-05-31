@@ -168,3 +168,43 @@ The primary remaining dimensionless parameter is the Rayleigh number ($Ra$), whi
 $\begin{equation}
 Ra = \frac{\rho_0 g \alpha \Delta{T} h^3}{\eta_0 \kappa}.
 \end{equation}$
+
+### Non-Dimensional Governing Equations
+
+**Momentum equation**
+
+*$x$-component*
+
+$\begin{equation}
+-\frac{\partial{P'}}{\partial{x'}}+\frac{\partial{\tau_{xj}'}}{\partial{x_j'}} = 0,
+\end{equation}$
+
+Or in terms of velocity: 
+
+$\begin{equation}
+-\frac{\partial{P'}}{\partial{x'}}+2\frac{\partial}{\partial{x'}}\eta'\frac{\partial{v_x'}}{\partial{x'}}+\frac{\partial}{\partial{y'}}\eta'\left(\frac{\partial{v_x'}}{\partial{y'}}+\frac{\partial{v_y'}}{\partial{x'}}\right) = 0.
+\end{equation}$
+
+*$y$-component*
+
+$\begin{equation}
+-\frac{\partial{P'}}{\partial{y'}}+\frac{\partial{\tau_{yj}'}}{\partial{x_j'}} = Ra T',
+\end{equation}$
+
+Or in terms of velocity: 
+
+$\begin{equation}
+-\frac{\partial{P'}}{\partial{y'}}+2\frac{\partial}{\partial{y'}}\eta'\frac{\partial{v_{y}'}}{\partial{y'}} +\frac{\partial}{\partial{x'}}\eta'\left(\frac{\partial{v_{y}'}}{\partial{x'}} + \frac{\partial{v_{x}'}}{\partial{y'}}\right) = Ra T'.
+\end{equation}$
+
+**Temperature equation**
+
+$\begin{equation}
+\left(\frac{\partial{T'}}{\partial{t'}} + v_j' \frac{\partial{T'}}{\partial{x_j'}}\right) = \frac{\partial^2{T'}}{\partial{x^{'2}_i}} + Q'.
+\end{equation}$
+
+**Continuity equation**
+
+$\begin{equation}
+\frac{\partial{v'_x}}{\partial{x}} + \frac{\partial{v'_y}}{\partial{y'}} = 0.
+\end{equation}$
