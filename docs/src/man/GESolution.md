@@ -125,3 +125,22 @@ where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\ka
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
 \end{equation}$
+
+# Scaling
+
+In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (7)–(10), we introduce *scaling constants* and derive the associated *scaling laws*.
+
+### Scaling Constants
+
+Several schemes exist for non-dimensionalization. In this case, the following set of scaling constants is used:
+
+$\begin{equation}\begin{split}
+h_{sc} & = h, \\ 
+t_{sc} & = \frac{h^2}{\kappa}, \\
+v_{sc} & = \frac{\kappa}{h}, \\
+\tau_{sc} & = \frac{\eta_0 \kappa}{h^2}, \\
+T_{sc} & = \Delta{T}, \\
+Q_{sc} & = \frac{\Delta{T}\kappa \rho_0 c_p}{h^2}, 
+\end{split}\end{equation}$
+
+where $h$ is the model height [m], $\kappa$ is the thermal diffusivity [m²/s], $\eta_0$ is the reference viscosity [Pa·s], $\Delta T$ is the temperature difference between the top and bottom boundaries [K], $\rho_0$ is the reference density [kg/m³], and $c_p$ is the specific heat capacity [J/kg/K].
