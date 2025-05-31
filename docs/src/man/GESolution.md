@@ -144,3 +144,27 @@ Q_{sc} & = \frac{\Delta{T}\kappa \rho_0 c_p}{h^2},
 \end{split}\end{equation}$
 
 where $h$ is the model height [m], $\kappa$ is the thermal diffusivity [m²/s], $\eta_0$ is the reference viscosity [Pa·s], $\Delta T$ is the temperature difference between the top and bottom boundaries [K], $\rho_0$ is the reference density [kg/m³], and $c_p$ is the specific heat capacity [J/kg/K].
+
+### Scaling laws
+
+These constants are applied to transform dimensional quantities into their non-dimensional counterparts:
+
+$\begin{equation}\begin{split}
+h & = h' \cdot h_{sc}, \\ 
+t & = t' \cdot t_{sc}, \\
+v & = v' \cdot v_{sc}, \\
+\tau & = \tau' \cdot \tau_{sc}, \\
+T & = T' \cdot T_{sc}, \\
+Q & = Q' \cdot Q_{sc}.
+\end{split}\end{equation}$
+
+When applied, many of the constants cancel out, resulting in non-dimensional equations that structurally resemble the dimensional ones.
+**Note:** This simplification is only valid under the assumptions and approximations discussed above. Any remaining scaling terms can often be grouped into key dimensionless parameters.
+
+### Rayleigh Number
+
+The primary remaining dimensionless parameter is the Rayleigh number ($Ra$), which characterizes the convective behavior and replaces the buoyancy term in the *momentum equation*:
+
+$\begin{equation}
+Ra = \frac{\rho_0 g \alpha \Delta{T} h^3}{\eta_0 \kappa}.
+\end{equation}$
