@@ -38,8 +38,6 @@ $\begin{equation}
 
 where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
 
-<!-- ende edit here -->
-
 ## Discretization and Numerical Schemes
 
 To numerically solve equation (3), the spatial domain must be discretized and the relevant thermal parameters assigned to the appropriate computational nodes.
@@ -80,8 +78,8 @@ where
 
 $\begin{equation}
 a = \frac{\kappa \Delta{t}}{\Delta{x^2}}, \quad 
-b = \frac{\kappa \Delta{t}}{\Delta{y^2}}
-\end{equation}$. 
+b = \frac{\kappa \Delta{t}}{\Delta{y^2}}.
+\end{equation}$
 
 For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
@@ -470,8 +468,8 @@ with
 
 $\begin{equation}
 a = \frac{1}{\Delta x^2}, \quad
-b = \frac{1}{\Delta y^2}
-\end{equation}$. 
+b = \frac{1}{\Delta y^2}.
+\end{equation}$
 
 ### Boundary Conditions
 
@@ -537,7 +535,7 @@ For spatially varying thermal conductivity, the steady-state heat equation in 2-
 
 $\begin{equation} 
 0 = \frac{\partial}{\partial x}\left(k_x\frac{\partial T}{\partial x}\right) + 
-\frac{\partial}{\partial y}\left(k_y\frac{\partial T}{\partial y}\right) + Q_{i,j} 
+\frac{\partial}{\partial y}\left(k_y\frac{\partial T}{\partial y}\right) + Q_{i,j}. 
 \end{equation}$
 
 To discretize this equation conservatively, a staggered finite difference scheme is used: the heat flux $q_i = k_i \frac{\partial T}{\partial i}$ is defined **between** centroids, while the temperature is defined **at** the centroids.

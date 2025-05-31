@@ -62,7 +62,7 @@ For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the *tempe
 
 # Thermal convection
 
-The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable.
+The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ( $\rho$ ), specific heat capacity ( $c_p$ ), and thermal conductivity ( $k$ )—is forthcoming, simplifications are often employed to make the problem more tractable.
 
 ### Approximations 
 
