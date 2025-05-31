@@ -59,3 +59,7 @@ Staggered grids also offer advantages in implementing boundary conditions. For e
 For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the *temperature equation*. The complete grid structure used for the governing equations in `GeoModBox.jl` is illustrated below:
 
 ![2DGrid_total](../assets/Grid_total.png)
+
+# Thermal convection
+
+The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ( $\rho$ ), specific heat capacity ( $c_p$ ), and thermal conductivity ( $k$ )—is forthcoming, simplifications are often employed to make the problem more tractable.
