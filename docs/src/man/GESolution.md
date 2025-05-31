@@ -63,3 +63,65 @@ For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the *tempe
 # Thermal convection
 
 The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ( $\rho$ ), specific heat capacity ( $c_p$ ), and thermal conductivity ( $k$ )—is forthcoming, simplifications are often employed to make the problem more tractable.
+
+### Approximations 
+
+A commonly used simplification in thermal convection modeling is the *Boussinesq* approximation. This approximation assumes that all thermodynamic properties remain constant, and adiabatic temperature effects are neglected in the *temperature equation*. Spatial density variations are assumed to be small and are only retained in the buoyancy term of the *momentum equation*. Under this framework, density becomes a function of temperature and is described using an *equation of state*.
+
+### Equation of State
+
+Several forms of the *equation of state* exist. For the current analysis, a linear approximation is used to describe density as a function of temperature:
+
+$\begin{equation}
+\rho = \rho_0 (1-\alpha T),
+\end{equation}$
+
+where $\rho_0$ is the reference density [kg/m³], and $\alpha$ is the thermal expansion coefficient [1/K].
+
+Substituting this relation into the buoyancy term on the right-hand side of the *momentum equation* and using the definition of total pressure,
+
+$\begin{equation}
+P_t = P_{\text{dyn}} + P_{\text{hydr}},
+\end{equation}$
+
+where $P_{\text{dyn}}$ and $P_{\text{hydr}}$ denote the dynamic and hydrostatic pressure, respectively, along with the gradient of hydrostatic pressure,
+
+$\begin{equation}
+\frac{\partial{P_{\text{hydr}}}}{\partial{y}}=\rho_0 g,
+\end{equation}$
+
+yields a modified form of the $y$-component of the dimensional *momentum equation*.
+
+**Governing equations**
+
+The following dimensional equations govern thermal convection under the *Boussinesq* approximation:
+
+**Momentum equation**
+
+*$x$-component*
+
+$\begin{equation}
+0 = -\frac{\partial{P_{\text{dyn}}}}{\partial{x}}+\frac{\partial{\tau_{xj}}}{\partial{x_j}},
+\end{equation}$
+
+*$y$-component*
+
+$\begin{equation}
+0 = -\frac{\partial{P_{\text{dyn}}}}{\partial{y}}+\frac{\partial{\tau_{yj}}}{\partial{x_j}} - \rho_0 g \alpha T,
+\end{equation}$
+
+where $P_{\text{dyn}}$ is the dynamic pressure [Pa], $\tau_{ij}$ is the deviatoric stress tensor [Pa], $\rho_0$ is the reference density [kg/m³], $g$ is the gravitational acceleration [m/s²], $\alpha$ is the thermal expansion coefficient [1/K], and $T$ is the absolute temperature [K].
+
+**Temperature equation**
+
+$\begin{equation}
+\left(\frac{\partial{T}}{\partial{t}} + v_j \frac{\partial{T}}{\partial{x_j}}\right) = \kappa \frac{\partial^2{T}}{\partial{x^2_i}} + \frac{Q}{\rho_0 c_p},
+\end{equation}$
+
+where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], $Q$ is the volumetric heat production rate [W/m³], and $c_p$ is the specific heat capacity [J/kg/K]. For implementation details, refer to the [thermal convection examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/).
+
+**Continuity equation**
+
+$\begin{equation}
+\frac{\partial{v_i}}{\partial{x_i}} = 0.
+\end{equation}$
