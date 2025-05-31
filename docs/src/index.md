@@ -72,4 +72,12 @@ The ```GeoModBox.jl``` provides different methods to advect certain properties w
 
 **Figure 6. Falling Block Benchmark.** Final tracers distribution for specific cases with $\eta_r \ge 0 $. 
 
+### [Thermal Convection]()
+
+**Figure 7. Bottom Heated Convection**
+
+**Figure 8. Internally Heated Convection**
+
+**Figure 9. Mixed Heated Convection**
+
 ------------------

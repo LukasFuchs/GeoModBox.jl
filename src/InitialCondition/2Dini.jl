@@ -1,7 +1,7 @@
 using Base.Threads 
 
 @doc raw""" 
-    IniTemperature!(type,M,NC,Δ,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
+    IniTemperature!(type,M,NC,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
 
 Function to setup an initial temperature condition for a two dimensional 
 problem. The temperature is defined on the centroids of a regular finite 
@@ -25,7 +25,7 @@ Possible initial temperature conditions are:
     2) Gaussian anomaly
     3) Block anomaly
 """
-@views function IniTemperature!(type,M,NC,Δ,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
+@views function IniTemperature!(type,M,NC,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
     if type==:circle 
         # Circle shaped anomaly ---
         # Bereich der Anomalie ---       
@@ -110,9 +110,9 @@ Possible initial temperature conditions are:
             end
         end
     end
-    D.Tmax[1]   =   maximum(D.T_ex)
-    D.Tmin[1]   =   minimum(D.T_ex)
-    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+    D.Tmax   =   maximum(D.T_ex)
+    D.Tmin   =   minimum(D.T_ex)
+    D.Tmean  =   (D.Tmax+D.Tmin)/2
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D

@@ -3,26 +3,24 @@
 The conservation of energy is a fundamental physical principle, stating that energy cannot be created or destroyed—only transformed. In geodynamical modeling, this is commonly expressed in terms of **temperature**, which is transported through **conductive** and **convective** processes. Assuming only radioactive heat sources, the general energy equation is defined as:
 
 $\begin{equation}
-\left(\frac{\partial E}{\partial t} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla} E\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
+\left(\frac{\partial E}{\partial t} + v_j\frac{\partial{E}}{\partial{x_j}}\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
 \end{equation}$
 
-where energy is defined as $E = c_p \rho T$. Here:
-
+where energy is defined as $E = c_p \rho T$. Here 
 $c_p$ is the specific heat capacity [J/kg/K],
 $\rho$ is the density [kg/m³],
 $T$ is temperature [K],
+$\partial/\partial t$ is the time derivative,
 $t$ is time [s],
-$\overrightharpoon{v}$ is the velocity vector [m/s],
+$v_j$ is the velocity [m/s] in direction $j$,
 $q_i$ is the heat flux [W/m²] in direction $i$,
 $\partial/\partial x_i$ is a directional derivative in $i$,
-$H$ is the internal heat production per unit mass [W/kg].
+$H$ is the internal heat production per unit mass [W/kg]. Repeated indices imply summation.
 
-Repeated indices imply summation.
-
-The heat flux $\overrightharpoon{q}$ is described by **Fourier’s law**:
+The heat flux $q_i$ is described by **Fourier’s law**:
 
 $\begin{equation}
-\overrightharpoon{q} = - k \overrightharpoon{\nabla} T,
+q_i = - k \frac{\partial{T}}{\partial{x_i}},
 \end{equation}$
 
 where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to the temperature gradient and represents the amount of heat passing through a unit surface per unit time.
@@ -30,10 +28,10 @@ where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to 
 Substituting into the energy equation, the **temperature conservation equation** in Eulerian form becomes: 
 
 $\begin{equation}
-\rho c_p \left(\frac{\partial T}{\partial t} + \overrightharpoon{v} \cdot \overrightharpoon{\nabla} T\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
 \end{equation}$
 
-This equation captures temperature changes due to **conduction** (right-hand side) and **advection** (left-hand side). For simplicity, these processes can be split using an *operator splitting* technique, solving the advection and conduction steps sequentially.
+This equation captures temperature changes due to **conduction** (right-hand side) and **advection** (left-hand side). For simplicity, these processes can be split using an *operator splitting* technique, solving the advection and conduction steps sequentially[^1].
 
 ## Heat Diffusion Equation
 
@@ -96,3 +94,7 @@ See the [examples documentation](./Examples.md) for further details.
 
 - [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
 - [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
+
+# References
+
+[^1]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
