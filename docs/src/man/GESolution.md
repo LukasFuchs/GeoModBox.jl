@@ -8,8 +8,7 @@ The general governing equations for solving a geodynamical problem, neglecting a
 
 $\begin{equation}
 \rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{\partial{v_{i}}}{\partial{x_{j}}}\right) = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
-\end{equation}
-$
+\end{equation}$
 
 where 
 $\rho$ is the density [kg/m³], 
@@ -37,8 +36,7 @@ $H$ is the internal heat production per unit mass [W/kg].
 
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
-\end{equation}
-$
+\end{equation}$
 
 Repeated indices imply summation.
 
