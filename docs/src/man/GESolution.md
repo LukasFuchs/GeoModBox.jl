@@ -31,3 +31,14 @@ $c_p$ is the specific heat capacity [J/kg/K],
 $T$ is temperature [K],
 $q_i$ is the heat flux [W/m²] in direction $i$,
 $H$ is the internal heat production per unit mass [W/kg]. 
+
+**Mass**
+
+$\begin{equation}
+\frac{\partial{v_i}}{\partial{x_i}} = 0.
+\end{equation}$
+
+Repeated indices imply summation.
+
+---
+
