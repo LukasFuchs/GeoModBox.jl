@@ -1,21 +1,30 @@
-using Plots
-using GeoModBox.HeatEquation.OneD
+# [Continental Geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl) 
 
-@doc raw"""
-    ContinentalGeotherm_1D()
+The 1-D temperature profile of a continental geotherm can be calculated by solving the conductive part of the 1-D *temperature equation* using variable thermal parameters with a proper conserving finite difference scheme (so far only including a radiogenic heat source). We use the 1-D solver for variable thermal parameters, since the thermal conductivity varies within each lithospheric layer. 
 
-Function to calculate the 1D geotherm for a continental lithosphere. 
-Temperature is calculated by solving the 1-D heat equation assuming
-variable thermal parameters and a radiogenic heat source.
-The equation is solved using a proper conserving finite difference
-scheme.
+A proper conservative finite difference scheme in 1-D means that the temperature is defined on the *centroids* and the vertical heat flux and the thermal conductivity $k$ on the *vertices*.
 
-"""
-function ContinentalGeotherm_1D()
-# ------------------------------------------------------------------- #
-#    LF - 24.10.2024 - julia                                          #
-# ------------------------------------------------------------------- #
-        
+The 1-D temperature equation is given by: 
+
+$\begin{equation}
+\rho c_{p} \frac{\partial{T}}{\partial{t}} = \frac{\partial{q_y}}{\partial{y}} + \rho H,
+\end{equation}$ 
+
+where the heat flux $q_y$ is defined as:
+
+$\begin{equation}
+\left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
+\end{equation}$
+
+with $\rho, c_{p}, T, t, k, H, y$ and $nv$ are the density [kg/m³], the specific heat capacity [J/kg/K], the temperature [K], the time [s], the thermal conductivity [W/m/K], the heat generation rate per mass [W/kg], the depth [m], and the number of vertices, respectively. 
+
+For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme see the [documentation](../DiffOneD.md).
+
+---
+
+Let's start with the definition of the geometrical, numerical, and physical constants: 
+
+```Julia 
 # Constants --------------------------------------------------------- #
 H           =   200e3               #   Hight of the model [ m ]
 yUC         =   10e3                #   Depth of the upper crust [ m ]
@@ -36,18 +45,27 @@ Py  =   (
     HM      =   2.3e-12,            #   Heat generation rate [W/kg]; Q = ρ*H;2.3e-12
         
     # Upper crust properties ---
-    ρUC     =   2700,               # [ kg/m^3 ]
-    kUC     =   3.0,                # [ W/m/K ]
-    HUC     =   617e-12,            # [ W/kg ]
+    ρUC     =   2700,               #   [ kg/m^3 ]
+    kUC     =   3.0,                #   [ W/m/K ]
+    HUC     =   617e-12,            #   [ W/kg ]
     cpUC    =   1000,
         
     # Lower crust properties ---
-    ρLC     =   2900,               # [ kg/m^3 ]
-    kLC     =   2.0,                # [ W/m/K ]
-    HLC     =   43e-12,             # [ W/kg ]
+    ρLC     =   2900,               #   [ kg/m^3 ]
+    kLC     =   2.0,                #   [ W/m/K ]
+    HLC     =   43e-12,             #   [ W/kg ]
     cpLC    =   1000,
 )                
 # ------------------------------------------------------------------- #
+```
+
+In the following, one needs to define the initial and boundary condition: 
+
+1. Temperature at the surface and bottom.
+2. Linear increasing temperature profile assuming a certain adiabatic gradient and potential mantle temperature.
+
+
+```Julia
 # Initial Condition ------------------------------------------------- #
 T   =   (
     Tpot    =   1315 + 273.15,      #   Potential temperautre [ K ]
@@ -65,14 +83,25 @@ Tini                =   zeros(nc,1)
 Tini                .=   T.T
 T.T_ex[2:end-1]     .=  T.T
 # ------------------------------------------------------------------- #
+```
+
+One can choose between *Dirichlet* or *Neumann* thermal boundary conditions at the surface and bottom. 
+
+```Julia 
 # Boundary conditions ----------------------------------------------- #
 BC      =   (
     type    = (N=:Dirichlet, S=:Dirichlet),
     val     = (N=T.Ttop,S=T.Tbot)
 )
+# If Neumann boundary conditions are choosen, the following values result in the given heatflux for the given thermal conductivity k. 
 # S      =   -0.03;          # c     =   -k/q -> 90 mW/m^2
 # N      =   -0.0033;        # c     =   -k/q -> 10 mW/m^2
 # ------------------------------------------------------------------- #
+```
+
+Now, one needs to define the multiplication factor ```fac``` of the *diffusion stability criterion* for the explicit thermal solver. This factor controls the stability criterion. If it is larger then 1 the solver becomes instable.  
+
+```Julia
 # Time stability criterion ------------------------------------------ #
 fac     =   0.9                 #   Courant criterion
 tmax    =   1000                 #   Lithosphere age [ Ma ]
@@ -80,6 +109,11 @@ tsca    =   60*60*24*365.25     #   Seconds per year
 
 age     =   tmax*1e6*tsca        #   Age in seconds    
 # ------------------------------------------------------------------- #
+```
+
+Let's check that the initial and boundary conditions are properly defined by plotting the temperature profile. 
+
+```Julia
 # Plot Initial condition -------------------------------------------- #
 p = plot(T.T,yc./1e3, 
     label="", 
@@ -88,6 +122,15 @@ p = plot(T.T,yc./1e3,
     xlim=(T.Ttop,T.Tbot),ylim=(-H/1e3,0))
 display(p)
 # ------------------------------------------------------------------- #
+```
+
+![CG1D_ini](../../assets/CG1D_iniT.svg)
+
+**Figure 1. Initial temperature profile.**
+
+Now one needs to define the fields for the thermal paramter and assign the corresponding values of each lithospheric layer (upper and lower crust, and lithospheric mantle) to them. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
+
+```Julia
 # Setup fields ------------------------------------------------------ #
 Py1     =   (
     k            =   zeros(nc+1,1),
@@ -123,6 +166,12 @@ T2  =   (
     )
 T   =   merge(T,T2)  
 # ------------------------------------------------------------------- #
+```
+
+Now, one can calculate the time stability criterion. 
+
+
+```Julia
 # Time stability criterion ------------------------------------------ #
 Δtexp   =   Δy^2/2/Py.κ             #   Stability criterion for explicit
 Δt      =   fac*Δtexp               #   total time step
@@ -131,6 +180,13 @@ nit     =   ceil(Int64,age/Δt)      #   Number of iterations
 
 time    =   zeros(1,nit)            #   Time array
 # ------------------------------------------------------------------- #
+```
+
+Now all required parameter and constants are defined to solve the 1-D temperature equation for each time step in a ```for``` loop. 
+
+The temperature conservation equation is solved via the function ```ForwardEuler1D!()```, which updates the temperature profile ```T.T``` for each time step using the extended temperautre field ```T.T_ex```, which include the ghost nodes. The temperature profile is plotted for a certain time.  
+
+```Julia
 # Time Loop --------------------------------------------------------- #
 count   =   1
 for i = 1:nit
@@ -153,6 +209,15 @@ for i = 1:nit
     end
 end
 # ------------------------------------------------------------------- #
+```
+
+![CG1D_evolve](../../assets/CG1D_evolve.svg)
+
+**Figure 2. Evolution of the temperature profile with depth in 5 Ma steps.**
+
+For the final time step, a depth profile for the vertical heat flux is calculated. Therefore, one needs to update the temperature at the ghost nodes to calculate the heat flux at the boundary. 
+
+```Julia
 # Calculate heaf flow ----------------------------------------------- #
 # South ---
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
@@ -160,12 +225,23 @@ T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) +
 # North ---
 T.T_ex[end] =   (BC.type.N==:Dirichlet) * (2 * BC.val.N - T.T_ex[nc+1]) +
                 (BC.type.N==:Neumann) * (T.T_ex[nc+1] + BC.val.N*Δy)
-for j=1:nc+1                        
-    T.q[j]  =   - Py.k[j] * 
-        (T.T_ex[j+1] - T.T_ex[j])/Δy
+if size(Py.k,1)==1
+    for j=1:nc+1
+        T.q[j]  =   -Py.k * 
+            (T.T_ex[j+1] - T.T_ex[j])/Δy
+    end    
+else
+    for j=1:nc+1
+        T.q[j]  =   -Py.k[j] * 
+            (T.T_ex[j+1] - T.T_ex[j])/Δy
+    end
 end
-
 # ------------------------------------------------------------------- #
+```
+
+Finally, one can caluclate the temperature profile for an oceanic geotherm using the analytical expression of an infinite half-space cooling model for a certain age. The analytical solution is plotted in the final figure, together with the final numerical temperature profile and the heat flux profile. 
+
+```Julia
 # Plot profile if requested ----------------------------------------- #
 q = plot(T.T.-T.Ttop,yc./1e3, 
         label=string("t = ",ceil(maximum(time)/1e6/tsca),"[Ma]"), 
@@ -193,8 +269,8 @@ display(q)
 # Save figures ---
 savefig(q,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D.png")
 savefig(p,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D_evolve.png")
-# ------------------------------------------------------------------- #
-end
-    
-ContinentalGeotherm_1D()
-    
+# ======================================================================= #
+```
+![CG1D_final](../../assets/CG1D_final.svg)
+
+**Figure 3. Final temperature, heat flux, and thermal parameter depth profiles.**

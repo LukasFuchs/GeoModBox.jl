@@ -1,6 +1,6 @@
 # Energy Conservation Equation
 
-The conservation of energy is a fundamental physical principle, stating that energy cannot be created or destroyed—only transformed. In geodynamical modeling, this is commonly expressed in terms of **temperature**, which is transported through **conductive** and **convective** processes. Assuming only radioactive heat sources, the general energy equation is defined as:
+The conservation of energy is a fundamental physical principle, stating that energy cannot be created or destroyed, only transformed. In geodynamical modeling, this is commonly expressed in terms of **temperature**, which is transported through **conductive** and **convective** processes. Assuming radioactive heat sources only, the general energy equation is defined as:
 
 $\begin{equation}
 \left(\frac{\partial E}{\partial t} + v_j\frac{\partial{E}}{\partial{x_j}}\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
@@ -25,7 +25,7 @@ q_i = - k \frac{\partial{T}}{\partial{x_i}},
 
 where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to the temperature gradient and represents the amount of heat passing through a unit surface per unit time.
 
-Substituting into the energy equation, the **temperature conservation equation** in Eulerian form becomes: 
+Substituting Fourier’s law into the energy equation yields the **temperature conservation equation** in Eulerian form:
 
 $\begin{equation}
 \rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
@@ -35,16 +35,16 @@ This equation captures temperature changes due to **conduction** (right-hand sid
 
 ## Heat Diffusion Equation
 
-```GeoModBox.jl``` includes various finite difference (FD) schemes to solve the **diffusive** component of the time-dependent or steady-state temperature equation (with optional radioactive heating) in [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
+```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the diffusive component of the time-dependent or steady-state temperature equation (with optional radioactive heating) in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
 
 - Forward Euler  
 - Backward Euler  
 - Crank–Nicolson  
 - Alternating Direction Implicit (ADI)
 
-See the documentation for [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
+See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
 
-Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, with exceptions in some 1-D and 2-D solvers. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
+At present, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, with exceptions in some 1-D and 2-D solvers. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
 **Example applications include:**
 
@@ -81,7 +81,7 @@ The first three schemes work for any scalar field defined at **centroids**, incl
 
 See the tracer [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) and [documentation](./AdvectMain.md). Tracer code resides in [`src/Tracers`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [`src/AdvectionEquation`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
-A key aspect of advection is the **preservation of amplitude and shape**, especially in cases like rigid body rotation. Numerical diffusion or interpolation can introduce significant artifacts depending on the scheme used, so method choice is critical.
+A key consideration in advection schemes is the **preservation of amplitude and shape**, particularly in scenarios involving rigid body rotation. Numerical diffusion and interpolation can introduce significant artifacts depending on the chosen scheme, making the selection of an appropriate method essential.
 
 **Advection examples:**
 

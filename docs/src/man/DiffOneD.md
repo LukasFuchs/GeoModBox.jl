@@ -1,12 +1,12 @@
 # Temperature Equation (1D)
 
-In one dimension, the conductive component of the *temperature equation* is given by (assuming only radiogenic heat sources):
+In one dimension, the conductive component of the *temperature equation* is expressed as follows, assuming only radiogenic heat sources:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H.
 \end{equation}$ 
 
-Incorporating Fourier’s law, and allowing for spatially variable thermal properties, the equation becomes:
+By incorporating Fourier’s law and allowing for spatially variable thermal properties, the equation becomes:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = \frac{\partial}{\partial x} k_x \frac{\partial T}{\partial x} + \rho H. 
@@ -20,25 +20,25 @@ $\begin{equation}
   
 where $\kappa = k/\rho/c_p$ is the thermal diffusivity [m²/s], and $Q = \rho H$ is the volumetric heat production rate [W/m³].  
 
-Equation (3) is a *parabolic partial differential equation* (PDE), which can be solved numerically given appropriate initial and boundary conditions.
+Equation (3) is classified as a *parabolic partial differential equation* (PDE), which can be solved numerically given appropriate initial and boundary conditions.
 
 ## Discretization and Numerical Schemes
 
-To numerically solve Equation (3), the spatial domain must be discretized and physical parameters assigned to their corresponding locations on the grid.  
+To solve Equation (3) numerically, the spatial domain must be discretized, assigning physical parameters to their corresponding grid locations.
 
-> **Note**: Although the thermal conductivity is assumed constant for now, we adopt a *conservative gridding* approach to ensure physical consistency. In this scheme, temperature $T$ is defined at **cell centers** (centroids), while heat flux $q$ is defined at **cell interfaces** (vertices).
+> **Note**: Although thermal conductivity is currently assumed to be constant, a *conservative gridding* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at **cell centers** (centroids), while heat flux $q$ is defined at **cell interfaces** (vertices).
 
 ![1DDiscretization](../assets/Diff_1D_Discretization.png)
 
-**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D conductive part of the temperature equation. Temperature is defined at centroids and heat flux at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D conductive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the conductive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, we briefly describe these well-known schemes and highlight their strengths and limitations.
+The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the conductive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, we briefly describe these well-known schemes and highlight their respective strengths and limitations.
 
 ### Explicit Finite Difference Scheme (FTCS; Forward Euler)
 
-A basic and intuitive approach to solving the 1D heat conduction equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
+A fundamental and intuitive approach to solving the 1D heat conduction equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
 
-This method approximates the continuous PDE on a discrete grid and converges toward the analytical solution as the spatial ($\Delta x$) and temporal ($\Delta t$) resolutions become sufficiently small. Its main advantages are **simplicity** and **computational efficiency**.
+This method approximates the continuous PDE on a discrete grid and converges to the analytical solution as the spatial ($\Delta x$) and temporal ($\Delta t$) resolutions are refined. Its main advantages are **simplicity** and **computational efficiency**.
 
 However, the FTCS scheme is **conditionally stable**. Its stability is governed by the *heat diffusion stability criterion*, which can be derived via *Von Neumann* analysis. This assesses how numerical perturbations grow or decay over time.
 
@@ -48,7 +48,7 @@ $\begin{equation}
 \Delta t < \frac{\Delta{x^2}}{2 \kappa}.
 \end{equation}$ 
 
-Thus, the maximum time step is limited by the grid spacing.
+Consequently, the maximum allowable time step is constrained by the spatial resolution.
 
 Discretizing Equation (3) with the FTCS scheme gives:
 
@@ -117,7 +117,7 @@ $\begin{equation}
 
 where $c_W$ and $c_E$ are the prescribed temperature gradients on the west and east boundaries, respectively.
 
-These ghost node definitions are substituted into the numerical scheme to enforce boundary conditions at each time step.
+These ghost node definitions are substituted into the numerical scheme to consistently enforce the boundary conditions at each time step.
 
 ### Implicit Scheme (Backward Euler)
 
@@ -298,7 +298,7 @@ $\begin{equation}
 
 where:
 
-$a = \frac{\kappa}{2\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. 
+$a = \frac{\kappa}{2\Delta{x^2}} \textrm{and} b = \frac{1}{\Delta{t}}$. 
 
 ### Boundary Conditions
 
@@ -332,7 +332,7 @@ $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
 \end{equation}$
 
-The resulting coefficient matrix remains tridiagonal, preserving computational efficiency. However, memory demands increase with higher resolution models due to the larger size of the linear system, making this method more memory-intensive.
+The resulting coefficient matrix remains tridiagonal, preserving computational efficiency. However, memory requirements increase with finer spatial resolution due to the larger size of the linear system, making this method more memory-intensive.
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
@@ -352,7 +352,7 @@ While the **explicit FTCS scheme** is simple and efficient for small time steps,
 
 ## Variable Thermal Parameters 
 
-To solve the conductive part of the 1-D temperature equation with **spatially variable thermal parameters**, a conservative finite difference scheme must be used. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
+To solve the conductive component of the 1D temperature equation with **spatially variable thermal properties**, a conservative finite difference scheme is employed. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
 
 The governing equation is:
 
