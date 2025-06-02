@@ -222,4 +222,3 @@ For an implementation example, see the [thermal convection examples](https://git
 # Mutable Structures 
 
 ... *tba* ...
-
