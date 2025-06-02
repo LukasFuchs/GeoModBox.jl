@@ -56,12 +56,12 @@ $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n} }{\Delta t} = \kappa \frac{T_{i-1}^{n} - 2T_{i}^{n} + T_{i+1}^{n}}{\Delta{x^2}} + \frac{Q_{i}^n}{\rho c_p},
 \end{equation}$ 
 
-where:
-- \(i\) is the spatial grid index,
-- \(n\) is the time step index,
-- \(\Delta x\) is the grid spacing,
-- \(\Delta t\) is the time step, and
-- \(Q_i^n\) is the heat production rate at node \(i\) and time \(n\).
+where 
+$i$ is the spatial grid index,
+$n$ is the time step index,
+$\Delta x$ is the grid spacing,
+$\Delta t$ is the time step, and
+$Q_i^n$ is the heat production rate at node $i$ and time $n$.
 
 Solving for $T_i^{n+1}$:
 
