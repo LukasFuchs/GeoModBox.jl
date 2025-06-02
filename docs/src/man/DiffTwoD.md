@@ -311,13 +311,11 @@ $\begin{equation}\begin{gather*}
 
 where the coefficients are defined as:
 
-$
-\begin{equation}
+$\begin{equation}
 a = \frac{\kappa}{\Delta x^2}, \quad 
 b = \frac{\kappa}{\Delta y^2}, \quad 
 c = \frac{1}{\Delta t}
-\end{equation}
-$
+\end{equation}$
 
 As with the implicit method, the boundary-adjacent centroids require modified coefficients to accommodate boundary conditions and maintain symmetry in the coefficient matrix.
 

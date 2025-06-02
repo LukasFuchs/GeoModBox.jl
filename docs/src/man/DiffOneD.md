@@ -298,7 +298,7 @@ $\begin{equation}
 
 where:
 
-$a = \frac{\kappa}{2\Delta{x^2}} \textrm{and} b = \frac{1}{\Delta{t}}$. 
+$a = \frac{\kappa}{2\Delta{x^2}}\quad \textrm{and}\quad b = \frac{1}{\Delta{t}}.$ 
 
 ### Boundary Conditions
 

@@ -4,11 +4,15 @@ The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for 
 
 1) [**energy**](./man/DiffMain.md), 
 2) [**momentum**](./man/MomentumMain.md), 
-3)  [**mass** and **compositon**](./man/AdvectMain.md). 
+3) [**mass** and **compositon**](./man/AdvectMain.md). 
 
 The ```GeoModBox.jl``` includes a series of [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/) and [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. The theoretical background is mainly given here in the documentation.
 
-## [Staggered Finite Difference](./man/GESolution.md)
+The solvers for each governing equation can be used seperately or in combination for dimensional or non-dimensional problems with only minimal modifications when calling the functions. Some typical initial conditions, like a linear increasing temperature, are predifined and can be called. 
+
+For more details on how this is implemented please see this [documentation](./man/GESolution.md).
+
+## Staggered Finite Difference
 
 To properly solve the governing equations, a staggered finite difference scheme is choosen for the *energy* and *momentum* equations. A staggered grid enables a correct, straight forward implementation of certain boundary conditions and enables the conservation of stress between the nodes in case of a variable viscosity. This also requires that certain parameters are defined on different grids. 
 
@@ -30,19 +34,17 @@ The ```GeoModBox.jl``` provides different methods to advect certain properties w
 
 ## [Momentum Conservation Equation](./man/MomentumMain.md)
 
-## Code Structure
-
-### Initial Conditions 
-
-### Scaling
+On a geological time scale, Earth's mantle and the lithosphere creep slowly due to its high viscosity and one can neglect the inertial forces. This simplifie the Navier-Stokes equation and one obtains the so called **Stokes equation**. The ```GeoModBox.jl``` provides mainly two different methods, the direct method and the defect correction method, to solve the Stokes equation in [1-D](./man/MomentumOneD.md) and [2-D](./man/MomentumTwoD.md) assuming both a constant and variable viscosity field. The velocity and the pressure are thereby defined on a staggered grid and ghost nodes are also defined to properly implement free slip and no slip boundary condtions. 
 
 ## [Benchmarks and Examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/)
+
+Here are the resulting visualizations of some of the examples provided by the ```GeoModBox.jl```. For more details on the examples, please refer to the [individual documentation of the examples](./man/Examples.md). The title of each example is linked to the source code of the example. 
 
 ### [Gaussian Temperature Diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 
 ![GaussianDiffusion](./assets/Gaussian_Diffusion_CNA_nx_100_ny_100.gif)
 
-**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly using the [Crank-Nicholson approach](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/CNA.jl) in comparison to its analytical solution. Top Left: 2-D temperature field of the numerical solution and isotherms lines of the numerical (solid black) and analytical (dashed yellow) solution. Top Right: Total deviation to the analytical solution. Bottom Left: 1-D y-profile along x=0. Bottom Right: Root Mean Square total devation of the temperature over time. 
+**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly for a resolution of 100 x 100 using the [Crank-Nicholson approach](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl) in comparison to its analytical solution. Top Left: 2-D temperature field of the numerical solution and isotherms lines of the numerical (solid black) and analytical (dashed yellow) solution. Top Right: Total deviation to the analytical solution. Bottom Left: 1-D y-profile along x=0. Bottom Right: Root Mean Square total devation of the temperature over time. 
 
 ![GDResTest](./assets/Gaussian_ResTest.png)
 
@@ -56,17 +58,17 @@ The ```GeoModBox.jl``` provides different methods to advect certain properties w
 
 ![RigidBodyIII](./assets/2D_advection_circle_RigidBody_tracers_100_100_nth_1.gif)
 
-**Figure 3. Rigid-Body-Rotation.** Time-dependent solution of a rotating circular temperature anomaly using the **upwind (first)**, **semi-lagrangian (second)**, and **tracer (third)** method. Within a circular area of our model domain the velocity is set to the velocity of a rigid rotation and outside euqal to zero. The temperature is scaled by the maximum temperature of the anomaly. 
+**Figure 3. Rigid-Body-Rotation.** Time-dependent solution of a rotating circular temperature anomaly using the **upwind (first)**, **semi-lagrangian (second)**, and **tracer (third)** method for a resolution of 100 x 100. Within a circular area of our model domain the velocity is set to the velocity of a rigid rotation and outside euqal to zero. The temperature is scaled by the maximum temperature of the anomaly. 
 
 ### [Falling Block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl)
 
 ![FallingBlockTD](./assets/Falling_block_ηr_0.0_tracers.gif)
 
-**Figure 4. Isoviscous Falling Block.** Time-dependent solution of an isoviscous falling block example. The problem is solved with a solver for variable viscosities. The tracers advect the phase ID, which is used to interpolate the density and viscosity on the centroids and vertices, respectively. 
+**Figure 4. Isoviscous Falling Block.** Time-dependent solution of an isoviscous falling block example for a resolution of 50 x 50 and 9 tracers per cell. The problem is solved with a solver for variable viscosities. The tracers advect the phase ID, which is used to interpolate the density and viscosity on the centroids and vertices, respectively. 
 
 ![FBSinkinVeloc](./assets/FallingBlock_SinkingVeloc_tracers.png)
 
-**Figure 5. Falling Block Sinking Velocity.** Sinking velocity of the block with respect to the viscosity ratio $\eta_r$ at the initial condition. 
+**Figure 5. Falling Block Sinking Velocity.** Sinking velocity of the block with respect to the viscosity ratio $\eta_r$ at the initial condition. Same setup as in the previous figure. 
 
 ![FBFinalStage](./assets/FallingBlock_FinalStage_tracers.png)
 
@@ -74,10 +76,16 @@ The ```GeoModBox.jl``` provides different methods to advect certain properties w
 
 ### [Thermal Convection]()
 
-**Figure 7. Bottom Heated Convection**
 
-**Figure 8. Internally Heated Convection**
 
-**Figure 9. Mixed Heated Convection**
+**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. 
+
+
+
+**Figure 8. Internally Heated, isoviscous Convection for $Ra_Q$ = $...$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
+
+
+
+**Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
 ------------------

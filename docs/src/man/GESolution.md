@@ -60,6 +60,10 @@ For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the *tempe
 
 ![2DGrid_total](../assets/Grid_total.png)
 
+# Initial Conditions 
+
+... *tba* ...
+
 # Thermal convection
 
 The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ( $\rho$ ), specific heat capacity ( $c_p$ ), and thermal conductivity ( $k$ )—is forthcoming, simplifications are often employed to make the problem more tractable.
@@ -214,3 +218,7 @@ When interpreting or analyzing non-dimensional models, it is essential to keep t
 Compared to the dimensional equations, the non-dimensional (scaled) forms differ only slightly in structure. As a result, the same numerical solver can be used for both dimensional and non-dimensional formulations, requiring only minimal modifications when specifying the parameters. 
 
 For an implementation example, see the [thermal convection examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/).
+
+# Mutable Structures 
+
+... *tba* ...
