@@ -10,23 +10,6 @@ By clicking on the title of each page one is directly directed to the julia exam
 
 > **Note:** Some examples use *named tuples* to define the different constants and variables. Alternatively, *mutable structures* can also be used to define those parameters in the ```GeoModBox.jl```. The mutable structure are especially benificial, if one needs to edit the parameters after the have been defined, e.g., for scaling. 
 
-## 2D
-
-### [Backward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/HeatEquation/2D/BackwardEuler.jl)
--> A gaussian diffusion using the defection correction method. The results are compared to the analytical solution.  
-
-### [Forward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/HeatEquation/2D/ForwardEuler.jl)
--> A gaussian diffusion using an explicit formulation. The results are compared to the analytical solution. 
-
-### [Gaussian Diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/HeatEquation/2D/Gaussian_Diffusion.jl)
--> Script to solve a 2-D gaussian diffusion using multiple different finite difference schemes and resolutions. The results are compared to the analytical solution and the final plot shows a resolution test including each finite difference scheme.
-
-### [Resolution Test Poisson Problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/HeatEquation/2D/Poisson_ResTest.jl)
--> Resolution test for a 2-D Poisson Problem. 
-
-### [Poisson Variable Parameters](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/HeatEquation/2D/Poisson_variable_k.jl) 
--> 2-D Poisson Problem with variable thermal parameters.
-
 # Advection Equation
 
 ## [2D Advection of an anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)

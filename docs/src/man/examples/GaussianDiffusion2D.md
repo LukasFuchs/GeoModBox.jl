@@ -405,7 +405,7 @@ end
 
 ![GD2D_Evolve_example](../../assets/Gaussian_Diffusion_CNA_nx_100_ny_100.gif)
 
-**Figure 2. Final animation using the Crank-Nicolson approach.** Top left: Numerical solution of the transient temperature field (background colored field and black contours); yellow dashed contours - analytical solution. Top right: Absolut deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain. Bottom right: RMS over time. 
+**Figure 2. Final animation using the Crank-Nicolson approach for a resolution of 100 x 100.** Top left: Numerical solution of the transient temperature field (background colored field and black contours); yellow dashed contours - analytical solution. Top right: Absolut deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain. Bottom right: RMS over time. 
 
 Finally, the results of the resolution test are plotted. 
 

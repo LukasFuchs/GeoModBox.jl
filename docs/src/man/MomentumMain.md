@@ -13,10 +13,9 @@ $\sigma_{ij}$ is the **Cauchy stress tensor** [Pa],
 $g_i$ is the gravitational acceleration [m/s²] in direction $i$, and 
 $\frac{D}{Dt}$ is the Lagrangian (material) time derivative, expressed in Eulerian form as: 
 
-$$\begin{equation}
+$\begin{equation}
 \frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + v_j\frac{\partial}{\partial{x_j}}
-\end{equation}
-$$.
+\end{equation}.$
 
 The Cauchy stress tensor is commonly decomposed as:
 
@@ -93,18 +92,16 @@ The following examples demonstrate the application of the Stokes equations:
 - [2D viscous inclusion problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)  
 - [2D Rayleigh–Taylor instability benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/RTI.jl)
 
-
-### Exercises
-
-- [Steady-state, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)  
-- [Time-dependent, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block_td.ipynb)
-
 Examples of coupled temperature–momentum systems (i.e., **convection models**) using **operator splitting** include:
 
 - [Mixed heated convection models](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/)
 
+See the [examples documentation](./Examples.md) for further details.
+
 ### Exercises
 
+- [Steady-state, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)  
+- [Time-dependent, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/10_2D_Falling_Block_td.ipynb)
 - [2D thermal convection (isoviscous)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/11_2D_Thermal_Convection.ipynb)  
 - [Scaled 2D thermal convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_Convection_scaled.ipynb)  
 - [Blankenbach benchmark with resolution study](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/13_Blankenbach_Benchmark.ipynb)
