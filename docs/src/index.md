@@ -76,15 +76,15 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 ### [Thermal Convection]()
 
-![BHTC]()
+
 
 **Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. 
 
-![IHTC]()
+
 
 **Figure 8. Internally Heated, isoviscous Convection for $Ra_Q$ = $...$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
-![MTC]()
+
 
 **Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
