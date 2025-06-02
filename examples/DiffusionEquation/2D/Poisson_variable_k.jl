@@ -6,7 +6,7 @@ function Poisson_variable_k()
 P       =   (
     L           =   4e3,      #   [m]
     H           =   2e3,      #   [m]
-    k1          =   5.6,      #   Waermeleitfaehigkeit, W/m/K
+    k1          =   3.2,      #   Waermeleitfaehigkeit, W/m/K
     k2          =   6.2,      #   Waermeleitfaehigkeit, W/m/K
     Wcave       =   200,      #
     Hcave       =   200,      #
