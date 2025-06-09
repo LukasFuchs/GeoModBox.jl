@@ -1,7 +1,14 @@
-using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots
+# [Poisson Problem (variable $k$)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_variable_k.jl)
 
-function Poisson_variable_k()
+This examples solves the steady-state, 2-D temperature equation, i.e. a Poisson equation, assuming a variable thermal conductivity $k$. 
 
+For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../DiffTwoD.md)
+
+---
+
+First one needs to define the geometrical and physical constants. 
+
+```Julia
 # Physikalischer Parameter ---------------------------------------------- #
 P       =   (
     L           =   4e3,      #   [m]
@@ -15,6 +22,11 @@ P       =   (
     Q           =   0.3       # W/m³ Q = rho*H
 )
 # ----------------------------------------------------------------------- #
+```
+
+Now, one needs the set up the grid and its coordinates.
+
+```Julia
 # Numerische Parameter -------------------------------------------------- #
 NC      =   (
     x           =   641,      #   Gitterpunkte in x-Richtung
@@ -40,6 +52,11 @@ y       = (
     v       =   LinRange(-P.H, 0.0, NV.y)
 )
 # ----------------------------------------------------------------------- #
+``` 
+
+Dirichlet boudnary condition are assumed on all sides. 
+
+```Julia
 # Boundary conditions --------------------------------------------------- #
 BC      =   (
     type    = (W=:Dirichlet, E=:Dirichlet, N=:Dirichlet, S=:Dirichlet),
@@ -47,7 +64,12 @@ BC      =   (
     val     = (W=zeros(NC.y,1),E=zeros(NC.y,1),N=zeros(NC.x,1),S=zeros(NC.x,1))
 )
 # ----------------------------------------------------------------------- #
-# Initialcondition -------------------------------------------------- #
+```
+
+In addition to the temperature and the heat source one needs to define two fields for the thermal conductivity, one for the horizontal and one for the vertical conductivity. The heat source and conductivity need to be assinged to the corresponding nodes. 
+
+```Julia
+# Initialcondition ------------------------------------------------------ #
 D       = ( 
     Q       =   zeros(NC...),           # (row,col) 
     T       =   zeros(NC...),
@@ -61,23 +83,35 @@ for i = 1:NC.x, j = 1:NC.y
         D.Q[i,j]    = P.Q
     end
 end
-#D.kx                        .=  P.k1
-#D.ky                        .=  P.k2
 D.kx[:,y.c.>=-P.H/2.0]      .=  P.k1
 D.kx[:,y.c.<-P.H/2.0]       .=  P.k2
 D.ky[x.c.>=P.L/2.0,:]       .=  P.k1
 D.ky[x.c.<P.L/2.0,:]        .=  P.k2
-# ------------------------------------------------------------------- #
-# Linear System of Equations ---------------------------------------- #
+# ----------------------------------------------------------------------- #
+```
+
+To solve the linear system of equations, one needs to define the coefficient matrix and its degree of freedom and initialized the right-hand side vector. 
+
+```Julia
+# Linear System of Equations -------------------------------------------- #
 Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
 ndof    =   maximum(Num.T)
 K       =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(ndof)
-# ------------------------------------------------------------------- #
-# Solve equation ---------------------------------------------------- #
-Poisson2D!(D.T, D.Q, D.kx, D.ky, Δ.x, Δ.y, NC, BC, K, rhs, Num )
-# ------------------------------------------------------------------- #
+# ----------------------------------------------------------------------- #
+```
 
+Now, all parameter are defined and one can solve the linear system of equations using the function ```Poisson2D!()```. 
+
+```Julia
+# Solve equation -------------------------------------------------------- #
+Poisson2D!(D.T, D.Q, D.kx, D.ky, Δ.x, Δ.y, NC, BC, K, rhs, Num )
+# ----------------------------------------------------------------------- #
+```
+
+Finally, one can plot the steady-state solution of the temperature conservation equation and, for clarity, the different thermal conductivities.  
+
+```Julia
 # Plot solution --------------------------------------------------------- #
 p = heatmap(x.c ./ 1e3, y.c ./ 1e3, D.T', 
         color=:viridis, colorbar=true, aspect_ratio=:equal, 
@@ -108,17 +142,11 @@ display(q)
 savefig(p,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_01.png")
 savefig(q,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
-end
+```
+![PPvari](../../assets/Poisson_vari_1.svg)
 
-Poisson_variable_k()
+**Figure 1. Temperature distribution for variable thermal parameters.**
 
+![PPvari](../../assets/Poisson_vari_2.svg)
 
-
-
-
-
-
-
-
-
-
+**Figure 2. Thermal conductivity distribution.**

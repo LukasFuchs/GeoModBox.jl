@@ -1,6 +1,6 @@
 # Stokes Equation (1D)
 
-Before solving the *stokes equation* in two dimensions, let's first start with a simpler, one-dimensional problem: an uniaxial stokes flow in a horizontal channel assuming a known horizontal pressure gradient. A flow like this is a very good, first order approximation of a flow in a magma or subduction channel. The *stokes equation* in one dimension is defined as (e.g., in the $x$-direction):  
+Before tackling the *Stokes equation* in two dimensions, we start with a simpler, one-dimensional problem: uniaxial Stokes flow in a horizontal channel, assuming a known horizontal pressure gradient. This setup provides a first-order approximation for flows in magma or subduction channels. The one-dimensional Stokes equation in the $x$-direction is expressed as:
 
 *$x$-component*
 
@@ -8,43 +8,43 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}},
 \end{equation}$
 
-where $P$ is the pressure in [Pa], $\frac{\partial}{\partial{x_i}}$ is the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress in [Pa] and given by: 
+where $P$ is the pressure [Pa], $\frac{\partial}{\partial x_i}$ denotes the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress [Pa], defined by:
 
 $\begin{equation}
 \tau_{xy} = 2 \eta \dot{\varepsilon}_{xy},
 \end{equation}$
 
-where $\eta$ is the viscosity in [Pa s] and $\dot{\varepsilon}_{xy}$ is the shear strain-rate in [1/s] and given by: 
+with $\eta$ the viscosity [Pa·s] and $\dot{\varepsilon}_{xy}$ the shear strain-rate [1/s], given by:
 
 $\begin{equation}
 \dot{\varepsilon}_{xy} = \frac{1}{2} \frac{\partial{v_x}}{\partial{y}}.
 \end{equation}$
 
-**Note:** For the $y$-component of the *stokes equation* one need to include the gravitational acceleration $g_y$. 
+>**Note:** For the $y$-component of the Stokes equation, gravitational acceleration $g_y$ must be included.
 
 ## Discretization 
 
 ![Stokes1D_Grid](../assets/Stokes_1D_Grid.png)
 
-**Figure 1.** **Channel flow setup and finite difference grid.** *Left*: Sketch of an uniaxial channel flow driven by a constant velocity on top ($v_x$) and/or a horizontal pressure gradient $\left(\frac{\Delta{P}}{\Delta{x}} = P_1 - P_0 \right)$, that is a Couette, Poiseuille, or Couette-Poiseuille flow. *Right*: Finite difference grid using a conservative gridding, that is the viscosity is defined on the *vertices* and the horizontal velocity in between. The open circles at the top are *ghost nodes* for the horizontal velocity. 
+**Figure 1.** **Channel flow setup and finite difference grid.** *Left:* Sketch of uniaxial channel flow driven by either a constant velocity at the top ($v_x$) and/or a horizontal pressure gradient $\left(\frac{\Delta P}{\Delta x} = P_1 - P_0\right)$, representing Couette, Poiseuille, or Couette-Poiseuille flow. *Right:* Finite difference grid with conservative gridding—viscosity is defined at *vertices*, and horizontal velocity is defined between them. The open circles at the top represent *ghost nodes* for horizontal velocity.
 
-The finite difference grid shown in Figure 1 is a conservative gridding, that is the horizontal velocity is defined at different nodes as the viscosity. Thus, the horizontal shear stress is conserved between two adjacent grid points and defined on the *vertices*. A conservative gridding is required in case the viscosity does vary with depth. Before solving the problem for a variable, depth-dependent viscosity, let's first look at an isoviscous case.
+The finite difference grid employs a conservative scheme where velocity and viscosity are defined at staggered nodes. This ensures the horizontal shear stress is conserved across adjacent grid points, with stress values defined at the *vertices*. Such conservative gridding is essential when viscosity varies with depth. To build intuition, we first consider the simpler case of constant viscosity before addressing depth-dependent viscosity.
 
-***Constant Viscosity***
+### Constant Viscosity
 
-In case the viscosity is constant, a conservative gridding is not necessary. Equation $(1)$ is then given by: 
+In the case of constant viscosity, a conservative gridding is not required. Equation (1) simplifies to:
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \eta\frac{\partial^2{v_x}}{\partial{y^2}}.
 \end{equation}$
 
-Using the finite difference approximations for the partial derivatives (second derivative, central differences), equation $(4)$ is given as (assuming the horizontal pressure gradient is constant and known): 
+Applying a central difference approximation to the second derivative, and assuming a constant and known horizontal pressure gradient, this becomes:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}} = \eta \left( \frac{v_{x,j-1} - 2v_{x,j} + v_{x,j+1}}{\Delta{y^2}} \right),
 \end{equation}$
 
-which can be simplified to: 
+which can be rewritten in a more compact form:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=av_{x,j-1}+bv_{x,j}+cv_{x,j+1}, 
@@ -52,41 +52,49 @@ $\begin{equation}
 
 where
 
-$a = c = \frac{\eta}{\Delta{y^2}},\ \textrm{and}\ b = -\frac{2\eta}{\Delta{y^2}}.$
+$a = c = \frac{\eta}{\Delta{y^2}},\quad \textrm{and} \quad b = -\frac{2\eta}{\Delta{y^2}}.$
 
-This is a linear system of equations in the form of $\bold{K} \cdot \overrightharpoon{v_x} = \overrightharpoon{rhs}$ with a three-diagonal coefficient matrix $\bold{K}$. The pressure gradient and the velocities at the boundaries define the known right-hand side (rhs) and the horizontal velocity in between the *vertices* are the unknown vector. For the sake of simplicity, no additional solver for the constant velocity case is included in the ```GeoModBox.jl```, thus the viscosity needs to be treated numerically as an array and not as a scalar. For more information on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
+This results in a linear system of equations of the form:
 
-***Variable Viscosity***
+$\begin{equation}
+\bold{K} \cdot \overrightharpoon{v_x} = \overrightharpoon{rhs}
+\end{equation}$ 
 
-In case of a variable viscosity, equation $(1)$ is given by: 
+where $\bold{K}$ is a tridiagonal matrix, $\overrightharpoon{v_x}$ is the vector of unknown horizontal velocites between the vertices, and $\overrightharpoon{\text{rhs}}$ is the known right-hand side defined by the pressure gradient and boundary velocities. 
+
+For simplicity, no separate solver for the constant viscosity case is included in `GeoModBox.jl`. Instead, viscosity is always treated numerically as an array, even in isoviscous cases. For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
+
+### Variable Viscosity
+
+In the case of variable viscosity, Equation (1) becomes:
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}} = -\frac{\partial{P}}{\partial{x}} + \frac{\partial}{\partial{y}}\left(\eta\frac{\partial{v_x}}{\partial{y}}\right).
 \end{equation}$
 
-The partial difference operators (first derivatives) in Equation $(7)$ are approximated using central finite differences, where the horizontal shear stress $\tau_{xy}$ and the viscosity are defined at the *vertices* and the velocity in between (for the sake of simplcity, let's call it the *centroids* in the 1-D case). 
+The differential operators in Equation (8) are approximated using central finite differences. The shear stress $\tau_{xy}$ and viscosity $\eta$ are defined at the vertices, while the velocity $v_x$ is defined at the *centroids* (the midpoints between adjacent vertices in 1D).
 
-Using central difference for the shear stress, Equation $(7)$ is given by: 
+Using a central difference approximation for the shear stress, Equation (8) becomes:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\tau_{xy,j+1}-\tau_{xy,j}}{\Delta{y}},\ \textrm{for}\ j = 1:nc, 
 \end{equation}$
 
-or in form of the unknowns: 
+or, in terms of the velocity:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\eta_{j+1}\frac{\partial{v_x}}{\partial{y}}\vert_{j+1}-\eta_{j}\frac{\partial{v_x}}{\partial{y}}\vert_{j}}{\Delta{y}},\ \textrm{for}\ j = 1:nc.
 \end{equation}$
 
-Approximating the partial derivatives for the velocity results in: 
+Approximating the velocity derivatives using central differences gives:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\eta_{j+1}\frac{v_{x,j+1}-v_{x,j}}{\Delta{y}}-\eta_{j}\frac{v_{x,j}-v_{x,j-1}}{\Delta{y}}\vert_{j}}{\Delta{y}}.
 \end{equation}$
 
-**Note**: The index $j$ goes from $1$ to $nc$, but the viscosity is defined on the *vertices* and the velocity on the *centroids*! 
+>**Note**: The index $j$ ranges from $1$ to $nc$, where viscosity is defined on the vertices and velocity on the centroids.
 
-In terms of the unknown velocity, equation $(10)$ can be rewritten as: 
+Rewriting the above in terms of the unknown velocities, the equation becomes:
 
 $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=av_{x,j-1}+bv_{x,j}+cv_{x,j+1}, 
@@ -95,38 +103,40 @@ $\begin{equation}
 where
 
 $\begin{equation}
-a = \frac{\eta_j}{\Delta{y^2}}, b = -\frac{\eta_j+\eta_{j+1}}{\Delta{y^2}},\ \textrm{and}\ c = \frac{\eta_{j+1}}{\Delta{y^2}}. 
+a = \frac{\eta_j}{\Delta{y^2}}, \quad 
+b = -\frac{\eta_j+\eta_{j+1}}{\Delta{y^2}},\ \textrm{and}\ \quad 
+c = \frac{\eta_{j+1}}{\Delta{y^2}}. 
 \end{equation}$
 
-Again, this is a linear system of equations with a three-diagonal coefficient matrix.  
+This again results in a linear system of equations with a tridiagonal coefficient matrix.
 
 ### Boundary Conditions
 
-To solve the equations, one needs to define the boundary conditions. To properly implement *Dirichlet* and *Neumann* boundary conditions, one needs to describe the velocity at the *ghost nodes*. Similar to the thermal boundary conditions, the value for the velocity at the *ghost nodes* can be defined assuming a constant velocity at the boundary (i.e., *Dirichlet*) or a constant velocity gradient across the boundary (i.e., *Neumann*). The velocites are then defined as: 
+To solve the equations, boundary conditions must be specified. For both *Dirichlet* and *Neumann* boundary conditions, the velocity values at the ghost nodes need to be defined. As with thermal boundary conditions, the ghost node velocities can be determined by assuming either a constant velocity at the boundary (Dirichlet) or a constant velocity gradient across the boundary (Neumann). The ghost node velocities are defined as:
 
-**Dirichlet**
+**Dirichlet Boundary Conditions**
 
-*Bottom*
+**Bottom**
 
 $\begin{equation}
 V_{G,S} = 2V_{BC,S} - v_{x,1}
 \end{equation}$
 
-*Top*
+**Top**
 
 $\begin{equation}
 V_{G,N} = 2V_{BC,N} - v_{x,nc}
 \end{equation}$
 
-**Neumann**
+**Neumann Boundary Conditions**
 
-*Bottom*
+**Bottom**
 
 $\begin{equation}
 V_{G,S} = v_{x,1} - c_s\Delta{y},
 \end{equation}$
 
-*Top*
+**Top**
 
 $\begin{equation}
 V_{G,N}=v_{x,nc} + c_N\Delta{y},
@@ -135,34 +145,36 @@ V_{G,N}=v_{x,nc} + c_N\Delta{y},
 where 
 
 $\begin{equation}
-c_S = \frac{dv_x}{dy}\vert_{S},\ \textrm{and}\ c_N=\frac{dv_x}{dy}\vert_{N}
+c_S = \frac{dv_x}{dy}\vert_{S},\ \textrm{and}\ c_N=\frac{dv_x}{dy}\vert_{N}, 
 \end{equation}$
 
-To obtain a symmetric coefficient matrix one needs to adjust the coefficients for the *centroids* adjacent to the boundary and the corresponding right-hand side. The equations at the top and bottom are then given by:  
+are the velocity gradients across the boundary. 
 
-**Dirichlet**
+To maintain a symmetric coefficient matrix, the coefficients at the centroids adjacent to the boundaries and the corresponding right-hand side (RHS) must be adjusted. The discretized equations at the bottom and top boundaries become:
 
-*Bottom* ($j=1$)
+**Dirichlet Boundary Conditions**
+
+**Bottom**
 
 $\begin{equation}
 \left(b-a\right)v_{x,1}+cv_{x,2} = \frac{\partial{P}}{\partial{x}} - 2aV_{BC,S}
 \end{equation}$
 
-*Top* ($j=nc$)
+**Top**
 
 $\begin{equation}
 av_{x,nc-1}+\left(b-c\right)v_{x,nx} = \frac{\partial{P}}{\partial{x}} - 2cV_{BC,N}
 \end{equation}$
 
-**Neumann**
+**Neumann Boundary Conditions**
 
-*Bottom* ($j=1$)
+**Bottom**
 
 $\begin{equation}
 \left(b+a\right)v_{x,1}+cv_{x,2} = \frac{\partial{P}}{\partial{x}} + ac_SΔy
 \end{equation}$
 
-*Top* ($j=nc$)
+**Top**
 
 $\begin{equation}
 av_{x,nc-1}+\left(b+c\right)v_{x,nx} = \frac{∂P}{∂x} - cc_NΔy
@@ -170,7 +182,7 @@ av_{x,nc-1}+\left(b+c\right)v_{x,nx} = \frac{∂P}{∂x} - cc_NΔy
 
 ### Solution 
 
-There are different ways to solve the linear system of equations. The most convenient one would be a direct solution using the right division of the coefficient matrix by the right-hand side. 
+There are different ways to solve the linear system of equations. The most convenient one is a direct solution using right division of the coefficient matrix by the right-hand side.
 
 **Direct**
 
@@ -178,54 +190,56 @@ $\begin{equation}
 v_x = \bold{K} ∖ rhs
 \end{equation}$
 
-Similar to the thermal problem, one can also solve the linear system of equations using the defect correction method. This is very helpful, once the system is non-linear and one can simply iterate to reduce the residual. 
+Similar to the thermal problem, the system can also be solved using the **defect correction** method. This becomes especially useful when the system is non-linear, as it allows one to iteratively reduce the residual.
 
 **Defect Correction**
 
-Here, one first calculates the residual of the governing equation: 
+The first step is to calculate the residual of the governing equation:
 
 $\begin{equation}
 R = -\frac{∂P}{∂x} + \frac{∂τ_{xy}}{∂y},
 \end{equation}$
 
-or in form of the unknown horizontal velocity:
+or in terms of the unknown horizontal velocity:
 
 $\begin{equation}
 R = -\frac{∂P}{∂x} + \bold{K} \cdot v_x. 
 \end{equation}$
 
-Assuming an initial guess for the horizontal velocity $v_{x,i}$ one obtains an initial residual $R_i$: 
+Assuming an initial guess for the horizontal velocity $v_{x,i}$, the initial residual is:
 
 $\begin{equation}
 R_i = -\frac{∂P}{∂x} + \bold{K_i} \cdot v_{x,i}.
 \end{equation}$
 
-Let's assume that the initial guess leads to the exact solution, i.e. the residual is zero, by adding a correction term $\delta{v_x}$. With a little algebra one finds: 
+Now assume that the initial guess can be corrected to the exact solution by adding a correction term $\delta{v_x}$. With some algebra:
 
 $\begin{equation}
 0 = -\frac{∂P}{∂x} + \bold{K}\left(v_{x,i}+ \delta{v_x} \right) = \bold{K}\cdot v_{x,i} -\frac{∂P}{∂x} + \bold{K}\cdot \delta{v_x} = R_i + \bold{K} \cdot \delta{v_x}.
 \end{equation}$
 
-Rearanging the equation to: 
+Rearanging gives: 
 
 $\begin{equation}
 R_i = -\bold{K}\cdot{\delta{v_x}}, 
 \end{equation}$
 
-one can solve for the correction term: 
+so the correction term is:
 
 $\begin{equation}
 \delta{v_x} = -\bold{K}^{-1}R_i. 
 \end{equation}$
 
-Finally, adding the correction term to the initial guess gives the solution: 
+Finally, the corrected solution is:
 
 $\begin{equation}
 v_x^n = v_{x,i} + \delta{v_x}.
 \end{equation}$
 
-In case the system is linear, this would be the solution for the problem. For a non-linear problem, one needs to iterate over the equation until the residual is small enough. For more information on how this is implemented see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
+If the system is linear, this gives the solution in one step. For non-linear problems, this process must be iterated until the residual becomes sufficiently small.
 
-How to solve the channel flow problem using the defect correction method is given within the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl). 
+For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
-Solving the same issue using the direct solution is part of the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/08_1D_Stokes.ipynb).
+An example of solving the channel flow using the defect correction method is provided in the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl).
+
+Solving the same problem using the direct method is part of the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/08_1D_Stokes.ipynb).

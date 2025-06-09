@@ -1,12 +1,12 @@
 # Temperature Equation (1D)
 
-In one dimension, the conductive component of the *temperature equation* is given by (assuming only radiogenic heat sources):
+In one dimension, the conductive component of the *temperature equation* is expressed as follows, assuming only radiogenic heat sources:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H.
 \end{equation}$ 
 
-Incorporating Fourier’s law, and allowing for spatially variable thermal properties, the equation becomes:
+By incorporating Fourier’s law and allowing for spatially variable thermal properties, the equation becomes:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = \frac{\partial}{\partial x} k_x \frac{\partial T}{\partial x} + \rho H. 
@@ -18,29 +18,27 @@ $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \frac{\partial^2 T}{\partial x^2} + \frac{Q}{\rho c_p},
 \end{equation}$
   
-where $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], and $Q = \rho H$ is the volumetric heat production rate [W/m³].  
+where $\kappa = k/\rho/c_p$ is the thermal diffusivity [m²/s], and $Q = \rho H$ is the volumetric heat production rate [W/m³].  
 
-Equation (3) is a *parabolic partial differential equation* (PDE), which can be solved numerically given appropriate initial and boundary conditions.
+Equation (3) is classified as a *parabolic partial differential equation* (PDE), which can be solved numerically given appropriate initial and boundary conditions.
 
 ## Discretization and Numerical Schemes
 
-To numerically solve Equation (3), the spatial domain must be discretized and physical parameters assigned to their corresponding locations on the grid.  
+To solve Equation (3) numerically, the spatial domain must be discretized, assigning physical parameters to their corresponding grid locations.
 
-**Note**: Although the thermal conductivity is assumed constant for now, we adopt a *conservative gridding* approach to ensure physical consistency. In this scheme, temperature $T$ is defined at **cell centers** (centroids), while heat flux $q$ is defined at **cell interfaces** (vertices).
+> **Note**: Although thermal conductivity is currently assumed to be constant, a *conservative gridding* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at **cell centers** (centroids), while heat flux $q$ is defined at **cell interfaces** (vertices).
 
 ![1DDiscretization](../assets/Diff_1D_Discretization.png)
 
-**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D conductive part of the temperature equation. Temperature is defined at centroids and heat flux at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D conductive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the conductive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods.
-
-Below, we briefly describe these well-known schemes and highlight their strengths and limitations.
+The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the conductive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, we briefly describe these well-known schemes and highlight their respective strengths and limitations.
 
 ### Explicit Finite Difference Scheme (FTCS; Forward Euler)
 
-A basic and intuitive approach to solving the 1D heat conduction equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
+A fundamental and intuitive approach to solving the 1D heat conduction equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
 
-This method approximates the continuous PDE on a discrete grid and converges toward the analytical solution as the spatial ($\Delta x$) and temporal ($\Delta t$) resolutions become sufficiently small. Its main advantages are **simplicity** and **computational efficiency**.
+This method approximates the continuous PDE on a discrete grid and converges to the analytical solution as the spatial ($\Delta x$) and temporal ($\Delta t$) resolutions are refined. Its main advantages are **simplicity** and **computational efficiency**.
 
 However, the FTCS scheme is **conditionally stable**. Its stability is governed by the *heat diffusion stability criterion*, which can be derived via *Von Neumann* analysis. This assesses how numerical perturbations grow or decay over time.
 
@@ -50,7 +48,7 @@ $\begin{equation}
 \Delta t < \frac{\Delta{x^2}}{2 \kappa}.
 \end{equation}$ 
 
-Thus, the maximum time step is limited by the grid spacing.
+Consequently, the maximum allowable time step is constrained by the spatial resolution.
 
 Discretizing Equation (3) with the FTCS scheme gives:
 
@@ -77,9 +75,9 @@ Equation (6) is solved for all interior nodes at each time step, assuming initia
 
 For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
-#### Boundary Conditions 
+### Boundary Conditions 
 
-Boundary conditions are implemented using *ghost nodes*. Here, we consider the two most common thermal boundary conditions: *Dirichlet* and *Neumann*.
+Boundary conditions are implemented using ghost nodes. Here, we consider the two most common thermal boundary conditions: Dirichlet and Neumann.
 
 **Dirichlet Boundary Condition**
 
@@ -119,7 +117,7 @@ $\begin{equation}
 
 where $c_W$ and $c_E$ are the prescribed temperature gradients on the west and east boundaries, respectively.
 
-These ghost node definitions are substituted into the numerical scheme to enforce boundary conditions at each time step.
+These ghost node definitions are substituted into the numerical scheme to consistently enforce the boundary conditions at each time step.
 
 ### Implicit Scheme (Backward Euler)
 
@@ -159,19 +157,19 @@ The coefficients are arranged to match the matrix structure used in the *defect 
 
 > **Note**: While the implicit method is unconditionally stable, very large time steps may still yield inaccurate results, particularly for resolving small-scale thermal gradients.
 
-#### Boundary Conditions
+### Boundary Conditions
 
-The temperature at *ghost nodes* is defined as before (see Equations (7)-(10)). However, to maintain symmetry in the coefficient matrix and ensure consistent discretization near boundaries, both the **matrix coefficients** and the **right-hand side** must be modified for the nodes adjacent to the boundaries.
+The temperature at ghost nodes is defined as before (see Equations (7)-(10)). However, to maintain symmetry in the coefficient matrix and ensure consistent discretization near boundaries, both the **matrix coefficients** and the **right-hand side** must be modified for the nodes adjacent to the boundaries.
 
 **Dirichlet Boundary Condition**
 
-*West* ($i=1$)
+**West boundary**
 
 $\begin{equation}
 \left(3 a + b\right) T_{1}^{n+1} - a T_{2}^{n+1} = b T_{1}^{n} + 2 a T_{BC,W},
 \end{equation}$
 
-*East* ($i=nc$)
+**East boundary**
 
 $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(3 a + b\right) T_{nc}^{n+1}  = b T_{nc}^{n} + 2 a T_{BC,E}, 
@@ -179,13 +177,13 @@ $\begin{equation}
 
 **Neumann Boundary Condition**
 
-*West* ($i=1$)
+**West boundary**
 
 $\begin{equation}
 \left(a + b\right) T_{1}^{n+1} - a T_{2}^{n+1} = b T_{1}^{n} - a c_{W} \Delta{x},
 \end{equation}$
 
-*East* ($i=nc$)
+**East boundary**
 
 $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(a + b\right) T_{nc}^{n+1}  = b T_{nc}^{n} + a c_{E} \Delta{x}, 
@@ -202,7 +200,7 @@ These adjustments ensure that the boundary conditions are enforced consistently 
 
 The **defect correction method** is an iterative scheme that progressively reduces the residual of the conductive part of the temperature equation using a correction term. If the system is linear, one iteration is sufficient to obtain the exact solution.
 
-#### Theory
+### Theory
 
 The conductive part of the temperature equation, in implicit form, can be written as:
 
@@ -276,7 +274,7 @@ a = \frac{\kappa}{\Delta{x}^2},\ \textrm{and} \ b = \frac{1}{\Delta{t}}.
 
 This structure defines the coefficients in $\mathbf{K}$.
 
-#### Boundary Conditions
+### Boundary Conditions
 
 As in the implicit FTCS method, the coefficients in $\mathbf{K}$ must be adjusted for centroids adjacent to the boundaries (see Equations (14)–(17)). However, **the right-hand side vector $b$ remains unchanged** during these modifications.
 
@@ -286,7 +284,7 @@ This makes the defect correction method efficient and modular, especially when r
 
 The fully implicit FTCS method is unconditionally stable but only first-order accurate in time. To improve temporal accuracy while retaining stability, the **Crank-Nicolson scheme** can be used. This method employs a time-centered (implicit) discretization and is second-order accurate in time.
 
-In one dimension, the Crank-Nicolson discretization of the temperature equation (Equation (3)) becomes:
+In one dimension, the Crank-Nicolson discretization of the conductive part of the temperature equation (Equation (3)) becomes:
 
 $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta{x^2}}. 
@@ -300,52 +298,53 @@ $\begin{equation}
 
 where:
 
-$a = \frac{\kappa}{2\Delta{x^2}}$ and $b = \frac{1}{\Delta{t}}$. 
+$a = \frac{\kappa}{2\Delta{x^2}}\quad \textrm{and}\quad b = \frac{1}{\Delta{t}}.$ 
 
-#### Boundary Conditions
+### Boundary Conditions
 
 To obtain a symmetric coefficient matrix, both the matrix and the right-hand side vector must be modified at the boundaries. The equations for centroids adjacent to the boundaries are:
 
-**Dirichlet**
+**Dirichlet Boundary Conditions**
 
-*West* ($i=1$)
+**West boundary**
 
 $\begin{equation}
 \left(b + 3 a \right) T_{1}^{n+1} - a T_{2}^{n+1} = \left( b - 3 a \right) T_{1}^{n} + a T_{2}^{n} + 4 a T_{BC,W}
 \end{equation}$
 
-*East* ($i=nc$)
+**East boundary**
 
 $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b + 3 a \right) T_{nc}^{n+1} = a T_{nc-1}^{n} + \left( b - 3 a \right) T_{nc}^{n} + 4 a T_{BC,E}
 \end{equation}$
 
-**Neumann**
+**Neumann Boundary Conditions**
 
-*West* ($i=1$)
+**West boundary**
 
 $\begin{equation}
 \left(b+a\right)T_{1}^{n+1} - a T_{2}^{n+1} = \left(b-a\right)T_{1}^{n} + a T_{2} - 2ac_{W} \Delta{x}
 \end{equation}$
 
-*East* ($i=nc$)
+**East boundary**
 
 $\begin{equation}
 -a T_{nc-1}^{n+1} + \left(b+a\right)T_{nc}^{n+1}  = a T_{nc-1}^{n} + \left(b-a\right)T_{nc}^{n} + 2ac_{E} \Delta{x}
 \end{equation}$
 
-The resulting coefficient matrix remains tridiagonal, preserving computational efficiency. However, memory demands increase with higher resolution models due to the larger size of the linear system, making this method more memory-intensive.
+The resulting coefficient matrix remains tridiagonal, preserving computational efficiency. However, memory requirements increase with finer spatial resolution due to the larger size of the linear system, making this method more memory-intensive.
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
 ---
 
-#### Temperature Field Management
+### Temperature Field Management
 
-- For the **explicit solver** and the **defect correction method**, the full temperature field—including ghost nodes—is used to evaluate the temperature equation. The old temperature field is assigned to the centroids of the extended grid to compute the new temperature.
-- For the **implicit methods** (Backward Euler, Crank-Nicolson), the current temperature at the centroids is assigned to the right-hand side vector. The coefficient matrix is then assembled, and the new temperature is computed by solving the resulting linear system.
+For the **explicit solver** and the **defect correction method**, the full temperature field—including ghost nodes—is used to evaluate the temperature equation. The old temperature field is assigned to the centroids of the extended grid to compute the new temperature.
 
-#### Summary
+For the **implicit methods** (Backward Euler, Crank-Nicolson), the current temperature at the centroids is assigned to the right-hand side vector. The coefficient matrix is then assembled, and the new temperature is computed by solving the resulting linear system.
+
+### Summary
 
 While the **explicit FTCS scheme** is simple and efficient for small time steps, **implicit methods** like Backward Euler and Crank-Nicolson are preferred for their unconditional stability. The Crank-Nicolson scheme further improves accuracy with its second-order time discretization. The **defect correction method** provides a flexible framework for both linear and nonlinear problems, allowing for iterative refinement when needed.
 
@@ -353,7 +352,7 @@ While the **explicit FTCS scheme** is simple and efficient for small time steps,
 
 ## Variable Thermal Parameters 
 
-To solve the *conductive* part of the 1-D temperature equation with **spatially variable thermal parameters**, a conservative finite difference scheme must be used. In this formulation, temperature is defined at *centroids*, while heat flux and thermal conductivity are defined at *vertices* (see Figure 1).
+To solve the conductive component of the 1D temperature equation with **spatially variable thermal properties**, a conservative finite difference scheme is employed. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
 
 The governing equation is:
 
@@ -372,7 +371,7 @@ $y$ is the vertical coordinate (depth) [m]
 
 ### Discretization
 
-In a conservative scheme, the vertical conductive heat flux $q_y$ is defined on *vertices*, as:
+In a conservative scheme, the vertical conductive heat flux $q_y$ is defined on vertices, as:
 
 $\begin{equation}
 \left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
@@ -382,16 +381,16 @@ where $n_v$ is the number of *vertices*.
 
 ### Explicit Finite Difference Formulation
 
-Using the above discretization, the time evolution of temperature at each *centroid* is computed from:
+Using the above discretization, the time evolution of temperature at each centroid is computed from:
 
 $\begin{equation}
 \rho_j c_{p,j} \frac{T_{j}^{n+1} - T_{j}^{n}}{\Delta{t}} = -\frac{q_{y,j+1}^{n} - q_{y,j}^{n} }{\Delta{y}} + \rho_j H_j,\ \textrm{for}\ j = 1:nc, 
 \end{equation}$
 
 where 
-$T$ is evaluated at *centroids*
-$q_y$ and $k$ are evaluated at *vertices*
-$\Delta t$ is the time step
+$T$ is evaluated at centroids,
+$q_y$ and $k$ are evaluated at vertices,
+$\Delta t$ is the time step, and
 $\Delta y$ is the spatial grid resolution.
 
 Substituting the expression for $q_y$ gives:
@@ -414,8 +413,8 @@ a = \frac{\Delta{t}}{\Delta{y^2} \rho c_{p_{j}}}.
 
 ### Boundary Conditions
 
-For centroids adjacent to the boundaries, **ghost nodes** are used to evaluate the temperature gradient consistently with the chosen thermal boundary condition (Dirichlet or Neumann). These ghost node values are computed according to equations (7)–(10).
+For centroids adjacent to the boundaries, ghost nodes are used to evaluate the temperature gradient consistently with the chosen thermal boundary condition (Dirichlet or Neumann). These ghost node values are computed according to equations (7)–(10).
 
 ---
 
-For implementation details, refer to the [GeoModBox.jl source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
