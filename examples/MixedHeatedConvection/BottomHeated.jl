@@ -88,8 +88,6 @@ D       =   DataFields(
     Tmin    =   0.0,
     Tmean   =   0.0,
 )
-# Wärmeproduktionsrate ------
-@. D.Q      =   P.Q₀
 # ------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
 divV        =   zeros(Float64,NC...)
@@ -258,12 +256,12 @@ for it = 1:T.itmax
         it          =   T.itmax
     end
     # Plot ========================================================== #
-    if mod(it,50) == 0 || it == T.itmax || it == 1
+    if mod(it,25) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-                ylims=(M.ymin, M.ymax),
+                ylims=(M.ymin, M.ymax),clims=(0,1),
                 layout=(2,1),subplot=1)
         heatmap!(p,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
@@ -325,6 +323,8 @@ for it = 1:T.itmax
             find    =   it
             break
         end
+    else
+        find    =   it
     end
     # --------------------------------------------------------------- #
     @printf("\n")
@@ -339,7 +339,7 @@ p2 = heatmap(x.c,y.c,D.T',
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Temperature",color=cgrad(:lajolla),
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-            ylims=(M.ymin, M.ymax),
+            ylims=(M.ymin, M.ymax),clims=(0,1),
             layout=(2,1),subplot=1)
     heatmap!(p2,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
@@ -372,10 +372,22 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string(".//examples/MixedHeatedConvection/Results/Bottom_Heated_TimeSeries",P.Ra,
+    savefig(q2,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_TimeSeries",P.Ra,
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
+end
+# ======================================================================= #
+# Plot Depth Profiles =================================================== #
+q3  =   plot(meanT[find,:],y.ce,
+            xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+            xlims=(0,1),ylims=(-1,0),
+            label="",aspect_ratio=1)
+if save_fig == 1
+    savefig(q3,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_Profiles",P.Ra,
+                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
+elseif save_fig == 0 
+    display(q3)
 end
 # ======================================================================= #
 end
