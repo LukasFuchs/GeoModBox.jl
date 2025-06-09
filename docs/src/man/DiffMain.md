@@ -66,7 +66,7 @@ For explanations, see the [examples documentation](./Examples.md) and the full [
 
 ## Heat Advection Equation
 
-To solve the **advective** component of the temperature equation, `GeoModBox.jl` offers several schemes:
+To solve the **advective** component of the temperature equation, ```GeoModBox.jl``` offers several schemes:
 
 - Upwind scheme  
 - Staggered leapfrog scheme  
@@ -79,7 +79,7 @@ The first three schemes work for any scalar field defined at **centroids**, incl
 
 **Passive tracers** can be used to advect temperature or phase IDs. When using phase IDs, the tracer data must include rheological and/or density parameters. These values are interpolated to either centroids or vertices, depending on the property (e.g., viscosity at vertices). Tracers are advected using a fourth-order Runge–Kutta method, with velocities from a staggered grid.
 
-See the tracer [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) and [documentation](./AdvectMain.md). Tracer code resides in [`src/Tracers`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [`src/AdvectionEquation`](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
+See the tracer [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) and [documentation](./AdvectMain.md). Tracer code resides in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
 A key consideration in advection schemes is the **preservation of amplitude and shape**, particularly in scenarios involving rigid body rotation. Numerical diffusion and interpolation can introduce significant artifacts depending on the chosen scheme, making the selection of an appropriate method essential.
 
