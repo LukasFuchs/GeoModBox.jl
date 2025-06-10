@@ -74,17 +74,17 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 **Figure 6. Falling Block Benchmark.** Final tracers distribution for specific cases with $\eta_r \ge 0 $. 
 
-### [Thermal Convection]()
+### [Thermal Convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection)
 
+![BHTC](./assets/Bottom_Heated_1.0e6_400_100_lineara.gif)
 
+**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. For more details see the [example documentations](./man/Examples.md).
 
-**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. 
-
-
+![IHTC](./assets/Internally_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 8. Internally Heated, isoviscous Convection for $Ra_Q$ = $...$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
-
+![MHTC](./assets/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 

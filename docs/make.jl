@@ -23,11 +23,11 @@ makedocs(
                 "1D" => "man/DiffOneD.md", # checked!
                 "2D" => "man/DiffTwoD.md", 
             ],
-            # "Advection Equation" => Any[
-            #     "General" => "man/AdvMain.md",
+            "Advection Equation" => Any[
+                 "General" => "man/AdvMain.md", # Checked! 
             #     "1D" => "man/AdvOneD.md",
             #     "2D" => "man/AdvTwoD.md",
-            # ],
+            ],
             "Momentum Equation" => Any[
                 "General" => "man/MomentumMain.md", # Checked! 
                 "1D" => "man/MomentumOneD.md", # Checked! 

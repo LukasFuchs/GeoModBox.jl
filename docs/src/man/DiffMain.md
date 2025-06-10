@@ -46,7 +46,7 @@ See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solv
 
 At present, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, with exceptions in some 1-D and 2-D solvers. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
-**Example applications include:**
+### Examples
 
 - [1-D oceanic geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl)  
 - [1-D continental geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl)  
@@ -56,7 +56,7 @@ At present, only *Dirichlet* and *Neumann* boundary conditions are supported. Mo
 
 For explanations, see the [examples documentation](./Examples.md) and the full [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
 
-**Exercises include:**
+### Exercises
 
 - [1-D forward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/02_1D_Heat_explicit.ipynb)  
 - [1-D backward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit.ipynb)  
@@ -73,24 +73,16 @@ To solve the **advective** component of the temperature equation, ```GeoModBox.j
 - Semi-Lagrangian scheme  
 - Passive tracers/markers
 
-See the [advection documentation](./AdvectMain.md) for method-specific details.
+See the [advection documentation](./AdvectMain.md) and source code for method-specific details. Tracer code resides in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
-The first three schemes work for any scalar field defined at **centroids**, including ghost nodes, and use centroid-defined velocity fields.
-
-**Passive tracers** can be used to advect temperature or phase IDs. When using phase IDs, the tracer data must include rheological and/or density parameters. These values are interpolated to either centroids or vertices, depending on the property (e.g., viscosity at vertices). Tracers are advected using a fourth-order Runge–Kutta method, with velocities from a staggered grid.
-
-See the tracer [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl) and [documentation](./AdvectMain.md). Tracer code resides in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), while other schemes are in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
-
-A key consideration in advection schemes is the **preservation of amplitude and shape**, particularly in scenarios involving rigid body rotation. Numerical diffusion and interpolation can introduce significant artifacts depending on the chosen scheme, making the selection of an appropriate method essential.
-
-**Advection examples:**
+### Examples
 
 - [2-D advection with constant velocity field](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)  
 - [Resolution test of 2-D advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 
 See the [examples documentation](./Examples.md) for further details.
 
-**Advection exercises include:**
+### Exercises
 
 - [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
 - [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
