@@ -77,7 +77,7 @@ $\begin{equation}
 
 This method avoids numerical diffusion, but becomes increasingly unstable when strong gradients in the advected field are present.
 
-## Semi-Lagrangian Method
+## Semi-Lagrangian
 
 The methods discussed above each have drawbacks. The *semi-Lagrangian* method addresses several of them: it is stable, does not suffer from numerical diffusion, and is not constrained by the Courant criterion. It is related to tracer-based advection schemes and solves ODEs rather than using traditional finite differences. While not inherently conservative and subject to minor interpolation errors, it offers promising accuracy and efficiency.
 
