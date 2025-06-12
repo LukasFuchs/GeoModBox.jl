@@ -282,12 +282,10 @@ R,
 
 where the coefficients are defined as:
 
-$
-\begin{equation}
+$\begin{equation}
 a = \frac{\kappa}{\Delta{x}^2},\quad  
 b = \frac{\kappa}{\Delta{y}^2}, \textrm{and} \quad c = \frac{1}{\Delta{t}}, 
-\end{equation}
-$
+\end{equation}$
 
 In this formulation, the defect $R$ quantifies the deviation from the true solution and can be used iteratively to improve accuracy through successive correction steps.
 

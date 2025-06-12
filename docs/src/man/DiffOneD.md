@@ -148,10 +148,10 @@ $b = \dfrac{1}{\Delta t}$.
 This equation results in a tridiagonal system of the form:
 
 $\begin{equation}
-\mathbf{A} \cdot \overrightharpoon{x} = \overrightharpoon{\text{rhs}}
+\mathbf{A} \cdot \vec{x} = \vec{\text{rhs}}
 \end{equation}$
 
-where $\mathbf{A}$ is the coefficient matrix (with three non-zero diagonals), $\overrightharpoon{x}$ is the unknown temperature vector at time $n+1$, and $\overrightharpoon{\text{rhs}}$ is the known right-hand side.
+where $\mathbf{A}$ is the coefficient matrix (with three non-zero diagonals), $\vec{x}$ is the unknown temperature vector at time $n+1$, and $\vec{\text{rhs}}$ is the known right-hand side.
 
 The coefficients are arranged to match the matrix structure used in the *defect correction* method, preserving modularity.
 
