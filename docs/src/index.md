@@ -86,7 +86,7 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 ![MHTC](./assets/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
+**Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. [^1,^2,^3,^4,^5]
 
 ------------------
 

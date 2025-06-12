@@ -1,6 +1,8 @@
 # Advection Equation (2D)
 
-### The Upwind Scheme
+# Discretization Schemes
+
+## The Upwind Scheme
 
 The idea is that the flux into the local cell will only depend on the gradient of temperature in the direction upstream. The upwind scheme is similar to a *FTCS* discretization, however, the central spacial derivatives are replaced by single-sided forward and backward finite differences and one needs to consider the advection velocity as well, to ensure that the discretization in space is always upstream. In 2-D the advection equation is then given as: 
 
@@ -17,7 +19,7 @@ $\begin{equation}
 \Delta t \le \frac{\Delta x}{max(|v|)}.
 \end{equation}$
    
-### The Staggered Leap Frog (SLF) Scheme 
+## The Staggered Leapfrog (SLF) Scheme 
 
 This method considers a centered in time and centered in space discretization of the partial differentials, thus it has a higher order of accuracy in space (second order) and is suppose to not have any numerical diffusion. In 2-D the advection equation discretizes to:
 
@@ -27,12 +29,12 @@ $\begin{equation}
 
 For more details see [SLFAdvection2D.m].
 
-### The semi-lagragian scheme 
+## The semi-lagragian scheme 
 This method is related to the tracer-based advection by solving ordinary differential equations (*ODEs*), where it assumes that *imaginary tracers* are located at certain positions and land directly at the finite difference grid nodes after advection within one time step. Thus, one needs to calculate the *origin points* for each grid node back in time (e.g., one Euler time step) with a given velocity field (e.g., using an *iterative mid-point scheme*, i.e. one uses the velocity at a point half a time step backward in time) and then to interpolate the property from the regular grid points to the determined *origin points*. This scheme assumes that no heat-sources were active during the advection. The method does not have any numerical diffusion but shows inaccuracies due to the interpolation method. For more details see [SemiLagAdvection2D.m].
 
 - central point iteration
    
-### Passive tracers
+## Passive tracers
 
 Here, one assumes that the model domain is completely filled with so-called *tracers* or *markers*. These tracers are then advected by solving the *ODE* of a particle advection using a certain method (e.g., Euler or Runge Kutta) and they transport any property stored on them. However, care needs to be taken when interpolating those properties from the regular grid onto the tracers and back. This is even more complex if the property advected does have an effect on parameters controlling the governing equations (e.g., the viscosity in continuum euqation).
 
