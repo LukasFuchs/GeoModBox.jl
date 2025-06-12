@@ -34,7 +34,7 @@ $\begin{equation}
 
 which represents the number of grid points traversed in a single time step. 
 
-Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis* [^1,^2]. Furthermore, the central difference at $i$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
+Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. Furthermore, the central difference at $i$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
 
 ## Lax-Friedrichs method
 
@@ -172,6 +172,6 @@ All the above methods are implemented in the 1D advection exercise:
 
 # References
 
-[^1]: Spiegelman, M. (2004). Myths and methods in modeling. Columbia University Course Lecture Notes, available online at http://www. ldeo. columbia. edu/~ mspieg/mmm/course. pdf, accessed, 6, 2006.
+Spiegelman, M. (2004). Myths and methods in modeling. Columbia University Course Lecture Notes, available online at http://www. ldeo. columbia. edu/~ mspieg/mmm/course. pdf, accessed, 6, 2006.
 
-[^2]: W. H. Press, B. P. Flannery, S. A. Teukolsky, and W. T. Vetterling, Numerical Recipes 1986, (Cambridge Univ. Press, Cambridge, 1986).
+W. H. Press, B. P. Flannery, S. A. Teukolsky, and W. T. Vetterling, Numerical Recipes 1986, (Cambridge Univ. Press, Cambridge, 1986).

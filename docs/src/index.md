@@ -86,18 +86,18 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 ![MHTC](./assets/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. [^1,^2,^3,^4,^5]
+**Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure.
 
 ------------------
 
 # References
 
-[^1]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
 
-[^2]: Spiegelman, M. (2004). Myths and methods in modeling. Columbia University Course Lecture Notes, available online at http://www. ldeo. columbia. edu/~ mspieg/mmm/course. pdf, accessed, 6, 2006.
+Spiegelman, M. (2004). Myths and methods in modeling. Columbia University Course Lecture Notes, available online at http://www. ldeo. columbia. edu/~ mspieg/mmm/course. pdf, accessed, 6, 2006.
 
-[^3]:  Becker, T.W., and Kaus, B.J.P., 2016, Numerical modeling of Earth systems, an introduction to computational methods with focus on solid Earth applications of continuum mechanics: University of Southern California Lecture Notes, http://www-udc.ig.utexas.edu/external/becker/preprints/Geodynamics557.pdf (last accessed June 2025).
+Becker, T.W., and Kaus, B.J.P., 2016, Numerical modeling of Earth systems, an introduction to computational methods with focus on solid Earth applications of continuum mechanics: University of Southern California Lecture Notes, http://www-udc.ig.utexas.edu/external/becker/preprints/Geodynamics557.pdf (last accessed June 2025).
 
-[^4]:  W. H. Press, B. P. Flannery, S. A. Teukolsky, and W. T. Vetterling, Numerical Recipes 1986, (Cambridge Univ. Press, Cambridge, 1986).
+W. H. Press, B. P. Flannery, S. A. Teukolsky, and W. T. Vetterling, Numerical Recipes 1986, (Cambridge Univ. Press, Cambridge, 1986).
 
-[^5]: Becker, T., & Faccenna, C. (2025). Tectonic Geodynamics. Princeton University Press.
+Becker, T., & Faccenna, C. (2025). Tectonic Geodynamics. Princeton University Press.

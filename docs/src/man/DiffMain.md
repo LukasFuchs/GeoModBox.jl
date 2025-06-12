@@ -31,7 +31,7 @@ $\begin{equation}
 \rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
 \end{equation}$
 
-This equation captures temperature changes due to **conduction** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and conduction steps sequentially[^1].If the internally heat production does vary one needs to consider a slightly improved advection scheme by integrating the source terms [^2,^3].
+This equation captures temperature changes due to **conduction** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and conduction steps sequentially.If the internally heat production does vary one needs to consider a slightly improved advection scheme by integrating the source terms.
 
 ## Heat Diffusion Equation
 
@@ -89,8 +89,8 @@ See the [examples documentation](./Examples.md) for further details.
 
 # References
 
-[^1]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
 
-[^2]: Becker, 2
+Becker, 2
 
-[^3]: Spiegelman, 3
+Spiegelman, 3
