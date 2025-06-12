@@ -25,7 +25,7 @@ The Stokes equation provides two equations for three unknowns: $v_x$, $v_y$, and
 The conservation of mass (assuming an incompressible medium) is defined as:
 
 $\begin{equation}
-\text{div}\left(\overrightharpoon{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0.
+\text{div}\left(\vec{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0.
 \end{equation}$ 
 
 ## Discretization 
@@ -658,7 +658,7 @@ $\begin{equation}
 
 ## Solution 
 
-To solve the linear system, the coefficient matrix $\bold{K}$ must be assembled by collecting all coefficients associated with the discretized equations. Additionally, the right-hand side vector $\overrightharpoon{rhs}$ must be constructed, typically based on boundary and body forces (e.g., gravity). This setup is required, at minimum, for a direct solution.
+To solve the linear system, the coefficient matrix $\bold{K}$ must be assembled by collecting all coefficients associated with the discretized equations. Additionally, the right-hand side vector $\vec{rhs}$ must be constructed, typically based on boundary and body forces (e.g., gravity). This setup is required, at minimum, for a direct solution.
 
 Construction of the coefficient matrix $\bold{K}$ requires assigning a unique index to each unknown variable at every relevant grid point, ensuring a one-to-one correspondence between equations and unknowns. The indexing proceeds by:
 
@@ -766,14 +766,14 @@ This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of:
 
 **Figure 6. Coefficient matrix, variable viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$ and a variable viscosity. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuum equation. 
 
-The right-hand side vector $\overrightharpoon{rhs}$ is given by the boundary and initial conditions (see equations (14) - (44)). 
+The right-hand side vector $\vec{rhs}$ is given by the boundary and initial conditions (see equations (14) - (44)). 
 
 ### Direct 
 
 Using a direct solution method, one needs to do a right division of the coefficient matrix by the right-hand side to obtain the solution vector:
 
 $\begin{equation}
-\bold{K} \backslash \overrightharpoon{rhs} = \overrightharpoon{x}.
+\bold{K} \backslash \vec{rhs} = \vec{x}.
 \end{equation}$
 
 ### Defect Correction

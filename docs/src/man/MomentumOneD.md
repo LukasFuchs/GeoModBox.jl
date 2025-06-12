@@ -57,10 +57,10 @@ $a = c = \frac{\eta}{\Delta{y^2}},\quad \textrm{and} \quad b = -\frac{2\eta}{\De
 This results in a linear system of equations of the form:
 
 $\begin{equation}
-\bold{K} \cdot \overrightharpoon{v_x} = \overrightharpoon{rhs}
+\bold{K} \cdot \vec{v_x} = \vec{rhs}
 \end{equation}$ 
 
-where $\bold{K}$ is a tridiagonal matrix, $\overrightharpoon{v_x}$ is the vector of unknown horizontal velocites between the vertices, and $\overrightharpoon{\text{rhs}}$ is the known right-hand side defined by the pressure gradient and boundary velocities. 
+where $\bold{K}$ is a tridiagonal matrix, $\vec{v_x}$ is the vector of unknown horizontal velocites between the vertices, and $\vec{\text{rhs}}$ is the known right-hand side defined by the pressure gradient and boundary velocities. 
 
 For simplicity, no separate solver for the constant viscosity case is included in `GeoModBox.jl`. Instead, viscosity is always treated numerically as an array, even in isoviscous cases. For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
