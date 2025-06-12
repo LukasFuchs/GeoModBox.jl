@@ -74,18 +74,30 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 **Figure 6. Falling Block Benchmark.** Final tracers distribution for specific cases with $\eta_r \ge 0 $. 
 
-### [Thermal Convection]()
+### [Thermal Convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection)
 
+![BHTC](./assets/Bottom_Heated_1.0e6_400_100_lineara.gif)
 
+**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. For more details see the [example documentations](./man/Examples.md).
 
-**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Transient behavior of the temperature (top) and velocity field (bottom) using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. 
-
-
+![IHTC](./assets/Internally_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 8. Internally Heated, isoviscous Convection for $Ra_Q$ = $...$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
-
+![MHTC](./assets/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 9. Mixed Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** Same solvers, boundary, and initial condition used as in the previous figure. 
 
 ------------------
+
+# References
+
+[^1]: Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
+
+[^2]: Spiegelman, M. (2004). Myths and methods in modeling. Columbia University Course Lecture Notes, available online at http://www. ldeo. columbia. edu/~ mspieg/mmm/course. pdf, accessed, 6, 2006.
+
+[^3]:  Becker, T.W., and Kaus, B.J.P., 2016, Numerical modeling of Earth systems, an introduction to computational methods with focus on solid Earth applications of continuum mechanics: University of Southern California Lecture Notes, http://www-udc.ig.utexas.edu/external/becker/preprints/Geodynamics557.pdf (last accessed June 2025).
+
+[^4]:  W. H. Press, B. P. Flannery, S. A. Teukolsky, and W. T. Vetterling, Numerical Recipes 1986, (Cambridge Univ. Press, Cambridge, 1986).
+
+[^5]: Becker, T., & Faccenna, C. (2025). Tectonic Geodynamics. Princeton University Press.

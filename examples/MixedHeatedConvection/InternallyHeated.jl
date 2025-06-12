@@ -41,7 +41,7 @@ P   =   Physics(
     k       =   4.125,              #   Thermische Leitfaehigkeit [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.0e-5,             #   Thermischer Expnasionskoef. [ K^-1 ]
-    Q₀      =   3.07e-08,           #   Waermeproduktionsrate pro Volumen [W/m^3]
+    Q₀      =   1.84e-08,           #   Waermeproduktionsrate pro Volumen [W/m^3]
     η₀      =   3.947725485e23,     #   Viskositaet [ Pa*s ] [1.778087025e21]
     ΔT      =   2500.0,             #   Temperaturdifferenz
     # Falls Ra < 0 gesetzt ist, dann wird Ra aus den obigen Parametern
@@ -257,13 +257,24 @@ for it = 1:T.itmax
         Time[it]    =   Time[it-1] + T.Δ
         it          =   T.itmax
     end
+    # Wärmefluss an der Oberfläche ================================== #
+    @. D.ΔTbot  =   
+         (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
+        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
+    @. D.ΔTtop  =   
+        (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
+        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
+    Nus[it]     =   mean(D.ΔTtop)
+    meanT[it,:] =   mean(D.T_ex,dims=1)
+    meanV[it]   =   mean(D.vc)
+    # --------------------------------------------------------------- #
     # Plot ========================================================== #
-    if mod(it,50) == 0 || it == T.itmax || it == 1
+    if mod(it,25) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-                ylims=(M.ymin, M.ymax),
+                ylims=(M.ymin, M.ymax),clims=(0,1),
                 layout=(2,1),subplot=1)
         heatmap!(p,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
@@ -290,17 +301,6 @@ for it = 1:T.itmax
     # Diffusion ===================================================== #
     CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
     # --------------------------------------------------------------- #
-    # Wärmefluss an der Oberfläche ================================== #
-    @. D.ΔTbot  =   
-         (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
-        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
-    @. D.ΔTtop  =   
-        (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
-        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
-    Nus[it]     =   mean(D.ΔTtop)
-    meanT[it,:] =   mean(D.T_ex,dims=1)
-    meanV[it]   =   mean(D.vc)
-    # --------------------------------------------------------------- #
     # Check break =================================================== #
     # If the maximum time is reached or if the models reaches steady 
     # state the time loop is stoped! 
@@ -325,6 +325,8 @@ for it = 1:T.itmax
             find    =   it
             break
         end
+    else
+        find    =   it
     end
     # --------------------------------------------------------------- #
     @printf("\n")
@@ -339,7 +341,7 @@ p2 = heatmap(x.c,y.c,D.T',
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Temperature",color=cgrad(:lajolla),
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-            ylims=(M.ymin, M.ymax),
+            ylims=(M.ymin, M.ymax),clims=(0,1),
             layout=(2,1),subplot=1)
     heatmap!(p2,x.c,y.c,D.vc',color=:imola,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
@@ -376,6 +378,18 @@ if save_fig == 1
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
+end
+# ======================================================================= #
+# Plot Depth Profiles =================================================== #
+q3  =   plot(meanT[find,:],y.ce,
+            xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+            xlims=(0,1),ylims=(-1,0),
+            label="",aspect_ratio=1)
+if save_fig == 1
+    savefig(q3,string("./examples/MixedHeatedConvection/Results/Internally_Heated_Profiles",P.Ra,
+                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
+elseif save_fig == 0 
+    display(q3)
 end
 # ======================================================================= #
 end
