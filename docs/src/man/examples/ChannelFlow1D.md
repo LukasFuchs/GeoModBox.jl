@@ -1,4 +1,4 @@
-# [Channel Flow; Defect correction (1D)]((https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl))
+# [Channel Flow; Defect correction (1D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)
 
 <!--
 ### Channel Flow
