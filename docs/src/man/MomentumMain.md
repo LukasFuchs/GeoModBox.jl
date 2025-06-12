@@ -81,7 +81,7 @@ $\begin{equation}
 
 Together, the momentum and continuity equations allow solving for $v_x$, $v_y$, and $P$.
 
-## Example Problems
+## Examples
 
 The following examples demonstrate the application of the Stokes equations:
 
@@ -98,7 +98,7 @@ Examples of coupled temperature–momentum systems (i.e., **convection models**)
 
 See the [examples documentation](./Examples.md) for further details.
 
-### Exercises
+## Exercises
 
 - [Steady-state, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)  
 - [Time-dependent, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/10_2D_Falling_Block_td.ipynb)

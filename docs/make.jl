@@ -23,11 +23,11 @@ makedocs(
                 "1D" => "man/DiffOneD.md", # checked!
                 "2D" => "man/DiffTwoD.md", 
             ],
-            # "Advection Equation" => Any[
-            #     "General" => "man/AdvMain.md",
-            #     "1D" => "man/AdvOneD.md",
+            "Advection Equation" => Any[
+                 "General" => "man/AdvectMain.md", # Checked! 
+                 "1D" => "man/AdvOneD.md", # Checked! 
             #     "2D" => "man/AdvTwoD.md",
-            # ],
+            ],
             "Momentum Equation" => Any[
                 "General" => "man/MomentumMain.md", # Checked! 
                 "1D" => "man/MomentumOneD.md", # Checked! 
@@ -41,6 +41,7 @@ makedocs(
                 "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md",
                 "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md",
                 "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md",
+                "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md",
                 "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md",
                 "Poisson Problem (2D)" => "man/examples/PoissonRestest.md",
                 "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
