@@ -257,6 +257,17 @@ for it = 1:T.itmax
         Time[it]    =   Time[it-1] + T.Δ
         it          =   T.itmax
     end
+    # Wärmefluss an der Oberfläche ================================== #
+    @. D.ΔTbot  =   
+         (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
+        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
+    @. D.ΔTtop  =   
+        (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
+        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
+    Nus[it]     =   mean(D.ΔTtop)
+    meanT[it,:] =   mean(D.T_ex,dims=1)
+    meanV[it]   =   mean(D.vc)
+    # --------------------------------------------------------------- #
     # Plot ========================================================== #
     if mod(it,25) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
@@ -289,17 +300,6 @@ for it = 1:T.itmax
     # --------------------------------------------------------------- #
     # Diffusion ===================================================== #
     CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
-    # --------------------------------------------------------------- #
-    # Wärmefluss an der Oberfläche ================================== #
-    @. D.ΔTbot  =   
-         (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
-        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
-    @. D.ΔTtop  =   
-        (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
-        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
-    Nus[it]     =   mean(D.ΔTtop)
-    meanT[it,:] =   mean(D.T_ex,dims=1)
-    meanV[it]   =   mean(D.vc)
     # --------------------------------------------------------------- #
     # Check break =================================================== #
     # If the maximum time is reached or if the models reaches steady 
