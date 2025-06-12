@@ -113,54 +113,54 @@ Using passive tracers represents a fully Lagrangian method. Initially distribute
 
 To transport a property with tracers:
 
-- **Define tracers** $\vec{x}_p$ with initial positions $\vec{x}_p\left(t=0\right)$ and initial property values $f\left(\vec{x}_p\left(t=0\right)\right)$.
+**1. Define tracers** $\vec{x}_p$ with initial positions $\vec{x}_p\left(t=0\right)$ and initial property values $f\left(\vec{x}_p\left(t=0\right)\right)$.
 
-- **Compute flow paths** by solving the ODE of particle motion, for instance using Forward Euler or Runge-Kutta integration.
+**2. Compute flow paths** by solving the ODE of particle motion, for instance using Forward Euler or Runge-Kutta integration.
 
-    In 1D, the path equation is:
+In 1D, the path equation is:
 
-    $\begin{equation}
-    \frac{dx_p}{dt}=v_x \left(x_p,t\right),
-    \end{equation}$
+$\begin{equation}
+\frac{dx_p}{dt}=v_x \left(x_p,t\right),
+\end{equation}$
 
-    where $x_p$ is the $x$-coordinate of the tracer. 
+where $x_p$ is the $x$-coordinate of the tracer. 
 
-    **Forward Euler**
+**Forward Euler**
 
-    The flow path ODE is approximated as:
+The flow path ODE is approximated as:
 
-    $\begin{equation}
-    \frac{x_p^{n+1}-x_p^n}{\Delta{t}} = v_x(x_p^n). 
-    \end{equation}$
+$\begin{equation}
+\frac{x_p^{n+1}-x_p^n}{\Delta{t}} = v_x(x_p^n). 
+\end{equation}$
 
-    Solving for the next position:
+ Solving for the next position:
 
-    $\begin{equation}
-    x_p^{n+1} = x_p^n + \Delta{t}\cdot v_x(x_p^n). 
-    \end{equation}$
+$\begin{equation}
+x_p^{n+1} = x_p^n + \Delta{t}\cdot v_x(x_p^n). 
+\end{equation}$
 
-    While simple, this method suffers from inaccuracy for large $\Delta{t}$ and $v_x$.
+While simple, this method suffers from inaccuracy for large $\Delta{t}$ and $v_x$.
     
-    **Runge-Kutta 4-th order**
+**Runge-Kutta 4-th order**
 
-    A more accurate method is the *4th-order Runge-Kutta*. In 1D, the next position is:
+A more accurate method is the *4th-order Runge-Kutta*. In 1D, the next position is:
 
-    $\begin{equation}
-    x_p^{n+1} = x_p^n + \frac{1}{6}k_1 + \frac{1}{3}k_2 + \frac{1}{3}k_3 + \frac{1}{6}k_4,
-    \end{equation}$
+$\begin{equation}
+x_p^{n+1} = x_p^n + \frac{1}{6}k_1 + \frac{1}{3}k_2 + \frac{1}{3}k_3 + \frac{1}{6}k_4,
+\end{equation}$
 
-    where:
+where:
 
-    $\begin{equation}
-    \begin{split}
-    k_1 & = \Delta{t} \cdot v_x(t^n,x_p^n) \\
-    k_2 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n+k_1/2) \\
-    k_3 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n + k_2/2) \\
-    k_4 & = \Delta{t} \cdot v_x(t^n+\Delta{t},x_p^n+k_3) \\
-    \end{split}
-    \end{equation}$
+$\begin{equation}
+\begin{split}
+k_1 & = \Delta{t} \cdot v_x(t^n,x_p^n) \\
+k_2 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n+k_1/2) \\
+k_3 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n + k_2/2) \\
+k_4 & = \Delta{t} \cdot v_x(t^n+\Delta{t},x_p^n+k_3) \\
+\end{split}
+\end{equation}$
 
-- **Interpolate grid values** of $f(x,t)$ from the tracer positions $\vec{x}_p$, e.g., using bilinear interpolation.
+**3. Interpolate grid values** of $f(x,t)$ from the tracer positions $\vec{x}_p$, e.g., using bilinear interpolation.
 
 Despite the advantages, care is required. Interpolation between grid and tracer data can cause smoothing and numerical diffusion, particularly in regions with sharp gradients. Additionally, clustering or depletion of tracers can introduce further errors and may require adaptive insertion of new tracers in under-sampled regions.
 
