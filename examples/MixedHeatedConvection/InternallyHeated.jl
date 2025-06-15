@@ -275,18 +275,17 @@ for it = 1:T.itmax
                 title="Temperature",color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
                 ylims=(M.ymin, M.ymax),clims=(0,1),
-                layout=(2,1),subplot=1)
-        heatmap!(p,x.c,y.c,D.vc',color=:imola,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin, M.xmax), 
-            ylims=(M.ymin, M.ymax),
-            layout=(2,1),subplot=2)
+                layout=(2,1),subplot=1)        
         quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
             la=0.5,color="black",
+            layout=(2,1),subplot=1)
+        plot!(p,meanT[it,:],y.ce,
+            xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+            xlims=(0,1),ylims=(-1,0),
+            label="",aspect_ratio=1,
             layout=(2,1),subplot=2)
         if save_fig == 1
             Plots.frame(anim)
@@ -338,23 +337,22 @@ if save_fig == 1
 end
 # Save final figure ===================================================== #
 p2 = heatmap(x.c,y.c,D.T',
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Temperature",color=cgrad(:lajolla),
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-            ylims=(M.ymin, M.ymax),clims=(0,1),
-            layout=(2,1),subplot=1)
-    heatmap!(p2,x.c,y.c,D.vc',color=:imola,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin, M.xmax), 
-            ylims=(M.ymin, M.ymax),
-            layout=(2,1),subplot=2)
-    quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
-            y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
-            quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-                    D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-            la=0.5,color="black",
-            layout=(2,1),subplot=2)
+        xlabel="x",ylabel="y",colorbar=true,
+        title="Temperature",color=cgrad(:lajolla),
+        aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+        ylims=(M.ymin, M.ymax),clims=(0,1),
+        layout=(2,1),subplot=1)
+quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
+    y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
+    quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+            D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
+    la=0.5,color="black",
+    layout=(2,1),subplot=1)
+plot!(p2,meanT[find,:],y.ce,
+    xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+    xlims=(0,1),ylims=(-1,0),
+    label="",aspect_ratio=1,
+    layout=(2,1),subplot=2)
 if save_fig == 1
     savefig(k,string("./examples/MixedHeatedConvection/Results/Internally_Heated_Iterations",P.Ra,
             "_",NC.x,"_",NC.y,
@@ -378,18 +376,6 @@ if save_fig == 1
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
-end
-# ======================================================================= #
-# Plot Depth Profiles =================================================== #
-q3  =   plot(meanT[find,:],y.ce,
-            xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
-            xlims=(0,1),ylims=(-1,0),
-            label="",aspect_ratio=1)
-if save_fig == 1
-    savefig(q3,string("./examples/MixedHeatedConvection/Results/Internally_Heated_Profiles",P.Ra,
-                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
-elseif save_fig == 0 
-    display(q3)
 end
 # ======================================================================= #
 end
