@@ -1,6 +1,6 @@
 # Temperature Equation (1D)
 
-In one dimension, the conductive component of the *temperature equation* is expressed as follows, assuming only radiogenic heat sources:
+In one dimension, the diffusive component of the *temperature equation* is expressed as follows, assuming only radiogenic heat sources:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} + \rho H.
@@ -30,13 +30,13 @@ To solve Equation (3) numerically, the spatial domain must be discretized, assig
 
 ![1DDiscretization](../assets/Diff_1D_Discretization.png)
 
-**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D conductive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D diffusive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the conductive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, we briefly describe these well-known schemes and highlight their respective strengths and limitations.
+The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
 
 ### Explicit Finite Difference Scheme (FTCS; Forward Euler)
 
-A fundamental and intuitive approach to solving the 1D heat conduction equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
+A fundamental and intuitive approach to solving the 1D heat diffusion equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
 
 This method approximates the continuous PDE on a discrete grid and converges to the analytical solution as the spatial ($\Delta x$) and temporal ($\Delta t$) resolutions are refined. Its main advantages are **simplicity** and **computational efficiency**.
 
@@ -77,7 +77,7 @@ For implementation details, see the [source code](https://github.com/GeoSci-FFM/
 
 ### Boundary Conditions 
 
-Boundary conditions are implemented using ghost nodes. Here, we consider the two most common thermal boundary conditions: Dirichlet and Neumann.
+Boundary conditions are implemented using ghost nodes. Here, the two most common thermal boundary conditions are considered: Dirichlet and Neumann.
 
 **Dirichlet Boundary Condition**
 
@@ -198,11 +198,11 @@ These adjustments ensure that the boundary conditions are enforced consistently 
 
 ### Defect Correction Method
 
-The **defect correction method** is an iterative scheme that progressively reduces the residual of the conductive part of the temperature equation using a correction term. If the system is linear, one iteration is sufficient to obtain the exact solution.
+The **defect correction method** is an iterative scheme that progressively reduces the residual of the diffusive part of the temperature equation using a correction term. If the system is linear, one iteration is sufficient to obtain the exact solution.
 
 ### Theory
 
-The conductive part of the temperature equation, in implicit form, can be written as:
+The diffusive part of the temperature equation, in implicit form, can be written as:
 
 $\begin{equation}
 \mathbf{K} \cdot T - b = R, 
@@ -220,7 +220,7 @@ $\begin{equation}
 R_i = \mathbf{K} \cdot T_i - b.
 \end{equation}$
 
-To reduce the residual, we define a correction $\delta T$ such that:
+To reduce the residual, a correction $\delta T$ is defined such that:
 
 $\begin{equation}
 0 = \mathbf{K} \left(T_i + \delta{T} \right) - b = \mathbf{K} T_i - b + \mathbf{K} \delta{T} = R_i + \mathbf{K} \delta{T}.
@@ -284,7 +284,7 @@ This makes the defect correction method efficient and modular, especially when r
 
 The fully implicit FTCS method is unconditionally stable but only first-order accurate in time. To improve temporal accuracy while retaining stability, the **Crank-Nicolson scheme** can be used. This method employs a time-centered (implicit) discretization and is second-order accurate in time.
 
-In one dimension, the Crank-Nicolson discretization of the conductive part of the temperature equation (Equation (3)) becomes:
+In one dimension, the Crank-Nicolson discretization of the diffusive part of the temperature equation (Equation (3)) becomes:
 
 $\begin{equation}
 \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} = \frac{\kappa}{2}\frac{(T_{i-1}^{n+1}-2T_{i}^{n+1}+T_{i+1}^{n+1})+(T_{i-1}^{n}-2T_{i}^{n}+T_{i+1}^{n})}{\Delta{x^2}}. 
@@ -352,7 +352,7 @@ While the **explicit FTCS scheme** is simple and efficient for small time steps,
 
 ## Variable Thermal Parameters 
 
-To solve the conductive component of the 1D temperature equation with **spatially variable thermal properties**, a conservative finite difference scheme is employed. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
+To solve the diffusive component of the 1D temperature equation with **spatially variable thermal properties**, a conservative finite difference scheme is employed. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
 
 The governing equation is:
 

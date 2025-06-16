@@ -1,6 +1,6 @@
 # Temperature Equation (2D)
 
-In two spatial dimensions ($x$ and $y$), the conductive part of the temperature equation, assuming only radiogenic heat production, is given by:
+In two spatial dimensions ($x$ and $y$), the diffusive part of the temperature equation, assuming only radiogenic heat production, is given by:
 
 $\begin{equation}
 \rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} -\frac{\partial q_y}{\partial y} + \rho H, 
@@ -30,23 +30,15 @@ where
 $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s] and
 $Q = \rho H$ is the volumetric heat production rate [W/m³].
 
-For an explicit finite difference discretization, the numerical stability criterion (heat diffusion condition) is given by:
-
-$\begin{equation}
-\Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
-\end{equation}$
-
-where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
-
 ## Discretization and Numerical Schemes
 
 To numerically solve equation (3), the spatial domain must be discretized and the relevant thermal parameters assigned to the appropriate computational nodes.
 
 ![2DDiffusionGrid](../assets/2D_Diffusion_Grid.jpg)
 
-**Figure 1. 2D Discretization.** *Conservative finite difference grid* for solving the 2D conductive temperature equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 2D Discretization.** *Conservative finite difference grid* for solving the 2D diffusive temperature equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
-A detailed implementation of various numerical schemes is provided in the example script [Gaussian_Diffusion.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl). This example demonstrates the application of several methods for solving the conductive part of the 2D temperature equation:
+A detailed implementation of various numerical schemes is provided in the example script [Gaussian_Diffusion.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl). This example demonstrates the application of several methods for solving the diffusive part of the 2D temperature equation:
 
 - **Explicit scheme**
 - **Fully implicit scheme**
@@ -59,6 +51,14 @@ The numerical results are compared with the analytical solution of a Gaussian te
 Each numerical scheme is briefly outlined in the following sections. For implementation details and derivations in one dimension, refer to the [1D solver documentation](DiffOneD.md).
 
 ### Explicit Scheme: FTCS (Forward Time, Centered Space)
+
+For an explicit finite difference discretization, the numerical stability criterion (heat diffusion condition) is given by:
+
+$\begin{equation}
+\Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
+\end{equation}$
+
+where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
 
 In two dimensions, the partial derivatives in equation (3) can be approximated using an explicit FTCS (Forward Time, Centered Space) finite difference scheme:
 
@@ -85,7 +85,7 @@ For implementation details, see the [source code](https://github.com/GeoSci-FFM/
 
 ### Boundary Conditions
 
-To correctly impose boundary conditions, *ghost nodes* are used adjacent to the domain boundaries.
+To correctly impose boundary conditions, ghost nodes are used adjacent to the domain boundaries.
 
 **Dirichlet Boundary Conditions**
 
@@ -191,7 +191,7 @@ c = \frac{1}{\Delta{t}}.
 
 ### Boundary Conditions
 
-Boundary conditions are imposed via ghost nodes, as previously described (see equations (7)–(14)). However, to ensure a symmetric coefficient matrix in the resulting linear system, both the coefficients and the right-hand side (RHS) for centroids adjacent to the boundaries must be modified accordingly.
+Boundary conditions are imposed via ghost nodes, as previously described (see equations (7)–(14)). However, to ensure a symmetric coefficient matrix in the resulting linear system, both the coefficients and the right-hand side for centroids adjacent to the boundaries must be modified accordingly.
 
 **Dirichlet Boundary Conditions**
 
@@ -256,7 +256,7 @@ These boundary-specific formulations ensure symmetry in the coefficient matrix a
 
 ### Defect Correction Method
 
-The defect correction method reformulates the conductive part of the temperature equation by introducing a residual term $R$, representing the defect (or error) in the discretized equation. This can be expressed as:
+The defect correction method reformulates the diffusive part of the temperature equation by introducing a residual term $R$, representing the defect (or error) in the discretized equation. This can be expressed as:
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} - \kappa \left( \frac{\partial^2{T}}{\partial{x}^2} + \frac{\partial^2{T}}{\partial{y}^2} \right) - \frac{Q_{i,j}^n}{\rho c_p} = R.
@@ -293,7 +293,7 @@ For more background on the defect correction approach, see the [1-D example](./D
 
 ### Cranck-Nicolson Approach (CNA)
 
-In 2-D, the conductive part of the heat equation (Equation 3) using the Crank–Nicolson method is written as:
+In 2-D, the diffusive part of the heat equation (Equation 3) using the Crank–Nicolson method is written as:
 
 $\begin{equation}\begin{gather*}
 & \frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta t} = \\ &
@@ -386,7 +386,7 @@ b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Alternating-Direction Implicit (ADI)
-In 2-D, the conducitve part of the heat equation (Equation 3) is discretized using the Alternating-Direction Implicit (ADI) method by splitting the time step into two fractional steps. The resulting system for each half-step is:
+In 2-D, the diffusive part of the heat equation (Equation 3) is discretized using the Alternating-Direction Implicit (ADI) method by splitting the time step into two fractional steps. The resulting system for each half-step is:
 
 #### First half-step (implicit in $y$, explicit in $x$):
 
@@ -418,9 +418,81 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 ### Variable Thermal Parameters 
 
-...*tba*...
+>**Note:** Variable thermal parameters are currently implemented for the 1-D time-dependent and 2-D steady-state cases. The 2-D defect correction method also supports time-dependent problems with variable parameters. These capabilities will be extended in future updates.
 
----
+The solution is the same as for constant thermal parameter, except that the coefficients of the matrix vary. 
+
+The residual $R$ is then calculated as 
+
+$\begin{equation}
+\rho c_p\frac{\partial{T}}{\partial{t}} + \frac{\partial{q_x}}{\partial{x}} + \frac{\partial{q_y}}{\partial{y}} - \rho H = R,
+\end{equation}$
+
+where $q_x$ and $q_y$ are the horizontal and vertical heat fluxes, respectively, and are defined as
+
+$\begin{equation}\begin{split}
+q_x & = - k_x\frac{\partial{T}}{\partial{x}} \\
+q_y & = - k_y\frac{\partial{T}}{\partial{y}},
+\end{split}\end{equation}$
+
+where $k_x$ and $k_y$ are the horizontal and vertical thermal conductivities. 
+
+Discretizing the equation in space and time using implicit finite differences yields: 
+
+$\begin{equation}
+\rho_{i,j} c_{p,(i,j)}\left(\frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta{t}}\right) 
++\frac{q_{x,(i+1,j)} - q_{x,(i,j)}}{\Delta{x}} 
++\frac{q_{y,(i,j+1)} - q_{y,(i,j)}}{\Delta{y}} 
+-\rho_{i,j} H_{i,j} = R, 
+\end{equation}$
+
+where $\Delta{x}$ and $\Delta{y}$ are the horizontal and vertical grid resolution, respectively, $\Delta{t}$ is the time step length and $i$ and $j$ the horizontal and vertical indices, respectively. 
+
+By applying Fourier's law the equation results in:
+
+$\begin{equation}
+\rho_{i,j} c_{p,(i,j)}\left(\frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta{t}}\right) 
++\left(
+\frac{-k_{x,(i+1,j)}\frac{T_{i+1,j}^{n+1}-T_{i,j}^{n+1}}{\Delta{x}} 
++k_{x,(i,j)}\frac{T_{i,j}^{n+1}-T_{i-1,j}^{n+1}}{\Delta{x}}}
+{\Delta{x}}
+\right)
++\left(
+\frac{-k_{y,(i,j+1)}\frac{T_{i,j+1}^{n+1}-T_{i,j}^{n+1}}{\Delta{y}} 
++k_{y,(i,j)}\frac{T_{i,j}^{n+1}-T_{i,j-1}^{n+1}}{\Delta{y}}}
+{\Delta{y}}
+\right)
+-\rho_{i,j} H_{i,j} = R.
+\end{equation}$
+
+Rewriting this in a matrix-compatible form leads to: 
+
+$\begin{equation}
+aT_{i,j-1}^{n+1} 
++bT_{i-1,j}^{n+1} 
++cT_{i,j}^{n+1} 
++dT_{i+1,j}^{n+1} 
++eT_{i,j+1}^{n+1} 
++fT_{i,j}^{n} 
+-\rho_{i,j} H_{i,j} = R,
+\end{equation}$
+
+where
+
+$\begin{equation}\begin{split}
+a & = -\frac{k_{y,(i,j)}}{\Delta{y^2}} \\
+b & = -\frac{k_{x,(i,j)}}{\Delta{x^2}} \\
+c & = \frac{\rho_{i,j} c_{p,(i,j)}}{\Delta{t}} 
++\frac{k_{x,(i+1,j)}}{\Delta{x^2}} + \frac{k_{x,(i,j)}}{\Delta{x^2}} 
++\frac{k_{y,(i,j+1)}}{\Delta{y^2}} + \frac{k_{y,(i,j)}}{\Delta{y^2}} \\
+d & = -\frac{k_{x,(i+1,j)}}{\Delta{x^2}} \\
+e & = -\frac{k_{y,(i,j+1)}}{\Delta{y^2}} \\
+f & = -\frac{\rho_{i,j} c_{p,(i,j)}}{\Delta{t}} \\
+\end{split}\end{equation}$
+
+Additional solver (explicit, implicit, CNA) for variable thermal parameter will follow in the near future. 
+
+--- 
 
 ### Temperature Field Management
 
@@ -429,8 +501,6 @@ In the **explicit solver** and the **defect correction method**, the *extended t
 For the remaining solvers, the current temperature field at the centroids is used to construct the known right-hand side vector. The corresponding coefficient matrices are assembled to solve for the unknown temperature at the next time step.
 
 ## Steady State Solution 
-
->**Note:** Variable thermal parameters are currently implemented for the 1-D time-dependent and 2-D steady-state cases. The 2-D defect correction method also supports time-dependent problems with variable parameters. These capabilities will be extended in future updates.
 
 In steady state, the temperature field does not vary with time (i.e., $\partial T/\partial t = 0$), and the heat equation simplifies to an *elliptic partial differential equation*, also known as the *Poisson equation*.
 
