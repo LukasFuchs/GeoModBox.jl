@@ -26,7 +26,7 @@ makedocs(
             "Advection Equation" => Any[
                  "General" => "man/AdvectMain.md", # Checked! 
                  "1D" => "man/AdvOneD.md", # Checked! 
-            #     "2D" => "man/AdvTwoD.md",
+                 "2D" => "man/AdvTwoD.md", # Checked!
             ],
             "Momentum Equation" => Any[
                 "General" => "man/MomentumMain.md", # Checked! 
@@ -46,22 +46,22 @@ makedocs(
                 "Poisson Problem (2D)" => "man/examples/PoissonRestest.md",
                 "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
             ],
-            "Advection Equtaion" => Any[
-                "Advection (2D)" => "man/examples/Advection2D.md",
-                "Advection Resolution Test (2D)" => "man/examples/AdvectionRestest2D.md",
-            ],
-            "Stokes Equation" => Any[
-                "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md",
-                "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md",
-                "Falling Block" => "man/examples/FallingBlockDC.md",
-                "Rayleigh Taylor Instability" => "man/examples/RTI.md",
-                "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
-            ],
-            "Mixed Thermal Convection" => Any[
-                "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
-                "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
-                "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
-            ],
+            # "Advection Equtaion" => Any[
+            #     "Advection (2D)" => "man/examples/Advection2D.md",
+            #     "Advection Resolution Test (2D)" => "man/examples/AdvectionRestest2D.md",
+            # ],
+            # "Stokes Equation" => Any[
+            #     "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md",
+            #     "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md",
+            #     "Falling Block" => "man/examples/FallingBlockDC.md",
+            #     "Rayleigh Taylor Instability" => "man/examples/RTI.md",
+            #     "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
+            # ],
+            # "Mixed Thermal Convection" => Any[
+            #     "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
+            #     "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
+            #     "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
+            # ],
         ],
         "List of functions" => "man/listoffunctions.md",
     ]
