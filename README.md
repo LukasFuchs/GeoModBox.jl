@@ -4,15 +4,15 @@
 
 The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for teaching purposes. The package provides different finite difference, staggered, discretization schemes to numerically solve the governing equations for a two-dimensional geodynamic problem. The governing equations are the conservation equations of 
 
-1) [**energy**](./docs/src/man/DiffMain.md), 
-2) [**momentum**](./docs/src/man/MomentumMain.md), 
-3) [**mass** and **compositon**](./docs/src/man/AdvectMain.md). 
+1) [**energy**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain.md), 
+2) [**momentum**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain.md), 
+3) [**mass** and **compositon**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain.md). 
 
 The ```GeoModBox.jl``` includes a series of [exercises](./exercises/) and [examples](./examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. The theoretical background is mainly given here in the documentation.
 
 The solvers for each governing equation can be used seperately or in combination for dimensional or non-dimensional problems with only minimal modifications when calling the functions. Some typical initial conditions, like a linear increasing temperature, are predifined and can be called. 
 
-For more details on how this is implemented please see this [documentation](./docs/src/man/GESolution.md).
+For more details on how this is implemented please see this [documentation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution.md).
 
 ## Staggered Finite Difference
 
@@ -20,23 +20,23 @@ To properly solve the governing equations, a staggered finite difference scheme 
 
 Here, the temperature, density, pressure are defined on the *centroids*, ... are defined on the *vertices*, the velocities are defined in between the *vertices*, and the viscosity is needed on both. 
 
-For more details on how this is used in the ```GeoModBox.jl``` see [here](./docs/src/man/GESolution.md).
+For more details on how this is used in the ```GeoModBox.jl``` see [here](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution.md).
 
 ## Energy Conservation Equation
 
 In geodynamics, the energy is described by the temperature and needs to be conserved within a closed system. Here, we solve the *temperature conservation equation*, or *temperature equation*, using an *operator splitting* method, that is, we first solve the *advective* part of the *temperature equation*, followed by the *diffusive* part. 
 
-### [Heat Diffusion Equation](./docs/src/man/DiffMain.md)
+### [Heat Diffusion Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain.md)
 
-The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to solve the *diffusive part* of the time-dependent or steady-state *temperature equation* including radioactive heating, in [1-D](./docs/src/man/DiffOneD.md) and [2-D](./docs/src/man/DiffTwoD.md). The solvers are located in [src/HeatEquation](./src/HeatEquation/). So far, only *Dirichlet* and *Neumann* thermal boundary conditions are available. Most of the functions assume constant thermal parameters (except for the 1-D solvers and the 2-D defect correction solver). 
+The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to solve the *diffusive part* of the time-dependent or steady-state *temperature equation* including radioactive heating, in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffOneD.md) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffTwoD.md). The solvers are located in [src/HeatEquation](./src/HeatEquation/). So far, only *Dirichlet* and *Neumann* thermal boundary conditions are available. Most of the functions assume constant thermal parameters (except for the 1-D solvers and the 2-D defect correction solver). 
 
-### [Heat Advection Equation](./docs/src/man/AdvectMain.md)
+### [Heat Advection Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain.md)
 
 The ```GeoModBox.jl``` provides different methods to advect certain properties within the model domain. The corresponding routines are structured in such a way, that any property can be advected with the described advection solvers, as long as the property is defined on the *centroids* including *ghost nodes* at all boundaries. Using passive tracers, one can, so far, choose to either advect the absolute temperature or the phase ID. 
 
-## [Momentum Conservation Equation](./docs/src/man/MomentumMain.md)
+## [Momentum Conservation Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain.md)
 
-On a geological time scale, Earth's mantle and the lithosphere creep slowly due to its high viscosity and one can neglect the inertial forces. This simplifie the Navier-Stokes equation and one obtains the so called **Stokes equation**. The ```GeoModBox.jl``` provides mainly two different methods, the direct method and the defect correction method, to solve the Stokes equation in [1-D](./docs/src/man/MomentumOneD.md) and [2-D](./docs/src/man/MomentumTwoD.md) assuming both a constant and variable viscosity field. The velocity and the pressure are thereby defined on a staggered grid and ghost nodes are also defined to properly implement free slip and no slip boundary condtions. 
+On a geological time scale, Earth's mantle and the lithosphere creep slowly due to its high viscosity and one can neglect the inertial forces. This simplifie the Navier-Stokes equation and one obtains the so called **Stokes equation**. The ```GeoModBox.jl``` provides mainly two different methods, the direct method and the defect correction method, to solve the Stokes equation in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumOneD.md) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumTwoD.md) assuming both a constant and variable viscosity field. The velocity and the pressure are thereby defined on a staggered grid and ghost nodes are also defined to properly implement free slip and no slip boundary condtions. 
 
 ## [Benchmarks and Examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/)
 
