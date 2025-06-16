@@ -51,6 +51,7 @@ P   =   Physics(
     Ra      =   1.0e6,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
+Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*M.H^5) / (P.k*P.κ*P.η₀) 
 # ------------------------------------------------------------------- #
 # Definiere Skalierungskonstanten =================================== # 
 S   =   ScalingConstants!(M,P)

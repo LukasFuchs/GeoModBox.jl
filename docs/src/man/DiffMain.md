@@ -86,11 +86,3 @@ See the [examples documentation](./Examples.md) for further details.
 
 - [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
 - [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
-
-# References
-
-Gerya, T. (2019). Introduction to numerical geodynamic modelling. Cambridge University Press.
-
-Becker, 2
-
-Spiegelman, 3
