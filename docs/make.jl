@@ -21,7 +21,7 @@ makedocs(
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md", # checked!
                 "1D" => "man/DiffOneD.md", # checked!
-                "2D" => "man/DiffTwoD.md", 
+                "2D" => "man/DiffTwoD.md", # checked! 
             ],
             "Advection Equation" => Any[
                  "General" => "man/AdvectMain.md", # Checked! 
