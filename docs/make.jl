@@ -26,7 +26,7 @@ makedocs(
             "Advection Equation" => Any[
                  "General" => "man/AdvectMain.md", # Checked! 
                  "1D" => "man/AdvOneD.md", # Checked! 
-            #     "2D" => "man/AdvTwoD.md",
+                 "2D" => "man/AdvTwoD.md", # Checked!
             ],
             "Momentum Equation" => Any[
                 "General" => "man/MomentumMain.md", # Checked! 
