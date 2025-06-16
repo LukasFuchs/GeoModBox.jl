@@ -4,15 +4,15 @@
 
 The **Geod**ynamic **Mod**elling Tool**Box** is a julia package mainly used for teaching purposes. The package provides different finite difference, staggered, discretization schemes to numerically solve the governing equations for a two-dimensional geodynamic problem. The governing equations are the conservation equations of 
 
-1) [**energy**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain.md), 
-2) [**momentum**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain.md), 
-3) [**mass** and **compositon**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain.md). 
+1) [**energy**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain/), 
+2) [**momentum**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain/), 
+3) [**mass** and **compositon**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain/). 
 
 The ```GeoModBox.jl``` includes a series of [exercises](./exercises/) and [examples](./examples/) of different geodynamically well defined problems. The exercises are given as Jupyter notebooks for the students to complete. The theoretical background is mainly given here in the documentation.
 
 The solvers for each governing equation can be used seperately or in combination for dimensional or non-dimensional problems with only minimal modifications when calling the functions. Some typical initial conditions, like a linear increasing temperature, are predifined and can be called. 
 
-For more details on how this is implemented please see this [documentation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution.md).
+For more details on how this is implemented please see this [documentation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution/).
 
 ## Staggered Finite Difference
 
@@ -20,27 +20,27 @@ To properly solve the governing equations, a staggered finite difference scheme 
 
 Here, the temperature, density, pressure are defined on the *centroids*, ... are defined on the *vertices*, the velocities are defined in between the *vertices*, and the viscosity is needed on both. 
 
-For more details on how this is used in the ```GeoModBox.jl``` see [here](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution.md).
+For more details on how this is used in the ```GeoModBox.jl``` see [here](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/GESolution/).
 
 ## Energy Conservation Equation
 
 In geodynamics, the energy is described by the temperature and needs to be conserved within a closed system. Here, we solve the *temperature conservation equation*, or *temperature equation*, using an *operator splitting* method, that is, we first solve the *advective* part of the *temperature equation*, followed by the *diffusive* part. 
 
-### [Heat Diffusion Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain.md)
+### [Heat Diffusion Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffMain/)
 
-The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to solve the *diffusive part* of the time-dependent or steady-state *temperature equation* including radioactive heating, in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffOneD.md) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffTwoD.md). The solvers are located in [src/HeatEquation](./src/HeatEquation/). So far, only *Dirichlet* and *Neumann* thermal boundary conditions are available. Most of the functions assume constant thermal parameters (except for the 1-D solvers and the 2-D defect correction solver). 
+The ```GeoModBox.jl``` provides different finite difference (**FD**) schemes to solve the *diffusive part* of the time-dependent or steady-state *temperature equation* including radioactive heating, in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/DiffTwoD/). The solvers are located in [src/HeatEquation](./src/HeatEquation/). So far, only *Dirichlet* and *Neumann* thermal boundary conditions are available. Most of the functions assume constant thermal parameters (except for the 1-D solvers and the 2-D defect correction solver). 
 
-### [Heat Advection Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain.md)
+### [Heat Advection Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/AdvectMain/)
 
 The ```GeoModBox.jl``` provides different methods to advect certain properties within the model domain. The corresponding routines are structured in such a way, that any property can be advected with the described advection solvers, as long as the property is defined on the *centroids* including *ghost nodes* at all boundaries. Using passive tracers, one can, so far, choose to either advect the absolute temperature or the phase ID. 
 
-## [Momentum Conservation Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain.md)
+## [Momentum Conservation Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumMain/)
 
-On a geological time scale, Earth's mantle and the lithosphere creep slowly due to its high viscosity and one can neglect the inertial forces. This simplifie the Navier-Stokes equation and one obtains the so called **Stokes equation**. The ```GeoModBox.jl``` provides mainly two different methods, the direct method and the defect correction method, to solve the Stokes equation in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumOneD.md) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumTwoD.md) assuming both a constant and variable viscosity field. The velocity and the pressure are thereby defined on a staggered grid and ghost nodes are also defined to properly implement free slip and no slip boundary condtions. 
+On a geological time scale, Earth's mantle and the lithosphere creep slowly due to its high viscosity and one can neglect the inertial forces. This simplifie the Navier-Stokes equation and one obtains the so called **Stokes equation**. The ```GeoModBox.jl``` provides mainly two different methods, the direct method and the defect correction method, to solve the Stokes equation in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/man/MomentumTwoD/) assuming both a constant and variable viscosity field. The velocity and the pressure are thereby defined on a staggered grid and ghost nodes are also defined to properly implement free slip and no slip boundary condtions. 
 
 ## [Benchmarks and Examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/)
 
-Here are the resulting visualizations of some of the examples provided by the ```GeoModBox.jl```. For more details on the examples, please refer to the [individual documentation of the examples](./man/Examples.md). The title of each example is linked to the source code of the example. 
+Here are the resulting visualizations of some of the examples provided by the ```GeoModBox.jl```. For more details on the examples, please refer to the [individual documentation of the examples](./man/Examples/). The title of each example is linked to the source code of the example. 
 
 ### [Gaussian Temperature Diffusion](./examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 
@@ -77,7 +77,7 @@ Here are the resulting visualizations of some of the examples provided by the ``
 
 ![BHTC](./examples/MixedHeatedConvection/Results/Bottom_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** TOP: Transient behavior of the temperature overlain with the velocity field vectors. BOTTOM: Horizonatlly averaged temperature-depth profiles for each time step. The model is solved using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. For more details see the [example documentations](./man/Examples.md).
+**Figure 7. Bottom Heated, isoviscous Convection for Ra = $10^6$ and a resolution of 400 x 100.** TOP: Transient behavior of the temperature overlain with the velocity field vectors. BOTTOM: Horizonatlly averaged temperature-depth profiles for each time step. The model is solved using the defect correction method for the momentum equation, semi-lagrangian advection scheme, and Crank-Nicolson approach for the heat diffusion. The thermal boundary conditions are Dirichlet at the top and bottom and Neumann at the sides. The velocity boundary conditions are free slip along all sides. For more details see the [example documentations](./man/Examples/).
 
 ![IHTC](.//examples/MixedHeatedConvection/Results/Internally_Heated_1.0e6_400_100_lineara.gif)
 
