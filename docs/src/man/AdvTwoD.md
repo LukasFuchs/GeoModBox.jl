@@ -1,44 +1,116 @@
 # Advection Equation (2D)
 
+In two dimensions ($x$ and $y$), the advection equation for the temperature conservation equation, for example, is given as follows 
+
+$\begin{equation}
+\frac{\partial{T}}{\partial{t}} = -v_x \left(\frac{\partial{T}}{\partial{x}}\right) - -v_y \left(\frac{\partial{T}}{\partial{y}}\right),
+\end{equation}$
+
+where $T$ is the temperature [K], $t$ is the time [s], and $v_x$ and $v_y$ are the velocities in the $x$- and $y$-direction, respectively. 
+
+The finite difference approximations of the different discretization schemes do not vary significantly from the 1D case. For more theoretical background, please refer to the [1D documentation](./AdvOneD.md).
+
+The following sections provide a brief overview of the available 2D discretization schemes.
+
 # Discretization Schemes
 
 ## Upwind
 
-The idea is that the flux into the local cell will only depend on the gradient of temperature in the direction upstream. The upwind scheme is similar to a *FTCS* discretization, however, the central spacial derivatives are replaced by single-sided forward and backward finite differences and one needs to consider the advection velocity as well, to ensure that the discretization in space is always upstream. In 2-D the advection equation is then given as: 
+In 2D, the advection equation can be discretized using the upwind scheme as:
 
 $\begin{equation}
-\frac{T_{i,j}^{n+1}-T_{i,j}^n}{\Delta t}=-v_{x;i,j}\cases{\matrix{\frac{T_{i,j}^{n}-T_{i,j-1}^n}{\Delta x} \quad \text{if} \quad v_{x;i,j} > 0 \\\ \frac{T_{i,j+1}^{n}-T_{i,j}^n}{\Delta x} \quad \text{if} \quad v_{x;i,j}<0}} 
--v_{z;i,j}\cases{\matrix{\frac{T_{i,j}^{n}-T_{i-1,j}^n}{\Delta z} \quad \text{if} \quad v_{z;i,j} > 0 \\\ \frac{T_{i+1,j}^{n}-T_{i,j}^n}{\Delta z} \quad \text{if} \quad v_{z;i,j}<0}},
+\frac{T_{i,j}^{n+1}-T_{i,j}^n}{\Delta t} = -v_{x;i,j}
+\begin{cases}
+\frac{T_{i,j}^{n}-T_{i-1,j}^n}{\Delta x} &\text{if } v_{x;i,j} \gt 0 \\ \frac{T_{i+1,j}^{n}-T_{i,j}^n}{\Delta x} &\text{if } v_{x;i,j} \lt <0
+\end{cases} 
+-v_{y;i,j}
+\begin{cases}
+\frac{T_{i,j}^{n}-T_{i,j-1}^n}{\Delta y} &\text{if } v_{y;i,j} > 0 \\ 
+\frac{T_{i,j+1}^{n}-T_{i,j}^n}{\Delta y} &\text{if } v_{y;i,j}<0
+\end{cases},
 \end{equation}$
 
-where $T$ is the temperature, $v$ the velocity, $n$ is the current time step, $\Delta t$ the time step increment, and $i$ and $j$ are the indices in $z$- and $x$- direction, respectively. For more details see [*UpwindAdvection2D.m*].
+where $T$ is the temperature, $v$ the velocity, $n$ is the current time step, $\Delta t$ the time step increment, and $i$, $j$ are the spatial indices in the $x$- and $y$-directions, respectively. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
 
-This is a stable and effective way, however, with a certain amount of numerical diffusion if the *courant criteria* is not fulfilled and only first order accurate in space. The courant criteria implies that the time step is smaller than the minimum grid spacing divided by the maximum velocity, that is, a property should not be advected over a distance larger than the grid spacing, or:
-
-$\begin{equation}
-\Delta t \le \frac{\Delta x}{max(|v|)}.
-\end{equation}$
+This method is stable and effective but introduces numerical diffusion if the Courant condition is not satisfied. It is also only first-order accurate in space.
    
 ## Staggered Leapfrog
 
-This method considers a centered in time and centered in space discretization of the partial differentials, thus it has a higher order of accuracy in space (second order) and is suppose to not have any numerical diffusion. In 2-D the advection equation discretizes to:
+The 2D staggered leapfrog discretization is given by:
 
 $\begin{equation}
-\frac{T_{i,j}^{n+1} - T_{i,j}^{n-1}}{2\Delta t}=-v_{x;i,j}\frac{T_{i,j+1}^{n} - T_{i,j-1}^{n}}{2\Delta x}-v_{z;i,j}\frac{T_{i+1,j}^{n} - T_{i-1,j}^{n}}{2\Delta z}.
+\frac{T_{i,j}^{n+1} - T_{i,j}^{n-1}}{2\Delta t} = 
+-v_{x;i,j}\frac{T_{i+1,j}^{n} - T_{i-1,j}^{n}}{2\Delta x} 
+-v_{y;i,j}\frac{T_{i,j+1}^{n} - T_{i,j-1}^{n}}{2\Delta y}.
 \end{equation}$
 
-For more details see [SLFAdvection2D.m].
+For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
 
 ## Semi-lagragian
 
-This method is related to the tracer-based advection by solving ordinary differential equations (*ODEs*), where it assumes that *imaginary tracers* are located at certain positions and land directly at the finite difference grid nodes after advection within one time step. Thus, one needs to calculate the *origin points* for each grid node back in time (e.g., one Euler time step) with a given velocity field (e.g., using an *iterative mid-point scheme*, i.e. one uses the velocity at a point half a time step backward in time) and then to interpolate the property from the regular grid points to the determined *origin points*. This scheme assumes that no heat-sources were active during the advection. The method does not have any numerical diffusion but shows inaccuracies due to the interpolation method. For more details see [SemiLagAdvection2D.m].
+In 2D, velocity can vary significantly in space and time. Therefore, a modified version of the 1D semi-Lagrangian scheme is used, employing an *iterative midpoint method* to determine the origin of the characteristic trajectory. The following steps are performed:
 
-- central point iteration
-   
+**1. Mid-point (half time step) origin** 
+Estimate the intermediate position $X'$ at time $t_{n+1/2}$ using the velocity at $t_{n+1}$ at point $(i,j)$.
+
+**2. Mid-point velocity** 
+Compute the velocity at $X'$ using temporal averaging:
+
+$\begin{equation}
+v\left(t_{n+1/2},(i,j)\right) = \frac{v\left(t_{n+1},(i,j)\right) + v\left(t_{n},(i,j)\right)}{2}.
+\end{equation}$
+
+The velocity at $X'$ can be interpolated linearly from the surrounding grid points.
+
+**3. Actual origin point** 
+
+Calculate the actual origin $X(t)$ for the position $x(t_{n+1},(i,j))$ using:
+
+$\begin{equation}
+X(t) = x\left(t+1,(i,j)\right) - \Delta{t}v\left(t_{n+1/2},X'\right).
+\end{equation}$
+
+This step is performed iteratively (e.g., five iterations or until convergence).
+
+**4. Update temperature** 
+Use cubic interpolation to determine the temperature at the origin $X(t)$, which defines the temperature at the final position $x(t_{n+1},(i,j))$.
+
+This scheme assumes no heat sources during advection. It is free from numerical diffusion but introduces interpolation-based inaccuracies. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).   
 ## Passive tracers
 
-Here, one assumes that the model domain is completely filled with so-called *tracers* or *markers*. These tracers are then advected by solving the *ODE* of a particle advection using a certain method (e.g., Euler or Runge Kutta) and they transport any property stored on them. However, care needs to be taken when interpolating those properties from the regular grid onto the tracers and back. This is even more complex if the property advected does have an effect on parameters controlling the governing equations (e.g., the viscosity in continuum euqation).
+Tracers are advected in 2D using fourth-oder Runge-Kutta method: 
 
-Here, I advect the tracers using Runge-Kutta fourth order; the tracers can transport the absolute temperature and the composition (so far only for two compositions with a constant viscosity and density). The property is then interpolated back to the regular grid points every time step. For more details see [AdvectMarker2D.m] and [TracerInterp.m].
+$\begin{equation}\begin{split}
+x_p^{n+1} & = x_p^n + \frac{1}{6}k_1 + \frac{1}{3}k_2 + \frac{1}{3}k_3 + \frac{1}{6}k_4, \\
+y_p^{n+1} & = y_p^n + \frac{1}{6}m_1 + \frac{1}{3}m_2 + \frac{1}{3}m_3 + \frac{1}{6}m_4,
+\end{split}
+\end{equation}$
 
-# References
+where:
+
+$\begin{equation}
+\begin{split}
+k_1 & = \Delta{t} \cdot v_x(t^n,(x_p^n,y_p^n)) \\
+m_1 & = \Delta{t} \cdot v_y(t^n,(x_p^n,y_p^n)) \\ \newline
+k_2 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,(x_p^n+k_1/2,y_p^n+m_1/2)) \\
+m_2 & = \Delta{t} \cdot v_y(t^n+\Delta{t}/2,(x_p^n+k_1/2,y_p^n+m_1/2)) \\ \newline
+k_3 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,(x_p^n+k_2/2,y_p^n+m_2/2)) \\
+m_3 & = \Delta{t} \cdot v_y(t^n+\Delta{t}/2,(x_p^n+k_2/2,y_p^n+m_2/2)) \\ \newline
+k_4 & = \Delta{t} \cdot v_x(t^n+\Delta{t},(x_p^n+k_3,y_p^n+m_3)) \\
+m_4 & = \Delta{t} \cdot v_y(t^n+\Delta{t},(y_p^n+k_3,y_p^n+m_3)) \\
+\end{split}
+\end{equation}$
+
+Per default, the tracers are advected by the velocity of the staggered velocity vertices. However, if required the velocity on the centroids or a combination of both is possible. The tracer velocity is calculated using a bilinear interpolation scheme. 
+
+The tracers can also be advected parallel by defining the maximum number of threads in the VScode julia extension settings ("julia.NumThreads"). 
+
+Tracers can carry different properties such as absolute temperature or phase identification number (ID). For temperature, interpolation between centroids and tracer positions is required. Note that this implementation currently does not support fully coupled temperature-momentum simulations.
+
+Alternatively, phase IDs (linked to properties like constant density or viscosity) can be advected to simulate compositional heterogeneity. Property interpolation is performed at vertices or centroids depending on the required context (e.g., viscosity for the momentum equations).
+
+Caution is required when interpolating properties between the grid and tracers, especially when those properties influence the governing equations (e.g., viscosity in momentum conservation).
+
+Currently, no new tracers are inserted where needed, limiting the applicability of this approach for coupled temperature-momentum models.
+
+For implementation details, please refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
