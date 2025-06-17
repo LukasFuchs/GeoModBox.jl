@@ -20,7 +20,14 @@ For more details on the different numerical discretization schemes, please see t
 
 ---
 
-First, let's define an array which includes the names of the different numerical schemes to be used. In the following, a loop is executed in which the individual scheme is called in the very beginning (via an if statement). Also, a mulitplication factor ```nrnxny``` is defined, which controlls the maximum resolution, that is ```nrnxny*20```. 
+First one needs to load the required packages: 
+
+```Julia 
+using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
+using Statistics, Printf, LinearAlgebra
+```
+
+Now, let's define an array which includes the names of the different numerical schemes to be used. In the following, a loop is executed in which the individual scheme is called in the very beginning (via an if statement). Also, a mulitplication factor ```nrnxny``` is defined, which controlls the maximum resolution, that is ```nrnxny*20```. 
 
 Within in each loop over the different numerical scheme, the resolution is consecutively increased up to the maximum defined resolution.
 

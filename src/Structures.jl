@@ -7,8 +7,8 @@
     xmax        ::Float64 = 1.0
     ymin        ::Float64 = -1.0
     ymax        ::Float64 = 0.0
-    L           ::Float64 = 1.0
-    H           ::Float64 = 1.0
+    # L           ::Float64 = 1.0
+    # H           ::Float64 = 1.0
 end
 
 @kwdef mutable struct Physics

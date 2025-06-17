@@ -2,7 +2,7 @@
 
 ## Governing Equations
 
-The general governing equations for solving a geodynamical problem, neglecting adiabatic effects and assuming only radioactive heat source, are the conservation equations of 
+The governing equations for solving geodynamical problems—neglecting adiabatic effects and assuming only radioactive heat sources—are given by the conservation laws of 
 
 **Momentum**
 
@@ -40,27 +40,71 @@ $\begin{equation}
 
 Repeated indices imply summation.
 
----
-
 Ordinary and partial differential equations (ODEs and PDEs) can be solved through various approaches—occasionally *analytically*, but more commonly *numerically* due to their inherent complexity. Among numerical methods, prominent techniques include *integral*-based methods, such as the *finite element* and *spectral* methods, as well as the *finite difference* method.
 
 The ```GeoModBox.jl``` framework employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
-In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below.
+In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. 
+
+**Mathematical Background**
+
+In infinitesimal calculus,the interest lies in how a quantity, such as $u$, changes in response to a small variation in the variable $x$. If $u$ has a value of $u_0$ at position $x_0$ and changes to $u_0 + \delta{u}$ when $x$ changes to $x_0 + \delta{x}, the incremental change can be described as follows:
+
+$\begin{equation}
+\delta{u} = \frac{\delta{u}}{\delta{x}}\left(x_0\right)\delta{x}. 
+\end{equation}$
+
+Here, $\delta$ denotes a small but finite change. When $\delta{x}$ decreases asymptotically toward 0 near $x_0$, the partial derivative is obtained:
+
+$\begin{equation}
+\lim_{\delta \to 0} \frac{\delta{u}}{\delta{x}}\left(x_0\right) = \frac{\partial{u}}{\partial{x}}.
+\end{equation}$
+
+This limit is valid provided there are no discontinuities or abrupt changes in $u$ with respect to $x$.
+
+The finite difference formulation permits the utilization of arithmetic (computational) operators to ascertain the derivatives. Finite difference formulations are predicated on a Taylor series expansion with truncation to a certain order. In general, a Taylor series expansion is given as 
+
+$\begin{equation}
+u(x) = u(x_0)+\frac{\partial{u}}{\partial{x}}(x_0)(x-x_0)+\frac{\partial^2{u}}{\partial{x^2}}(x_0)\frac{\left(x-x_0\right)^2}{2!}+\frac{\partial^3{u}}{\partial{x^3}}(x_0)\frac{\left(x-x_0\right)^3}{3!}+ \dots + +\frac{\partial^n{u}}{\partial{x^n}}(x_0)\frac{\left(x-x_0\right)^n}{n!},
+\end{equation}$ 
+
+where $\frac{\partial^2{u}}{\partial{x^2}}$ is the second derivative and $n!$ describes the factorial, that is: 
+
+$\begin{equation}
+n! = 1 \times 2 \times 3 \times \dots \times n.
+\end{equation}$
+
+Rearranging the Taylor series extension and neglecting higher order terms one obtains an approximation of the partial derivatives using finite difference formulations as 
+
+$\begin{equation}
+\frac{\partial{u}}{\partial{x}}(x_0) = \frac{u(x_0)-u(x)}{\left(x-x_0\right)} + \cal{O}\left(\Delta{x}\right) = \frac{u(x_0)-u(x_0+\Delta{x})}{\Delta{x}} + \cal{O}\left(\Delta{x}\right),
+\end{equation}$
+
+where $\cal{O}$ indicates the truncation error of the approximation (here, $\Delta{x}$), and the formulation is, by definition, only accurate up to the first order.
+
+The partial derivatives can be approximated via different finite differences as 
+
+$\begin{equation}\begin{split}
+\textrm{forward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x+\Delta{x})-u(x)}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i+1,j}-u_{i,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\ \newline
+\textrm{central difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x+\Delta{x})-u(x-\Delta{x})}{2\Delta{x}} + \cal{O}\left(\Delta{x^2}\right) = \frac{u_{i+1,j}-u_{i-1,j}}{2\Delta{x}} + \cal{O}\left(\Delta{x^2}\right) \\ \newline
+\textrm{backward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x)-u(x-\Delta{x})}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i,j}-u_{i-1,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\
+\end{split}\end{equation}$
+
+For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below.
 
 ## Staggered Finite Difference
 
-... *finite difference approximation* ... Taylor expansion, forward, backward, central finite differencing, approximation of the partial differential equations ... 
-
 To solve differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
 
-However, in many cases, certain limitations or physical constraints require a different arrangement of variable locations to ensure numerical stability and the conservation of physical properties. For instance, solving the *momentum equation* with **variable viscosity** typically requires a *fully staggered grid* to correctly preserve stress continuity across adjacent grid points. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
+However, in many cases, physical constraints or numerical stability requirements necessitate an alternative arrangement of variable locations. For example, solving the *momentum equation* with **variable viscosity** generally requires a *fully staggered grid* to ensure continuity of stress across adjacent grid points. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
 
-Staggered grids also offer advantages in implementing boundary conditions. For example, with *Neumann* thermal boundary conditions, the heat flux across a boundary can be naturally evaluated at staggered points using so-called *ghost points*. These ghost points can also be employed to impose *Dirichlet* boundary conditions. This approach helps maintain consistent accuracy and order of the finite difference scheme both at internal and boundary points. 
+Staggered grids also offer advantages in implementing boundary conditions. For example, with *Neumann* thermal boundary conditions, the heat flux across a boundary can be naturally evaluated at staggered points using so-called *ghost points*. These ghost points can also be employed to impose *Dirichlet* boundary conditions. This approach helps maintain consistent accuracy and the order of the finite difference scheme both at internal and boundary points. 
 
 For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temperature equation. The complete grid structure used for the governing equations in `GeoModBox.jl` is illustrated below:
 
 ![2DGrid_total](../assets/Grid_total.png)
+
+**Figure 1. Staggered Finite Difference Grid used in ´GeoModBox.jl`.**
 
 # Initial Conditions 
 
@@ -68,15 +112,15 @@ Certain initial conditions and parameter structures are already defined in `GeoM
 
 # Thermal convection
 
-The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ( $\rho$ ), specific heat capacity ( $c_p$ ), and thermal conductivity ( $k$ )—is forthcoming, simplifications are often employed to make the problem more tractable.
+The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable.
 
-### Approximations 
+## Approximations 
 
 A commonly used simplification in thermal convection modeling is the *Boussinesq* approximation. This approximation assumes that all thermodynamic properties remain constant, and adiabatic temperature effects are neglected in the temperature equation. Spatial density variations are assumed to be small and are only retained in the buoyancy term of the momentum equation. Under this framework, density becomes a function of temperature and is described using an *equation of state*.
 
-### Equation of State
+## Equation of State
 
-Several forms of the *equation of state* exist. For the current analysis, a linear approximation is used to describe density as a function of temperature:
+Various forms of the *equation of state* are available. In this context, a linear approximation is used to relate density to temperature:
 
 $\begin{equation}
 \rho = \rho_0 (1-\alpha T),
@@ -98,7 +142,23 @@ $\begin{equation}
 
 yields a modified form of the $y$-component of the dimensional momentum equation.
 
-**Governing equations**
+## Constitutive Relation
+
+The constitutive equations of rheology delineate a relationship between the second-order tensor for the kinematics $\left(\text{Strain rate: }\dot{\varepsilon}, \text{Strain: } \varepsilon \right)$ and the dynamics $\left(\text{Forces}, \text{Stresses: }\sigma\right)$. Several constitutive models are commonly employed (e.g., viscous, elastic, viscoelastic, plastic). In `GeoModBox.jl`, the focus is on incompressible, viscous rheology, described by: 
+
+$\begin{equation}
+\tau_{i,j} = 2\eta \cdot \dot{\varepsilon}_{i,j},
+\end{equation}$
+
+where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{i,j}$ is the deviatoric stress tensor [Pa] defined as 
+
+$\begin{equation}
+\tau_{i,j} = \sigma_{i,j} + P\delta{i,j},
+\end{equation}$
+
+where $\sigma_{i,j}$ is the full stress tensor [Pa], $P$ is the pressure [Pa], and $\delta$ is the *Kronecker Delta*. 
+
+## Governing equations
 
 The following dimensional equations govern thermal convection under the *Boussinesq* approximation:
 
@@ -132,13 +192,13 @@ $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
 \end{equation}$
 
-# Scaling
+## Scaling
 
-In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (7)–(10), we introduce *scaling constants* and derive the associated *scaling laws*.
+In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (15)–(18), certain *scaling constants* are introduced and the associated *scaling laws* derived.
 
 ### Scaling Constants
 
-Several schemes exist for non-dimensionalization. In this case, the following set of scaling constants is used:
+Various approaches exist for non-dimensionalization. Here, the following set of scaling constants are adopted:
 
 $\begin{equation}\begin{split}
 h_{sc} & = h, \\ 
@@ -168,7 +228,7 @@ When applied, many of the constants cancel out, resulting in non-dimensional equ
 
 >**Note:** This simplification is only valid under the assumptions and approximations discussed above. Any remaining scaling terms can often be grouped into key dimensionless parameters.
 
-### Rayleigh Number
+## Rayleigh Number
 
 The primary remaining dimensionless parameter is the Rayleigh number ($Ra$), which characterizes the convective behavior and replaces the buoyancy term in the momentum equation:
 
@@ -176,7 +236,7 @@ $\begin{equation}
 Ra = \frac{\rho_0 g \alpha \Delta{T} h^3}{\eta_0 \kappa}.
 \end{equation}$
 
-### Non-Dimensional Governing Equations
+## Non-Dimensional Governing Equations
 
 The non-dimensional governing equations are then defined as: 
 

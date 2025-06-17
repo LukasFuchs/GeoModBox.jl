@@ -22,6 +22,13 @@ For more details on how to discretize the equation using an explicit, forward Eu
 
 ---
 
+First one needs to load the required packages: 
+
+```Julia 
+using Plots
+using GeoModBox.HeatEquation.OneD
+```
+
 Let's start with the definition of the geometrical, numerical, and physical constants: 
 
 ```Julia 
