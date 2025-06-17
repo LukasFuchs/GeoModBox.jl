@@ -6,7 +6,13 @@ For more details on the model setup and the physics or the numerical scheme, ple
 
 ---
 
-First one needs to define the geometrical and physical constants. 
+First one needs to load the required packages: 
+
+```Julia 
+using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots
+```
+
+Now, one needs to define the geometrical and physical constants. 
 
 ```Julia
 # Physikalischer Parameter ---------------------------------------------- #
