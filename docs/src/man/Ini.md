@@ -29,7 +29,7 @@ Certain default values can be modified as well:
 
 - Tb - Scalar value for the background temperature
 - Ta - Scalar value for the maximum (anomaly) temperature
-- $\sigma$ - Width of the Gaussian temperature anomaly
+- σ - Width of the Gaussian temperature anomaly
 
 The temperature is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
@@ -55,7 +55,7 @@ The input parameters are:
 - type - Parameter defining the type (see above)
 - D - Structure or tuple containing the field arrays
 - NV - Structure or tuple containing the vertices parameter 
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
 - x - Structure or tuple containing the x-coordinates
 - y - tructure or tuple containing the y-coordinates
@@ -128,7 +128,7 @@ The input parameters are:
 - Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
 - nmx - number of horizontal tracers per cell
 - nmy - number of vertical tracers per cell
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
 - NC - Structure or tuple containing centroids parameter
 - noise - add noise; 1 - yes, 0 - no
@@ -224,7 +224,7 @@ The input parameters are:
 - x - Structure or tuple containing the x-coordinates
 - y - Structure or tuple containing the y-coordinates
 - dt - Time step
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - NC - Structure or tuple containing the centroids parameter
 - rkw - Runge-Kutta weights for averaging
 - rkv - Runge-Kutta weights for time stepping
@@ -293,7 +293,7 @@ This initializes a box with a minimum and maximum depth of 0.0 [m] and 1.0 [m], 
 
 The following mutable structures including their default values are currently available: 
 
-## Geometry
+### Geometry
 ```julia 
 M = Geometry(
     xmin    = 0.0,              # Minimum x-coordinate [ m ]
@@ -303,7 +303,7 @@ M = Geometry(
 )
 ```
 
-## Physics
+### Physics
 ```julia 
 P = Physics(
     g       = 9.81,             # Gravitational acceleration [ m/s² ]
@@ -321,7 +321,7 @@ P = Physics(
 )
 ```
 
-## Grid Spacing
+### Grid Spacing
 
 ```julia 
 Δ = GridSpacing(
@@ -330,7 +330,7 @@ P = Physics(
 )
 ```
 
-## Data Fields
+### Data Fields
 
 ```julia 
 D = DataFields(
@@ -360,7 +360,7 @@ end
 
 If the default value for a field is used, an empty array is initialized to save memory. 
 
-## Time Parameter
+### Time Parameter
 
 ```julia
 T = TimeParameter(

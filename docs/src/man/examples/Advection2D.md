@@ -1,5 +1,7 @@
 # [Advection Problem (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)
 
+
+
 - Model intention
 - Model setup up
 
@@ -39,6 +41,11 @@ Pl  =   (
     Msz         =   0.2,
 )
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Model Constants ==================================================== #
 M   =   (
     xmin    =   0.0,
@@ -47,6 +54,11 @@ M   =   (
     ymax    =   1.0,
 )
 # -------------------------------------------------------------------- #
+ ``` 
+
+
+
+ ```Julia
 # Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
@@ -87,6 +99,11 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
+```
+
+
+
+```Julia
 # Animationsettings ================================================== #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
@@ -110,6 +127,11 @@ D       =   (
     Tmean   =   [0.0],
 )
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Initial Conditions ================================================= #
 # Temperature ---
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
@@ -127,6 +149,11 @@ IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Time =============================================================== #
 T   =   ( 
     tmax    =   [0.0],  
@@ -138,6 +165,11 @@ T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) /
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Tracer Advection =================================================== #
 if FD.Method.Adv==:tracers 
     # Tracer Initialization ---
@@ -170,6 +202,11 @@ if FD.Method.Adv==:tracers
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 end
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Visualize initial condition ======================================== #
 if FD.Method.Adv==:tracers
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
@@ -203,6 +240,11 @@ elseif save_fig == 0
     display(p)
 end
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Time Loop ========================================================== #
 for i=2:nt
     @printf("Time step: #%04d\n ",i)
@@ -264,6 +306,11 @@ for i=2:nt
     end
 end # End Time Loop
 # -------------------------------------------------------------------- #
+```
+
+...
+
+```Julia
 # Save Animation ===================================================== #
 if save_fig == 1
     # Write the frames to a GIF file

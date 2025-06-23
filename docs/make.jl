@@ -35,7 +35,7 @@ makedocs(
             ],
         ],
         "Examples" => Any[
-            "Overview" => "man/Examples.md",
+            "General" => "man/Examples.md",
             "Diffusion Equation" => Any[
                 "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md",
                 "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md",
