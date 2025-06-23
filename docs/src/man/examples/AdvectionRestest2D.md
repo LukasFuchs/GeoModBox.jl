@@ -1,8 +1,16 @@
 # [Advection; Resolution Test (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 
-- Model intention
-- Model setup up
+This is an example of a quasi resolution test for the 2D advection scheme. The setup is the same as in the [2D advection example](Advection2D.md).
 
+To quantify the efficiency of the advection scheme with increasing resolution, the script determines three different quantities: 
+
+- the maximum deviation of advected temperature from the maximum initial temperature, 
+- the maximum temperature, and 
+- the mean temperature. 
+
+The first quantity indicates the maximum lost information during the advection scheme, e.g. due to numerical diffusion. With increasing resolution, the remaning parameters should approach the initial values. 
+
+--- 
 
 First one needs to load the required packages: 
 
@@ -14,6 +22,14 @@ using Base.Threads
 using Printf
 ```
 
+In the following, one can define the maximum resultion and the schemes to be tested. The maximum resolution is given by: 
+
+$\begin{equation}
+nx_{max} = nrnxny*nx_{ini}, 
+\end{equation}$
+
+where $nrnxny$ is a simple multiplication factor and $nx_{ini} = 20$ the initial resolution. The resolution in the vertical direction is equal to the resolution in the horizontal direction. 
+
 ```Julia
 @printf("Running on %d thread(s)\n", nthreads())
 
@@ -22,7 +38,19 @@ Scheme      =   ["upwind","slf","semilag","tracers"]
 ns          =   size(Scheme,1)
 @show ns
 save_fig    =   -1
+```
 
+The variable `save_fig` controls the plotting output of the script: 
+
+- `save_fig = -1` -> only plot the final result
+- `save_fig = 0` -> plot every figure (Not recommended for large resolutions!)
+- `save_fig = 1` -> save the gif animation for each model
+
+For every other value, no plot is shown. 
+
+Now, one can initialize the statistical parameter for the resolution test. 
+
+```Julia
 # Statistical Parameter ============================================== #
 St      = (
     Δ           =   zeros(size(Scheme,1),nrnxny),    
@@ -31,6 +59,11 @@ St      = (
     Tmean       =   zeros(size(Scheme,1),nrnxny),    
 )
 # -------------------------------------------------------------------- #
+```
+
+In the following, one needs to define the initial conditions, the model geometry and some constants for the visualization. 
+
+```Julia
 # Define Initial Condition =========================================== #
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block
@@ -38,27 +71,37 @@ St      = (
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
+# Model Constants ==================================================== #
+M   =   (
+    xmin    =   0.0,
+    xmax    =   1.0,
+    ymin    =   0.0,
+    ymax    =   1.0,
+)
+# -------------------------------------------------------------------- #
+# Plot constants ===================================================== #
+Pl  =   (
+    inc         =   5,
+    sc          =   1.0e9,
+    Minc        =   1, 
+    Msz         =   0.2,
+)
+# -------------------------------------------------------------------- #
+```
+
+Let's start with the loop over the different advection schemes. 
+
+```Julia
 for m = 1:ns # Loop over advection schemes
     # Define Numerical Scheme ======================================== #
     FD          =   (Method     = (Adv=Scheme[m],),)    
     @printf("Advection Scheme: %s\n ",string(FD.Method.Adv))
     # ---------------------------------------------------------------- #
-    # Plot constants ================================================= #
-    Pl  =   (
-        inc         =   5,
-        sc          =   1.0e9,
-        Minc        =   1, 
-        Msz         =   0.2,
-    )
-    # ---------------------------------------------------------------- #
-    # Model Constants ================================================ #
-    M   =   (
-        xmin    =   0.0,
-        xmax    =   1.0,
-        ymin    =   0.0,
-        ymax    =   1.0,
-    )
-    # ---------------------------------------------------------------- #
+```
+
+Followed by the loop over the different resolutions for each scheme. Within the loop, one needs to update the grid resolution and coordinates. 
+
+```Julia
     for l = 1:nrnxny # Loop over differnet resolutions
         # Numerical Constants ======================================== #
         NC  =   (
@@ -101,6 +144,11 @@ for m = 1:ns # Loop over advection schemes
         )
         y   =   merge(y,y1)
         # ------------------------------------------------------------ #
+```
+
+To visualize the result, the path and name for the gif animation is set. Additional, the memory for the required data fields is initialized. 
+
+```Julia
         # Animationsettings =0======================================== #
         path        =   string("./examples/AdvectionEquation/Results/")
         anim        =   Plots.Animation(path, String[] )
@@ -124,6 +172,11 @@ for m = 1:ns # Loop over advection schemes
             Tmin    =   [0.0],
             Tmean   =   [0.0],
         )
+```
+
+Now, one can calculate the initial conditions. Here, the build-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentaion](../Ini.md). Following the velocity initialization, one can caluclate the velocity on the centroids. 
+
+```Julia
         # Initial Condition ========================================== #
         # Temperature ---
         IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
@@ -141,6 +194,11 @@ for m = 1:ns # Loop over advection schemes
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ------------------------------------------------------------ #
+```
+
+Now, one needs to define the time parameter. Here, the maximum time is set such that the one full rotation of the anomaly is achieved. 
+
+```Julia
         # Time ======================================================= #
         T   =   ( 
             tmax    =   [0.0],  
@@ -152,6 +210,11 @@ for m = 1:ns # Loop over advection schemes
                     (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
         nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
         # ------------------------------------------------------------ #
+```
+
+In case tracer are required one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
+
+```Julia
         # Tracer Advection =========================================== #
         if FD.Method.Adv == "tracers"
             # Tracer Initialization ---
@@ -184,6 +247,12 @@ for m = 1:ns # Loop over advection schemes
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
         end
         # ------------------------------------------------------------ #
+```
+
+Let's visualize the initial condition first. 
+
+
+```Julia
         # Visualize initial condition -------------------------------- #
         if FD.Method.Adv == "tracers"
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
@@ -217,6 +286,15 @@ for m = 1:ns # Loop over advection schemes
             display(p)
         end
         # ------------------------------------------------------------ #
+```
+
+![APIniPlot](../../assets/AdvIniSetup.svg)
+
+**Figure 1. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature is scaled be its maximum value such that the intensity of the anomaly is equal to one. 
+
+Now, one can start the time loop and the advection. 
+
+```Julia
         # Time Loop ================================================== #
         for i=2:nt
             #@printf("Time step: #%04d\n ",i) 
@@ -276,7 +354,12 @@ for m = 1:ns # Loop over advection schemes
                 end
             end
                 
-        end # End Time loop    
+        end # End Time loop
+```
+
+If wanted, a gif animation is generated in the following. 
+
+```Julia
         # Save Animation ============================================= #
         if save_fig == 1
             # Write the frames to a GIF file
@@ -295,7 +378,11 @@ for m = 1:ns # Loop over advection schemes
     end # End resolution loop
 
 end # End method loop
+```
 
+Let's visualize and store the statistical parameters. 
+
+```Julia
 q   =   plot(0,0,layout=(1,3))
 for m=1:ns    
     plot!(q,St.nxny[m,:],St.Δ[m,:],
@@ -330,3 +417,7 @@ if save_fig == 1 || save_fig == -1
 end
 # --------------------------------------------------------------------- #
 ```
+
+![AdvResFinal](../../assets/2D_advection_circle_RigidBody_ResTest.png)
+
+**Figure 2. Advection Resolution Test.** Deviation, maximum, and mean temperature for each advection 
