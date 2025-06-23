@@ -110,9 +110,9 @@ Possible initial temperature conditions are:
             end
         end
     end
-    D.Tmax   =   maximum(D.T_ex)
-    D.Tmin   =   minimum(D.T_ex)
-    D.Tmean  =   (D.Tmax+D.Tmin)/2
+    D.Tmax[1]   =   maximum(D.T_ex)
+    D.Tmin[1]   =   minimum(D.T_ex)
+    D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D
