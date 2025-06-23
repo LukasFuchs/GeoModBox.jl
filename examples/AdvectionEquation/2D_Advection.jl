@@ -126,7 +126,7 @@ D       =   (
 # -------------------------------------------------------------------- #
 # Initial Conditions ================================================= #
 # Temperature ---
-IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
+IniTemperature!(Ini.T,M,NC,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
@@ -216,6 +216,8 @@ if save_fig == 1
 elseif save_fig == 0
     display(p)
 end
+
+
 # -------------------------------------------------------------------- #
 # Time Loop ========================================================== #
 for i=2:nt

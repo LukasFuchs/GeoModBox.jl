@@ -2,9 +2,57 @@
 
 
 
-- Model intention
-- Model setup up
+This is an example to test the quality of the advection solver in two dimensions. The available solvers are: 
 
+- upwind 
+- staggered leapfrog
+- semi-lagrangian 
+- tracers
+
+The first three solvers are designed in such a way, that any property defined on the centroids including ghost nodes can be advected with the interpolated centroid velocity from the staggered grid. The tracers are here used to advect the initial temperature anomaly, without updating the information on the tracers; that is, the temperature is interpolated on the centroids every time step. For more implementation details please see the [documentation](../AdvectMain.md).
+
+As initial temperature condition, one can use three different anomalies, which are: 
+
+- a rectangular block 
+- a Gaussian temperature distribution
+- a circle
+
+>**Note:** The anomaly is here defined on the temperature field. However, one could also assume a similar density anomaly. This might even be more applicable for the tracer advection test. 
+
+As initial velocity condition, one can use two different fields: 
+
+- a rigid body rotation 
+- an analytical shear cell velocity
+
+The second field is simply applicable to test the code or might also be used as initial velocity condition for a thermal convection. 
+
+For the given example, the rigid body rotation should actually be choosed as initial velocity. A rigid body rotation is a very good benchmark to test the efficiency of the advection scheme, since only rotation is applied which results in a simple displacment of an anomaly without deformation. Thus, the shape and intensity of the anomaly should be the same as in the initial condition. Any deviation thereof is a result of either numerical diffusion (e.g., for the upwind case) or an interpolation error, especially for sharp gradient anomalies. 
+
+![APIni](../../assets/Advection_SetUp.png)
+
+**Figure 1. Rigid Body Rotation.** Initial setup for a rigid body rotation with a circular (dashed line) or rectangular (solid line) anomaly. The velocity (gray arrows) within the square model domain is set to zero outside the inner circle area (gray shaped) to avoid boundary effects. 
+
+**Initial Velocity Condtion**
+
+The velocity is assumed to be constant and calculated on the staggered grid. For advection, the velocity on the cenroids is used, except for the tracers. The analytical velocity for the here given velocity fields is given as
+
+**Rigid Body Rotation**
+
+$\begin{equation}\begin{split}
+v_x & = \frac{y_c-\frac{H}{2}}{H}, \\
+v_y & = -\frac{x_c-\frac{L}{2}}{L},
+\end{split}\end{equation}$
+
+and
+
+**Shear Cell** 
+
+$\begin{equation}\begin{split}
+v_x & = -\text{sin}\left(\pi \frac{x_v}{L}\right)*\text{cos}\left(\pi \frac{y_c}{H}\right), \\
+v_y & = \text{cos}\left(\pi \frac{x_c}{L}\right)*\text{sin}\left(\pi \frac{y_v}{H}\right).
+\end{split}\end{equation}$
+
+---
 
 First one needs to load the required packages: 
 
@@ -15,6 +63,8 @@ using GeoModBox.InitialCondition
 using Base.Threads
 using Printf
 ```
+
+In the following one can define the advection scheme as well as the initial conditions. Additional some plot parameters are defined in the very beginning as well. 
 
 ```Julia
 @printf("Running on %d thread(s)\n", nthreads())
@@ -43,7 +93,7 @@ Pl  =   (
 # -------------------------------------------------------------------- #
 ```
 
-...
+Now, one can define the geometry of the squared model domain. 
 
 ```Julia
 # Model Constants ==================================================== #
@@ -54,11 +104,6 @@ M   =   (
     ymax    =   1.0,
 )
 # -------------------------------------------------------------------- #
- ``` 
-
-
-
- ```Julia
 # Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
@@ -99,11 +144,6 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
-```
-
-
-
-```Julia
 # Animationsettings ================================================== #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
@@ -127,11 +167,6 @@ D       =   (
     Tmean   =   [0.0],
 )
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Initial Conditions ================================================= #
 # Temperature ---
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
@@ -149,11 +184,6 @@ IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Time =============================================================== #
 T   =   ( 
     tmax    =   [0.0],  
@@ -165,11 +195,6 @@ T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) /
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Tracer Advection =================================================== #
 if FD.Method.Adv==:tracers 
     # Tracer Initialization ---
@@ -202,11 +227,6 @@ if FD.Method.Adv==:tracers
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 end
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Visualize initial condition ======================================== #
 if FD.Method.Adv==:tracers
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
@@ -240,11 +260,6 @@ elseif save_fig == 0
     display(p)
 end
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Time Loop ========================================================== #
 for i=2:nt
     @printf("Time step: #%04d\n ",i)
@@ -306,11 +321,6 @@ for i=2:nt
     end
 end # End Time Loop
 # -------------------------------------------------------------------- #
-```
-
-...
-
-```Julia
 # Save Animation ===================================================== #
 if save_fig == 1
     # Write the frames to a GIF file
@@ -321,3 +331,11 @@ elseif save_fig == 0
 end
 # -------------------------------------------------------------------- #
 ```
+
+![APup_ani](../../assets/2D_advection_circle_RigidBody_upwind.gif)
+
+**Figure 3. Rigid Body Rotation using Upwind. ***
+
+![APtracer_ani](../../assets/2D_advection_circle_RigidBody_tracers.gif)
+
+**Figure 4. Rigid Body Rotation using Tracers.** Left: Temperature field interpolated from the tracers onto the centroids. Right: Tracers density per cell. The problem was solved on one cpu. 

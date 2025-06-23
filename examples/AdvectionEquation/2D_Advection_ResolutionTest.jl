@@ -14,11 +14,11 @@ function Advection_2D_ResTest()
 
 @printf("Running on %d thread(s)\n", nthreads())
 
-nrnxny      =   10
+nrnxny      =   2
 Scheme      =   ["upwind","slf","semilag","tracers"]
 ns          =   size(Scheme,1)
 @show ns
-save_fig    =   -1
+save_fig    =   -2
 
 # Statistical Parameter ============================================== #
 St      = (
@@ -123,7 +123,7 @@ for m = 1:ns # Loop over advection schemes
         )
         # Initial Condition ========================================== #
         # Temperature ---
-        IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
+        IniTemperature!(Ini.T,M,NC,D,x,y)
         if FD.Method.Adv == "slf"
             D.T_exo    .=  D.T_ex
         end
