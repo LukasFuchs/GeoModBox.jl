@@ -104,6 +104,11 @@ M   =   (
     ymax    =   1.0,
 )
 # -------------------------------------------------------------------- #
+ ``` 
+
+In the following the numerical grid and their coordinates are defined. 
+
+ ```Julia
 # Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
@@ -144,6 +149,11 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
+```
+
+To visualize the result, the path and name for the gif animation is set. Additional, the memory for the required data fields is initialized. 
+
+```Julia
 # Animationsettings ================================================== #
 path        =   string("./examples/AdvectionEquation/Results/")
 anim        =   Plots.Animation(path, String[] )
@@ -167,6 +177,11 @@ D       =   (
     Tmean   =   [0.0],
 )
 # -------------------------------------------------------------------- #
+```
+
+Now, one can calculate the initial conditions. Here, the build-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentaion](../Ini.md). Following the velocity initialization, one can caluclate the velocity on the centroids. 
+
+```Julia
 # Initial Conditions ================================================= #
 # Temperature ---
 IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
@@ -184,6 +199,11 @@ IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 # -------------------------------------------------------------------- #
+```
+
+Now, one needs to define the time parameter. Here, the maximum time is set such that the one full rotation of the anomaly is achieved. 
+
+```Julia
 # Time =============================================================== #
 T   =   ( 
     tmax    =   [0.0],  
@@ -195,6 +215,11 @@ T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) /
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
+```
+
+In case tracer are required one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
+
+```Julia
 # Tracer Advection =================================================== #
 if FD.Method.Adv==:tracers 
     # Tracer Initialization ---
@@ -227,6 +252,11 @@ if FD.Method.Adv==:tracers
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 end
 # -------------------------------------------------------------------- #
+```
+
+Let's visualize the initial condition first. 
+
+```Julia
 # Visualize initial condition ======================================== #
 if FD.Method.Adv==:tracers
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
@@ -260,6 +290,15 @@ elseif save_fig == 0
     display(p)
 end
 # -------------------------------------------------------------------- #
+```
+
+![APIniPlot](../../assets/AdvIniSetup.svg)
+
+**Figure 2. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature is scaled be its maximum value such that the intensity of the anomaly is equal to one. 
+
+Now, one can start the time loop and the advection. 
+
+```Julia
 # Time Loop ========================================================== #
 for i=2:nt
     @printf("Time step: #%04d\n ",i)
@@ -321,6 +360,11 @@ for i=2:nt
     end
 end # End Time Loop
 # -------------------------------------------------------------------- #
+```
+
+In the end, the gif animation is generated. 
+
+```Julia
 # Save Animation ===================================================== #
 if save_fig == 1
     # Write the frames to a GIF file
