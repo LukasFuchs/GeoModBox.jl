@@ -28,7 +28,7 @@ function FallingBlockBenchmark(td)
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
     path        =   string("./examples/StokesEquation/2D/Results/")
-    save_fig    =   -1
+    save_fig    =   1
     p2          =   plot(0,0,layout=(2,3))
     count       =   Int64(0)
     # ------------------------------------------------------------------- #
@@ -272,7 +272,7 @@ function FallingBlockBenchmark(td)
                                 ylims=(M.ymin/1e3, M.ymax/1e3),
                                 layout=(2,2),subplot=1)
                 else
-                    p = heatmap(x.v./1e3,y.v./1e3,log10.(D.ηv'),color=reverse(cgrad(:roma)),
+                    p = heatmap(x.v./1e3,y.v./1e3,log10.(abs.(D.ηv')),color=reverse(cgrad(:roma)),
                                 xlabel="x[km]",ylabel="y[km]",title="η_v",
                                 clims=(15,27),
                                 aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
@@ -306,7 +306,7 @@ function FallingBlockBenchmark(td)
                             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
                             la=0.5,color="white",layout=(1,3),subplot=3)
-                heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
+                heatmap!(p,x.c./1e3,y.c./1e3,log10.(abs.(D.ηc)'),color=reverse(cgrad(:roma)),
                             xlabel="x[km]",ylabel="y[km]",title="η_c",
                             clims=(15,27),
                             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
@@ -410,7 +410,7 @@ function FallingBlockBenchmark(td)
             display(q)
         end
     else
-        if save_fig == -1
+        if save_fig == -1 ||save_fig == 1
             savefig(p2,string("./examples/StokesEquation/2D/Results/FallingBlock_FinalStage",
                                 "_",FD.Method.Adv,".png"))
         else
