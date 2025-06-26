@@ -28,6 +28,11 @@ NV  =   (
 Δ   =   (
     y   =   (M.ymax-M.ymin)/NC.y,       #   Grid resolution
 )
+# Grid ---
+y   =   (
+    c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
+    v   =   LinRange(M.ymin,M.ymax,NV.y),
+)
 # Iterations ---
 niter   =   10
 ϵ       =   1e-10
@@ -46,11 +51,7 @@ D   =   (
     ∂vₓ∂y   =   zeros(NV...),
 )
 # ----------------------------------------------------------------------- #
-# Grid ------------------------------------------------------------------ #
-y   =   (
-    c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-    v   =   LinRange(M.ymin,M.ymax,NV.y),
-)
+# Viscosity ------------------------------------------------------------- #
 @. D.η  =   I.η₀ * exp(-log(I.m)* y.v / (M.ymax-M.ymin))
 # ----------------------------------------------------------------------- #
 # Analytical Solution --------------------------------------------------- #
@@ -60,8 +61,11 @@ if I.m  == 1.0
                     I.vₓ₀*y.c/(M.ymax-M.ymin) + I.vₓ₀
 else
     @. D.vₓₐ    =   -I.∂P∂x * (M.ymax-M.ymin) / I.η₀ / log(I.m) / (I.m-1) * 
-        (-y.c * (I.m^((y.c + (M.ymax-M.ymin))/(M.ymax-M.ymin)) - 
-        I.m^(y.c/(M.ymax-M.ymin))) + (M.ymax-M.ymin)*(I.m^(y.c/(M.ymax-M.ymin)) - 1)) + 
+        (-y.c * 
+            (I.m^((y.c + (M.ymax-M.ymin))/(M.ymax-M.ymin)) - 
+            I.m^(y.c/(M.ymax-M.ymin)) ) + 
+            (M.ymax-M.ymin) * (I.m^(y.c/(M.ymax-M.ymin)) - 1)
+        ) + 
         I.vₓ₀ / (I.m-1) * (I.m ^ ((y.c+(M.ymax-M.ymin))/(M.ymax-M.ymin)) - 1)
 end
 # ----------------------------------------------------------------------- #

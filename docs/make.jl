@@ -47,16 +47,16 @@ makedocs(
                 "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
             ],
             "Advection Equtaion" => Any[
-                "Advection (2D)" => "man/examples/Advection2D.md",
-                "Advection Resolution Test (2D)" => "man/examples/AdvectionRestest2D.md",
+                "Advection (2D)" => "man/examples/Advection2D.md", # Checked! 
+                "Advection Resolution Test (2D)" => "man/examples/AdvectionRestest2D.md", # Checked! 
             ],
-            # "Stokes Equation" => Any[
-            #     "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md",
-            #     "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md",
-            #     "Falling Block" => "man/examples/FallingBlockDC.md",
+            "Stokes Equation" => Any[
+                "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md", # Checked! 
+                "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md", # Checked! 
+                "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
             #     "Rayleigh Taylor Instability" => "man/examples/RTI.md",
             #     "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
-            # ],
+            ],
             # "Mixed Thermal Convection" => Any[
             #     "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
             #     "Internally Heated" => "man/examples/InternallyHeatedConvection.md",

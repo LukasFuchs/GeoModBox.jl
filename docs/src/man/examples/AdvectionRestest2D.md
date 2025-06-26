@@ -1,14 +1,14 @@
 # [Advection; Resolution Test (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 
-This is an example of a quasi resolution test for the 2D advection scheme. The setup is the same as in the [2D advection example](Advection2D.md).
+This example presents a quasi-resolution test for the 2D advection schemes. The setup is the same as in the [2D advection example](Advection2D.md).
 
-To quantify the efficiency of the advection scheme with increasing resolution, the script determines three different quantities: 
+To evaluate the efficiency of each advection scheme as resolution increases, the script computes the following metrics: 
 
 - the maximum deviation of advected temperature from the maximum initial temperature, 
 - the maximum temperature, and 
 - the mean temperature. 
 
-The first quantity indicates the maximum lost information during the advection scheme, e.g. due to numerical diffusion. With increasing resolution, the remaning parameters should approach the initial values. 
+The first quantity reflects the maximum information loss due to numerical diffusion during the advection process. As the resolution increases, all metrics are expected to converge toward their respective initial values. 
 
 --- 
 
@@ -22,13 +22,13 @@ using Base.Threads
 using Printf
 ```
 
-In the following, one can define the maximum resultion and the schemes to be tested. The maximum resolution is given by: 
+The following section defines the maximum resolution and the advection schemes to be tested. The maximum resolution is given by: 
 
 $\begin{equation}
 nx_{max} = nrnxny*nx_{ini}, 
 \end{equation}$
 
-where $nrnxny$ is a simple multiplication factor and $nx_{ini} = 20$ the initial resolution. The resolution in the vertical direction is equal to the resolution in the horizontal direction. 
+where $nrnxny$ is a simple multiplication factor and $nx_{ini} = 20$ the initial resolution. The resolution in the vertical direction is set equal to that in the horizontal direction. 
 
 ```Julia
 @printf("Running on %d thread(s)\n", nthreads())
@@ -48,7 +48,7 @@ The variable `save_fig` controls the plotting output of the script:
 
 For every other value, no plot is shown. 
 
-Now, one can initialize the statistical parameter for the resolution test. 
+Next, initialize the statistical parameters used for the resolution analysis. 
 
 ```Julia
 # Statistical Parameter ============================================== #
@@ -61,7 +61,7 @@ St      = (
 # -------------------------------------------------------------------- #
 ```
 
-In the following, one needs to define the initial conditions, the model geometry and some constants for the visualization. 
+The next step defines the initial conditions, model geometry, and constants for visualization. 
 
 ```Julia
 # Define Initial Condition =========================================== #
@@ -89,7 +89,7 @@ Pl  =   (
 # -------------------------------------------------------------------- #
 ```
 
-Let's start with the loop over the different advection schemes. 
+The simulation begins with a loop over the different advection schemes. 
 
 ```Julia
 for m = 1:ns # Loop over advection schemes
@@ -99,7 +99,7 @@ for m = 1:ns # Loop over advection schemes
     # ---------------------------------------------------------------- #
 ```
 
-Followed by the loop over the different resolutions for each scheme. Within the loop, one needs to update the grid resolution and coordinates. 
+For each scheme, a nested loop is used to iterate over different grid resolutions. Within the loop, one needs to update the grid resolution and coordinates. 
 
 ```Julia
     for l = 1:nrnxny # Loop over differnet resolutions
@@ -146,7 +146,7 @@ Followed by the loop over the different resolutions for each scheme. Within the 
         # ------------------------------------------------------------ #
 ```
 
-To visualize the result, the path and name for the gif animation is set. Additional, the memory for the required data fields is initialized. 
+To enable visualization, the output path and filename for the animation are defined. In addition, memory is allocated for the required data fields. 
 
 ```Julia
         # Animationsettings =0======================================== #
@@ -290,7 +290,7 @@ Let's visualize the initial condition first.
 
 ![APIniPlot](../../assets/AdvIniSetup.svg)
 
-**Figure 1. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature is scaled be its maximum value such that the intensity of the anomaly is equal to one. 
+**Figure 1. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature field is normalized by its maximum value so that the anomaly intensity equals one. 
 
 Now, one can start the time loop and the advection. 
 
@@ -420,4 +420,5 @@ end
 
 ![AdvResFinal](../../assets/2D_advection_circle_RigidBody_ResTest.png)
 
-**Figure 2. Advection Resolution Test.** Deviation, maximum, and mean temperature for each advection 
+**Figure 2. Advection Resolution Test.**  
+Deviation, maximum, and mean temperature for each advection scheme across increasing grid resolutions. 

@@ -2,16 +2,16 @@
 
 
 
-This is an example to test the quality of the advection solver in two dimensions. The available solvers are: 
+This example evaluates the accuracy of the advection solvers implemented for two-dimensional problems. The available solvers are: 
 
 - upwind 
 - staggered leapfrog
 - semi-lagrangian 
 - tracers
 
-The first three solvers are designed in such a way, that any property defined on the centroids including ghost nodes can be advected with the interpolated centroid velocity from the staggered grid. The tracers are here used to advect the initial temperature anomaly, without updating the information on the tracers; that is, the temperature is interpolated on the centroids every time step. For more implementation details please see the [documentation](../AdvectMain.md).
+The first three solvers are implemented such that any property defined on the centroids (including ghost nodes) can be advected using interpolated centroid velocities from the staggered grid. Tracers are used to advect the initial temperature anomaly, but their internal properties are not updated. Instead, the temperature is interpolated onto the centroids at each time step. For more implementation details please see the [documentation](../AdvectMain.md).
 
-As initial temperature condition, one can use three different anomalies, which are: 
+The initial temperature condition can be defined using one of the following anomalies: 
 
 - a rectangular block 
 - a Gaussian temperature distribution
@@ -19,14 +19,14 @@ As initial temperature condition, one can use three different anomalies, which a
 
 >**Note:** The anomaly is here defined on the temperature field. However, one could also assume a similar density anomaly. This might even be more applicable for the tracer advection test. 
 
-As initial velocity condition, one can use two different fields: 
+Two different velocity fields can be used as initial conditions: 
 
 - a rigid body rotation 
 - an analytical shear cell velocity
 
-The second field is simply applicable to test the code or might also be used as initial velocity condition for a thermal convection. 
+The second velocity field is primarily intended for testing but may also serve as an initial condition in thermal convection problems. 
 
-For the given example, the rigid body rotation should actually be choosed as initial velocity. A rigid body rotation is a very good benchmark to test the efficiency of the advection scheme, since only rotation is applied which results in a simple displacment of an anomaly without deformation. Thus, the shape and intensity of the anomaly should be the same as in the initial condition. Any deviation thereof is a result of either numerical diffusion (e.g., for the upwind case) or an interpolation error, especially for sharp gradient anomalies. 
+In this example, rigid body rotation is the preferred initial velocity condition. Rigid body rotation provides a useful benchmark for testing advection scheme accuracy, as it applies pure rotation, displacing the anomaly without deformation. Thus, the shape and intensity of the anomaly should be the same as in the initial condition. Any deviation from the initial condition indicates either numerical diffusion (as in the upwind method) or interpolation error, particularly for sharp gradients. 
 
 ![APIni](../../assets/Advection_SetUp.png)
 
@@ -294,7 +294,7 @@ end
 
 ![APIniPlot](../../assets/AdvIniSetup.svg)
 
-**Figure 2. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature is scaled be its maximum value such that the intensity of the anomaly is equal to one. 
+**Figure 2. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature field is normalized by its maximum value so that the anomaly intensity equals one. 
 
 Now, one can start the time loop and the advection. 
 
@@ -378,8 +378,11 @@ end
 
 ![APup_ani](../../assets/2D_advection_circle_RigidBody_upwind.gif)
 
-**Figure 3. Rigid Body Rotation using Upwind. ***
+**Figure 3. Rigid Body Rotation using the Upwind Scheme.**
 
 ![APtracer_ani](../../assets/2D_advection_circle_RigidBody_tracers.gif)
 
-**Figure 4. Rigid Body Rotation using Tracers.** Left: Temperature field interpolated from the tracers onto the centroids. Right: Tracers density per cell. The problem was solved on one cpu. 
+**Figure 4. Rigid Body Rotation using Tracers.**  
+Left: Temperature field interpolated from tracers onto the centroids.  
+Right: Tracer density per cell.  
+The simulation was performed on a single CPU. 
