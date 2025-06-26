@@ -1,7 +1,5 @@
 # [Advection Problem (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)
 
-
-
 This example evaluates the accuracy of the advection solvers implemented for two-dimensional problems. The available solvers are: 
 
 - upwind 
