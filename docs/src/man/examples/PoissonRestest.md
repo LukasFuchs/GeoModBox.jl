@@ -10,6 +10,13 @@ For more details on the model setup and the physics or the numerical scheme, ple
 
 ---
 
+First one needs to load the required packages: 
+
+```Julia 
+using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots, Statistics
+using GLM, DataFrames
+```
+
 Let's first define the maximum resolution. 
 
 ```Julia

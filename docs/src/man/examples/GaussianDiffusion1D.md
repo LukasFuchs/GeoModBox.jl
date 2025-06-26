@@ -15,7 +15,14 @@ For more details regarding the model setup and physics or details on the differe
 
 ---
 
-First, one needs to define the geometrical and physical constants. 
+First one needs to load the required packages: 
+
+```Julia 
+using Plots, Printf, LinearAlgebra, ExtendableSparse
+using GeoModBox.HeatEquation.OneD
+```
+
+Now, one needs to define the geometrical and physical constants. 
 
 ```Julia
 # Physical Parameters --------------------------------------------------- #

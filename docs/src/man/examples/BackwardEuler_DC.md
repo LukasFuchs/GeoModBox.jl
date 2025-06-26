@@ -13,7 +13,14 @@ The accuracy of the numerical solution is checked with its analytical solution. 
 
 ---
 
-First one needs to define the geometry and the numerical parameters. 
+First one needs to load the required packages: 
+
+```Julia 
+using GeoModBox.HeatEquation.TwoD
+using ExactFieldSolutions, LinearAlgebra, Plots, Printf
+```
+
+Now, one needs to define the geometry and the numerical parameters. 
 
 ```julia
 # Spatial domain
