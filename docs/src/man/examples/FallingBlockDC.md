@@ -254,7 +254,7 @@ display(p)
 savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous_DC.png"))
 ```
 
-![FBIsoInst](../../assets/Falling_Block_const_inst.svg)
+![FBIsoInst](../../assets/Falling_Block_const_inst.png)
 
 **Figure 1. Instanteneous solution of an isoviscous falling block problem.** 
 
