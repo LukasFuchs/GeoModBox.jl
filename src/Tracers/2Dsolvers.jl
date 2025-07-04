@@ -17,7 +17,7 @@ end
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
-@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase)
+@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -53,13 +53,25 @@ end
         
         # phase ---
         for k = 1:nmark
-            if ymi[k]>=yU && ymi[k]<=yO && xmi[k]>=xL && xmi[k]<=xR
+            if Ma.y[k]>=yU && Ma.y[k]<=yO && Ma.x[k]>=xL && Ma.x[k]<=xR
                 Ma.phase[k]     =   phase[2]    #   anomaly 
             else
                 Ma.phase[k]     =   phase[1]    #   background
             end
         end
+
+    else ini==:RTI
+        @threads for k=1:nmark
+            # Layer interface  --- 
+            δAm     =   cos(2*π*((Ma.x[k] - 0.5*(M.xmax-M.xmin))/λ))*δA
+            if abs(Ma.y[k]) >  (M.ymax-M.ymin)/2 + δAm
+                Ma.phase[k]     =   phase[2]    #   Lower layer
+            else
+                Ma.phase[k]     =   phase[1]    #   Upper layer
+            end
+        end
     end
+
     return Ma
 end
 

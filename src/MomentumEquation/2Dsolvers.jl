@@ -151,8 +151,8 @@ function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     @. τ.xx =   2.0 * η * ε.xx
     @. τ.yy =   2.0 * η * ε.yy
     @. τ.xy =   2.0 * η * ε.xy
-    @. Fm.x[2:end-1,:] = - ((τ.xx[2:end,:]-τ.xx[1:end-1,:])/Δ.x + (τ.xy[2:end-1,2:end]-τ.xy[2:end-1,1:end-1])/Δ.y - (D.Pt[2:end,:]-D.Pt[1:end-1,:])/Δ.x)
-    @. Fm.y[:,2:end-1] = - ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y + g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
+    @. Fm.x[2:end-1,:] = ((τ.xx[2:end,:]-τ.xx[1:end-1,:])/Δ.x + (τ.xy[2:end-1,2:end]-τ.xy[2:end-1,1:end-1])/Δ.y - (D.Pt[2:end,:]-D.Pt[1:end-1,:])/Δ.x)
+    @. Fm.y[:,2:end-1] = ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y - g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
     @. FPt             = divV
 end
 
@@ -204,8 +204,8 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             K[ii,iNW]   =   - ηv[i,j+1] / dx / dy
             K[ii,iNE]   =   ηv[i,j+1] / dx / dy
             if inN K[ii,iN] =   ηv[i,j+1] / dy^2  end
-            K[ii,iPW]   = 1 / dx
-            K[ii,iPC]   = -1 / dx
+            K[ii,iPW]   =   1 / dx
+            K[ii,iPC]   =   -1 / dx
         end
     end
     # ------------------------------------------------------------------- #
@@ -327,7 +327,7 @@ function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
     @. τ.xx =   2.0 * ηc * ε.xx
     @. τ.yy =   2.0 * ηc * ε.yy
     @. τ.xy =   2.0 * ηv * ε.xy
-    @. Fm.x[2:end-1,:] = - ((τ.xx[2:end,:]-τ.xx[1:end-1,:])/Δ.x + (τ.xy[2:end-1,2:end]-τ.xy[2:end-1,1:end-1])/Δ.y - (D.Pt[2:end,:]-D.Pt[1:end-1,:])/Δ.x)
-    @. Fm.y[:,2:end-1] = - ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y + g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
+    @. Fm.x[2:end-1,:] = ((τ.xx[2:end,:]-τ.xx[1:end-1,:])/Δ.x + (τ.xy[2:end-1,2:end]-τ.xy[2:end-1,1:end-1])/Δ.y - (D.Pt[2:end,:]-D.Pt[1:end-1,:])/Δ.x)
+    @. Fm.y[:,2:end-1] = ((τ.yy[:,2:end]-τ.yy[:,1:end-1])/Δ.y + (τ.xy[2:end,2:end-1]-τ.xy[1:end-1,2:end-1])/Δ.x - (D.Pt[:,2:end]-D.Pt[:,1:end-1])/Δ.y - g * ((D.ρ[:,2:end] + D.ρ[:,1:end-1]) / 2.0))
     @. FPt             = divV
 end

@@ -54,7 +54,8 @@ makedocs(
                 "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md", # Checked! 
                 "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md", # Checked! 
                 "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
-            #     "Rayleigh Taylor Instability" => "man/examples/RTI.md",
+                "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md",
+                "RTI - Growth Rate" => "man/examples/RTI_Growth_Rate.md",
             #     "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],
             # "Mixed Thermal Convection" => Any[
