@@ -51,7 +51,7 @@ P   =   Physics(
     Ra      =   1.0e6,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
-Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*M.H^5) / (P.k*P.κ*P.η₀) 
+Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*(M.ymax-M.ymin)^5) / (P.k*P.κ*P.η₀) 
 # ------------------------------------------------------------------- #
 # Definiere Skalierungskonstanten =================================== # 
 S   =   ScalingConstants!(M,P)
@@ -191,7 +191,10 @@ filename    =   string("Internally_Heated_",P.Ra[1],
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
 # Impulserhaltung (IEG) ------
-off    = [  NV.x*NC.y,                          # vx
+# Iterations --- 
+niter   =   50
+ϵ       =   1e-10
+off     = [ NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
             NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
 
@@ -222,18 +225,22 @@ for it = 1:T.itmax
     D.Pt    .=  0.0
     # Anfangsresiduum ------
     @. D.ρ  =   -P.Ra*D.T
-    Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
-    rhsM[Num.Vx]    =   Fm.x[:]
-    rhsM[Num.Vy]    =   Fm.y[:]
-    rhsM[Num.Pt]    =   FPt[:]
-    # Update K ------
-    K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
-    # Lösen des lineare Gleichungssystems ------
-    χ      =   - K \ rhsM
-    # Update unbekante Variablen ------
-    D.vx[:,2:end-1]     .+=  χ[Num.Vx]
-    D.vy[2:end-1,:]     .+=  χ[Num.Vy]
-    D.Pt                .+=  χ[Num.Pt]
+    for iter = 1:niter
+        Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
+        rhsM[Num.Vx]    =   Fm.x[:]
+        rhsM[Num.Vy]    =   Fm.y[:]
+        rhsM[Num.Pt]    =   FPt[:]
+        @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
+                norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+        # Update K ------
+        K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+        # Lösen des lineare Gleichungssystems ------
+        χ      =   - K \ rhsM
+        # Update unbekante Variablen ------
+        D.vx[:,2:end-1]     .+=  χ[Num.Vx]
+        D.vy[2:end-1,:]     .+=  χ[Num.Vy]
+        D.Pt                .+=  χ[Num.Pt]
+    end
     D.ρ  =   ones(NC...)
     # ======
     # Berechnung der Geschwindikeit auf den Centroids ------

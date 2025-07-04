@@ -4,7 +4,7 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
-using Printf
+using Printf, LinearAlgebra
 
 function FallingBlockVarEta_Dc()
     # Define Initial Condition ========================================== #
@@ -162,6 +162,9 @@ function FallingBlockVarEta_Dc()
                             D.ηv[1:end-1,2:end-0] + 
                             D.ηv[2:end-0,2:end-0])
     # System of Equations =============================================== #
+    # Iterations --- 
+    niter       =   50
+    ϵ           =   1e-8
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -192,23 +195,24 @@ function FallingBlockVarEta_Dc()
         D.vx    .=  0.0
         D.vy    .=  0.0
         D.Pt    .=  0.0
-        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-        F[Num.Vx]   =   Fm.x[:]
-        F[Num.Vy]   =   Fm.y[:]
-        F[Num.Pt]   =   FPt[:]
-        # Assemble Coefficients ========================================= #
-        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-        # --------------------------------------------------------------- #
-        # Solution of the linear system ================================= #
-        δx      =   - K \ F
-        # --------------------------------------------------------------- #
-        # Update Unknown Variables ====================================== #
-        D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-        D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-        D.Pt                .+=  δx[Num.Pt]
-        # Final Residual ================================================ #
-        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-        # --------------------------------------------------------------- #
+        for iter = 1:niter
+            Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+            F[Num.Vx]   =   Fm.x[:]
+            F[Num.Vy]   =   Fm.y[:]
+            F[Num.Pt]   =   FPt[:]
+            @printf("||R|| = %1.4e\n", norm(F)/length(F))
+            norm(F)/length(F) < ϵ ? break : nothing
+            # Assemble Coefficients ===================================== #
+            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            # ----------------------------------------------------------- #
+            # Solution of the linear system ============================= #
+            δx      =   - K \ F
+            # ----------------------------------------------------------- #
+            # Update Unknown Variables ================================== #
+            D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+            D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+            D.Pt                .+=  δx[Num.Pt]
+        end
         # --------------------------------------------------------------- #
         # Get the velocity on the centroids ---
         for i = 1:NC.x

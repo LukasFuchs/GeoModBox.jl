@@ -113,15 +113,17 @@ The following steps are required to use tracers:
 
 **1. Tracer initialization**
 
-To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected.
+To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`. 
 
 Following the definition of the required parameters for the tracer advection, the initial tracer position can be defined via the function 
 
 ```julia
-IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase)
+IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
 ``` 
 
-The function initializes the position and the memory of the tracers. 
+The function initializes the position, phase, and memory of the tracers. As initial tracer phase distribution one can choose: 
+- `ini=:block` - a rectangular block
+- `ini=:RTI` - a cosine perturbation with wavelength λ and amplitude δA 
 
 The input parameters are: 
 
@@ -134,6 +136,8 @@ The input parameters are:
 - noise - add noise; 1 - yes, 0 - no
 - ini - Initial phase distribution (`block`)
 - phase - Vector with phase IDs, (e.g. [0,1])
+- λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
+- δA - Amplitude [m] of the perturbation
 
 To advect the temperature, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
