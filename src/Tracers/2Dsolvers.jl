@@ -17,7 +17,7 @@ end
 @doc raw"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
-@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
+@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -59,8 +59,7 @@ end
                 Ma.phase[k]     =   phase[1]    #   background
             end
         end
-
-    else ini==:RTI
+    elseif ini==:RTI
         @threads for k=1:nmark
             # Layer interface  --- 
             δAm     =   cos(2*π*((Ma.x[k] - 0.5*(M.xmax-M.xmin))/λ))*δA
@@ -68,6 +67,21 @@ end
                 Ma.phase[k]     =   phase[2]    #   Lower layer
             else
                 Ma.phase[k]     =   phase[1]    #   Upper layer
+            end
+        end
+    elseif ini==:Inclusion
+        # Circle shaped anomaly ---
+        # Bereich der Anomalie ---       
+        xc          =   (M.xmin+M.xmax)/2
+        yc          =   (M.ymin+M.ymax)/2
+        @threads for k = 1:nmark
+            x_ell   =  (Ma.x[k]-xc)*cosd(α) + (Ma.y[k]-yc)*sind(α)
+            y_ell   =  -(Ma.x[k]-xc)*sind(α) + (Ma.y[k]-yc)*cosd(α)
+            Elli    =   (x_ell/ellA)^2 + (y_ell/ellB)^2
+            if Elli < 1
+                Ma.phase[k]     =   phase[2]    #   Inclusion
+            else
+                Ma.phase[k]     =   phase[1]    #   Matrix
             end
         end
     end
