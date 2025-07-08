@@ -18,7 +18,7 @@ nrnxny      =   5
 Scheme      =   ["upwind","slf","semilag","tracers"]
 ns          =   size(Scheme,1)
 @show ns
-save_fig    =   -2
+save_fig    =   1
 
 # Statistical Parameter ============================================== #
 St      = (
@@ -55,6 +55,7 @@ for m = 1:ns # Loop over advection schemes
         ymin    =   0.0,
         ymax    =   1.0,
     )
+    BC  =   ()  # dummy
     # ---------------------------------------------------------------- #
     for l = 1:nrnxny # Loop over differnet resolutions
         # Numerical Constants ======================================== #

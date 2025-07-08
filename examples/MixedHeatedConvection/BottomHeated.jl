@@ -228,7 +228,7 @@ for it = 1:T.itmax
         rhsM[Num.Vy]    =   Fm.y[:]
         rhsM[Num.Pt]    =   FPt[:]
         @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
-                norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+        norm(rhsM)/length(rhsM) < ϵ ? break : nothing
         # Update K ------
         K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
         # Lösen des lineare Gleichungssystems ------

@@ -8,7 +8,7 @@ using Base.Threads
 using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
-    plot_fields     =:no
+    plot_fields     =:yes
     save_fig        = 1
     Pl  =   (
         qinc    =   5, 

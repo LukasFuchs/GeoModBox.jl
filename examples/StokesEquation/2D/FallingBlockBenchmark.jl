@@ -28,7 +28,7 @@ function FallingBlockBenchmark(td)
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
     path        =   string("./examples/StokesEquation/2D/Results/")
-    save_fig    =   0
+    save_fig    =   1
     p2          =   plot(0,0,layout=(2,3))
     count       =   Int64(0)
     # ------------------------------------------------------------------- #

@@ -8,20 +8,20 @@ function ViscousInclusion()
 save_fig    =   0
 plotfields  =:yes
 #Py.scale        =   'yes';
-chkvel      =   1; 
 FDMethod    =:dc
 # ----------------------------------------------------------------------- #
 # Plot Settings ========================================================= #
 Pl  =   (
-    qinc    =   10,
+    qinc    =   8,
     mainc   =   2,
-    qsc     =   5e-4# 100*(60*60*24*365.25)
+    qsc     =   1e8# 100*(60*60*24*365.25)
 )
 # ------------------------------------------------------------------- #
 # Define Initial Condition ============================================== #
 Ini         =   (
-    V=:SimpleShear,
+    V=:PureShear,
     p=:Inclusion,
+    ε = 1e-12,
 ) 
 # inclusions bedingungen
 α           =   0;             # positive -> counter clockwise
@@ -38,8 +38,8 @@ M       =   Geometry(
 # ----------------------------------------------------------------------- #
 ## ====================== Define the numerical grid ===================== #
 NC  =   ( 
-    x   =   150, 
-    y   =   150, 
+    x   =   100, 
+    y   =   100, 
 )
 NV  =   (
     x   =   NC.x + 1,
@@ -126,18 +126,52 @@ VBC     =   (
 )
 # ----------------------------------------------------------------------- #
 # Initial Condition ===================================================== #
-IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y;rad=EllA,mus_i=η₁/η₀)
-for i = 1:NC.x
-    for j = 1:NC.y
-        D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-        D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
-    end
-end
-@. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-@show minimum(D.vx),maximum(D.vx), minimum(D.vy),maximum(D.vy)
-vxana       =   copy(D.vx)
-vyana       =   copy(D.vy)
-Pta         =   copy(D.Pt)
+IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y;Ini.ε)
+# for i = 1:NC.x
+#     for j = 1:NC.y
+#         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+#         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+#     end
+# end
+# @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+# @show minimum(D.vx),maximum(D.vx), minimum(D.vy),maximum(D.vy)
+# vxana       =   copy(D.vx)
+# vyana       =   copy(D.vy)
+# Pta         =   copy(D.Pt)
+# Get analytical Solution
+AnaSol  =   (
+    Pa      =   zeros(Float64,NC...),
+    Vxa     =   zeros(Float64,NV.x,NC.y),
+    Vya     =   zeros(Float64,NC.x,NV.y),
+    Vx_N    =   zeros(Float64,NV.x,1),
+    Vx_S    =   zeros(Float64,NV.x,1),
+    Vx_W    =   zeros(Float64,NC.y,1),
+    Vx_E    =   zeros(Float64,NC.y,1),
+    Vy_N    =   zeros(Float64,NC.x,1),
+    Vy_S    =   zeros(Float64,NC.x,1),
+    Vy_W    =   zeros(Float64,NV.y,1),
+    Vy_E    =   zeros(Float64,NV.y,1),
+)
+
+Dani_Solution_vec!(Ini.V,AnaSol,M,x,y,EllA,η₁/η₀,NC,NV)
+
+# Boundary Conditions ---
+# Horizontal velocity 
+VBC.val.S    .=  AnaSol.Vx_S./1e12
+VBC.val.N    .=  AnaSol.Vx_N./1e12
+VBC.val.vxE  .=  AnaSol.Vx_E./1e12
+VBC.val.vxW  .=  AnaSol.Vx_W./1e12
+
+# Vertical velocity 
+VBC.val.E    .=  AnaSol.Vy_E./1e12
+VBC.val.W    .=  AnaSol.Vy_W./1e12
+VBC.val.vyS  .=  AnaSol.Vy_S./1e12
+VBC.val.vyN  .=  AnaSol.Vy_N./1e12
+
+@. D.vx[1,2:end-1]      =   AnaSol.Vx_W/1e12
+@. D.vx[end,2:end-1]    =   AnaSol.Vx_E/1e12
+@. D.vy[2:end-1,1]      =   AnaSol.Vy_S/1e12
+@. D.vy[2:end-1,end]    =   AnaSol.Vy_N/1e12
 # ----------------------------------------------------------------------- #
 # Tracer Advection ====================================================== #
 nmx,nmy     =   5,5
@@ -159,11 +193,8 @@ MPC1        = (
 MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
                 ellA=EllA,ellB=EllB,α=α)
-# RK4 weights ---
-rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
-# Count marker per cell ---
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+# # Count marker per cell ---
+# CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 # Interpolate from markers to cell ---
 Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
 Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
@@ -175,7 +206,7 @@ Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 # ------------------------------------------------------------------- #
 # System of Equations =============================================== #
 # Iterations
-niter   =   10
+niter   =   50
 ϵ       =   1e-8
 # Numbering, without ghost nodes! ---
 off    = [  NV.x*NC.y,                          # vx
@@ -243,205 +274,93 @@ elseif FDMethod==:direct
     D.Pt                .=  χ[Num.Pt]
 end
 # --------------------------------------------------------------- #
-# Get the velocity on the centroids ---
-for i = 1:NC.x
-    for j = 1:NC.y
-        D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-        D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
-    end
-end
-@. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+@. D.vx     *=  1e12
+@. D.vy     *=  1e12
+@. D.Pt     *=  1e12
+# # Get the velocity on the centroids ---
+# for i = 1:NC.x
+#     for j = 1:NC.y
+#         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+#         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+#     end
+# end
+# @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+Pe      =   copy(D.Pt)
+@. Pe   =   abs((D.Pt-AnaSol.Pa))
+Vxe     =   copy(AnaSol.Vxa)
+@. Vxe  =   abs((D.vx[:,2:end-1]-AnaSol.Vxa))
+Vye     =   copy(AnaSol.Vya)
+@. Vye  =   abs((D.vy[2:end-1,:]-AnaSol.Vya))
 
-p = heatmap(x.v./1e3,y.ce./1e3,D.vx',color=:berlin,
+p = heatmap(x.v./1e3,y.ce./1e3,(D.vx)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="v_x",
+            title="Numerical",
             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
             ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,2),subplot=1)
-heatmap!(p,x.ce./1e3,y.v./1e3,D.vy',color=:berlin,
+            layout=(3,3),subplot=1)
+heatmap!(p,x.ce./1e3,y.v./1e3,(D.vy)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="v_y",
+            title="v_y [cm/a]",
             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
             ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,2),subplot=2)
+            layout=(3,3),subplot=4)
 heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="P_t",
             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
             ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,2),subplot=3)
-heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=:lipari10,
+            layout=(3,3),subplot=7)
+heatmap!(p,x.v./1e3,y.c./1e3,(AnaSol.Vxa)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="phase",
+            title="Analytical",
             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
             ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(2,2),subplot=4)
-quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-                    D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-                    la=0.5,color="white",layout=(2,2),subplot=4)
-# p = heatmap(x.v./1e3,y.ce./1e3,D.vx',color=:berlin,
+            layout=(3,3),subplot=2)
+heatmap!(p,x.c./1e3,y.v./1e3,(AnaSol.Vya)',color=:berlin,
+            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            title="v_y [cm/a]",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(3,3),subplot=5)
+heatmap!(p,x.c./1e3,y.c./1e3,AnaSol.Pa',color=:glasgow,
+            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            title="P_t",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(3,3),subplot=8)
+heatmap!(p,x.v./1e3,y.c./1e3,(Vxe)',color=:berlin,
+            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            title="Analytical",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(3,3),subplot=3)
+heatmap!(p,x.c./1e3,y.v./1e3,(Vye)',color=:berlin,
+            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            title="v_y [cm/a]",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(3,3),subplot=6)
+heatmap!(p,x.c./1e3,y.c./1e3,Pe',color=:glasgow,
+            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            title="P_t",
+            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+            ylims=(M.ymin/1e3, M.ymax/1e3),
+            layout=(3,3),subplot=9)
+
+
+# heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
 #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="v_x",
+#             title="η",
 #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
 #             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(1,3),subplot=1)
-# heatmap!(p,x.ce./1e3,y.v./1e3,D.vy',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="v_y",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(1,3),subplot=2)
-# heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',color=:glasgow,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="|v|",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(1,3),subplot=3)
-# heatmap!(x.v./1e3,y.ce./1e3,vxana',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="v_x_ana",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(3,3),subplot=2)
-# heatmap!(p,x.ce./1e3,y.v./1e3,vyana',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="v_y",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(3,3),subplot=5)
-# heatmap!(p,x.c./1e3,y.c./1e3,Pta',color=:glasgow,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="|v|",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(3,3),subplot=8)
+#             layout=(2,2),subplot=4)
 # quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
 #             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
 #             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
 #                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-#                     la=0.5,color="white",layout=(2,2),subplot=3)
-# heatmap!(p,x.c./1e3,y.c./1e3,D.p',color=:lipari10,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="phase",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(2,2),subplot=4)
+#                     la=0.5,color="white",layout=(2,2),subplot=4)
 
 display(p)
-# ## ========================= Time loop ================================= ##
-#     ## =========== Interpolate velocity onto the regular grid =========== #
-#     [ID]        =   InterpStaggered(D,ID,N,'velocity');
-#     D.meanV(it) =   rms(ID.vx(:) + ID.vz(:));
-#     [ID]        =   GetStrainRate(ID,N);
-#     ID.tauII    =   ID.eII.*D.eta.*2;
-#     ID.psi      =   ID.eII.*ID.tauII;
-#     # =================================================================== #
-#     [D]         =   GetStrainRateStag(D,N);
-#     [D]         =   GetStressStag(D,N);
-#     D.psi       =   D.eII.*D.tauII;
-        
-#     incind      =   D.C > 1.5; 
-#     #             matind      =   D.C <= 1.5;   
-#     # =================================================================== #
-#     ## ========================== Plot data ============================= #
-#     Pl.time     =   '';
-#     Pl.xlab     =   '$$x$$';
-#     Pl.zlab     =   '$$z$$';
-    
-#     if (mod(it,5)==0||it==1)
-#         figure(1) # ----------------------------------------------------- #
-#         clf
-#         ax1 = subplot(2,2,1);
-#         D.eta(~incind) = NaN;
-#         plotfield(log10(D.eta),M.X,M.Z,Pl,'pcolor',...
-#             '$$log_{10} (\ \eta\ )$$','quiver',ID.vx,ID.vz);
-#         colormap(ax1,flipud(Pl.lapaz))
-#         ax2 = subplot(2,2,2);
-#         D.psi(~incind) = NaN;
-#         plotfield((D.psi),M.X,M.Z,Pl,'pcolor',...
-#             '$$log_{10} (\ \psi\ )$$');
-#         colormap(ax2,Pl.imola)
-#         ax3 = subplot(2,2,3);
-#         D.eII(~incind) = NaN;
-#         plotfield((D.eII),M.X,M.Z,Pl,'pcolor',...
-#             '$$log_{10} (\ \dot\varepsilon_{II}\ )$$')
-#         colormap(ax3,Pl.batlowW)
-#         ax4 = subplot(2,2,4);
-#         D.tauII(~incind) = NaN;
-#         plotfield((D.tauII),M.X,M.Z,Pl,'pcolor',...
-#             '$$log_{10} (\ \tau_{II}\ )$$')
-#         colormap(ax4,Pl.nuuk)
-# #         figure(3) # ----------------------------------------------------- #
-# #         clf
-# #         ax1 = subplot(2,2,1);
-# #         D.eta(~incind) = NaN;
-# #         plotfield(log10(D.eta),M.X,M.Z,Pl,'pcolor',...
-# #             '$$log_{10} (\ \eta\ )$$','quiver',ID.vx,ID.vz);
-# #         colormap(ax1,flipud(Pl.lapaz))
-# #         ax2 = subplot(2,2,2);
-# #         ID.psi(~incind) = NaN;
-# #         plotfield((ID.psi),M.X,M.Z,Pl,'pcolor',...
-# #             '$$log_{10} (\ \psi\ )$$');
-# #         colormap(ax2,Pl.imola)
-# #         ax3 = subplot(2,2,3);
-# #         ID.eII(~incind) = NaN;
-# #         plotfield((ID.eII),M.X,M.Z,Pl,'pcolor',...
-# #             '$$log_{10} (\ \dot\varepsilon_{II}\ )$$')
-# #         colormap(ax3,Pl.batlowW)
-# #         ax4 = subplot(2,2,4);
-# #         ID.tauII(~incind) = NaN;
-# #         plotfield((ID.tauII),M.X,M.Z,Pl,'pcolor',...
-# #             '$$log_{10} (\ \tau_{II}\ )$$')
-# #         colormap(ax4,Pl.nuuk)
-#     end       
-#     # =================================================================== #
-#     if B.chkvel == 1
-#         ID  =   CheckContinuum(ID,N,M,Ma,Pl);
-#     end
-    
-# end
-# # Staggered grid coordinates
-# [M.xVx,M.zVx] = meshgrid(M.x,M.z1);
-# [M.xVz,M.zVz] = meshgrid(M.x1,M.z);
-
-# D.Pe        = abs(D.P(2:end,2:end)-D.Pa);
-# D.vxe       = abs(D.vx(1:end-1,:)-D.Vxa);
-# D.vze       = abs(D.vz(:,1:end-1)-D.Vza);
-
-# figure(2)
-# ax1 = subplot(3,3,1); plotfield(D.Vxa,M.xVx,M.zVx,Pl,...
-#     'pcolor','$$vx\ (analytical)$$')
-# colormap(ax1,Pl.imola)
-# ax2 = subplot(3,3,2); plotfield(D.vx(1:end-1,:),M.xVx,M.zVx,Pl,...
-#     'pcolor','$$vx\ (numerical)$$')
-# colormap(ax2,Pl.imola)
-# ax3 = subplot(3,3,3); plotfield(D.vxe,M.xVx,M.zVx,Pl,...
-#     'pcolor','$$vx\ (error)$$')
-# colormap(ax3,Pl.batlowW)
-# ax4 = subplot(3,3,4); plotfield(D.Vza,M.xVz,M.zVz,Pl,...
-#     'pcolor','$$vz\ (analytical)$$')
-# colormap(ax4,Pl.imola)
-# ax5 = subplot(3,3,5); plotfield(D.vz(:,1:end-1),M.xVz,M.zVz,Pl,...
-#     'pcolor','$$vz\ (numerical)$$')
-# colormap(ax5,Pl.imola)
-# ax6 = subplot(3,3,6); plotfield(D.vze,M.xVz,M.zVz,Pl,...
-#     'pcolor','$$vz\ (error)$$')
-# colormap(ax6,Pl.batlowW)
-# ax7 = subplot(3,3,7); plotfield(D.Pa,M.X1,M.Z1,Pl,...
-#     'pcolor','$$P\ (analytical)$$')
-# colormap(ax7,Pl.hawaii)     
-# ax8 = subplot(3,3,8); plotfield(D.P(2:end,2:end),M.X1,M.Z1,Pl,...
-#     'pcolor','$$P\ (numerical)$$')
-# colormap(ax8,Pl.hawaii)
-# ax9 = subplot(3,3,9); plotfield(D.Pe,M.X1,M.Z1,Pl,...
-#     'pcolor','$$P\ (error)$$')
-# colormap(ax9,Pl.batlowW)
-
-# psiinc1 = mean(ID.psi(incind));
-# psiinc2 = -sum(ID.psi(incind))./sum(incind(:).*N.dx.*N.dz);
-# psiinc3 = sum(ID.psi(incind))./pi/B.EllA/B.EllB;
 
 # ----------------------------------------------------------------------- #
 # =============================== END =================================== #

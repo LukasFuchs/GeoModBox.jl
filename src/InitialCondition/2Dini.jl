@@ -121,7 +121,7 @@ end
 #
 # ---
 """
-@views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;rad=100.0,mus_i=1e-5)
+@views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;ε=1e-15)
     if type==:RigidBody
         # Rigid Body Rotation ---
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
@@ -165,39 +165,34 @@ end
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
     elseif type==:SimpleShear || type==:PureShear
-        AnaSol  =   (
-            Pa      =   zeros(Float64,NC...),
-            Vxa     =   zeros(Float64,NV.x,NC.y),
-            Vya     =   zeros(Float64,NC.x,NV.y),
-            Vx_N    =   zeros(Float64,NV.x,1),
-            Vx_S    =   zeros(Float64,NV.x,1),
-            Vx_W    =   zeros(Float64,NC.y,1),
-            Vx_E    =   zeros(Float64,NC.y,1),
-            Vy_N    =   zeros(Float64,NC.x,1),
-            Vy_S    =   zeros(Float64,NC.x,1),
-            Vy_W    =   zeros(Float64,NV.y,1),
-            Vy_E    =   zeros(Float64,NV.y,1),
-        )
-
-        Dani_Solution_vec!(type,AnaSol,M,x,y,rad,mus_i,NC,NV)
-        
-        # Assign analytical solution ---
-        @. D.vx[:,2:end-1]  =   AnaSol.Vxa
-        @. D.vy[2:end-1,:]  =   AnaSol.Vya
-        @. D.Pt             =   AnaSol.Pa
-
-        # Boundary Conditions ---
-        # Horizontal velocity 
-        BC.val.S    .=  AnaSol.Vx_S
-        BC.val.N    .=  AnaSol.Vx_N
-        BC.val.vxE  .=  AnaSol.Vx_E
-        BC.val.vxW  .=  AnaSol.Vx_W
-
-        # Vertical velocity 
-        BC.val.E    .=  AnaSol.Vy_E
-        BC.val.W    .=  AnaSol.Vy_W
-        BC.val.vyS  .=  AnaSol.Vy_S
-        BC.val.vyN  .=  AnaSol.Vy_N
+        if type==:SimpleShear
+            # Horizontal velocity 
+            @. BC.val.S     =   (y.v2d[:,1]+(M.ymax-M.ymin)/2)*ε        #   South
+            @. BC.val.N     =   (y.v2d[:,end]+(M.ymax-M.ymin)/2)*ε      #   North
+            @. BC.val.vxW   =   (y.c2d[1,:]+(M.ymax-M.ymin)/2)*ε        #   West
+            @. BC.val.vxE   =   (y.c2d[end,:]+(M.ymax-M.ymin)/2)*ε      #   East
+            # Vertical velocity 
+            @. BC.val.vyS   =   0.0
+            @. BC.val.vyN   =   0.0
+            @. BC.val.W     =   0.0
+            @. BC.val.E     =   0.0            
+            
+        elseif type==:PureShear
+            # Horizontal velocity 
+            @. BC.val.S     =   -(x.vx2d[:,1]-(M.xmax-M.xmin)/2)*ε               #   South
+            @. BC.val.N     =   -(x.vx2d[:,end]-(M.xmax-M.xmin)/2)*ε             #   North
+            @. BC.val.vxW   =   -(x.vx2d[1,2:end-1]-(M.xmax-M.xmin)/2)*ε         #   West
+            @. BC.val.vxE   =   -(x.vx2d[end,2:end-1]-(M.xmax-M.xmin)/2)*ε       #   East
+            # Vertical velocity 
+            @. BC.val.vyS   =   (y.vy2d[2:end-1,1]+(M.ymax-M.ymin)/2)*ε         #   South
+            @. BC.val.vyN   =   (y.vy2d[2:end-1,end]+(M.ymax-M.ymin)/2)*ε       #   North
+            @. BC.val.W     =   (y.v2d[1,:]+(M.ymax-M.ymin)/2)*ε                #   West
+            @. BC.val.E     =   (y.v2d[end,:]+(M.ymax-M.ymin)/2)*ε              #   East
+        end
+        D.vx[1,2:end-1]     .=   BC.val.vxW      #   West
+        D.vx[end,2:end-1]   .=   BC.val.vxE      #   East
+        D.vy[2:end-1,1]     .=   BC.val.vyS      #   South
+        D.vy[2:end-1,end]   .=   BC.val.vyN      #   North
     end
     return D, BC
 end
