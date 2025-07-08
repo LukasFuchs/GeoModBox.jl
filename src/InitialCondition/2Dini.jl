@@ -1,4 +1,5 @@
-using Base.Threads 
+using Base.Threads
+using GeoModBox
 
 @doc raw""" 
     IniTemperature!(type,M,NC,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
@@ -58,14 +59,10 @@ Possible initial temperature conditions are:
         end        
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
-        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        xTr     =   xTl + (M.xmax-M.xmin)/10.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0  # (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 #(abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        # xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        # xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        # yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        # yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0
+        xTr     =   xTl + (M.xmax-M.xmin)/10.0
+        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0 
+        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 
         # Anfangstemperatur Verteilung ---
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -124,7 +121,7 @@ end
 #
 # ---
 """
-@views function IniVelocity!(type,D,NV,Δ,M,x,y)
+@views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;ε=1e-15)
     if type==:RigidBody
         # Rigid Body Rotation ---
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
@@ -167,8 +164,37 @@ end
         end
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
+    elseif type==:SimpleShear || type==:PureShear
+        if type==:SimpleShear
+            # Horizontal velocity 
+            @. BC.val.S     =   (y.v2d[:,1]+(M.ymax-M.ymin)/2)*ε        #   South
+            @. BC.val.N     =   (y.v2d[:,end]+(M.ymax-M.ymin)/2)*ε      #   North
+            @. BC.val.vxW   =   (y.c2d[1,:]+(M.ymax-M.ymin)/2)*ε        #   West
+            @. BC.val.vxE   =   (y.c2d[end,:]+(M.ymax-M.ymin)/2)*ε      #   East
+            # Vertical velocity 
+            @. BC.val.vyS   =   0.0
+            @. BC.val.vyN   =   0.0
+            @. BC.val.W     =   0.0
+            @. BC.val.E     =   0.0            
+            
+        elseif type==:PureShear
+            # Horizontal velocity 
+            @. BC.val.S     =   -(x.vx2d[:,1]-(M.xmax-M.xmin)/2)*ε               #   South
+            @. BC.val.N     =   -(x.vx2d[:,end]-(M.xmax-M.xmin)/2)*ε             #   North
+            @. BC.val.vxW   =   -(x.vx2d[1,2:end-1]-(M.xmax-M.xmin)/2)*ε         #   West
+            @. BC.val.vxE   =   -(x.vx2d[end,2:end-1]-(M.xmax-M.xmin)/2)*ε       #   East
+            # Vertical velocity 
+            @. BC.val.vyS   =   (y.vy2d[2:end-1,1]+(M.ymax-M.ymin)/2)*ε         #   South
+            @. BC.val.vyN   =   (y.vy2d[2:end-1,end]+(M.ymax-M.ymin)/2)*ε       #   North
+            @. BC.val.W     =   (y.v2d[1,:]+(M.ymax-M.ymin)/2)*ε                #   West
+            @. BC.val.E     =   (y.v2d[end,:]+(M.ymax-M.ymin)/2)*ε              #   East
+        end
+        D.vx[1,2:end-1]     .=   BC.val.vxW      #   West
+        D.vx[end,2:end-1]   .=   BC.val.vxE      #   East
+        D.vy[2:end-1,1]     .=   BC.val.vyS      #   South
+        D.vy[2:end-1,end]   .=   BC.val.vyN      #   North
     end
-    return D
+    return D, BC
 end
 
 @doc raw"""

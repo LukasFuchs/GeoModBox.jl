@@ -42,28 +42,36 @@ IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
 ## Initial Velocity
 
 ```julia
-IniVelocity!(type,D,NV,Δ,M,x,y)
+IniVelocity!(type,D,VBC,NC,NV,Δ,M,x,y;ε=1e-15)
 ```
 
-Two initial velocity configurations are currently supported: 
+The following velocity configurations are currently supported: 
 
 1. A rigid-body rotation (`RigidBody`)
 2. A shear cell (`ShearCell`)
+3. Simple Shear (`SimpleShear`) 
+4. Pure Shear (`PureShear`)
 
 The input parameters are: 
 
 - type - Parameter defining the type (see above)
 - D - Structure or tuple containing the field arrays
+- VBC - Structure or tuple containing the velocity boundary conditions
+- NC - Structure or tuple containing the centroids parameter 
 - NV - Structure or tuple containing the vertices parameter 
 - Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
 - x - Structure or tuple containing the x-coordinates
 - y - tructure or tuple containing the y-coordinates
 
+Certain default values can be modified as well: 
+
+- ε - Background strain rate for pure shear or simple shear
+
 The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
 ```Julia
-IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
+IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y)
 ``` 
 
 ## Initial Phase

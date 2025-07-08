@@ -8,7 +8,7 @@ using Base.Threads
 using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
-    plot_fields     =:no
+    plot_fields     =:yes
     save_fig        = 1
     Pl  =   (
         qinc    =   5, 
@@ -333,12 +333,12 @@ function RTI_GrowthRate()
                     color=:black)
             end # Loop λ - j
             if k == 1
-                plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],color=:black,
+                plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],
                             xlabel="ϕ₁ = 2πh₁/λ",
                             ylabel="b₁K + b₂", 
                             title="",
                             xlims=(0.5,4),ylims=(0.05,0.4),
-                            label="")
+                            label=string("ηᵣ = ", ηᵣ[i]))
             end
         end # Loop ηᵣ - i 
     end # Loop delfac - k 

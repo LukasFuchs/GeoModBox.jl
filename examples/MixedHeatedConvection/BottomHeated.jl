@@ -24,7 +24,7 @@ Pl  =   (
 k           =   scatter()
 path        =   string("./examples/MixedHeatedConvection/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   1
+save_fig    =   0
 # ------------------------------------------------------------------- #
 # Modellgeometrie Konstanten ======================================== #
 M   =   Geometry(
@@ -113,7 +113,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   1.0,                #   Courant time factor
     Δfacd   =   1.0,                #   Diffusion time factor
-    itmax   =   6000,              #   Maximum iterations; 30000
+    itmax   =   20,              #   Maximum iterations; 30000
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -228,7 +228,7 @@ for it = 1:T.itmax
         rhsM[Num.Vy]    =   Fm.y[:]
         rhsM[Num.Pt]    =   FPt[:]
         @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
-                norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+        norm(rhsM)/length(rhsM) < ϵ ? break : nothing
         # Update K ------
         K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
         # Lösen des lineare Gleichungssystems ------
