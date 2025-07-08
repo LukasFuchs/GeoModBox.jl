@@ -28,10 +28,10 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
             # ---
             inS     =   j==1    ? false  : true  
             FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
-            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
+            NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
             inN     =   j==NC.y ? false  : true   
             FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
-            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.
+            NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.
             if inS K[ii,iS] =   η / dy^2 end
             K[ii,iW]    =   η / dx^2
             K[ii,iC]    =   - 2.0 * η / dx^2 - (2.0 - FSS - FSN + NSS + NSN) * η / dy^2
@@ -63,10 +63,10 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
             # ---
             inW     =   i==1    ? false  : true  
             FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
-            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
+            NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             inE     =   i==NC.x ? false  : true   
             FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
-            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             K[ii,iS]    =   η / dy^2
             if inW K[ii,iW] =  η / dx^2 end
             K[ii,iC]    =   - (2.0 - FSW - FSE + NSW + NSE) * η / dx^2 - 2.0 * η / dy^2
@@ -107,11 +107,14 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
         if i == 1 || i == NV.x
             # East and West boundary ---
             # Free Slip && No Slip: vₓ = 0 
-            rhs[ii]     =   0.0
+            # rhs[ii]     =   0.0
+            CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
+            CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            rhs[ii]  += CW * BC.val.vxW[j] + CE * BC.val.vxE[j]
         else            
             # ---
-            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
-            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.            
+            NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
+            NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.            
             # ---
             rhs[ii] +=  -2.0 * η * BC.val.S[i] / Δ.y^2 * NSS -
                         2.0 * η * BC.val.N[i] / Δ.y^2 * NSN
@@ -125,11 +128,14 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
         if j == 1 || j == NV.y
             # North and South boundary ---
             # Free Slip && No Slip: vy = 0 
-            rhs[ii]     =   0.0
+            # rhs[ii]     =   0.0
+            CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
+            CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            rhs[ii]     += CN * BC.val.vyN[i] + CS * BC.val.vyS[i]
         else            
             # ---
-            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
-            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
+            NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             # ---
             rhs[ii] +=  - g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
                         2.0 * η * BC.val.W[j] / Δ.x^2 * NSW -
@@ -140,10 +146,14 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
 end
 
 function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
-    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip)*(2*BC.val.S - D.vx[:,2])
-    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip)*(2*BC.val.N - D.vx[:,end-1])
-    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
-    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip)*(2*BC.val.E - D.vy[end-1,:])
+    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
+    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
+    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
+    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    # @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip)*(2*BC.val.S - D.vx[:,2])
+    # @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip)*(2*BC.val.N - D.vx[:,end-1])
+    # @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
+    # @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip)*(2*BC.val.E - D.vy[end-1,:])
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
     @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
     @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
@@ -191,10 +201,10 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             # ---
             inS     =   j==1    ? false  : true  
             FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
-            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
+            NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
             inN     =   j==NC.y ? false  : true   
             FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
-            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.
+            NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.
             if inS K[ii,iS] =   ηv[i,j] / dy^2   end
             K[ii,iSW]   =   ηv[i,j] / dx / dy 
             K[ii,iSE]   =   - ηv[i,j] / dx / dy
@@ -214,7 +224,7 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
         # Equation Number ---
         ii  =   Num.Vy[i,j] 
         if j == 1 || j == NV.y
-            # East and West boundary ---
+            # North and South boundary ---
             # Free Slip && No Slip: vₓ = 0 
             K[ii,ii]    =   1.0
         else
@@ -235,10 +245,10 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             # ---
             inW     =   i==1    ? false  : true  
             FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
-            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
+            NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             inE     =   i==NC.x ? false  : true   
             FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
-            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             K[ii,iS]    =   2 * ηc[i,j-1] / dy^2
             K[ii,iSW]   =   ηv[i,j] / dx / dy
             K[ii,iSE]   =   - ηv[i+1,j] / dx / dy
@@ -283,11 +293,14 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
         if i == 1 || i == NV.x
             # East and West boundary ---
             # Free Slip && No Slip: vₓ = 0 
-            rhs[ii]     =   0.0
+            # rhs[ii]     =   0.0
+            CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
+            CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            rhs[ii]  += CW * BC.val.vxW[j] + CE * BC.val.vxE[j]
         else            
             # ---
-            NSS     =   (j==1    && BC.type.S==:noslip) ? 1. : 0.
-            NSN     =   (j==NC.y && BC.type.N==:noslip) ? 1. : 0.            
+            NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
+            NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.            
             # ---
             rhs[ii] +=  -2.0 * ηv[i,j] * BC.val.S[i] / Δ.y^2 * NSS -
                         2.0 * ηv[i,j+1] * BC.val.N[i] / Δ.y^2 * NSN
@@ -301,11 +314,14 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
         if j == 1 || j == NV.y
             # North and South boundary ---
             # Free Slip && No Slip: vy = 0 
-            rhs[ii]     =   0.0
+            # rhs[ii]     =   0.0
+            CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
+            CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            rhs[ii]     += CN * BC.val.vyN[i] + CS * BC.val.vyS[i]
         else            
             # ---
-            NSW     =   (i==1    && BC.type.W==:noslip) ? 1. : 0.
-            NSE     =   (i==NC.x && BC.type.E==:noslip) ? 1. : 0.            
+            NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
+            NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             # ---
             rhs[ii] +=  g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
                         2.0 * ηv[i,j] * BC.val.W[j] / Δ.x^2 * NSW -
@@ -316,10 +332,10 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
 end
 
 function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
-    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip)*(2*BC.val.S - D.vx[:,2])
-    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip)*(2*BC.val.N - D.vx[:,end-1])
-    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
-    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip)*(2*BC.val.E - D.vy[end-1,:])
+    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
+    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
+    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
+    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
     @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
     @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV

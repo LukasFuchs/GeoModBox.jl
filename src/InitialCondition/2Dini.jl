@@ -1,4 +1,5 @@
-using Base.Threads 
+using Base.Threads
+using GeoModBox
 
 @doc raw""" 
     IniTemperature!(type,M,NC,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
@@ -58,14 +59,10 @@ Possible initial temperature conditions are:
         end        
     elseif type==:block        
         # Bereich der Temperatur Anomalie ---
-        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        xTr     =   xTl + (M.xmax-M.xmin)/10.0 # (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0  # (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 #(abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        # xTl     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 - (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        # xTr     =   (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/4 + (abs(M.xmin-Δ.x/2)+abs(M.xmax+Δ.x/2))/10
-        # yTu     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 - (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
-        # yTo     =   (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/2 + (abs(M.ymin-Δ.y/2)+abs(M.ymax+Δ.y/2))/10
+        xTl     =   M.xmin + (M.xmax-M.xmin)/8.0
+        xTr     =   xTl + (M.xmax-M.xmin)/10.0
+        yTu     =   M.ymin + (M.ymax-M.ymin)/2.0 - (M.ymax-M.ymin)/10.0 
+        yTo     =   M.ymin + (M.ymax-M.ymin)/2.0 + (M.ymax-M.ymin)/10.0 
         # Anfangstemperatur Verteilung ---
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
@@ -124,7 +121,7 @@ end
 #
 # ---
 """
-@views function IniVelocity!(type,D,NV,Δ,M,x,y)
+@views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;rad=100.0,mus_i=1e-5)
     if type==:RigidBody
         # Rigid Body Rotation ---
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
@@ -167,8 +164,42 @@ end
         end
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
+    elseif type==:SimpleShear || type==:PureShear
+        AnaSol  =   (
+            Pa      =   zeros(Float64,NC...),
+            Vxa     =   zeros(Float64,NV.x,NC.y),
+            Vya     =   zeros(Float64,NC.x,NV.y),
+            Vx_N    =   zeros(Float64,NV.x,1),
+            Vx_S    =   zeros(Float64,NV.x,1),
+            Vx_W    =   zeros(Float64,NC.y,1),
+            Vx_E    =   zeros(Float64,NC.y,1),
+            Vy_N    =   zeros(Float64,NC.x,1),
+            Vy_S    =   zeros(Float64,NC.x,1),
+            Vy_W    =   zeros(Float64,NV.y,1),
+            Vy_E    =   zeros(Float64,NV.y,1),
+        )
+
+        Dani_Solution_vec!(type,AnaSol,M,x,y,rad,mus_i,NC,NV)
+        
+        # Assign analytical solution ---
+        @. D.vx[:,2:end-1]  =   AnaSol.Vxa
+        @. D.vy[2:end-1,:]  =   AnaSol.Vya
+        @. D.Pt             =   AnaSol.Pa
+
+        # Boundary Conditions ---
+        # Horizontal velocity 
+        BC.val.S    .=  AnaSol.Vx_S
+        BC.val.N    .=  AnaSol.Vx_N
+        BC.val.vxE  .=  AnaSol.Vx_E
+        BC.val.vxW  .=  AnaSol.Vx_W
+
+        # Vertical velocity 
+        BC.val.E    .=  AnaSol.Vy_E
+        BC.val.W    .=  AnaSol.Vy_W
+        BC.val.vyS  .=  AnaSol.Vy_S
+        BC.val.vyN  .=  AnaSol.Vy_N
     end
-    return D
+    return D, BC
 end
 
 @doc raw"""

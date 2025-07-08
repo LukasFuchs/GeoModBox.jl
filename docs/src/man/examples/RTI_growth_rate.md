@@ -454,3 +454,5 @@ end
 
 ![RTI_GrowthRate](../../assets/RTI_Growth_Rate.png)
 
+**Figure 2.RTI Growth Rate.** Growth rate of an initial cosinusoidal pertrubation of a two-layered system with different wavelengths $\lambda$. The growth rate is arbitrarily scalled by $b_1$ and $b_2$ for visualization purposes following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the black circles show the corresponding numerical results. The rising velocity is numerically calculated following the approach shown in Figure 1. 
+
