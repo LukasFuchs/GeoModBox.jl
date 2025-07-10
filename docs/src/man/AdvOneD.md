@@ -164,9 +164,3 @@ k_4 & = \Delta{t} \cdot v_x(t^n+\Delta{t},x_p^n+k_3) \\
 
 Despite the advantages, care is required. Interpolation between grid and tracer data can cause smoothing and numerical diffusion, particularly in regions with sharp gradients. Additionally, clustering or depletion of tracers can introduce further errors and may require adaptive insertion of new tracers in under-sampled regions.
 
-## Exercise
-
-All the above methods are implemented in the 1D advection exercise:
-
-- [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
-

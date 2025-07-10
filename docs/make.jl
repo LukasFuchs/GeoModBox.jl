@@ -37,9 +37,9 @@ makedocs(
         "Examples" => Any[
             "General" => "man/Examples.md",
             "Diffusion Equation" => Any[
-                "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md",
-                "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md",
-                "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md",
+                "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md", # Checked! 
+                "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md", # Checked! 
+                "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md", # Checked!  
                 "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md",
                 "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md",
                 "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md",

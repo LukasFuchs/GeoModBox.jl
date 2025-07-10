@@ -30,7 +30,7 @@ where
 $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s] and
 $Q = \rho H$ is the volumetric heat production rate [W/m³].
 
-## Discretization and Numerical Schemes
+# Discretization and Numerical Schemes
 
 To numerically solve equation (3), the spatial domain must be discretized and the relevant thermal parameters assigned to the appropriate computational nodes.
 
@@ -50,7 +50,7 @@ The numerical results are compared with the analytical solution of a Gaussian te
 
 Each numerical scheme is briefly outlined in the following sections. For implementation details and derivations in one dimension, refer to the [1D solver documentation](DiffOneD.md).
 
-### Explicit Scheme: FTCS (Forward Time, Centered Space)
+## Explicit Scheme: FTCS (Forward Time, Centered Space)
 
 For an explicit finite difference discretization, the numerical stability criterion (heat diffusion condition) is given by:
 
@@ -157,7 +157,7 @@ are the specified temperature gradients (or fluxes) at each boundary.
 
 Once the ghost node temperatures are defined according to the chosen boundary conditions, equation (6) can be used to update the temperature at the *centroids* for the next time step.
 
-### Implicit Scheme: Backward Euler Method
+## Implicit Scheme: Backward Euler Method
 
 In two dimensions, the temperature equation can be discretized using the implicit (Backward Euler) method as:
 
@@ -254,7 +254,7 @@ c T_{i,ncy}^{n} + b c_N \Delta{y} + \frac{Q_{i,j}}{\rho c_p}
 
 These boundary-specific formulations ensure symmetry in the coefficient matrix and proper enforcement of Dirichlet and Neumann conditions within the implicit time-stepping scheme.
 
-### Defect Correction Method
+## Defect Correction Method
 
 The defect correction method reformulates the diffusive part of the temperature equation by introducing a residual term $R$, representing the defect (or error) in the discretized equation. This can be expressed as:
 
@@ -291,7 +291,7 @@ In this formulation, the defect $R$ quantifies the deviation from the true solut
 
 For more background on the defect correction approach, see the [1-D example](./DiffOneD.md). For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-### Cranck-Nicolson Approach (CNA)
+## Cranck-Nicolson Approach (CNA)
 
 In 2-D, the diffusive part of the heat equation (Equation 3) using the Crank–Nicolson method is written as:
 
@@ -385,10 +385,10 @@ b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} 
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-### Alternating-Direction Implicit (ADI)
+## Alternating-Direction Implicit (ADI)
 In 2-D, the diffusive part of the heat equation (Equation 3) is discretized using the Alternating-Direction Implicit (ADI) method by splitting the time step into two fractional steps. The resulting system for each half-step is:
 
-#### First half-step (implicit in $y$, explicit in $x$):
+### First half-step (implicit in $y$, explicit in $x$):
 
 $\begin{equation}
 \frac{T_{i,j}^{n+1/2}-T_{i,j}^n}{\Delta t/2} = 
@@ -399,7 +399,7 @@ $\begin{equation}
     \right)
 \end{equation}$
 
-#### Second half-step (implicit in $x$, explicit in $y$):
+### Second half-step (implicit in $x$, explicit in $y$):
 
 $\begin{equation}
 \frac{T_{i,j}^{n+1}-T_{i,j}^{n+1/2}}{\Delta t/2} = 
@@ -416,7 +416,7 @@ As in the Crank–Nicolson approach, the coefficients and right-hand side vector
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-### Variable Thermal Parameters 
+## Variable Thermal Parameters 
 
 >**Note:** Variable thermal parameters are currently implemented for the 1-D time-dependent and 2-D steady-state cases. The 2-D defect correction method also supports time-dependent problems with variable parameters. These capabilities will be extended in future updates.
 
@@ -494,17 +494,17 @@ Additional solver (explicit, implicit, CNA) for variable thermal parameter will 
 
 --- 
 
-### Temperature Field Management
+## Temperature Field Management
 
 In the **explicit solver** and the **defect correction method**, the *extended temperature field*, which includes ghost nodes, is required to compute the temperature at the new time step. The current temperature values at the centroids are assigned to this extended field to serve as the *old* temperature.
 
 For the remaining solvers, the current temperature field at the centroids is used to construct the known right-hand side vector. The corresponding coefficient matrices are assembled to solve for the unknown temperature at the next time step.
 
-## Steady State Solution 
+# Steady State Solution 
 
 In steady state, the temperature field does not vary with time (i.e., $\partial T/\partial t = 0$), and the heat equation simplifies to an *elliptic partial differential equation*, also known as the *Poisson equation*.
 
-### Poisson Equation (Constant $k$)
+## Poisson Equation (Constant $k$)
 
 For constant thermal conductivity, the steady-state heat equation is given by:
 
@@ -595,7 +595,7 @@ aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-### Poisson Equation (variable $k$)
+## Poisson Equation (variable $k$)
 
 For spatially varying thermal conductivity, the steady-state heat equation in 2-D is given by:
 

@@ -201,12 +201,13 @@ function RTI_GrowthRate()
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
                 # Interpolate from markers to cell ---
                 Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
+                Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
+                # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
                 Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-                @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                                        D.ηv[2:end-0,1:end-1] + 
-                                        D.ηv[1:end-1,2:end-0] + 
-                                        D.ηv[2:end-0,2:end-0])
+                # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
+                #                         D.ηv[2:end-0,1:end-1] + 
+                #                         D.ηv[1:end-1,2:end-0] + 
+                #                         D.ηv[2:end-0,2:end-0])
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
                 # Iterations

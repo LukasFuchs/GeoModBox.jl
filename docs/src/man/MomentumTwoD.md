@@ -28,7 +28,7 @@ $\begin{equation}
 \text{div}\left(\vec{v} \right) = \left(\frac{\partial{v_i}}{\partial{x_i}}+\frac{\partial{v_j}}{\partial{x_j}}\right) = 0.
 \end{equation}$ 
 
-## Discretization 
+# Discretization 
 
 The conservation equations of **momentum** and **mass** are solved in two dimensions ($x$ and $y$) using a **staggered finite difference grid**, where the horizontal (cyan dashes) and vertical (orange dashes) velocities are defined between the regular grid points (vertices), and the pressure (red circles) within finite difference cells (centroids), as shown in Figure 1.
 
@@ -42,7 +42,7 @@ Discretization of the conservation equations of momentum and mass. The horizonta
 ---------------------
 ---------------------
 
-## Constant Viscosity
+# Constant Viscosity
 
 Let's first assume a special case of the Stokes equation, a **constant viscosity**, which simplifies equation (1) to:
 
@@ -66,7 +66,7 @@ $\begin{equation}
 
 To discretize these equations, we define a **numerical stencil** indicating the grid points involved in the finite difference approximation. Each stencil is centered on the point $(i,j)$, where $i$ and $j$ denote indices in the horizontal and vertical directions, respectively. The central point corresponds to the equation's location in the global linear system.
 
-### Stencil
+## Stencil
 
 The numerical stencils for the momentum equations under constant viscosity are shown in Figure 2. These stencils illustrate the neighboring grid points required to evaluate each component using a finite difference scheme.
 
@@ -128,13 +128,13 @@ N & = \frac{\eta}{\Delta{y^2}}. \\
 \end{split}
 \end{equation}$
 
-### Boundary Conditions
+## Boundary Conditions
 
 The most commonly applied boundary conditions for the momentum equation are combinations of *Dirichlet* and *Neumann* velocity boundary conditions. These are typically referred to as **free slip** and **no slip** boundary conditions.
 
 ---------------------
 
-#### Free slip 
+### Free slip 
 
 Free slip boundary conditions allow fluid motion along the boundary while enforcing **zero shear stress** and **no flow across** the boundary. For the lateral boundaries (East, West), this translates to:
 
@@ -256,7 +256,7 @@ and all other coefficients are zero.
 
 --------------
 
-#### No slip
+### No slip
 
 No slip boundary conditions enforce zero velocity along the boundary, effectively "fixing" the fluid to the boundary. That is, for all boundaries (East, West, South, North), the velocity components satisfy:
 
@@ -374,7 +374,7 @@ For implementation details, please refer to the [source code](https://github.com
 -------------
 -------------
 
-## Variable Viscosity
+# Variable Viscosity
 
 In the case of variable viscosity, the momentum equation is written in terms of the unknowns as follows:
 
@@ -392,7 +392,7 @@ $\begin{equation}
 
 where $\eta_c$ denotes the viscosity defined at the *centroids*, and $\eta_v$ denotes the viscosity defined at the *vertices*.
 
-### Stencil
+## Stencil
 
 The stencils for the momentum equation assuming variable viscosity illustrate the grid points (parameters) required to solve the equations for each velocity component using a finite difference discretization (Figure 3).
 
@@ -484,13 +484,13 @@ NE & = \frac{\eta_{v,(i+1,j)}}{\Delta{x}\Delta{y}},\\
 N & = \frac{2\eta_{c,(i,j)}}{\Delta{y^2}}.\\
 \end{split}\end{equation}$
 
-### Boundary Conditions
+## Boundary Conditions
 
 The velocities for the ghost nodes used to define the various velocity boundary conditions are the same as described for the constant viscosity case.
 
 ---
 
-#### Free Slip
+### Free Slip
 
 Using equations (16)–(19), the coefficients of the equations adjacent to the corresponding boundaries are modified accordingly. Note that the right-hand side does **not** change for free slip boundary conditions.
 
@@ -556,7 +556,7 @@ and all other coefficients are set to zero.
 
 -------------
 
-**No Slip**
+### No Slip
 
 Using equations (31)–(34), the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side change as follows.
 
@@ -625,11 +625,11 @@ For more details on the implementation, please refer to the [source code](https:
 -------------
 -------------
 
-## Continuum Equation 
+# Continuum Equation 
 
 The continuum equation provides a third equation that helps to solve for the third unknown, $P$.
 
-### Stencil
+## Stencil
 
 The corresponding numerical stencil includes only the horizontal and vertical velocity components (Figure 4).
 
@@ -656,7 +656,7 @@ $\begin{equation}
 \end{split}
 \end{equation}$
 
-## Solution 
+# Solution 
 
 To solve the linear system, the coefficient matrix $\bold{K}$ must be assembled by collecting all coefficients associated with the discretized equations. Additionally, the right-hand side vector $\vec{rhs}$ must be constructed, typically based on boundary and body forces (e.g., gravity). This setup is required, at minimum, for a direct solution.
 
@@ -768,7 +768,7 @@ This results in a coefficient matrix $\bold{K[ii_j,i_k]}$ in the form of:
 
 The right-hand side vector $\vec{rhs}$ is given by the boundary and initial conditions (see equations (14) - (44)). 
 
-### Direct 
+## Direct 
 
 Using a direct solution method, one needs to do a right division of the coefficient matrix by the right-hand side to obtain the solution vector:
 
@@ -776,7 +776,7 @@ $\begin{equation}
 \bold{K} \backslash \vec{rhs} = \vec{x}.
 \end{equation}$
 
-### Defect Correction
+## Defect Correction
 
 The defect correction method is particularly effective when solving non-linear systems. First, one needs to calculate the residual for each equation, where the unknowns are given by an initial guess (usually all equal to zero and the boundary conditions): 
 
