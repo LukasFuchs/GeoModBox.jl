@@ -22,7 +22,7 @@ where $\kappa = k/\rho/c_p$ is the thermal diffusivity [m²/s], and $Q = \rho H$
 
 Equation (3) is classified as a *parabolic partial differential equation* (PDE), which can be solved numerically given appropriate initial and boundary conditions.
 
-## Discretization and Numerical Schemes
+# Discretization and Numerical Schemes
 
 To solve Equation (3) numerically, the spatial domain must be discretized, assigning physical parameters to their corresponding grid locations.
 
@@ -34,7 +34,7 @@ To solve Equation (3) numerically, the spatial domain must be discretized, assig
 
 The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
 
-### Explicit Finite Difference Scheme (FTCS; Forward Euler)
+## Explicit Finite Difference Scheme (FTCS; Forward Euler)
 
 A fundamental and intuitive approach to solving the 1D heat diffusion equation is the **Forward in Time and Centered in Space (FTCS)** scheme, implemented in an **explicit** manner.
 
@@ -119,7 +119,7 @@ where $c_W$ and $c_E$ are the prescribed temperature gradients on the west and e
 
 These ghost node definitions are substituted into the numerical scheme to consistently enforce the boundary conditions at each time step.
 
-### Implicit Scheme (Backward Euler)
+## Implicit Scheme (Backward Euler)
 
 The fully implicit finite difference scheme, also known as the **Backward Euler** method, is **unconditionally stable**, allowing time steps larger than those permitted by the diffusion stability criterion.
 
@@ -196,7 +196,7 @@ $nc$ is the number of centroids.
 
 These adjustments ensure that the boundary conditions are enforced consistently while preserving the symmetry and stability of the implicit solver.
 
-### Defect Correction Method
+## Defect Correction Method
 
 The **defect correction method** is an iterative scheme that progressively reduces the residual of the diffusive part of the temperature equation using a correction term. If the system is linear, one iteration is sufficient to obtain the exact solution.
 
@@ -246,7 +246,7 @@ T_{i+1} = T_i + \delta T.
 
 In the linear case, this yields the exact solution in a single step. For nonlinear problems, the process is repeated iteratively until the residual is sufficiently small.
 
-#### Coefficient Matrix
+### Coefficient Matrix
 
 The matrix $\mathbf{K}$ can be derived from the discretized form of the temperature equation:
 
@@ -280,7 +280,7 @@ As in the implicit FTCS method, the coefficients in $\mathbf{K}$ must be adjuste
 
 This makes the defect correction method efficient and modular, especially when reusing the same matrix structure across iterations or solver variants.
 
-### Crank-Nicolson approach (CNA)
+## Crank-Nicolson approach (CNA)
 
 The fully implicit FTCS method is unconditionally stable but only first-order accurate in time. To improve temporal accuracy while retaining stability, the **Crank-Nicolson scheme** can be used. This method employs a time-centered (implicit) discretization and is second-order accurate in time.
 
@@ -338,19 +338,19 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 ---
 
-### Temperature Field Management
+## Temperature Field Management
 
 For the **explicit solver** and the **defect correction method**, the full temperature field—including ghost nodes—is used to evaluate the temperature equation. The old temperature field is assigned to the centroids of the extended grid to compute the new temperature.
 
 For the **implicit methods** (Backward Euler, Crank-Nicolson), the current temperature at the centroids is assigned to the right-hand side vector. The coefficient matrix is then assembled, and the new temperature is computed by solving the resulting linear system.
 
-### Summary
+## Summary
 
 While the **explicit FTCS scheme** is simple and efficient for small time steps, **implicit methods** like Backward Euler and Crank-Nicolson are preferred for their unconditional stability. The Crank-Nicolson scheme further improves accuracy with its second-order time discretization. The **defect correction method** provides a flexible framework for both linear and nonlinear problems, allowing for iterative refinement when needed.
 
 ---
 
-## Variable Thermal Parameters 
+# Variable Thermal Parameters 
 
 To solve the diffusive component of the 1D temperature equation with **spatially variable thermal properties**, a conservative finite difference scheme is employed. In this formulation, temperature is defined at centroids, while heat flux and thermal conductivity are defined at vertices (see Figure 1).
 
@@ -369,7 +369,7 @@ $k$ is the thermal conductivity [W/m/K],
 $H$ is the internal heat generation rate per unit mass [W/kg], and
 $y$ is the vertical coordinate (depth) [m]
 
-### Discretization
+## Discretization
 
 In a conservative scheme, the vertical conductive heat flux $q_y$ is defined on vertices, as:
 
@@ -379,7 +379,7 @@ $\begin{equation}
 
 where $n_v$ is the number of *vertices*.
 
-### Explicit Finite Difference Formulation
+## Explicit Finite Difference Formulation
 
 Using the above discretization, the time evolution of temperature at each centroid is computed from:
 

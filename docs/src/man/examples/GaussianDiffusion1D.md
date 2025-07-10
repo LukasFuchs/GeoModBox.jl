@@ -1,15 +1,15 @@
 # [Gaussian Diffusion (1D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl)
 
-This examples shows the advantages and disadvantages for different finite difference discretization scheme solving the 1-D temperature conservation equation assuming constant thermal parameters and neglecting adiabatic pressure effects (i.e., a simple diffusion problem).
+This example illustrates the advantages and disadvantages of different finite difference discretization schemes for solving the 1-D temperature conservation equation. The model assumes constant thermal parameters and neglects adiabatic pressure effects, resulting in a purely diffusive problem.
 
-The following discretization scheme are used: 
+The following discretization schemes are applied: 
 
 - Forward Euler
 - Backward Euler
 - Crank-Nicolson
 - Defect Correction
 
-As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed along a 1-D profile. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. The temperature distribution and error in percent are shown for each time step in a small animation. 
+As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed along a 1-D profile. The transient evolution of this temperature distribution can be described analytically, allowing for the calculation of accuracy at each time step by comparing numerical and analytical results. The temperature distribution and error in percent are shown for each time step in a small animation. 
 
 For more details regarding the model setup and physics or details on the different numerical discretization schemes, please see the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises) or the [documentation](../DiffOneD.md).
 
@@ -47,7 +47,7 @@ niter       =   10
 # ----------------------------------------------------------------------- #
 ```
 
-All numerical schemes are solved consecutively for their individual temperature profile within the same time loop. Thus, the time step needs to satisfy the diffusion time stability criterion for the Backward Euler (explicit) numerical scheme. One can control the absolut time step via the multiplication factor ```fac```.
+All numerical schemes are solved sequentially for their respective temperature profiles within a shared time loop. Therefore, the time step must satisfy the diffusion stability criterion, which is based on the Forward Euler (explicit) scheme. One can control the absolut time step via the multiplication factor ```fac```.
 
 ```Julia
 # Time Parameters ------------------------------------------------------- #
@@ -64,7 +64,7 @@ nt          =   ceil(Int,tmax/Δt)
 # ----------------------------------------------------------------------- #
 ```
 
-As initial condition, a Gaussian temperature distribution along the $x$-direction is defined, assuming a certain width $\sigma$ and its peak at the middle of the profile. The initial temperature distribution is assigned to an individual temperature field for each numerical sceheme. The temperature is not stored for each time step, but overwritten within the time loop. 
+As initial condition, a Gaussian temperature distribution along the $x$-direction is defined, assuming a certain width $\sigma$ and its peak at the middle of the profile. The initial temperature distribution is assigned to an individual temperature field for each numerical sceheme. The temperature is overwritten at each time step; it is not stored throughout the time loop. 
 
 ```Julia
 # Initial condition ----------------------------------------------------- #
@@ -158,9 +158,9 @@ end
 
 **Figure 1. Initial temperature distribution.**
 
-Now, all parameter have been defined to solve the 1-D temperature conservation equation for each time step using a for loop. Within the time loop, the equation is solved seperately using each of the above mentioned numerical discretization schemes. 
+With all parameters defined, the 1-D temperature conservation equation is solved iteratively for each time step using a `for` loop. Within the time loop, the equation is solved seperately using each of the above mentioned numerical discretization schemes. 
 
-If the temperature field is not explicitly updated within this script after the solver, the temperature is updated within the solver already. 
+If the temperature field is not explicitly updated in the script after calling the solver, the solver is assumed to update it internally. 
 
 ```Julia
 # Time loop ------------------------------------------------------------- #
@@ -235,7 +235,7 @@ end
 
 **Figure 2. Temperature evolution and corresponding error for each numerical scheme.** exp - Forward Euler, imp - Backward Euler, dc - Defect correction, cna - Crank-Nicolson. 
 
-Finally, the plots are stored in an animation and the individual *png* files for the certain time steps are removed. 
+Finally, the plots are compiled into an animation, and individual PNG files corresponding to specific time steps are deleted. 
 
 ```Julia
 # Speicher Animation ---------------------------------------------------- #
