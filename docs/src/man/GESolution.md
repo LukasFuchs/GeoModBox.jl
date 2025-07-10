@@ -42,6 +42,8 @@ Repeated indices imply summation.
 
 Ordinary and partial differential equations (ODEs and PDEs) can be solved through various approaches—occasionally *analytically*, but more commonly *numerically* due to their inherent complexity. Among numerical methods, prominent techniques include *integral*-based methods, such as the *finite element* and *spectral* methods, as well as the *finite difference* method.
 
+## Finite Difference Method
+
 The ```GeoModBox.jl``` framework employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
 In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. 
@@ -114,11 +116,27 @@ Certain initial conditions and parameter structures are already defined in `GeoM
 
 The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable.
 
+## Constitutive Relation
+
+The constitutive equations of rheology delineate a relationship between the second-order tensor for the kinematics $\left(\text{Strain rate: }\dot{\varepsilon}, \text{Strain: } \varepsilon \right)$ and the dynamics $\left(\text{Forces}, \text{Stresses: }\sigma\right)$. Several constitutive models are commonly employed (e.g., viscous, elastic, viscoelastic, plastic). In `GeoModBox.jl`, the focus is on incompressible, viscous rheology, described by: 
+
+$\begin{equation}
+\tau_{i,j} = 2\eta \cdot \dot{\varepsilon}_{i,j},
+\end{equation}$
+
+where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{i,j}$ is the deviatoric stress tensor [Pa] defined as 
+
+$\begin{equation}
+\tau_{i,j} = \sigma_{i,j} + P\delta{i,j},
+\end{equation}$
+
+where $\sigma_{i,j}$ is the full stress tensor [Pa], $P$ is the pressure [Pa], and $\delta$ is the *Kronecker Delta*. 
+
 ## Approximations 
 
 A commonly used simplification in thermal convection modeling is the *Boussinesq* approximation. This approximation assumes that all thermodynamic properties remain constant, and adiabatic temperature effects are neglected in the temperature equation. Spatial density variations are assumed to be small and are only retained in the buoyancy term of the momentum equation. Under this framework, density becomes a function of temperature and is described using an *equation of state*.
 
-## Equation of State
+### Equation of State
 
 Various forms of the *equation of state* are available. In this context, a linear approximation is used to relate density to temperature:
 
@@ -142,23 +160,7 @@ $\begin{equation}
 
 yields a modified form of the $y$-component of the dimensional momentum equation.
 
-## Constitutive Relation
-
-The constitutive equations of rheology delineate a relationship between the second-order tensor for the kinematics $\left(\text{Strain rate: }\dot{\varepsilon}, \text{Strain: } \varepsilon \right)$ and the dynamics $\left(\text{Forces}, \text{Stresses: }\sigma\right)$. Several constitutive models are commonly employed (e.g., viscous, elastic, viscoelastic, plastic). In `GeoModBox.jl`, the focus is on incompressible, viscous rheology, described by: 
-
-$\begin{equation}
-\tau_{i,j} = 2\eta \cdot \dot{\varepsilon}_{i,j},
-\end{equation}$
-
-where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{i,j}$ is the deviatoric stress tensor [Pa] defined as 
-
-$\begin{equation}
-\tau_{i,j} = \sigma_{i,j} + P\delta{i,j},
-\end{equation}$
-
-where $\sigma_{i,j}$ is the full stress tensor [Pa], $P$ is the pressure [Pa], and $\delta$ is the *Kronecker Delta*. 
-
-## Governing equations
+### Governing equations
 
 The following dimensional equations govern thermal convection under the *Boussinesq* approximation:
 

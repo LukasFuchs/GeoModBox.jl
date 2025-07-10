@@ -1,6 +1,7 @@
 using Plots
 using ExtendableSparse
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
+using Printf, LinearAlgebra
 
 function FallingBlockConstEta_Dc()
     # =================================================================== #
@@ -119,12 +120,15 @@ function FallingBlockConstEta_Dc()
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
+    # Iterations
+    niter   =   10
+    ϵ       =   1e-12
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
                 NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
 
-    Num    =    (
+    Num     = (
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
@@ -132,25 +136,26 @@ function FallingBlockConstEta_Dc()
     F       =   zeros(maximum(Num.Pt))
     δx      =   zeros(maximum(Num.Pt))
     # ------------------------------------------------------------------- #
-    # Initial Residual -------------------------------------------------- #
-    Residuals2Dc!(D,VBC,ε,τ,divV,Δ,η₀,g,Fm,FPt)
-    F[Num.Vx]   =   Fm.x[:]
-    F[Num.Vy]   =   Fm.y[:]
-    F[Num.Pt]   =   FPt[:]
-    # ------------------------------------------------------------------- #
-    # Assemble Coefficients ============================================= #
-    K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
-    # ------------------------------------------------------------------- #
-    # Solution of the linear system ===================================== #
-    δx      =   - K \ F
-    # ------------------------------------------------------------------- #
-    # Update Unknown Variables ========================================== #
-    D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-    D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-    D.Pt                .+=  δx[Num.Pt]
-    # Final Residual ==================================================== #
-    Residuals2Dc!(D,VBC,ε,τ,divV,Δ,η₀,g,Fm,FPt)
-    # ------------------------------------------------------------------- #
+    for iter = 1:niter
+        # Initial Residual -------------------------------------------------- #
+        Residuals2Dc!(D,VBC,ε,τ,divV,Δ,η₀,g,Fm,FPt)
+        F[Num.Vx]   =   Fm.x[:]
+        F[Num.Vy]   =   Fm.y[:]
+        F[Num.Pt]   =   FPt[:]
+        @printf("||R|| = %1.4e\n", norm(F)/length(F))
+        norm(F)/length(F) < ϵ ? break : nothing
+        # ------------------------------------------------------------------- #
+        # Assemble Coefficients ============================================= #
+        K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
+        # ------------------------------------------------------------------- #
+        # Solution of the linear system ===================================== #
+        δx      =   - K \ F
+        # ------------------------------------------------------------------- #
+        # Update Unknown Variables ========================================== #
+        D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+        D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+        D.Pt                .+=  δx[Num.Pt]
+    end
     # ------------------------------------------------------------------- #
     # Get the velocity on the centroids ---
     for i = 1:NC.x

@@ -81,13 +81,21 @@ Bottom Right: Root Mean Square (RMS) total deviation over time.
 
 **Figure 6. Falling Block Benchmark.** Tracer distribution at the final stage for selected viscosity ratios $\eta_r \ge 0$.
 
+--- 
+
+### [Rayleigh-Taylor Instability](./man/examples/RTI.md)
+
+![RTIani](./examples/StokesEquation/2D/Results/RTI_ηr_-6.0_tracers_DC.gif)
+
+**Figure 7. Rayleigh-Taylor Instability.** Evolution of two-layered Rayleigh-Taylor instability. 
+
 ---
 
 ### [Thermal Convection](./examples/MixedHeatedConvection)
 
 ![BHTC](./examples/MixedHeatedConvection/Results/Bottom_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 7. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
+**Figure 8. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
 TOP: Transient temperature field with velocity vectors.  
 BOTTOM: Horizontally averaged temperature–depth profiles at each time step.  
 Solvers: defect correction (momentum), semi-Lagrangian (advection), Crank-Nicolson (heat diffusion).  
@@ -95,12 +103,12 @@ Boundary conditions: Dirichlet (top/bottom), Neumann (sides), free-slip (velocit
 
 ![IHTC](.//examples/MixedHeatedConvection/Results/Internally_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 8. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
+**Figure 9. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
 Same setup as above, but with Neumann boundary at the bottom (zero heat flux) and constant internal volumetric heat production $Q \approx 15$.
 
 ![MHTC](.//examples/MixedHeatedConvection/Results/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 9. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
+**Figure 10. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
 Combination of the above two setups (bottom heating + internal heating).
 
 ------------------

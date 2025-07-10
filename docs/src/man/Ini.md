@@ -29,7 +29,7 @@ Certain default values can be modified as well:
 
 - Tb - Scalar value for the background temperature
 - Ta - Scalar value for the maximum (anomaly) temperature
-- $\sigma$ - Width of the Gaussian temperature anomaly
+- σ - Width of the Gaussian temperature anomaly
 
 The temperature is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
@@ -42,28 +42,36 @@ IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
 ## Initial Velocity
 
 ```julia
-IniVelocity!(type,D,NV,Δ,M,x,y)
+IniVelocity!(type,D,VBC,NC,NV,Δ,M,x,y;ε=1e-15)
 ```
 
-Two initial velocity configurations are currently supported: 
+The following velocity configurations are currently supported: 
 
 1. A rigid-body rotation (`RigidBody`)
 2. A shear cell (`ShearCell`)
+3. Simple Shear (`SimpleShear`) 
+4. Pure Shear (`PureShear`)
 
 The input parameters are: 
 
 - type - Parameter defining the type (see above)
 - D - Structure or tuple containing the field arrays
+- VBC - Structure or tuple containing the velocity boundary conditions
+- NC - Structure or tuple containing the centroids parameter 
 - NV - Structure or tuple containing the vertices parameter 
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
 - x - Structure or tuple containing the x-coordinates
 - y - tructure or tuple containing the y-coordinates
 
+Certain default values can be modified as well: 
+
+- ε - Background strain rate for pure shear or simple shear
+
 The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
 ```Julia
-IniVelocity!(Ini.V,D,NV,Δ,M,x,y)
+IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y)
 ``` 
 
 ## Initial Phase
@@ -113,27 +121,31 @@ The following steps are required to use tracers:
 
 **1. Tracer initialization**
 
-To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected.
+To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`. 
 
 Following the definition of the required parameters for the tracer advection, the initial tracer position can be defined via the function 
 
 ```julia
-IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase)
+IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
 ``` 
 
-The function initializes the position and the memory of the tracers. 
+The function initializes the position, phase, and memory of the tracers. As initial tracer phase distribution one can choose: 
+- `ini=:block` - a rectangular block
+- `ini=:RTI` - a cosine perturbation with wavelength λ and amplitude δA 
 
 The input parameters are: 
 
 - Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
 - nmx - number of horizontal tracers per cell
 - nmy - number of vertical tracers per cell
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
 - NC - Structure or tuple containing centroids parameter
 - noise - add noise; 1 - yes, 0 - no
 - ini - Initial phase distribution (`block`)
 - phase - Vector with phase IDs, (e.g. [0,1])
+- λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
+- δA - Amplitude [m] of the perturbation
 
 To advect the temperature, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
@@ -224,7 +236,7 @@ The input parameters are:
 - x - Structure or tuple containing the x-coordinates
 - y - Structure or tuple containing the y-coordinates
 - dt - Time step
-- $\Delta$ - Structure or tuple containing the grid resolution
+- Δ - Structure or tuple containing the grid resolution
 - NC - Structure or tuple containing the centroids parameter
 - rkw - Runge-Kutta weights for averaging
 - rkv - Runge-Kutta weights for time stepping
@@ -293,7 +305,7 @@ This initializes a box with a minimum and maximum depth of 0.0 [m] and 1.0 [m], 
 
 The following mutable structures including their default values are currently available: 
 
-## Geometry
+### Geometry
 ```julia 
 M = Geometry(
     xmin    = 0.0,              # Minimum x-coordinate [ m ]
@@ -303,7 +315,7 @@ M = Geometry(
 )
 ```
 
-## Physics
+### Physics
 ```julia 
 P = Physics(
     g       = 9.81,             # Gravitational acceleration [ m/s² ]
@@ -321,7 +333,7 @@ P = Physics(
 )
 ```
 
-## Grid Spacing
+### Grid Spacing
 
 ```julia 
 Δ = GridSpacing(
@@ -330,7 +342,7 @@ P = Physics(
 )
 ```
 
-## Data Fields
+### Data Fields
 
 ```julia 
 D = DataFields(
@@ -360,7 +372,7 @@ end
 
 If the default value for a field is used, an empty array is initialized to save memory. 
 
-## Time Parameter
+### Time Parameter
 
 ```julia
 T = TimeParameter(

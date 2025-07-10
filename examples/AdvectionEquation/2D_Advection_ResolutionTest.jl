@@ -14,11 +14,11 @@ function Advection_2D_ResTest()
 
 @printf("Running on %d thread(s)\n", nthreads())
 
-nrnxny      =   2
+nrnxny      =   5
 Scheme      =   ["upwind","slf","semilag","tracers"]
 ns          =   size(Scheme,1)
 @show ns
-save_fig    =   -2
+save_fig    =   1
 
 # Statistical Parameter ============================================== #
 St      = (
@@ -55,6 +55,7 @@ for m = 1:ns # Loop over advection schemes
         ymin    =   0.0,
         ymax    =   1.0,
     )
+    BC  =   ()  # dummy
     # ---------------------------------------------------------------- #
     for l = 1:nrnxny # Loop over differnet resolutions
         # Numerical Constants ======================================== #
@@ -127,8 +128,11 @@ for m = 1:ns # Loop over advection schemes
         if FD.Method.Adv == "slf"
             D.T_exo    .=  D.T_ex
         end
+        D.Tmax[1]   =   maximum(D.T_ex)
+        D.Tmin[1]   =   minimum(D.T_ex)
+        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
         # Velocity ---
-        IniVelocity!(Ini.V,D,NV,Δ,M,x,y)        
+        IniVelocity!(Ini.V,D,BC,NC,NV,Δ,M,x,y)            # [ m/s ]
         # Get the velocity on the centroids ---
         @threads for i = 1:NC.x
             for j = 1:NC.y

@@ -35,11 +35,11 @@ makedocs(
             ],
         ],
         "Examples" => Any[
-            "Overview" => "man/Examples.md",
+            "General" => "man/Examples.md",
             "Diffusion Equation" => Any[
-                "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md",
-                "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md",
-                "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md",
+                "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md", # Checked! 
+                "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md", # Checked! 
+                "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md", # Checked!  
                 "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md",
                 "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md",
                 "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md",
@@ -54,7 +54,8 @@ makedocs(
                 "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md", # Checked! 
                 "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md", # Checked! 
                 "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
-            #     "Rayleigh Taylor Instability" => "man/examples/RTI.md",
+                "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md",
+                "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md",
             #     "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],
             # "Mixed Thermal Convection" => Any[

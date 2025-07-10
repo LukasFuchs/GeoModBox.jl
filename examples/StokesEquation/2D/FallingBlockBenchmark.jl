@@ -98,7 +98,8 @@ function FallingBlockBenchmark(td)
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                    vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     # ------------------------------------------------------------------- #
     for mn in eachindex(ηᵣ)     #   Loop over ηᵣ
@@ -175,12 +176,13 @@ function FallingBlockBenchmark(td)
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
             # Interpolate from markers to cell ---
             Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
+            Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
+            # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
             Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-            @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                                    D.ηv[2:end-0,1:end-1] + 
-                                    D.ηv[1:end-1,2:end-0] + 
-                                    D.ηv[2:end-0,2:end-0])
+            # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
+            #                         D.ηv[2:end-0,1:end-1] + 
+            #                         D.ηv[1:end-1,2:end-0] + 
+            #                         D.ηv[2:end-0,2:end-0])
         else
             # ----------------------------------------------------------- #
             # Initial Condition ========================================= #
@@ -349,12 +351,13 @@ function FallingBlockBenchmark(td)
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
                 # Interpolate phase from tracers to grid ---
                 Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
+                Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
+                # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
                 Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-                @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                                    D.ηv[2:end-0,1:end-1] + 
-                                    D.ηv[1:end-1,2:end-0] + 
-                                    D.ηv[2:end-0,2:end-0])
+                # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
+                #                     D.ηv[2:end-0,1:end-1] + 
+                #                     D.ηv[1:end-1,2:end-0] + 
+                #                     D.ηv[2:end-0,2:end-0])
             end
             if FD.Method.Adv!=:tracers
                 # --- Vertices -

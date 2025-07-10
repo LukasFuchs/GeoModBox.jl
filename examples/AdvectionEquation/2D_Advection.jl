@@ -36,7 +36,7 @@ save_fig    =   1
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:tracers,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
@@ -61,6 +61,7 @@ M   =   (
     ymax    =   1.0,
 )
 # -------------------------------------------------------------------- #
+BC  =   ()  # dummy
 # Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
@@ -130,8 +131,11 @@ IniTemperature!(Ini.T,M,NC,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
+D.Tmax[1]   =   maximum(D.T_ex)
+D.Tmin[1]   =   minimum(D.T_ex)
+D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 # Velocity ---
-IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
+IniVelocity!(Ini.V,D,BC,NC,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
 @threads for i = 1:NC.x
     for j = 1:NC.y

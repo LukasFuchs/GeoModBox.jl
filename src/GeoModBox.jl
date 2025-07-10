@@ -7,6 +7,9 @@ module GeoModBox
     export Geometry, Physics, 
             GridSpacing,
             DataFields, TimeParameter
+    
+    include("./AnalyticalSolutions2D.jl")
+    export Dani_Solution_vec!
 
     module Scaling
    
