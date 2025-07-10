@@ -1,8 +1,8 @@
 # [Oceanic Geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) 
 
-The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using variable thermal parameters with a proper conserving finite difference scheme (so far only including a radiogenic heat source). For the sake of continuity, we use the 1-D solver for variable thermal parameters, even though, we assume a constant thermal conductivity in this example.
+The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using variable thermal parameters with a conservative finite difference scheme (so far only including a radiogenic heat source). For the sake of continuity, we use the 1-D solver for variable thermal parameters, even though a constant thermal conductivity is assumed in this example.
 
-A proper conservative finite difference scheme in 1-D means that the temperature is defined on the *centroids* and the vertical heat flux $q_y$ and the thermal conductivity $k$ on the *vertices*.
+In a conservative finite difference scheme for 1-D conduction, temperature is defined at the *centroids*, while vertical heat flux $q_y$ and thermal conductivity $k$ are defined at the *vertices*.
 
 The 1-D temperature equation is given by: 
 
@@ -16,7 +16,7 @@ $\begin{equation}
 \left. q_{y,m} = -k_m \frac{\partial T}{\partial y}\right\vert_{m},\ \textrm{for}\ m = 1:nv, 
 \end{equation}$
 
-with $\rho, c_{p}, T, t, k, H, y$ and $nv$ are the density [kg/m³], the specific heat capacity [J/kg/K], the temperature [K], the time [s], the thermal conductivity [W/m/K], the heat generation rate per mass [W/kg], the depth [m], and the number of vertices, respectively. 
+where $\rho$, $c_{p}$, $T$, $t$, $k$, $H$, $y$, and $nv$ denote the density [kg/m³], the specific heat capacity [J/kg/K], the temperature [K], the time [s], the thermal conductivity [W/m/K], the heat generation rate per mass [W/kg], the depth [m], and the number of vertices, respectively. 
 
 For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme, please see the [documentation](../DiffOneD.md).
 
@@ -76,7 +76,7 @@ T.T_ex[2:end-1]     .=   T.T
 # ------------------------------------------------------------------- #
 ```
 
-One can choose between *Dirichlet* or *Neumann* thermal boundary conditions at the surface and bottom. 
+Either *Dirichlet* or *Neumann* thermal boundary conditions can be applied at the surface and bottom. 
 
 ```Julia 
 # Boundary conditions ----------------------------------------------- #
@@ -90,7 +90,7 @@ BC      =   (
 # ------------------------------------------------------------------- #
 ```
 
-Now, one needs to define the multiplication factor ```fac``` of the *diffusion stability criterion* for the explicit thermal solver. This factor controls the stability criterion. If it is larger then 1 the solver becomes instable.  
+Next, define the multiplicative factor `fac` for the *diffusion stability criterion* for the explicit thermal solver. This factor controls the stability criterion. If `fac` exceeds 1, the solver becomes unstable.  
 
 ```Julia
 # Time stability criterion ------------------------------------------ #
@@ -102,7 +102,7 @@ age     =   tmax*1e6*tsca        #   Age in seconds
 # ------------------------------------------------------------------- #
 ```
 
-Let's check that the initial and boundary conditions are properly defined by plotting the temperature profile. 
+To verify the initial and boundary conditions by plotting the temperature profile. 
 
 ```Julia
 # Plot Initial condition -------------------------------------------- #
@@ -157,9 +157,9 @@ time    =   zeros(1,nit)            #   Time array
 # ------------------------------------------------------------------- #
 ```
 
-Now all required parameter and constants are defined to solve the 1-D temperature equation for each time step in a ```for``` loop. 
+With all parameters and constants defined, the equation can now be solved the 1-D temperature equation for each time step in a ```for``` loop. 
 
-The temperature conservation equation is solved via the function ```ForwardEuler1D!()```, which updates the temperature profile ```T.T``` for each time step using the extended temperautre field ```T.T_ex```, which include the ghost nodes. The temperature profile is plotted for a certain time.  
+The temperature conservation equation is solved via the function ```ForwardEuler1D!()```, which updates the temperature profile `T.T` for each time step using the extended temperature field ```T.T_ex```, which include the ghost nodes. The temperature profile is plotted for a certain time.  
 
 ```Julia
 # Calculate 1-D temperature profile --------------------------------- #
@@ -207,7 +207,7 @@ end
 # ------------------------------------------------------------------- #
 ```
 
-Finally, one can caluclate the temperature profile for an oceanic geotherm using the analytical expression of an infinite half-space cooling model for a certain age. The analytical solution is plotted in the final figure, together with the final numerical temperature profile and the heat flux profile. 
+Finally, compute the temperature profile for an oceanic geotherm using the analytical expression of an infinite half-space cooling model for a certain age. The analytical solution is shown in the final figure, alongside the final numerical temperature profile and the heat flux profile. 
 
 ```Julia
 # Plot -------------------------------------------------------------- #

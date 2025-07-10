@@ -22,7 +22,7 @@ $\begin{equation}
 
 >**Note:** For the $y$-component of the Stokes equation, gravitational acceleration $g_y$ must be included.
 
-## Discretization 
+# Discretization 
 
 ![Stokes1D_Grid](../assets/Stokes_1D_Grid.png)
 
@@ -30,7 +30,7 @@ $\begin{equation}
 
 The finite difference grid employs a conservative scheme where velocity and viscosity are defined at staggered nodes. This ensures the horizontal shear stress is conserved across adjacent grid points, with stress values defined at the *vertices*. Such conservative gridding is essential when viscosity varies with depth. To build intuition, we first consider the simpler case of constant viscosity before addressing depth-dependent viscosity.
 
-### Constant Viscosity
+## Constant Viscosity
 
 In the case of constant viscosity, a conservative gridding is not required. Equation (1) simplifies to:
 
@@ -64,7 +64,7 @@ where $\bold{K}$ is a tridiagonal matrix, $\vec{v_x}$ is the vector of unknown h
 
 For simplicity, no separate solver for the constant viscosity case is included in `GeoModBox.jl`. Instead, viscosity is always treated numerically as an array, even in isoviscous cases. For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
-### Variable Viscosity
+## Variable Viscosity
 
 In the case of variable viscosity, Equation (1) becomes:
 
@@ -110,7 +110,7 @@ c = \frac{\eta_{j+1}}{\Delta{y^2}}.
 
 This again results in a linear system of equations with a tridiagonal coefficient matrix.
 
-### Boundary Conditions
+## Boundary Conditions
 
 To solve the equations, boundary conditions must be specified. For both *Dirichlet* and *Neumann* boundary conditions, the velocity values at the ghost nodes need to be defined. As with thermal boundary conditions, the ghost node velocities can be determined by assuming either a constant velocity at the boundary (Dirichlet) or a constant velocity gradient across the boundary (Neumann). The ghost node velocities are defined as:
 

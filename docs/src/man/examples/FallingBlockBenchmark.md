@@ -8,11 +8,9 @@ The falling block benchmark is a well-established test for assessing the accurac
 
 The purpose of this benchmark is twofold: 
 
-1. Accuracy of the variable viscosity momentum solver<br>
-Solving the momentum equation for the initial state, one can calculate the sinking velocity of the block, which follows a characteristic trend as a function of the viscosity contrast between the block and the matrix. 
+1. Accuracy of the variable viscosity momentum solver. Solving the momentum equation for the initial state, one can calculate the sinking velocity of the block, which follows a characteristic trend as a function of the viscosity contrast between the block and the matrix. 
 
-2. Accuracy of the advection scheme<br>
-Assuming a time-dependent problem, one can test the efficiency of the advection scheme. Here, all four different advection schemes can be choosen: 
+2. Accuracy of the advection scheme. Assuming a time-dependent problem, one can test the efficiency of the advection scheme. Here, all four different advection schemes can be choosen: 
     - Upwind
     - Staggered leapfrog
     - Semilagrangian 

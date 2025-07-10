@@ -9,12 +9,3 @@
 - [Viscous inclusion problem](.ViscousInclusion.jl), and
 
 - [Rayleigh-Taylor instability benchmark](.RTI.jl)
-
-
-<!-- 
-- 2D case 
--- Discretized equations
--- Solving the equations 
---- Direct solution 
---- Defection corrections solution
--->
