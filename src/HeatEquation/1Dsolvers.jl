@@ -1,5 +1,5 @@
 using ExtendableSparse
-@doc raw"""
+"""
     ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC)
 
 Solves the onedimensional heat diffusion equation assuming no internal heating and
