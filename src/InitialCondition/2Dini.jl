@@ -1,7 +1,7 @@
 using Base.Threads
 using GeoModBox
 
-@doc raw""" 
+""" 
     IniTemperature!(type,M,NC,D,x,y;Tb=1000,Ta=1200,Ampl=200,σ=0.05)
 
 Function to setup an initial temperature condition for a two dimensional 
@@ -115,11 +115,8 @@ Possible initial temperature conditions are:
     return D
 end    
 
-@doc raw"""
+"""
     IniVelocity!(type,D,NC,Δ,M,x,y)
-#
-#
-# ---
 """
 @views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;ε=1e-15)
     if type==:RigidBody
@@ -197,8 +194,8 @@ end
     return D, BC
 end
 
-@doc raw"""
-    IniPhase!
+"""
+    IniPhase!(type,D,M,x,y,NC;phase=0)
 """
 @views function IniPhase!(type,D,M,x,y,NC;phase=0)
 

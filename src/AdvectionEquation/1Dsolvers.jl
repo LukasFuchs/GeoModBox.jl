@@ -1,7 +1,7 @@
 using Dierckx
 
-@doc raw"""
-    RK4O1D
+"""
+    RK4O1D!( x, Δt, vx, xmin, xmax )    
 
 """
 function RK4O1D!( x, Δt, vx, xmin, xmax )    
@@ -18,8 +18,8 @@ function RK4O1D!( x, Δt, vx, xmin, xmax )
     
 end
 
-@doc raw"""
-
+"""
+    upwind1D!( A, vx, Δt, Δx )
 """
 function upwind1D!( A, vx, Δt, Δx )
     Aold    =   zeros(size(A))
@@ -35,8 +35,8 @@ function upwind1D!( A, vx, Δt, Δx )
     end
 end
 
-@doc raw"""
-
+"""
+    lax1D!( A, vx, Δt, Δx )
 """
 function lax1D!( A, vx, Δt, Δx )
     Aold    =   zeros(size(A))
@@ -47,8 +47,8 @@ function lax1D!( A, vx, Δt, Δx )
             (vx*Δt/2/Δx) * ( Aold[3:end] - Aold[1:end-2])
 end
 
-@doc raw"""
-
+"""
+    slf1D!( A, Aold2, vx, Δt, Δx )
 """
 function slf1D!( A, Aold2, vx, Δt, Δx )
     # Aold2 is old time step
@@ -62,8 +62,8 @@ function slf1D!( A, Aold2, vx, Δt, Δx )
 
 end
 
-@doc raw"""
-
+"""
+    semilag1D!( A, xc, vx, Δt, Δx )
 """
 function semilag1D!( A, xc, vx, Δt, Δx )
     X       =   zeros(size(xc))

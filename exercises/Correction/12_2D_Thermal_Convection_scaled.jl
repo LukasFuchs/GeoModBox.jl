@@ -21,7 +21,7 @@ function ThermalConvection_scaled()
 FD          =   (Method     = (
     Diff=:explicit,
     Adv=:upwind,
-    Mom=:dc),
+    Mom=:direct),
 )
 # Define Initial Condition ---
 # Temperature - 
@@ -223,8 +223,7 @@ TBC     = (
 # Geschwindigkeit ------
 VBC     =   (
     type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-    val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
-                vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
+    val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
 )
 # ------------------------------------------------------------------- # 
 # Rayleigh Zahl Bedingungen ========================================= #
@@ -240,9 +239,7 @@ end
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
 # Impulserhaltung (IEG) ------
-niterM  =   50
-ϵM      =   1e-10
-off     = [  NV.x*NC.y,                          # vx
+off    = [  NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
             NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
 
@@ -300,23 +297,19 @@ for it = 1:T.itmax
     elseif FD.Method.Mom==:dc
         # Anfangsresiduum ------
         @. D.ρ  =   -P.Ra*D.T
-        for iter=1:niterM
-            Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
-            rhsM[Num.Vx]    =   Fm.x[:]
-            rhsM[Num.Vy]    =   Fm.y[:]
-            rhsM[Num.Pt]    =   FPt[:]
-            @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
-            norm(rhsM)/length(rhsM) < ϵM ? break : nothing
-            # Update K ------
-            K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
-            # Lösen des lineare Gleichungssystems ------
-            χ      =   - K \ rhsM
-            # Update unbekante Variablen ------
-            D.vx[:,2:end-1]     .+=  χ[Num.Vx]
-            D.vy[2:end-1,:]     .+=  χ[Num.Vy]
-            D.Pt                .+=  χ[Num.Pt]
-        end
-        @. D.ρ  =   1.0 #ones(NC...)
+        Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
+        rhsM[Num.Vx]    =   Fm.x[:]
+        rhsM[Num.Vy]    =   Fm.y[:]
+        rhsM[Num.Pt]    =   FPt[:]
+        # Update K ------
+        K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+        # Lösen des lineare Gleichungssystems ------
+        χ      =   - K \ rhsM
+        # Update unbekante Variablen ------
+        D.vx[:,2:end-1]     .+=  χ[Num.Vx]
+        D.vy[2:end-1,:]     .+=  χ[Num.Vy]
+        D.Pt                .+=  χ[Num.Pt]
+        @. D.ρ  =   ones(NC...)
     end
     # ======
     # Berechnung der Geschwindikeit auf den Centroids ------

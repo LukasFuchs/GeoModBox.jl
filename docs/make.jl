@@ -40,10 +40,10 @@ makedocs(
                 "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md", # Checked! 
                 "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md", # Checked! 
                 "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md", # Checked!  
-                "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md",
-                "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md",
-                "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md",
-                "Poisson Problem (2D)" => "man/examples/PoissonRestest.md",
+                "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md", # Checked!
+                "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md", # Checked! 
+                "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md", # Checked!
+                "Poisson Problem (2D)" => "man/examples/PoissonRestest.md", # Checked!
                 "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
             ],
             "Advection Equtaion" => Any[
@@ -56,15 +56,16 @@ makedocs(
                 "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
                 "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md",
                 "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md",
-            #     "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
+                "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],
-            # "Mixed Thermal Convection" => Any[
-            #     "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
-            #     "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
-            #     "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
-            # ],
+            "Mixed Thermal Convection" => Any[
+                "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
+                "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
+                "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
+            ],
         ],
         "List of functions" => "man/listoffunctions.md",
+        "License" => "man/license.md",
     ]
 )
 

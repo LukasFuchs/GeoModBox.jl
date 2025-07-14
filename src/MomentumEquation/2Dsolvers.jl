@@ -1,5 +1,8 @@
 using ExtendableSparse
 
+"""
+    Assemblyc(NC, NV, Δ, η, BC, Num)
+"""
 function Assemblyc(NC, NV, Δ, η, BC, Num)
 
     # Linear system of equation ---
@@ -95,6 +98,9 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
     return flush!(K)
 end
 
+"""
+    updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
+"""
 function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
 
     rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
@@ -145,6 +151,9 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
     return rhs
 end
 
+"""
+    Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
+"""
 function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
     @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
@@ -166,6 +175,9 @@ function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     @. FPt             = divV
 end
 
+"""
+    Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
+"""
 function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
 
     # Linear system of equation ---
@@ -281,6 +293,9 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
     return flush!(K)
 end
 
+"""
+    updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
+"""
 function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
 
     rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
@@ -331,6 +346,9 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
     return rhs
 end
 
+"""
+    Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
+"""
 function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
     @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
     @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])

@@ -1,6 +1,9 @@
 using Base.Threads
 using Statistics, Printf
 
+"""
+    TMarkers()
+"""
 mutable struct TMarkers
     x       ::  Array{Float64,1}
     y       ::  Array{Float64,1}
@@ -8,13 +11,16 @@ mutable struct TMarkers
     phase   ::  Array{Int64,1}
 end
 
+"""
+    Markers()
+"""
 mutable struct Markers
     x       ::  Array{Float64,1}
     y       ::  Array{Float64,1}
     phase   ::  Array{Int64,1}
 end
 
-@doc raw"""
+"""
     IniTracer2D(nmx,nmy,Δ,M,NC,noise)
 """
 @views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
@@ -89,8 +95,8 @@ end
     return Ma
 end
 
-@doc raw"""
-    CountMPC()
+"""
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
 """
 @views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
      # Disable markers outside of the domain
@@ -192,7 +198,7 @@ end
     # return Ma
 end
 
-@doc raw"""
+"""
     VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
 """
 @views function VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
@@ -241,7 +247,7 @@ end
     return vxm
 end
 
-@doc raw"""
+"""
     VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
 """
 @views function VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
@@ -290,7 +296,7 @@ end
     return vym
 end
 
-@doc raw"""
+"""
     VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC )
 """
 @views function VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC)
@@ -326,7 +332,7 @@ end
     return vxm, vym
 end
 
-@doc raw"""
+"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
 @views function FromCtoM(Prop, k, Ma, x, y, Δ, NC)
@@ -364,7 +370,7 @@ end
     return Propm
 end
 
-@doc raw"""
+"""
     Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
 """
 @views function Markers2Cells(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
@@ -436,7 +442,7 @@ end
     return
 end
 
-@doc raw"""
+"""
     Markers2Vertices(Ma,nmark,PG,weight,x,y,Δ,param)
 """
 @views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
@@ -508,7 +514,7 @@ end
     return
 end
 
-@doc raw"""
+"""
     FromCtoM(Prop, Ma, x, y, Δ, NC)
 """
 @views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)

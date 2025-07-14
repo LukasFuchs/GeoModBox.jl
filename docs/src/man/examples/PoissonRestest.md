@@ -1,10 +1,10 @@
 # [Poisson Problem (constant $k$)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_ResTest.jl)
 
-This example conducts a resolution test for a steady state, 2-D temperarture conservation equation, i.e. a Poisson equation, assuming a constant thermal conductivity $k$. 
+This example performs a resolution test for the steady-state 2-D temperature conservation equation, i.e., the Poisson equation, assuming constant thermal conductivity $k$. 
 
 The maximum resolution is define by ```n*ncx x n*ncy```, where ```n``` needs to be defined in the very beginning. 
 
-The temperature equation is solved for each resolution in a loop and the maximum and mean temperature is stored. In theory, the exact solution of the problem should be reached with increasing resolution. 
+The temperature equation is solved for each resolution in a loop and the maximum and mean temperature is stored. In theory, increasing the resolution should asymptotically approach the exact solution of the problem. 
 
 For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../DiffTwoD.md)
 
@@ -43,7 +43,7 @@ P       = (
 # ----------------------------------------------------------------------- #
 ```
 
-Dirichlet boundary conditions are assumed along all boundaries. 
+Dirichlet boundary conditions are applied to all domain boundaries. 
 
 ```Julia
 # Boundary conditions --------------------------------------------------- #
@@ -54,7 +54,7 @@ BC      =   (
 # ----------------------------------------------------------------------- #
 ```
 
-In the following, the parameters for the resolution test are initialized: 
+The following parameters are initialized for the resolution test: 
 
 - the reziprocal resolution 
 - the maximum temperature
@@ -70,14 +70,14 @@ ST      =   (
 # ----------------------------------------------------------------------- #
 ```
 
-Now, one can start the loop over the given resolutions ($k$).
+The loop over resolutions (`k`) is now initialized.
 
 ```Julia
 # Loop over the resolutions --------------------------------------------- #
 for k = 1:n
 ```
 
-Within the loop, one needs to update the grid information. 
+Within the loop, the grid parameters are updated for each resolution. 
 
 ```Julia
     # Numerical Parameters ---------------------------------------------- #
@@ -104,7 +104,7 @@ Within the loop, one needs to update the grid information.
     # ------------------------------------------------------------------- #
 ```
 
-Now, one can initialize the required fields and setup the initial conditions. For the sake of simplicity, let's assume a constant background temperature of zero. 
+The required fields are then initialized, and initial conditions are applied. For simplicity, a constant background temperature of zero is assumed. 
 
 ```Julia
     # Initialcondition -------------------------------------------------- #
@@ -133,7 +133,7 @@ To solve the Poisson equation, one needs to define the coefficient matrix, the d
     # ------------------------------------------------------------------- #
 ```
 
-The linear system of equation is solve via the function ```Poisson2Dc!()``` for a constant thermal conductivity. The function updates the temperature field ```D.T``` with the solution. For each resolution, the parameters for the resolution test can be calculated. 
+The linear system of equation is solve via the function ```Poisson2Dc!()``` for a constant thermal conductivity. The function updates the temperature field ```D.T``` with the solution. After solving the equation for each resolution, the corresponding test metrics are computed. 
 
 ```Julia
     # Solve equation ---------------------------------------------------- #
@@ -144,7 +144,7 @@ The linear system of equation is solve via the function ```Poisson2Dc!()``` for 
 end
 ```
 
-Following the loop over the entire given resolutions, one can linearly fit the mean and maximum temperature to determine the value for a theoretical, zero grid space, that is the exact solution of the problem.
+After the resolution loop, a linear fit is applied to the mean and maximum temperature to extrapolate the theoretical solution at zero grid spacing.
 
 ```Julia
 # Linear fit ------------------------------------------------------------ #
