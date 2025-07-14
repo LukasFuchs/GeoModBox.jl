@@ -1,22 +1,15 @@
 using GeoModBox, Printf, Plots
 using GeoModBox.InitialCondition, GeoModBox.Tracers.TwoD
 using GeoModBox.MomentumEquation.TwoD
-using Base.Threads, LinearAlgebra
+using Base.Threads, LinearAlgebra, Statistics
 
 function ViscousInclusion()
 ## ===================== Some initial definitions ======================= #
-save_fig    =   0
-plotfields  =:yes
+# save_fig    =   0
+# plotfields  =:yes
 #Py.scale        =   'yes';
 FDMethod    =:dc
 # ----------------------------------------------------------------------- #
-# Plot Settings ========================================================= #
-Pl  =   (
-    qinc    =   8,
-    mainc   =   2,
-    qsc     =   1e8# 100*(60*60*24*365.25)
-)
-# ------------------------------------------------------------------- #
 # Define Initial Condition ============================================== #
 Ini         =   (
     V=:PureShear,
@@ -25,21 +18,21 @@ Ini         =   (
 ) 
 # inclusions bedingungen
 α           =   0;             # positive -> counter clockwise
-EllA        =   2e2 # 1.75e3; [m]
-EllB        =   2e2 # 0.25e3; [m] 
+EllA        =   2e-1 # 1.75e3; [m]
+EllB        =   2e-1 # 0.25e3; [m] 
 # ----------------------------------------------------------------------- #
 ## ==================== Define model geometry constants ================= #
 M       =   Geometry(
-        ymin    =   -1.0e3,     #   Model depth [ m ]
+        ymin    =   -1.0,     #   Model depth [ m ]
         ymax    =   0.0,        
         xmin    =   0.0,
-        xmax    =   1.0e3,      #   Model length [ m ]
+        xmax    =   1.0,      #   Model length [ m ]
 )
 # ----------------------------------------------------------------------- #
 ## ====================== Define the numerical grid ===================== #
 NC  =   ( 
-    x   =   100, 
-    y   =   100, 
+    x   =   50, 
+    y   =   50, 
 )
 NV  =   (
     x   =   NC.x + 1,
@@ -127,17 +120,6 @@ VBC     =   (
 # ----------------------------------------------------------------------- #
 # Initial Condition ===================================================== #
 IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y;Ini.ε)
-# for i = 1:NC.x
-#     for j = 1:NC.y
-#         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-#         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
-#     end
-# end
-# @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-# @show minimum(D.vx),maximum(D.vx), minimum(D.vy),maximum(D.vy)
-# vxana       =   copy(D.vx)
-# vyana       =   copy(D.vy)
-# Pta         =   copy(D.Pt)
 # Get analytical Solution
 AnaSol  =   (
     Pa      =   zeros(Float64,NC...),
@@ -157,21 +139,23 @@ Dani_Solution_vec!(Ini.V,AnaSol,M,x,y,EllA,η₁/η₀,NC,NV)
 
 # Boundary Conditions ---
 # Horizontal velocity 
-VBC.val.S    .=  AnaSol.Vx_S./1e12
-VBC.val.N    .=  AnaSol.Vx_N./1e12
-VBC.val.vxE  .=  AnaSol.Vx_E./1e12
-VBC.val.vxW  .=  AnaSol.Vx_W./1e12
+VBC.val.S    .=  AnaSol.Vx_S
+VBC.val.N    .=  AnaSol.Vx_N
+VBC.val.vxE  .=  AnaSol.Vx_E
+VBC.val.vxW  .=  AnaSol.Vx_W
 
 # Vertical velocity 
-VBC.val.E    .=  AnaSol.Vy_E./1e12
-VBC.val.W    .=  AnaSol.Vy_W./1e12
-VBC.val.vyS  .=  AnaSol.Vy_S./1e12
-VBC.val.vyN  .=  AnaSol.Vy_N./1e12
+VBC.val.E    .=  AnaSol.Vy_E
+VBC.val.W    .=  AnaSol.Vy_W
+VBC.val.vyS  .=  AnaSol.Vy_S
+VBC.val.vyN  .=  AnaSol.Vy_N
 
-@. D.vx[1,2:end-1]      =   AnaSol.Vx_W/1e12
-@. D.vx[end,2:end-1]    =   AnaSol.Vx_E/1e12
-@. D.vy[2:end-1,1]      =   AnaSol.Vy_S/1e12
-@. D.vy[2:end-1,end]    =   AnaSol.Vy_N/1e12
+@. D.vx[1,2:end-1]      =   AnaSol.Vx_W
+@. D.vx[end,2:end-1]    =   AnaSol.Vx_E
+@. D.vy[2:end-1,1]      =   AnaSol.Vy_S
+@. D.vy[2:end-1,end]    =   AnaSol.Vy_N
+
+# @. AnaSol.Pa        -=  mean(AnaSol.Pa)
 # ----------------------------------------------------------------------- #
 # Tracer Advection ====================================================== #
 nmx,nmy     =   5,5
@@ -193,20 +177,14 @@ MPC1        = (
 MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
                 ellA=EllA,ellB=EllB,α=α)
-# # Count marker per cell ---
-# CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
-# Interpolate from markers to cell ---
 Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
+Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
 Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
 Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-@. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                        D.ηv[2:end-0,1:end-1] + 
-                        D.ηv[1:end-1,2:end-0] + 
-                        D.ηv[2:end-0,2:end-0])
 # ------------------------------------------------------------------- #
 # System of Equations =============================================== #
 # Iterations
-niter   =   50
+niter   =   20
 ϵ       =   1e-8
 # Numbering, without ghost nodes! ---
 off    = [  NV.x*NC.y,                          # vx
@@ -273,94 +251,70 @@ elseif FDMethod==:direct
     D.vy[2:end-1,:]     .=  χ[Num.Vy]
     D.Pt                .=  χ[Num.Pt]
 end
+# @. D.Pt     -=  mean(D.Pt)
 # --------------------------------------------------------------- #
-@. D.vx     *=  1e12
-@. D.vy     *=  1e12
-@. D.Pt     *=  1e12
-# # Get the velocity on the centroids ---
-# for i = 1:NC.x
-#     for j = 1:NC.y
-#         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-#         D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
-#     end
-# end
-# @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 Pe      =   copy(D.Pt)
-@. Pe   =   abs((D.Pt-AnaSol.Pa))
+Pe      =   abs.((D.Pt.-AnaSol.Pa))./maximum(abs.(AnaSol.Pa)).*100
 Vxe     =   copy(AnaSol.Vxa)
-@. Vxe  =   abs((D.vx[:,2:end-1]-AnaSol.Vxa))
+Vxe     =   abs.((D.vx[:,2:end-1].-AnaSol.Vxa))./maximum(abs.(AnaSol.Vxa)).*100
 Vye     =   copy(AnaSol.Vya)
-@. Vye  =   abs((D.vy[2:end-1,:]-AnaSol.Vya))
+Vye     =   abs.((D.vy[2:end-1,:].-AnaSol.Vya))./maximum(abs.(AnaSol.Vya)).*100
 
-p = heatmap(x.v./1e3,y.ce./1e3,(D.vx)',color=:berlin,
+display(heatmap(x.v,y.ce,(D.vx)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Numerical",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=1)
-heatmap!(p,x.ce./1e3,y.v./1e3,(D.vy)',color=:berlin,
+            title="Numerical - vx",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=1)
+display(heatmap(x.ce,y.v,(D.vy)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="v_y [cm/a]",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=4)
-heatmap!(p,x.c./1e3,y.c./1e3,D.Pt',color=:glasgow,
+            title="Numerical - v_y ",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=4)
+display(heatmap(x.c,y.c,D.Pt',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="P_t",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=7)
-heatmap!(p,x.v./1e3,y.c./1e3,(AnaSol.Vxa)',color=:berlin,
+            title="Numerical - P_t",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=7)
+display(heatmap(x.v,y.c,(AnaSol.Vxa)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Analytical",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=2)
-heatmap!(p,x.c./1e3,y.v./1e3,(AnaSol.Vya)',color=:berlin,
+            title="Analytical - vx",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=2))
+display(heatmap(x.c,y.v,(AnaSol.Vya)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="v_y [cm/a]",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=5)
-heatmap!(p,x.c./1e3,y.c./1e3,AnaSol.Pa',color=:glasgow,
+            title="Analytical - v_y ",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=5)
+display(heatmap(x.c,y.c,AnaSol.Pa',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="P_t",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=8)
-heatmap!(p,x.v./1e3,y.c./1e3,(Vxe)',color=:berlin,
+            title="Analytical - P_t",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=8)
+display(heatmap(x.v,y.c,(Vxe)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Analytical",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=3)
-heatmap!(p,x.c./1e3,y.v./1e3,(Vye)',color=:berlin,
+            title="Error - vy",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=3)
+display(heatmap(x.c,y.v,(Vye)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="v_y [cm/a]",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=6)
-heatmap!(p,x.c./1e3,y.c./1e3,Pe',color=:glasgow,
+            title="Error - v_y ",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=6)
+display(heatmap(x.c,y.c,Pe',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="P_t",
-            aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            ylims=(M.ymin/1e3, M.ymax/1e3),
-            layout=(3,3),subplot=9)
-
-
-# heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="η",
-#             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-#             ylims=(M.ymin/1e3, M.ymax/1e3),
-#             layout=(2,2),subplot=4)
-# quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-#             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-#             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-#                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-#                     la=0.5,color="white",layout=(2,2),subplot=4)
-
-display(p)
+            title="Error - P_t",
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+            ylims=(M.ymin, M.ymax)))
+            # layout=(3,3),subplot=9)
+# display(p)
 
 # ----------------------------------------------------------------------- #
 # =============================== END =================================== #
