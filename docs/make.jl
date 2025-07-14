@@ -40,10 +40,10 @@ makedocs(
                 "Oceanic Geotherm (1D)" => "man/examples/OceanicGeotherm.md", # Checked! 
                 "Continental Geotherm (1D)" => "man/examples/ContinentalGeotherm.md", # Checked! 
                 "Gaussian Diffusion (1D)" => "man/examples/GaussianDiffusion1D.md", # Checked!  
-                "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md",
-                "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md",
-                "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md",
-                "Poisson Problem (2D)" => "man/examples/PoissonRestest.md",
+                "Backward Euler (2D)" => "man/examples/BackwardEuler_DC.md", # Checked!
+                "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md", # Checked! 
+                "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md", # Checked!
+                "Poisson Problem (2D)" => "man/examples/PoissonRestest.md", # Checked!
                 "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
             ],
             "Advection Equtaion" => Any[

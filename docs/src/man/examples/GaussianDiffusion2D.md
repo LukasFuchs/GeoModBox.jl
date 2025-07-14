@@ -1,8 +1,8 @@
 # [Gaussian Diffusion (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 
-This examples calculates are resolution test for different finite difference discretization scheme for the 2-D temperature conservation equation assuming constant thermal parameters and neglecting adiabatic pressure effects (i.e., a simple diffusion problem) using a Gaussian diffusion problem.
+This example performs a resolution test for various finite difference discretization schemes applied to the 2-D temperature conservation equation, assuming constant thermal parameters and neglecting adiabatic pressure effects (i.e., a simple diffusion problem) using a Gaussian temperature anomaly.
 
-The following discretization scheme are used: 
+The following discretization schemes are employed: 
 
 - Forward Euler
 - Backward Euler
@@ -10,11 +10,11 @@ The following discretization scheme are used:
 - Alternating-Direction Implicit
 - Defect Correction
 
-As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed with it's peak at the center of the 2-D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
+As the initial condition, a Gaussian temperature distribution with a specified width and amplitude is prescribed, centered at the midpoint of the 2-D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
 
-The 2-D analytical solution is caluclated using the julia package ```ExactFieldSolutions```. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
+The 2-D analytical solution is computed using the Julia package `ExactFieldSolutions`. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
 
-In this example, for the sake of simplicity, the 2-D temperature conservation equation is solved seperately over time for each finite difference scheme. After each time loop, the transient behavior for each solution is saved in a small *gif* animaion showing the temperature distribution, it's absolute deviation from the analytical solution, a vertical prolile through the middle of the model domain, and the RMS. 
+For simplicity, the 2-D temperature conservation equation is solved independently for each discretization scheme over time. After each time loop, the transient solution is visualized and saved as a *gif* animation showing the temperature distribution, it's absolute deviation from the analytical solution, a vertical profile through the center of the model domain, and the RMS. 
 
 For more details on the different numerical discretization schemes, please see the [documentation](../DiffTwoD.md).
 
@@ -117,7 +117,7 @@ Since the name of the animation does contain the resolution, one needs to define
         # ------------------------------------------------------------ #
 ```
 
-Also the grid corrdinates. 
+The grid coordinates are also defined. 
 
 ```Julia
         # Grid coordinates ------------------------------------------- #
@@ -150,7 +150,7 @@ For the sake of simplicity, the calculation of the time step is kept the same fo
         # ------------------------------------------------------------ #
 ```
 
-Now, one can initialize the field arrays and the initial condtion. 
+Next, the field arrays and initial condition are initialized. 
 
 ```Julia
         # Initial Conditions  ---------------------------------------- #
@@ -178,7 +178,7 @@ Now, one can initialize the field arrays and the initial condtion.
         D.T_ex[2:end-1,2:end-1]     .=  D.T
 ```
 
-For visualization purposes, the temperature profile throught the middle of the domain is stored. 
+For visualization purposes, the temperature profile through the center of the domain is stored. 
 
 > **Note:** Even though we do not assume a radioactive heat source, one needs to initialize the field and set it to zero. This is required by the solver. 
 
@@ -233,9 +233,9 @@ For visualization purposes, the temperature profile throught the middle of the d
 
 ![GD2Dini](../../assets/Gaussian_Diffusion_Ini.svg)
 
-**Figure 1. Initial condition.** Top left: Numerical temperature distribution (background colored field and black contour lines) overlain by the analytical solution (yellow dashed contours). Top right: Absolut deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain; black solid - numerical, yellow dashed - analytical. Bottom right: RMS over time. 
+**Figure 1. Initial condition.** Top left: Numerical temperature distribution (background colored field and black contour lines) overlain by the analytical solution (yellow dashed contours). Top right: Absolute deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain; black solid - numerical, yellow dashed - analytical. Bottom right: RMS over time. 
 
-Since the resolution does vary, one needs to define the boundary conditions wihitn the loop as well. 
+Since the resolution varies, the boundary conditions must also be redefined within the loop. 
 
 ```Julia
         # Boundary Conditions ---------------------------------------- #
@@ -412,7 +412,7 @@ end
 
 ![GD2D_Evolve_example](../../assets/Gaussian_Diffusion_CNA_nx_100_ny_100.gif)
 
-**Figure 2. Final animation using the Crank-Nicolson approach for a resolution of 100 x 100.** Top left: Numerical solution of the transient temperature field (background colored field and black contours); yellow dashed contours - analytical solution. Top right: Absolut deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain. Bottom right: RMS over time. 
+**Figure 2. Final animation using the Crank-Nicolson approach for a resolution of 100 x 100.** Top left: Numerical solution of the transient temperature field (background colored field and black contours); yellow dashed contours - analytical solution. Top right: Absolute deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain. Bottom right: RMS over time. 
 
 Finally, the results of the resolution test are plotted. 
 
