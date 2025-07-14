@@ -58,13 +58,14 @@ makedocs(
                 "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md",
                 "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],
-            # "Mixed Thermal Convection" => Any[
-            #     "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
-            #     "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
-            #     "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
-            # ],
+            "Mixed Thermal Convection" => Any[
+                "Bottom Heated" => "man/examples/BottomHeatedConvection.md",
+                "Internally Heated" => "man/examples/InternallyHeatedConvection.md",
+                "Mixed Heated" => "man/examples/MixedHeatedConvection.md",
+            ],
         ],
         "List of functions" => "man/listoffunctions.md",
+        "License" => "man/license.md",
     ]
 )
 
