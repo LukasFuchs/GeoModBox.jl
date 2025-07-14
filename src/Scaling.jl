@@ -1,3 +1,6 @@
+"""
+    Constants
+"""
 @kwdef mutable struct Constants
     hsc ::Float64 = 0.0
     tsc ::Float64 = 0.0
@@ -7,6 +10,9 @@
     Qsc ::Float64 = 0.0
 end
 
+"""
+    ScalingConstants!(M,P)
+"""
 function ScalingConstants!(M,P)
 
     S       =   Constants()
@@ -22,6 +28,9 @@ function ScalingConstants!(M,P)
     
 end
 
+"""
+    ScaleParameters!(S,M,Δ,T,P,D)
+"""
 function ScaleParameters!(S,M,Δ,T,P,D)
     # Geometry ---
     M.xmin   /=  S.hsc

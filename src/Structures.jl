@@ -35,6 +35,9 @@ end
 #     c           ::
 # end
 
+"""
+    Physics()
+"""
 @kwdef mutable struct Physics
     # Physical parameters --- 
     # 
@@ -52,11 +55,17 @@ end
     Ra          ::Float64 = 1e5                 # Rayleigh number
 end
 
+"""
+    GridSpacing()
+"""
 @kwdef mutable struct GridSpacing
     x           ::Float64   =   0.0
     y           ::Float64   =   0.0
 end
 
+"""
+    DataFields()
+"""
 @kwdef mutable struct DataFields
     # Data fields ---
     Q           ::Matrix{Float64}   = zeros(1,1)
@@ -81,6 +90,9 @@ end
     Tmean       ::Float64           = 0.0
 end
 
+"""
+    TimeParameter()
+"""
 @kwdef mutable struct TimeParameter
     # Time Parameters ---
     const year      ::Float64   =   365.25*3600*24      #   Seconds per year
