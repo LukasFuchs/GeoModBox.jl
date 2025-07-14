@@ -1,7 +1,7 @@
 using ExtendableSparse
 
-@doc raw"""
-    ForwardEuler2Dc
+"""
+    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 """
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the explicit finite
@@ -43,8 +43,8 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # ------------------------------------------------------------------- #    
 end
 
-@doc raw"""
-    ComputeResiduals2D
+"""
+    ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
 """
 function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. T_ex[2:end-1,2:end-1] = T 
@@ -59,8 +59,8 @@ function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
     @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y  
 end
 
-@doc raw"""
-    AssembleMatrix2D
+"""
+    AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
 """
 function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     # Linear system of equation
@@ -111,8 +111,8 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
     return flush!(K)
 end
 
-@doc raw"""
-    BackwardEuler2Dc
+"""
+    BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
 """
 function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
@@ -178,8 +178,8 @@ D.T_ex[2:end-1,2:end-1]     .=    D.T
 # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
-    CNA2Dc
+"""
+    CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
 """
 function CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
@@ -276,8 +276,8 @@ D.T_ex[2:end-1,2:end-1]     .=    D.T
 # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
-    ADI2Dc
+"""
+    ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 """
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
@@ -466,8 +466,8 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     T.T_ex[2:end-1,2:end-1]     .=    T.T
 end
 
-@doc raw"""
-    Poisson2Dc
+"""
+    Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 """
 function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
@@ -531,8 +531,8 @@ function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
     
 end
 
-@doc raw"""
-    Poisson2D
+"""
+    Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
 """
 function Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
     #  --------------------------------------------- #

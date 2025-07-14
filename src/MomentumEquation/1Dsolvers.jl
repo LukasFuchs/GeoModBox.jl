@@ -1,7 +1,7 @@
 using ExtendableSparse
 
-@doc raw"""
-    ComputeStokesResiduals1D! ()
+"""
+    ComputeStokesResiduals1D!( D, ∂P∂x, Δy, BC)
 """
 function ComputeStokesResiduals1D!( D, ∂P∂x, Δy, BC)
     @. D.vₓₑ[2:end-1]     =   D.vₓ
@@ -18,8 +18,8 @@ function ComputeStokesResiduals1D!( D, ∂P∂x, Δy, BC)
     @. D.R              =   -∂P∂x + D.∂τxy∂y
 end
 
-@doc raw"""
-    AssembleStokesMatrix1D()
+"""
+    AssembleStokesMatrix1D(nc, η, Δy, BC, K)
 """
 function AssembleStokesMatrix1D(nc, η, Δy, BC, K)
     # Zusammenstellen der Koeffizientenmatrix ------------------------------- #
@@ -49,8 +49,8 @@ function AssembleStokesMatrix1D(nc, η, Δy, BC, K)
     return flush!(K)
 end
 
-@doc raw"""
-    Stokes_1D()
+"""
+    Stokes_1D_direct(vₓ,η,Δy,nc,BC,K,rhs)
 """
 function Stokes_1D_direct(vₓ,η,Δy,nc,BC,K,rhs)
 
