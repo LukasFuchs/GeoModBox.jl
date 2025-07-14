@@ -83,7 +83,7 @@ Bottom Right: Root Mean Square (RMS) total deviation over time.
 
 --- 
 
-### [Rayleigh-Taylor Instability](./man/examples/RTI.md)
+### [Rayleigh-Taylor Instability](./examples/StokesEquation/2D/RTI.jl)
 
 ![RTIani](./examples/StokesEquation/2D/Results/RTI_ηr_-6.0_tracers_DC.gif)
 
