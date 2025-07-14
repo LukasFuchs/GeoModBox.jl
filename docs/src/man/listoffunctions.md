@@ -2,5 +2,8 @@
 
 Here an overview of all functions:
 ```@autodocs
-Modules = [GeoModBox]
+Modules = [
+    GeoModBox,
+    GeoModBox.HeatEquation.OneD,
+]
 ```

@@ -37,7 +37,7 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     explicit.T_ex[2:end-1]  .=  explicit.T
 end
 
-@doc raw"""
+"""
     ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
 
 Solves the onedimensional heat diffusion equation assuming internal heating and
@@ -92,7 +92,7 @@ function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
     T.T_ex[2:end-1]     .= T.T
 end
 
-@doc raw"""
+"""
     BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
 
 Solves the onedimensional heat diffusion equation assuming no internal heating and
@@ -154,7 +154,7 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs)
     # ------------------------------------------------------------------- #    
 end
 
-@doc raw"""
+"""
     CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
 
 Solves the onedimensional heat diffusion equation assuming no internal heating and
@@ -234,7 +234,7 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
+"""
     ComputeResiduals1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
 
 Computes the residual of the onedimensional heat diffusion equation assuming 
@@ -274,7 +274,7 @@ function ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
     # ------------------------------------------------------------------- #
 end
 
-@doc raw"""
+"""
     AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
 
 Setup the coefficient matrix for the linear system of equations. 
