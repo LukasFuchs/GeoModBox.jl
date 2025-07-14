@@ -1,3 +1,6 @@
+"""
+    Dani_Solution_vec!(type,D,M,x,y,rad,mus_i,NC,NV)
+"""
 function Dani_Solution_vec!(type,D,M,x,y,rad,mus_i,NC,NV)
 # [ Vx_N,Vx_S,Vx_W,Vx_E,Vy_N,Vy_S,Vy_W,Vy_E,Pa,Vxa,Vya ]
 # ------------------------------------------------------------------------ #

@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------- #
 using Interpolations
 
-@doc raw"""
+"""
     upwindc2D!()
 
     Using the velocity on the centroids! 
@@ -23,7 +23,7 @@ function upwindc2D!(P,P_ex,vxc,vyc,NC,Δt,Δx,Δy)
     # ---------------------------------------------------------------- #
 end
 
-@doc raw"""
+"""
     slfc2D!
 """
 function slfc2D!(P,P_ex,P_exo,vxc,vyc,NC,Δt,Δx,Δy)
@@ -40,7 +40,7 @@ function slfc2D!(P,P_ex,P_exo,vxc,vyc,NC,Δt,Δx,Δy)
     # ---------------------------------------------------------------- #
 end
 
-@doc raw"""
+"""
     semilagc2D!()
 """
 function semilagc2D!(P,P_ex,vxc,vyc,vxo,vyo,x,y,Δt)
