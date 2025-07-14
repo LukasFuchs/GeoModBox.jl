@@ -1,6 +1,11 @@
 
 # M = Geometry(xmin=0.0,xmax=1.0,ymin=-1.0,ymax=0.0)
 # ==================================================================== #
+"""
+    Geometry()
+
+Structure to initialize the geometry of the model domain. 
+"""
 @kwdef mutable struct Geometry
     # Structural parameters ---
     xmin        ::Float64 = 0.0
@@ -10,6 +15,25 @@
     # L           ::Float64 = 1.0
     # H           ::Float64 = 1.0
 end
+
+@kwdef mutable struct GeometryGrid
+    xmin        ::Float64 = 0.0
+    xmax        ::Float64 = 1.0
+    ymin        ::Float64 = -1.0
+    ymax        ::Float64 = 0.0
+    L           ::Float64 = xmax - xmin
+    H           ::Float64 = ymax - ymin
+    ncx         ::Int64 = 20
+    ncy         ::Int64 = 20
+    nvx         ::Int64 = ncx + 1
+    nvy         ::Int64 = nvy + 1 
+    Δx          ::Float64 = L / ncx
+    Δy          ::Float64 = H / ncy
+end
+
+# @kwdef mutable struct Coordinates
+#     c           ::
+# end
 
 @kwdef mutable struct Physics
     # Physical parameters --- 
@@ -27,12 +51,6 @@ end
     Tbot        ::Float64 = Ttop + ΔT           # Temperature at the bottom [ K ] 
     Ra          ::Float64 = 1e5                 # Rayleigh number
 end
-
-# @kwdef mutable struct Grid
-#     # Grid parameters ---
-#     #
-
-# end
 
 @kwdef mutable struct GridSpacing
     x           ::Float64   =   0.0
