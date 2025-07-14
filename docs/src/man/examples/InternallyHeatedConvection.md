@@ -1,0 +1,3 @@
+# [Internally Heated Convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/InternallyHeated.jl) 
+
+... *tba* ...
