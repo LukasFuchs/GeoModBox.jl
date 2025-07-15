@@ -44,7 +44,7 @@ makedocs(
                 "Forward Euler (2D)" => "man/examples/ForwardEuler_DC.md", # Checked! 
                 "Gaussian Diffusion (2D)" => "man/examples/GaussianDiffusion2D.md", # Checked!
                 "Poisson Problem (2D)" => "man/examples/PoissonRestest.md", # Checked!
-                "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md",
+                "Poisson Problem; variable k (2D)" => "man/examples/PoissonVariablek.md", # Checked!
             ],
             "Advection Equtaion" => Any[
                 "Advection (2D)" => "man/examples/Advection2D.md", # Checked! 
@@ -54,7 +54,7 @@ makedocs(
                 "Channel Flow (1D)" => "man/examples/ChannelFlow1D.md", # Checked! 
                 "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md", # Checked! 
                 "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
-                "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md",
+                "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md", # Checked!
                 "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md",
                 "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],

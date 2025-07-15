@@ -2,9 +2,9 @@
 
 This example demonstrates the transient behavior of a well-known problem in geodynamics: the Rayleigh–Taylor instability (RTI) in a two-layered system with different densities and viscosities. The script presents the setup and dynamic evolution of an RTI, which is also used in another script within `GeoModBox.jl` to benchmark the solution of the momentum equation under purely density-driven conditions. 
 
-The RTI setup consists of two horizontally oriented layers, each with specified thickness, viscosity, and density. No-slip boundary conditions are applied at the top and bottom, and symmetric velocity boundary conditions at the lateral boundaries. If the boundary between the layers is uneven, e.g., like a sinusoidal perturbation, the system becomes instable. The more buoyant lower layer is rising and the less buoyant upper layer is sinking, while the velocities are enhancing with time until a stable layering is reached again. 
+The RTI model consists of two horizontally layered materials, each characterized by specified thickness, viscosity, and density. No-slip boundary conditions are applied at the top and bottom, and symmetric velocity boundary conditions at the lateral boundaries. If the interface between the layers is perturbed (e.g., sinusoidally), the system becomes unstable. The more buoyant lower layer rises while the denser upper layer sinks, with velocities increasing over time until a new stable configuration is reached. 
 
-The initial growth rate of the instability is primarily governed by the density contrast between the layers, as well as the wavelength and amplitude of the perturbation. This can be estimated analytically. A benchmark example therefore is given in an [additional script](./RTI_growth_rate.md). 
+The initial growth rate of the instability is mainly controlled by the density contrast, as well as the perturbation’s wavelength and amplitude. This can be estimated analytically. A benchmark example therefore is given in an [additional script](./RTI_growth_rate.md). 
 
 In the following, the focus lies on setting up the RTI instability using tracers, solving the momentum equation, and advecting the phase field. 
 
@@ -34,7 +34,7 @@ Ini         =   (p=:RTI,)       #   Set RTI
 # ------------------------------------------------------------------- #
 ```
 
-The following paramers are required for visalization. 
+The following parameters are used for visualization. 
 
 ```Julia
 # Plot Settings ===================================================== #
@@ -98,7 +98,7 @@ y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
 ```
 
-Now, the physical parameter of the two layers can be defined. 
+Next, define the physical parameters for the two layers. 
 
 ```Julia
 # Physics ============================================================ #
@@ -128,7 +128,7 @@ filename    =   string(Ini.p,"_ηr_",round(ηᵣ),
 # ------------------------------------------------------------------- #
 ```
 
-The problem does not consider the solution of the energy equation and thus one needs to initialize less data fields. The momentum equation is solved using the defect correction method. Therefore the strain rate and stress components are requirerd as well.  
+Since the energy equation is not solved, fewer data fields need to be initialized. The momentum equation is solved using the defect correction method. Therefore the strain rate and stress components are requirerd as well.  
 
 ```Julia
 # Allocation ======================================================== #
@@ -163,7 +163,7 @@ divV        =   zeros(Float64,NC...)
 # ------------------------------------------------------------------- #
 ```
 
-As velocity boundary condition, noslip is defined at the top and bottom and freeslip on the sides. 
+No-slip velocity boundary conditions are applied at the top and bottom, and free-slip conditions along the lateral boundaries. 
 
 ```Julia
 # Boundary Conditions =============================================== #
@@ -174,7 +174,7 @@ VBC     =   (
 # ------------------------------------------------------------------- #
 ```
 
-The parameters are set arbitrarily to a maximum iteration of 50. This enables the rise of multiple dikes without reaching a full overturn of the system. 
+The number of time steps is arbitrarily limited to a maximum of 50 iterations. This enables the rise of multiple dikes without reaching a full overturn of the system. 
 
 ```Julia
 # Time ============================================================== #
@@ -257,7 +257,7 @@ FPt     =   zeros(Float64,NC...)
 # ------------------------------------------------------------------- #
 ```
 
-No, one can start the time loop. 
+Now, the time loop can be started. 
 
 ```Julia
 # Time Loop ========================================================= #
@@ -270,7 +270,7 @@ for it = 1:T.itmax
                 Time[it]/(60*60*24*365.25)/1.0e6)
 ```
 
-To solve the momentum equation an initial guess is provided to solve for the residuals. Using the defect correction method, the coefficient matrix needs to be assembed to calculate the correction term for the initial guess. 
+An initial guess is provided for the momentum equation, and residuals are computed iteratively. Within the defect correction method, the coefficient matrix is assembled to calculate the correction term for the initial guess. 
 
 ```Julia
     # Momentum Equation ===
@@ -299,7 +299,7 @@ To solve the momentum equation an initial guess is provided to solve for the res
     # --------------------------------------------------------------- #
 ```
 
-For visualization purposes, the centroid velocity is calculated. The density, marker distribution, absolut velocity and centroid viscosity is plotted for certain time steps. Depending on the parameter `save_fig` the plot is displayed or stored to generate a gif animation. 
+For visualization, the centroid velocity field is computed. The density, marker distribution, absolut velocity and centroid viscosity is plotted for certain time steps. Depending on the parameter `save_fig` the plot is displayed or stored to generate a gif animation. 
 
 ```Julia
     # --------------------------------------------------------------- #
@@ -361,7 +361,7 @@ For visualization purposes, the centroid velocity is calculated. The density, ma
     end
 ```
 
-Since only the momentum and mass conservation euqations are solved, the maximum time step is fully governed by the *Courant* criterium. 
+Since only the momentum and mass conservation equations are solved, the maximum time step is fully governed by the *Courant* criterium. 
 
 ```Julia
     # Calculate Time Stepping ---
@@ -406,4 +406,4 @@ end
 
 ![RTI_transient](../../assets/RTI_ηr_-6.0_tracers_DC.gif)
 
-**Figure 1. Rayleigh–Taylor Instability.** Transient evolution of a two-layered system with a density contrast of 100 kg/m³ and a viscosity contrast spanning six orders of magnitude. Panels show: density (top left), tracer distribution (top right), centroid viscosity (bottom left), and absolute centroid velocity (bottom right). 
+**Figure 1. Rayleigh–Taylor Instability.** Transient evolution of a two-layer system with a density contrast of 100 kg/m³ and a viscosity contrast spanning six orders of magnitude. Panels show: density (top left), tracer distribution (top right), centroid viscosity (bottom left), and absolute centroid velocity (bottom right). 
