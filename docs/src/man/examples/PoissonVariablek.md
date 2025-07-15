@@ -1,6 +1,6 @@
 # [Poisson Problem (variable $k$)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_variable_k.jl)
 
-This examples solves the steady-state, 2-D temperature equation, i.e. a Poisson equation, assuming a variable thermal conductivity $k$. 
+This example solves the steady-state 2-D temperature equation—i.e., the Poisson equation—assuming a variable thermal conductivity $k$. 
 
 For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../DiffTwoD.md)
 
@@ -30,7 +30,7 @@ P       =   (
 # ----------------------------------------------------------------------- #
 ```
 
-Now, one needs the set up the grid and its coordinates.
+Next, define the grid and its coordinates.
 
 ```Julia
 # Numerische Parameter -------------------------------------------------- #
@@ -60,7 +60,7 @@ y       = (
 # ----------------------------------------------------------------------- #
 ``` 
 
-Dirichlet boudnary condition are assumed on all sides. 
+Dirichlet boundary conditions are applied on all sides. 
 
 ```Julia
 # Boundary conditions --------------------------------------------------- #
@@ -72,7 +72,7 @@ BC      =   (
 # ----------------------------------------------------------------------- #
 ```
 
-In addition to the temperature and the heat source one needs to define two fields for the thermal conductivity, one for the horizontal and one for the vertical conductivity. The heat source and conductivity need to be assinged to the corresponding nodes. 
+In addition to temperature and heat source terms, two fields must be defined for thermal conductivity—one for the horizontal and one for the vertical components. The heat source and thermal conductivity must be assigned to their corresponding grid nodes. 
 
 ```Julia
 # Initialcondition ------------------------------------------------------ #
@@ -96,7 +96,7 @@ D.ky[x.c.<P.L/2.0,:]        .=  P.k2
 # ----------------------------------------------------------------------- #
 ```
 
-To solve the linear system of equations, one needs to define the coefficient matrix and its degree of freedom and initialized the right-hand side vector. 
+To solve the linear system of equations, define the coefficient matrix, determine the degrees of freedom, and initialize the right-hand side vector. 
 
 ```Julia
 # Linear System of Equations -------------------------------------------- #
@@ -107,7 +107,7 @@ rhs     =   zeros(ndof)
 # ----------------------------------------------------------------------- #
 ```
 
-Now, all parameter are defined and one can solve the linear system of equations using the function ```Poisson2D!()```. 
+With all parameters defined, the linear system can now be solved using the function ```Poisson2D!()```. 
 
 ```Julia
 # Solve equation -------------------------------------------------------- #
@@ -115,7 +115,7 @@ Poisson2D!(D.T, D.Q, D.kx, D.ky, Δ.x, Δ.y, NC, BC, K, rhs, Num )
 # ----------------------------------------------------------------------- #
 ```
 
-Finally, one can plot the steady-state solution of the temperature conservation equation and, for clarity, the different thermal conductivities.  
+Finally, the steady-state temperature solution is visualized along with the horizontal and vertical thermal conductivity fields for comparison.  
 
 ```Julia
 # Plot solution --------------------------------------------------------- #
