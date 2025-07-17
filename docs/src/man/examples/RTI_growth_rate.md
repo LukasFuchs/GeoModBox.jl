@@ -2,7 +2,7 @@
 
 This script performs a benchmark for the growth rate of a Rayleigh–Taylor instability, following Gerya (2009). The benchmark is based on the analytical solution by Ramberg (1968) and is used to assess the accuracy of the velocity field in a purely gravity-driven flow. 
 
-Although small-amplitude perturbations can be analyzed in theory—enabled by the use of tracers and bilinear interpolation of density onto centroids—a relatively large perturbation amplitude is used here for practical implementation. 
+While small-amplitude perturbations can be analyzed theoretically—facilitated by the use of tracers and bilinear interpolation of density onto centroids—a relatively large perturbation amplitude is employed here to accommodate practical implementation constraints. 
 
 --- 
 
@@ -34,7 +34,7 @@ Pl  =   (
 )
 ```
 
-Let's set the parameter for an initial cosinusoidal tracer perturbation for a two-layered model. For the benchmark analysis, the range of wavelenghts is defined as well. 
+The parameters for an initial cosinusoidal tracer perturbation are defined for a two-layer model. For benchmarking purposes, a range of wavelengths is specified. 
 
 ```Julia
 # Define Initial Condition ========================================== #
@@ -44,7 +44,7 @@ Ini         =   (p=:RTI,)
 # ------------------------------------------------------------------- #
 ```
 
-Now, one can set the physical parameters. Here, the range of the viscosity ration between the two layers is also defined. 
+The physical parameters are now defined, including the range of viscosity ratios between the two layers. 
 
 ```Julia
 # Physics =========================================================== #
@@ -143,7 +143,7 @@ The variables required for the analytical solution are calculated for each model
         @. PP.ϕₐ        =   ϕ₁
 ```
 
-Since the analytical solution is independent of the perturbation amplitude, the loop over different amplitudes can be performed subsequently. Within that loop, the model domain needs to be first setup as well as the perturbation amplitude. 
+Because the analytical solution is independent of perturbation amplitude, the loop over different amplitudes is performed separately. Within that loop, both the model domain and perturbation amplitude are defined for each configuration. 
 
 ```Julia
         for j in eachindex(λᵣ)
@@ -278,7 +278,7 @@ To setup the perturbation, the markers are initialized in the following.
             # ------------------------------------------------------- #
 ```
 
-Now, one needs to define the parameters to solve the linear system of equations using the defec correction method. 
+The parameters for solving the linear system using the defect correction method are now defined. 
 
 ```Julia
             # System of Equations =================================== #
@@ -306,7 +306,7 @@ Now, one needs to define the parameters to solve the linear system of equations 
             # ------------------------------------------------------- #
 ```
 
-Now,pne can solve the momentum and mass conservation equations. 
+The momentum and mass conservation equations are now solved. 
 
 ```Julia
             # Momentum Equation ===
@@ -371,7 +371,7 @@ In the following, one defines the parameters to calculate the rising velocity at
             PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
 ```
 
-If wanted, the density, tracer, and viscosity fields are plotted. To verify the position of the perturbation tip used for velocity interpolation, the tip (black circle) and surrounding vertical velocity grid points (red circles) are plotted over the tracer field. The plot is zoomed in for better visualization. 
+If wanted, the density, tracer, and viscosity fields are plotted. To verify the position of the perturbation tip used in velocity interpolation, the tip (black circle) and surrounding vertical velocity grid points (red circles) are plotted on the tracer field. The plot is zoomed in for better visualization. 
 
 ```Julia
             if plot_fields==:yes
@@ -425,7 +425,7 @@ If wanted, the density, tracer, and viscosity fields are plotted. To verify the 
 
 ![Growth_Rate_Example](../../assets/RTI_GR_example.svg)
 
-**Figure 1. Example of a RTI model.** Top: Centroid velocity arrows on top of the density field. Middle: Centroid viscosity. Bottom: Zoom of the tracer field on the tip of the perturbation at the center of the model domain. The black tracer marks the tip, and the red tracer mark the vertical velocity nodes from which the vertical velocity is interpolated onto the tip. The example is a model with a perturbation of $A=h_{1}/15$ and a wavelength of 12 km. The number of centroids in the vertical direction is 50. The number of horizontal centroids is related to the wavelength and aspect ratio of the model such that the resoluton is always the same in the horizontal and vertical direction for each model of the benchmark. 
+**Figure 1. Example of a RTI model.** Top: Centroid velocity arrows on top of the density field. Middle: Centroid viscosity. Bottom: Zoom of the tracer field on the tip of the perturbation at the center of the model domain. The black tracer marks the tip, and the red tracer mark the vertical velocity nodes from which the vertical velocity is interpolated onto the tip. This example uses a perturbation of $A = h_{1}/15$ and a wavelength of 12 km. The model includes 50 centroids in the vertical direction. The number of horizontal centroids is chosen such that the resolution remains consistent in both the horizontal and vertical directions for all benchmark models. 
 
 Finally, the rising velocity is plotted over the analytical solution for the given range of viscosity contrasts. 
 
@@ -454,5 +454,5 @@ end
 
 ![RTI_GrowthRate](../../assets/RTI_Growth_Rate.png)
 
-**Figure 2.RTI Growth Rate.** Growth rate of an initial cosinusoidal pertrubation of a two-layered system with different wavelengths $\lambda$. The growth rate is arbitrarily scalled by $b_1$ and $b_2$ for visualization purposes following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the black circles show the corresponding numerical results. The rising velocity is numerically calculated following the approach shown in Figure 1. 
+**Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the black circles show the corresponding numerical results. The rising velocity is numerically calculated following the approach shown in Figure 1. 
 
