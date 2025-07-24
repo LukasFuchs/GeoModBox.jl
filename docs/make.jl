@@ -55,7 +55,7 @@ makedocs(
                 "Falling Block Benchmark" => "man/examples/FallingBlockBenchmark.md", # Checked! 
                 "Falling Block" => "man/examples/FallingBlockDC.md", # Checked! 
                 "Rayleigh Taylor Instability (RTI)" => "man/examples/RTI.md", # Checked!
-                "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md",
+                "RTI - Growth Rate" => "man/examples/RTI_growth_rate.md", # Checked!
                 "Viscous Inclusion" => "man/examples/ViscousInclusion.md",
             ],
             "Mixed Thermal Convection" => Any[

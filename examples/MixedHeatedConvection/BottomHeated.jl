@@ -24,7 +24,7 @@ Pl  =   (
 k           =   scatter()
 path        =   string("./examples/MixedHeatedConvection/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   0
+save_fig    =   1
 # ------------------------------------------------------------------- #
 # Modellgeometrie Konstanten ======================================== #
 M   =   Geometry(
@@ -113,7 +113,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   1.0,                #   Courant time factor
     Δfacd   =   1.0,                #   Diffusion time factor
-    itmax   =   20,              #   Maximum iterations; 30000
+    itmax   =   6000,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
