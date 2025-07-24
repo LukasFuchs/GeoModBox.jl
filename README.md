@@ -101,12 +101,12 @@ BOTTOM: Horizontally averaged temperature–depth profiles at each time step.
 Solvers: defect correction (momentum), semi-Lagrangian (advection), Crank-Nicolson (heat diffusion).  
 Boundary conditions: Dirichlet (top/bottom), Neumann (sides), free-slip (velocity, all sides).
 
-![IHTC](.//examples/MixedHeatedConvection/Results/Internally_Heated_1.0e6_400_100_lineara.gif)
+![IHTC](./examples/MixedHeatedConvection/Results/Internally_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 9. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
 Same setup as above, but with Neumann boundary at the bottom (zero heat flux) and constant internal volumetric heat production $Q \approx 15$.
 
-![MHTC](.//examples/MixedHeatedConvection/Results/Mixed_Heated_1.0e6_400_100_lineara.gif)
+![MHTC](./examples/MixedHeatedConvection/Results/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
 **Figure 10. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
 Combination of the above two setups (bottom heating + internal heating).
