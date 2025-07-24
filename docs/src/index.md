@@ -40,7 +40,7 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Gaussian Temperature Diffusion](./man/examples/GaussianDiffusion2D.md)
 
-![GaussianDiffusion](./assets/Gaussian_Diffusion_CNA_nx_100_ny_100.gif)
+![GaussianDiffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Results/Gaussian_Diffusion_CNA_nx_100_ny_100.gif)
 
 **Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 100 × 100, using the [Crank-Nicholson approach](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), compared to the analytical solution.  
 Top Left: 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow).  
