@@ -17,9 +17,9 @@ Ini         =   (
     ε = 1e-12,
 ) 
 # inclusions bedingungen
-α           =   0;             # positive -> counter clockwise
-EllA        =   2e-1 # 1.75e3; [m]
-EllB        =   2e-1 # 0.25e3; [m] 
+α           =   0;              # positive -> counter clockwise
+EllA        =   2e-1            # [ m ]
+EllB        =   2e-1            # [ m ] 
 # ----------------------------------------------------------------------- #
 ## ==================== Define model geometry constants ================= #
 M       =   Geometry(
@@ -67,12 +67,11 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # ----------------------------------------------------------------------- #
-## ====================== Define physical constants ===================== #
+# ====================== Define physical constants ====================== #
 g       =   10.0                #   Gravitational acceleration [ m/s^2 ]
 # 0 - upper layer; 1 - lower layer
 η₀      =   1e19                #   Viscosity composition 0 [ Pa s ]
 η₁      =   1e23                #   Viscosity composition 1 - Inclusion [ Pa s]
-# ηᵣ      =   log10(η₁/η₀)
 η       =   [η₀,η₁]             #   Viscosity for phases 
 
 ρ₀      =   3200.0              #   Density composition 0 [ kg/m^3 ]
@@ -81,7 +80,7 @@ g       =   10.0                #   Gravitational acceleration [ m/s^2 ]
 
 phase   =   [0,1]
 # ----------------------------------------------------------------------- #
-# Allocation ======================================================== #
+# Allocation ============================================================ #
 D       =   (
     ρ       =   zeros(Float64,(NC...)),
     p       =   zeros(Float64,(NC...)),
@@ -97,7 +96,7 @@ D       =   (
     ηc      =   zeros(Float64,NC...),
     ηv      =   zeros(Float64,NV...),
 )
-# ------------------------------------------------------------------- #
+# ----------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
 divV        =   zeros(Float64,NC...)
 ε           =   (
@@ -155,7 +154,7 @@ VBC.val.vyN  .=  AnaSol.Vy_N
 @. D.vy[2:end-1,1]      =   AnaSol.Vy_S
 @. D.vy[2:end-1,end]    =   AnaSol.Vy_N
 
-# @. AnaSol.Pa        -=  mean(AnaSol.Pa)
+AnaSol.Pa        .-=  mean(AnaSol.Pa)
 # ----------------------------------------------------------------------- #
 # Tracer Advection ====================================================== #
 nmx,nmy     =   5,5
@@ -181,8 +180,8 @@ Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
 Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
 Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
 Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-# ------------------------------------------------------------------- #
-# System of Equations =============================================== #
+# ----------------------------------------------------------------------- #
+# System of Equations =================================================== #
 # Iterations
 niter   =   20
 ϵ       =   1e-8
@@ -215,7 +214,7 @@ FPt     =   zeros(Float64,NC...)
 # # ----------------------------------------------------------------------- #
 # Solution ============================================================== #
 # Momentum Equation ===
-# Initial Residual ---------------------------------------------- #
+# Initial Residual ------------------------------------------------------ #
 D.vx[2:end-1,:]     .=  0.0
 D.vy[:,2:end-1]     .=  0.0
 D.Pt    .=  1.0
@@ -252,7 +251,7 @@ elseif FDMethod==:direct
     D.Pt                .=  χ[Num.Pt]
 end
 # @. D.Pt     -=  mean(D.Pt)
-# --------------------------------------------------------------- #
+# ----------------------------------------------------------------------- #
 Pe      =   copy(D.Pt)
 Pe      =   abs.((D.Pt.-AnaSol.Pa))./maximum(abs.(AnaSol.Pa)).*100
 Vxe     =   copy(AnaSol.Vxa)
@@ -260,61 +259,117 @@ Vxe     =   abs.((D.vx[:,2:end-1].-AnaSol.Vxa))./maximum(abs.(AnaSol.Vxa)).*100
 Vye     =   copy(AnaSol.Vya)
 Vye     =   abs.((D.vy[2:end-1,:].-AnaSol.Vya))./maximum(abs.(AnaSol.Vya)).*100
 
-display(heatmap(x.v,y.ce,(D.vx)',color=:berlin,
+p = heatmap(x.v,y.ce,(D.vx)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Numerical - vx",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=1)
-display(heatmap(x.ce,y.v,(D.vy)',color=:berlin,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=1)
+heatmap!(p,x.ce,y.v,(D.vy)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Numerical - v_y ",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=4)
-display(heatmap(x.c,y.c,D.Pt',color=:glasgow,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=4)
+heatmap!(p,x.c,y.c,D.Pt',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Numerical - P_t",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=7)
-display(heatmap(x.v,y.c,(AnaSol.Vxa)',color=:berlin,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=7)
+heatmap!(p,x.v,y.c,(AnaSol.Vxa)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Analytical - vx",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=2))
-display(heatmap(x.c,y.v,(AnaSol.Vya)',color=:berlin,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=2)
+heatmap!(p,x.c,y.v,(AnaSol.Vya)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Analytical - v_y ",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=5)
-display(heatmap(x.c,y.c,AnaSol.Pa',color=:glasgow,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=5)
+heatmap!(x.c,y.c,AnaSol.Pa',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Analytical - P_t",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=8)
-display(heatmap(x.v,y.c,(Vxe)',color=:berlin,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=8)
+heatmap!(p,x.v,y.c,(Vxe)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Error - vy",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=3)
-display(heatmap(x.c,y.v,(Vye)',color=:berlin,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=3)
+heatmap!(p,x.c,y.v,(Vye)',color=:berlin,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Error - v_y ",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=6)
-display(heatmap(x.c,y.c,Pe',color=:glasgow,
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=6)
+heatmap!(p,x.c,y.c,Pe',color=:glasgow,
             xlabel="x[km]",ylabel="y[km]",colorbar=true,
             title="Error - P_t",
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax)))
-            # layout=(3,3),subplot=9)
-# display(p)
+            ylims=(M.ymin, M.ymax),
+            layout=(3,3),subplot=9)
+display(p)
+
+# display(heatmap(x.v,y.ce,(D.vx)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Numerical - vx",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=1)
+# display(heatmap(x.ce,y.v,(D.vy)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Numerical - v_y ",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=4)
+# display(heatmap(x.c,y.c,D.Pt',color=:glasgow,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Numerical - P_t",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=7)
+# display(heatmap(x.v,y.c,(AnaSol.Vxa)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Analytical - vx",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=2))
+# display(heatmap(x.c,y.v,(AnaSol.Vya)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Analytical - v_y ",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=5)
+# display(heatmap(x.c,y.c,AnaSol.Pa',color=:glasgow,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Analytical - P_t",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=8)
+# display(heatmap(x.v,y.c,(Vxe)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Error - vy",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=3)
+# display(heatmap(x.c,y.v,(Vye)',color=:berlin,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Error - v_y ",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=6)
+# display(heatmap(x.c,y.c,Pe',color=:glasgow,
+#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
+#             title="Error - P_t",
+#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+#             ylims=(M.ymin, M.ymax)))
+#             # layout=(3,3),subplot=9)
+# # display(p)
 
 # ----------------------------------------------------------------------- #
 # =============================== END =================================== #
