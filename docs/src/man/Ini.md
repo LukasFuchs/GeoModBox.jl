@@ -244,7 +244,7 @@ The input parameters are:
 
 For more details please refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl).
 
->**Note:** Currently, temperature is not intended to be advected via tracers, as this would require the update of the tracer temperature via incremental changes rather than absolute value. Within the [2-D advection example](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl) temperature advection is only used assuming non-diffusive process. Thus, no update of the tracer temperature is required! 
+>**Note:** Currently, temperature is not intended to be advected via tracers, as this would require the update of the tracer temperature via incremental changes rather than absolute value. Within the [2-D advection example](./examples/Advection2D.md) temperature advection is only used assuming non-diffusive process. Thus, no update of the tracer temperature is required! 
 
 The advection of temperature and the update of the temperature field on the centroids is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 

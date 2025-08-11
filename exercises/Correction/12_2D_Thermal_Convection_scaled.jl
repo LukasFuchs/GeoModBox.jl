@@ -297,18 +297,20 @@ for it = 1:T.itmax
     elseif FD.Method.Mom==:dc
         # Anfangsresiduum ------
         @. D.ρ  =   -P.Ra*D.T
-        Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
-        rhsM[Num.Vx]    =   Fm.x[:]
-        rhsM[Num.Vy]    =   Fm.y[:]
-        rhsM[Num.Pt]    =   FPt[:]
-        # Update K ------
-        K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
-        # Lösen des lineare Gleichungssystems ------
-        χ      =   - K \ rhsM
-        # Update unbekante Variablen ------
-        D.vx[:,2:end-1]     .+=  χ[Num.Vx]
-        D.vy[2:end-1,:]     .+=  χ[Num.Vy]
-        D.Pt                .+=  χ[Num.Pt]
+        for iter = 1:niter
+            Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
+            rhsM[Num.Vx]    =   Fm.x[:]
+            rhsM[Num.Vy]    =   Fm.y[:]
+            rhsM[Num.Pt]    =   FPt[:]
+            # Update K ------
+            K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+            # Lösen des lineare Gleichungssystems ------
+            χ      =   - K \ rhsM
+            # Update unbekante Variablen ------
+            D.vx[:,2:end-1]     .+=  χ[Num.Vx]
+            D.vy[2:end-1,:]     .+=  χ[Num.Vy]
+            D.Pt                .+=  χ[Num.Pt]
+        end
         @. D.ρ  =   ones(NC...)
     end
     # ======

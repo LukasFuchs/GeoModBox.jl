@@ -38,7 +38,7 @@ To numerically solve equation (3), the spatial domain must be discretized and th
 
 **Figure 1. 2D Discretization.** *Conservative finite difference grid* for solving the 2D diffusive temperature equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
-A detailed implementation of various numerical schemes is provided in the example script [Gaussian_Diffusion.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl). This example demonstrates the application of several methods for solving the diffusive part of the 2D temperature equation:
+A detailed implementation of various numerical schemes is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). This example demonstrates the application of several methods for solving the diffusive part of the 2D temperature equation:
 
 - **Explicit scheme**
 - **Fully implicit scheme**
