@@ -48,13 +48,13 @@ Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. Mos
 
 ## Examples
 
-- [1-D oceanic geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl)  
-- [1-D continental geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl)  
-- [Comparison of FD schemes on a Gaussian anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl)  
-- [2-D resolution test with Gaussian anomaly](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)  
-- [2-D Poisson equation resolution test](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Poisson_ResTest.jl)
+- [1-D oceanic geotherm](./examples/OceanicGeotherm.md)  
+- [1-D continental geotherm](./examples/ContinentalGeotherm.md)  
+- [Comparison of FD schemes on a Gaussian anomaly](./examples/GaussianDiffusion1D.md)  
+- [2-D resolution test with Gaussian anomaly](./examples/GaussianDiffusion2D.md)  
+- [2-D Poisson equation resolution test](./examples/PoissonRestest.md)
 
-For explanations, see the [examples documentation](./Examples.md) and the full [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
+For more details, see the full [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
 
 ## Exercises
 
@@ -77,10 +77,9 @@ See the [advection documentation](./AdvectMain.md) and associated source code fo
 
 ## Examples
 
-- [2-D advection with constant velocity field](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)  
-- [Resolution test of 2-D advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
+- [2-D advection with constant velocity field](./examples/Advection2D.md)  
+- [Resolution test of 2-D advection](./examples/AdvectionRestest2D.md)
 
-See the [examples documentation](./Examples.md) for further details.
 
 ## Exercises
 

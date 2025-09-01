@@ -9,7 +9,7 @@ using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
     plot_fields     =:yes
-    save_fig        = 1
+    save_fig        = 0
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -28,14 +28,14 @@ function RTI_GrowthRate()
     ρ₀          =   3000.0                  #   Density composition 0 [ kg/m^3 ]
     # ---
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
-    ηᵣ          =   [1e-6 1 10 100 500]     #   Viscosity ratio
+    ηᵣ          =   1 # [1e-6 1 10 100 500]     #   Viscosity ratio
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Plotting factors following Gerya (2009) --------------------------- #
-    b1          =   [0.5 1 5 50 250]
-    b2          =   [0.2 0.15 0.1 0.05 0]
+    b1          =   1 #[0.5 1 5 50 250]
+    b2          =   0.15 # [0.2 0.15 0.1 0.05 0]
     # Divisional factor of the amplitude following Gerya (2009) --------- #
-    delfac      =   15 # [15 150] # [150 1500] # 1500 15
+    delfac      =   150 # [15 150] # [150 1500] # 1500 15
     ms          =   zeros(3)
     ms          =   [6,4,2]
     # Analytical Solution ----------------------------------------------- #
@@ -103,7 +103,7 @@ function RTI_GrowthRate()
                 # ------------------------------------------------------- #
                 # Grid ================================================== # 
                 NC  =   (
-                    x   =   50*ar,
+                    x   =   50, #*ar,
                     y   =   50,
                 )
                 NV  =   (
@@ -202,7 +202,6 @@ function RTI_GrowthRate()
                 # Interpolate from markers to cell ---
                 Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
                 Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-                # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
                 Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
                 # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
                 #                         D.ηv[2:end-0,1:end-1] + 
@@ -273,7 +272,7 @@ function RTI_GrowthRate()
 
                 dx          =   (xwave+Δ.x/2)/Δ.x - xn
                 dy          =   abs(((M.ymax-M.ymin)-ywave)/Δ.y - yn)
-                # @show dx, dy
+                @show dx, dy
                 # @show D.vy[xn+1,yn]
 
                 wvy     =   (1.0-dx)*(1.0-dy) * D.vy[xn+1,yn] + 
@@ -281,10 +280,11 @@ function RTI_GrowthRate()
                                 (1.0-dx)*dy * D.vy[xn+1,yn+1] + 
                                 dx*dy * D.vy[xn+2,yn+1]
                 # @show wvy
+                @show D.vy[xn+1,yn], D.vy[xn+2,yn], D.vy[xn+1,yn+1], D.vy[xn+2,yn+1]
                 PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                 PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                 PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
-                # @show PP.Q[1], PP.K[1],PP.ϕ[1]
+                @show PP.Q[1], PP.K[1],PP.ϕ[1]
 
                 if plot_fields==:yes
                     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
@@ -316,10 +316,10 @@ function RTI_GrowthRate()
                             markersize=3,label="",color=:black,
                             layout=(3,1),subplot=3)
                     scatter!(p,(x1.vy2d[xn+1,yn]/1e3,y1.vy2d[xn+1,yn]/1e3),
-                            markersize=3,label="",color=:red,
+                            markersize=3,label="",color=:blue,
                             layout=(3,1),subplot=3)
                     scatter!(p,(x1.vy2d[xn+2,yn]/1e3,y1.vy2d[xn+2,yn]/1e3),
-                            markersize=3,label="",color=:red,
+                            markersize=3,label="",color=:blue,
                             layout=(3,1),subplot=3)
                     scatter!(p,(x1.vy2d[xn+1,yn+1]/1e3,y1.vy2d[xn+1,yn+1]/1e3),
                             markersize=3,label="",color=:red,
