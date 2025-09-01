@@ -32,7 +32,7 @@ To solve Equation (3) numerically, the spatial domain must be discretized, assig
 
 **Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D diffusive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-The example script [Heat_1D_discretization.jl](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
+The example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
 
 ## Explicit Finite Difference Scheme (FTCS; Forward Euler)
 

@@ -79,8 +79,8 @@ This criterion ensures that no particle is advected a greater distance than the 
 
 ## Examples
 
-- [2-D advection with constant velocity field](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl)  
-- [Resolution test of 2-D advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
+- [2-D advection with constant velocity field](./examples/Advection2D.md)  
+- [Resolution test of 2-D advection](./examples/AdvectionRestest2D.md)
 
 See the [examples documentation](./Examples.md) for further details.
 

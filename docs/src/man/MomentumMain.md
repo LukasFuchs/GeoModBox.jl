@@ -85,18 +85,17 @@ Together, the momentum and continuity equations allow solving for $v_x$, $v_y$, 
 
 The following examples demonstrate the application of the Stokes equations:
 
-- [1D channel flow with constant and depth-dependent viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl)  
-- [2D falling block benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl)  
-- [2D falling block with constant viscosity (defect correction)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockConstEta_DC.jl)  
-- [2D falling block with variable viscosity (defect correction)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl)  
-- [2D viscous inclusion problem](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)  
-- [2D Rayleigh–Taylor instability benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/RTI.jl)
+- [1D channel flow with constant and depth-dependent viscosity](./examples/ChannelFlow1D.md)  
+- [2D falling block benchmark](./examples/FallingBlockBenchmark.md)  
+- [2D falling block with constant viscosity (defect correction)](./examples/FallingBlockDC.md)  
+- [2D falling block with variable viscosity (defect correction)](./examples/FallingBlockDC.md)  
+- [2D viscous inclusion problem](./examples/ViscousInclusion.md)  
+- [2D Rayleigh–Taylor instability benchmark](./examples/RTI_growth_rate.md)
 
 Examples of coupled temperature–momentum systems (i.e., **convection models**) using **operator splitting** include:
 
-- [Mixed heated convection models](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/)
+- [Mixed heated convection models](./examples/MixedHeatedConvection.md)
 
-See the [examples documentation](./Examples.md) for further details.
 
 ## Exercises
 

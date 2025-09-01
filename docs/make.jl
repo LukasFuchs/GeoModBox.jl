@@ -34,6 +34,10 @@ makedocs(
                 "2D" => "man/MomentumTwoD.md", # Checked!
             ],
         ],
+        "Exercises" => Any[
+            "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md",
+            "02 - Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md",
+        ],
         "Examples" => Any[
             "General" => "man/Examples.md",
             "Diffusion Equation" => Any[
