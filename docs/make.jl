@@ -35,8 +35,21 @@ makedocs(
             ],
         ],
         "Exercises" => Any[
-            "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md",
-            "02 - Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md",
+            "General" => "man/Exercises.md",
+            "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md", # Checked! 
+            "02 - 1D Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md", # Checked! 
+            "03 - 1D Heat Diffusion (implicit)" => "man/exercises/03_1D_Heat_implicit.md", # Checked!
+            "04 - 2D Heat Diffusion (stationary)" => "man/exercises/04_2D_Diffusion_Stationary.mb", # Checked!
+            "05 - 2D Heat Diffusion (Plume)" => "man/exercises/05_2D_Diffusion_TD_Plume.md", # Checked! 
+            "05 - 2D Heat Diffusion (Sill)" => "man/exercises/05_2D_Diffusion_TD_Sill.md", # Checked!
+            "06 - 1D Advection" => "man/exercises/06_1D_Advection.md", # Checked!
+            "07 - 2D Energy Conservation" => "man/exercises/07_2D_Energy_Equation.md", # Checked!
+            "08 - 1D Stokes" => "man/exercises/08_1D_Stokes.md",
+            "09 - 2D Falling Block (steady state)" => "man/exercises/09_2D_Falling_Block.md",
+            "10 - 2D Falling Block (time-dep)" => "man/exercises/10_2D_Falling_Block_td.md",
+            "11 - 2D Thermal Convection" => "man/exercises/11_2D_Thermal_Convection.md",
+            "12 - 2D Thermal Convection (scaled)" => "man/exercises/12_2D_Thermal_Convection_scaled.md",
+            "13 - Blankenbach Benchmark" => "man/exercises/12_Blankenbach_Benchmark.md",
         ],
         "Examples" => Any[
             "General" => "man/Examples.md",

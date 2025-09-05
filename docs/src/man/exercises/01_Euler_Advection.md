@@ -1,7 +1,15 @@
-# [01 - Euler Advection(1D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/01_1D_Euler_Advection.ipynb)
+# [01 - Euler Advection (1D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/01_1D_Euler_Advection_en.ipynb)
 
-This exercise focuses on starting programming with `Julia` and discretizing and solving a partial differential equation. 
+This exercise introduces programming with `Julia` and the numerical solution of a partial differential equation.  
 
-![Exercise1a](../../assets/01_1D_Euler.gif)
+The main objectives are to understand:
 
-**Figure 1. 1-D Particle Advection.**
+1. The discretization of the one-dimensional advection equation,  
+2. The approximation of differential operators using finite differences, and  
+3. The implementation and visualization of the solution in `Julia`.  
+
+The equation is solved using the explicit Euler method, and the resulting particle advection is illustrated in Figure 1.  
+
+![Exercise1a](../../assets/01_1D_Euler.gif)  
+
+**Figure 1. One-dimensional particle advection computed with the Euler method.**
