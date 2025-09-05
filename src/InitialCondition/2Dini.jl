@@ -118,7 +118,7 @@ end
 """
     IniVelocity!(type,D,NC,Δ,M,x,y)
 """
-@views function IniVelocity!(type,D,BC,NC,NV,Δ,M,x,y;ε=1e-15)
+@views function IniVelocity!(type,D,BC,NV,Δ,M,x,y;ε=1e-15)
     if type==:RigidBody
         # Rigid Body Rotation ---
         # We assume a maximum and minimum velocity of 0.5 cm/a, respectively! 
