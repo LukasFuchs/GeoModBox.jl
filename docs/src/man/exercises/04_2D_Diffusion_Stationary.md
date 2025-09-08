@@ -1,4 +1,4 @@
-# [04 - 2D Heat Diffusion (stationary)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary.ipynb)
+# [04 - 2D Heat Diffusion (stationary)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary_en.ipynb)
 
 This exercise focuses on solving the stationary two-dimensional heat diffusion equation with internal heat generation. The problem setup resembles a simplified model of localized heat sources, such as radioactive waste disposal in a salt dome. The stationary case is particularly useful for introducing matrix assembly and boundary-condition handling in two dimensions.  
 

@@ -39,7 +39,7 @@ makedocs(
             "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md", # Checked! 
             "02 - 1D Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md", # Checked! 
             "03 - 1D Heat Diffusion (implicit)" => "man/exercises/03_1D_Heat_implicit.md", # Checked!
-            # "04 - 2D Heat Diffusion (stationary)" => "man/exercises/04_2D_Diffusion_Stationary.mb", # Checked!
+            "04 - 2D Heat Diffusion (stationary)" => "man/exercises/04_2D_Diffusion_Stationary.md", # Checked!
             # "05 - 2D Heat Diffusion (Plume)" => "man/exercises/05_2D_Diffusion_TD_Plume.md", # Checked! 
             # "05 - 2D Heat Diffusion (Sill)" => "man/exercises/05_2D_Diffusion_TD_Sill.md", # Checked!
             # "06 - 1D Advection" => "man/exercises/06_1D_Advection.md", # Checked!
