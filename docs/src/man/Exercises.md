@@ -25,6 +25,7 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 - The **first runtime** corresponds to the initial execution, including compilation and memory allocation.  
 - The **runtime in parentheses** corresponds to a second execution, where compilation and allocation overhead are avoided.  
 
+```@raw hmtl
 <table>
 <tr>
   <th>Exercise Number</th>
@@ -46,4 +47,5 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
   </td>
 </tr>
 </table>
+```
 
