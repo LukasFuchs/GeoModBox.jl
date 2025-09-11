@@ -25,27 +25,7 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 - The **first runtime** corresponds to the initial execution, including compilation and memory allocation.  
 - The **runtime in parentheses** corresponds to a second execution, where compilation and allocation overhead are avoided.  
 
-```@raw hmtl
-<table>
-<tr>
-  <th>Exercise Number</th>
-  <th>Type</th>
-  <th>Total Runtime [s]</th>
-</tr>
-<tr>
-  <td>1</td>
-  <td>Euler Advection</td>
-  <td>5.741</td>
-</tr>
-<tr>
-  <td>2</td>
-  <td>1-D Heat Diffusion <br> (explicit)</td>
-  <td>
-    1) 9.342 (1.14) <br>
-    2) 9.975 (1.087) <br>
-    3) 9.616 (1.017)
-  </td>
-</tr>
-</table>
-```
-
+| Exercise Number | Type                               | Total Runtime [s] |
+| --------------- | ---------------------------------- | ----------------- |
+| 1               | Euler Advection                    | 5.741             |
+| 2               | 1-D Heat Diffusion \n (explicit) | 1) 9.342 (1.14) \n 2) 9.975 (1.087) \n 3) 9.616 (1.017) |
