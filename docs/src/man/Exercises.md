@@ -28,4 +28,4 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 | Exercise Number | Type                               | Total Runtime [s] |
 | --------------- | ---------------------------------- | ----------------- |
 | 1               | Euler Advection                    | 5.741             |
-| 2               | 1-D Heat Diffusion \n (explicit) | 1) 9.342 (1.14) <br/> 2) 9.975 (1.087) <br/> 3) 9.616 (1.017) |
+| 2               | 1-D Heat Diffusion \\n (explicit) | 1) 9.342 (1.14) <br/> 2) 9.975 (1.087) <br/> 3) 9.616 (1.017) |
