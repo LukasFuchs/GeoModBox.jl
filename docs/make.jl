@@ -47,7 +47,7 @@ makedocs(
             "08 - 1D Stokes" => "man/exercises/08_1D_Stokes.md",
             "09 - 2D Falling Block (steady state)" => "man/exercises/09_2D_Falling_Block.md",
             "10 - 2D Falling Block (time-dep)" => "man/exercises/10_2D_Falling_Block_td.md",
-            # "11 - 2D Thermal Convection" => "man/exercises/11_2D_Thermal_Convection.md",
+            "11 - 2D Thermal Convection" => "man/exercises/11_2D_Thermal_Convection.md",
             # "12 - 2D Thermal Convection (scaled)" => "man/exercises/12_2D_Thermal_Convection_scaled.md",
             # "13 - Blankenbach Benchmark" => "man/exercises/12_Blankenbach_Benchmark.md",
         ],
