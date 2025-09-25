@@ -7,7 +7,7 @@ The governing equations for solving geodynamical problems—neglecting adiabatic
 **Momentum**
 
 $\begin{equation}
-\rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{\partial{v_{i}}}{\partial{x_{j}}}\right) = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
+\rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{\partial{v_{i}}}{\partial{x_{j}}}\right) = -\frac{\partial{P_t}}{\partial{x_{i}}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}} + \rho g_{i},
 \end{equation}$
 
 where 
@@ -16,7 +16,7 @@ $v_i$ is the velocity in the $i$-th direction [m/s],
 $t$ is time [s],
 $\partial/\partial{t}$ is the time derivative, 
 $\partial/\partial x_i$ is a directional derivative in $i$, 
-$P$ the total pressure [Pa], 
+$P_t$ is the total pressure [Pa], 
 $\tau_{ij}$ is the deviatoric stress tensor [Pa], and 
 $\boldsymbol{g}$ is the gravitational acceleration vector [m/s²]. 
 
@@ -121,16 +121,16 @@ The equations discussed here are used to solve for pressure and velocity in two-
 The constitutive equations of rheology delineate a relationship between the second-order tensor for the kinematics $\left(\text{Strain rate: }\dot{\varepsilon}, \text{Strain: } \varepsilon \right)$ and the dynamics $\left(\text{Forces}, \text{Stresses: }\sigma\right)$. Several constitutive models are commonly employed (e.g., viscous, elastic, viscoelastic, plastic). In `GeoModBox.jl`, the focus is on incompressible, viscous rheology, described by: 
 
 $\begin{equation}
-\tau_{i,j} = 2\eta \cdot \dot{\varepsilon}_{i,j},
+\tau_{ij} = 2\eta \cdot \dot{\varepsilon}_{ij},
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{i,j}$ is the deviatoric stress tensor [Pa] defined as 
+where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{ij}$ is the deviatoric stress tensor [Pa] defined as 
 
 $\begin{equation}
-\tau_{i,j} = \sigma_{i,j} + P\delta{i,j},
+\tau_{ij} = \sigma_{ij} + P\delta{}_{ij},
 \end{equation}$
 
-where $\sigma_{i,j}$ is the full stress tensor [Pa], $P$ is the pressure [Pa], and $\delta$ is the *Kronecker Delta*. 
+where $\sigma_{ij}$ is the full stress tensor [Pa], $P$ is the pressure [Pa], and $\delta$ is the *Kronecker Delta*. 
 
 ## Approximations 
 
@@ -152,7 +152,7 @@ $\begin{equation}
 P_t = P_{\text{dyn}} + P_{\text{hydr}},
 \end{equation}$
 
-where $P_{\text{dyn}}$ and $P_{\text{hydr}}$ denote the dynamic and hydrostatic pressure, respectively, along with the gradient of hydrostatic pressure,
+where $P_{\text{dyn}}$ and $P_{\text{hydr}}$ denote the dynamic and hydrostatic pressure [Pa], respectively, along with the gradient of hydrostatic pressure,
 
 $\begin{equation}
 \frac{\partial{P_{\text{hydr}}}}{\partial{y}}=\rho_0 g,
@@ -277,7 +277,7 @@ $\begin{equation}
 **Continuity equation**
 
 $\begin{equation}
-\frac{\partial{v'_x}}{\partial{x}} + \frac{\partial{v'_y}}{\partial{y'}} = 0.
+\frac{\partial{v'_x}}{\partial{x'}} + \frac{\partial{v'_y}}{\partial{y'}} = 0.
 \end{equation}$
 
 When interpreting or analyzing non-dimensional models, it is essential to keep track of the scaling constants and reference values used in the transformation.
