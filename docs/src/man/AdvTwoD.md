@@ -3,7 +3,7 @@
 In two dimensions ($x$ and $y$), the advection equation for the temperature conservation equation, for example, is given as follows 
 
 $\begin{equation}
-\frac{\partial{T}}{\partial{t}} = -v_x \left(\frac{\partial{T}}{\partial{x}}\right) - -v_y \left(\frac{\partial{T}}{\partial{y}}\right),
+\frac{\partial{T}}{\partial{t}} = -v_x \left(\frac{\partial{T}}{\partial{x}}\right) - v_y \left(\frac{\partial{T}}{\partial{y}}\right),
 \end{equation}$
 
 where $T$ is the temperature [K], $t$ is the time [s], and $v_x$ and $v_y$ are the velocities in the $x$- and $y$-direction, respectively. 
