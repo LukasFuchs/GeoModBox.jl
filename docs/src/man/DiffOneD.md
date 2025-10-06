@@ -369,7 +369,7 @@ $k$ is the thermal conductivity [W/m/K],
 $H$ is the internal heat generation rate per unit mass [W/kg], and
 $y$ is the vertical coordinate (depth) [m]
 
-## Discretization
+### Discretization
 
 In a conservative scheme, the vertical conductive heat flux $q_y$ is defined on vertices, as:
 
@@ -379,7 +379,7 @@ $\begin{equation}
 
 where $n_v$ is the number of *vertices*.
 
-## Explicit Finite Difference Formulation
+### Explicit Finite Difference Formulation
 
 Using the above discretization, the time evolution of temperature at each centroid is computed from:
 

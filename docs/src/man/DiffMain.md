@@ -35,12 +35,19 @@ This equation captures temperature changes due to **diffusion** (right-hand side
 
 # Heat Diffusion Equation
 
+Neglecting the advection part of the temperature equation, the heat diffusion equation is defined as: 
+
+$\begin{equation}
+\rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_i}{\partial x_i} + \rho H.
+\end{equation}$
+
 ```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the diffusive component of the time-dependent or steady-state temperature equation—including optional radioactive heating—in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
 
 - Forward Euler  
 - Backward Euler  
 - Crank–Nicolson  
 - Alternating Direction Implicit (ADI)
+- Defection Correction
 
 See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
 

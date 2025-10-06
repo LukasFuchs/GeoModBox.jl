@@ -40,7 +40,7 @@ where $x_i$ are the coordinates and $v_i$ the corresponding velocity components.
 
 ## Discretization Schemes
 
-Although simple in form, the advection equation is challenging to solve numerically. The choice of discretization and interpolation schemes—particularly when coupling grid-based fields with Lagrangian tracers—can introduce numerical artifacts such as diffusion, dispersion, or instability.
+Although simple in form, the advection equation is challenging to solve numerically. The choice of discretization and interpolation schemes can introduce numerical artifacts such as diffusion, dispersion, or instability.
 
 To promote clarity and modularity, `GeoModBox.jl` employs an **operator-splitting** strategy. This approach decouples the advective and diffusive terms of the temperature conservation equation and solves them sequentially. First, the advective (convective) term is solved, followed by the diffusive term. The latter is handled using the schemes described in the [Diffusion Equation documentation](./DiffMain.md). 
 
@@ -86,5 +86,5 @@ See the [examples documentation](./Examples.md) for further details.
 
 ## Exercises
 
-- [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
-- [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
+- [1-D Gaussian or block anomaly advection](../man/exercises/06_1D_Advection.md)  
+- [2-D coupled advection-diffusion](../man/exercises/07_2D_Energy_Equation.md)
