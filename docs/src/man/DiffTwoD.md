@@ -265,7 +265,7 @@ $\begin{equation}
 Discretizing the equation in space and time using implicit finite differences yields:
 
 $\begin{equation}
-\frac{T_i^{n+1}-T_i^{n}}{\Delta{t}} - \kappa 
+\frac{T_{i,j}^{n+1}-T_{i,j}^{n}}{\Delta{t}} - \kappa 
 \left( \frac{T_{i-1,j}^{n+1} - 2 T_{i,j}^{n+1} + T_{i+1,j}^{n+1}}{\Delta{x}^2} + \frac{T_{i,j-1}^{n+1} - 2 T_{i,j}^{n+1} + T_{i,j+1}^{n+1}}{\Delta{y}^2}  
 \right) - \frac{Q_{i,j}^n}{\rho c_p} = R.
 \end{equation}$
@@ -298,13 +298,13 @@ In 2-D, the diffusive part of the heat equation (Equation 3) using the Crank–N
 $\begin{equation}\begin{gather*}
 & \frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta t} = \\ &
 \frac{\kappa}{2}\frac{(T_{i-1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i+1,j}^{n+1})+(T_{i-1,j}^{n}-2T_{i,j}^{n}+T_{i+1,j}^{n})}{\Delta x^2} + \\ &
-\frac{\kappa}{2}\frac{(T_{i,j-1}^{n+1}-2T_{i,j}^{n+1}+T_{i,j+1}^{n+1})+(T_{i,j-1}^{n}-2T_{i,j}^{n}+T_{i,j+1}^{n})}{\Delta y^2}
+\frac{\kappa}{2}\frac{(T_{i,j-1}^{n+1}-2T_{i,j}^{n+1}+T_{i,j+1}^{n+1})+(T_{i,j-1}^{n}-2T_{i,j}^{n}+T_{i,j+1}^{n})}{\Delta y^2} + \frac{Q_{i,j}^n}{\rho c_p}
 \end{gather*}\end{equation}$
 
 Rearranging into a form that separates known and unknown variables gives the linear system:
 
 $\begin{equation}\begin{gather*}
-& -b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = \\ &b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n}
+& -b T_{i,j-1}^{n+1} -aT_{i-1,j}^{n+1}+\left(2a + 2b + c\right)T_{i,j}^{n+1} -aT_{i+1,j}^{n+1} -b T_{i,j+1}^{n+1} = \\ &b T_{i,j-1}^{n} +aT_{i-1,j}^{n}-\left(2a + 2b - c\right)T_{i,j}^{n} +aT_{i+1,j}^{n} +b T_{i,j+1}^{n} + \frac{Q_{i,j}^n}{\rho c_p}
 \end{gather*}\end{equation}$
 
 where the coefficients are defined as:
@@ -325,7 +325,7 @@ $\begin{equation}\begin{gather*}
 & -b T_{1,j-1}^{n+1} +
 \left(3a + 2b + c \right) T_{1,j}^{n+1} 
 -a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = \\ &
-b T_{1,j-1}^{n} - \left( 3a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} + 4 a T_{BC,W},
+b T_{1,j-1}^{n} - \left( 3a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} + 4 a T_{BC,W} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **East boundary**
@@ -335,7 +335,7 @@ $\begin{equation}\begin{gather*}
 \left(3a + 2b + c \right) T_{ncx,j}^{n+1} 
 -b T_{ncx,j+1}^{n+1} = \\ & 
 b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} -
-\left( 3a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 4 a T_{BC,E},
+\left( 3a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 4 a T_{BC,E} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **South boundary**
@@ -343,14 +343,14 @@ b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} -
 $\begin{equation}\begin{gather*}
 & -a T_{i-1,1}^{n+1} +
 \left(2a + 3b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = \\ & 
-a T_{i-1,1}^{n} - \left( 2a + 3b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} + 4 b T_{BC,S},
+a T_{i-1,1}^{n} - \left( 2a + 3b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} + 4 b T_{BC,S} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **North boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + 3b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = \\ &
-b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + 3b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 4 b T_{BC,N}.
+b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + 3b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 4 b T_{BC,N} + \frac{Q_{i,j}^n}{\rho c_p}.
 \end{gather*}\end{equation}$
 
 **Neumann Boundary Conditions**
@@ -359,28 +359,28 @@ b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + 3b - c \right) T_{i,ncy}^{n}
 
 $\begin{equation}\begin{gather*}
 & -b T_{1,j-1}^{n+1} + \left(a + 2b + c \right) T_{1,j}^{n+1} - a T_{2,j}^{n+1} - b T_{1,j+1}^{n+1} = \\ &
-b T_{1,j-1}^{n} - \left( a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} - 2 a c_W \Delta{x},
+b T_{1,j-1}^{n} - \left( a + 2b - c \right) T_{1,j}^{n} + a T_{2,j}^{n} + b T_{1,j+1}^{n} - 2 a c_W \Delta{x} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **East boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{ncx,j-1}^{n+1} - a T_{ncx-1,j}^{n+1} + \left(a + 2b + c \right) T_{ncx,j}^{n+1} - b T_{ncx,j+1}^{n+1} = \\ &
-b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} - \left( a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 2 a c_E \Delta{x},
+b T_{ncx,j-1}^{n} + a T_{ncx-1,j}^{n} - \left( a + 2b - c \right) T_{ncx,j}^{n} + b T_{ncx,j+1}^{n} + 2 a c_E \Delta{x} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **South boundary**
 
 $\begin{equation}\begin{gather*}
 & -a T_{i-1,1}^{n+1} + \left(2a + b + c \right) T_{i,1}^{n+1} - a T_{i+1,1}^{n+1} - b T_{i,2}^{n+1} = \\ &
-a T_{i-1,1}^{n} - \left( 2a + b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} - 2 b c_S \Delta{y}
+a T_{i-1,1}^{n} - \left( 2a + b - c \right) T_{i,1}^{n} + a T_{i+1,1}^{n} + b T_{i,2}^{n} - 2 b c_S \Delta{y} + \frac{Q_{i,j}^n}{\rho c_p},
 \end{gather*}\end{equation}$
 
 **North boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{i,ncy-1}^{n+1} + a T_{i-1,ncy}^{n+1} + \left(2a + b + c \right) T_{i,ncy}^{n+1} - a T_{i+1,ncy}^{n+1} = \\ &
-b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 2 b c_N \Delta{y}
+b T_{i,ncy-1}^{n} + a T_{i-1,ncy}^{n} - \left( 2a + b - c \right) T_{i,ncy}^{n} + a T_{i+1,ncy}^{n} + 2 b c_N \Delta{y} + \frac{Q_{i,j}^n}{\rho c_p}.
 \end{gather*}\end{equation}$
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
@@ -396,7 +396,7 @@ $\begin{equation}
     \left( 
     \frac{T_{i-1,j}^n-2T_{i,j}^n+T_{i+1,j}^n}{\Delta x^2} +
     \frac{T_{i,j-1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j+1}^{n+1/2}}{\Delta y^2}
-    \right)
+    \right) + \frac{Q_{i,j}^n}{\rho c_p}
 \end{equation}$
 
 ### Second half-step (implicit in $x$, explicit in $y$):
@@ -407,7 +407,7 @@ $\begin{equation}
     \left( 
     \frac{T_{i-1,j}^{n+1}-2T_{i,j}^{n+1}+T_{i+1,j}^{n+1}}{\Delta x^2} + 
     \frac{T_{i,j-1}^{n+1/2}-2T_{i,j}^{n+1/2}+T_{i,j+1}^{n+1/2}}{\Delta y^2}
-    \right)
+    \right) + \frac{Q_{i,j}^n}{\rho c_p}
 \end{equation}$
 
 Each fractional step results in a tridiagonal linear system, alternating between the $x$- and $y$-directions. This decomposition improves computational efficiency while retaining the stability benefits of implicit schemes.
@@ -443,7 +443,7 @@ $\begin{equation}
 \rho_{i,j} c_{p,(i,j)}\left(\frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta{t}}\right) 
 +\frac{q_{x,(i+1,j)} - q_{x,(i,j)}}{\Delta{x}} 
 +\frac{q_{y,(i,j+1)} - q_{y,(i,j)}}{\Delta{y}} 
--\rho_{i,j} H_{i,j} = R, 
+-\rho_{i,j} H_{i,j} = R_{i,j}, 
 \end{equation}$
 
 where $\Delta{x}$ and $\Delta{y}$ are the horizontal and vertical grid resolution, respectively, $\Delta{t}$ is the time step length and $i$ and $j$ the horizontal and vertical indices, respectively. 
@@ -462,7 +462,7 @@ $\begin{equation}
 +k_{y,(i,j)}\frac{T_{i,j}^{n+1}-T_{i,j-1}^{n+1}}{\Delta{y}}}
 {\Delta{y}}
 \right)
--\rho_{i,j} H_{i,j} = R.
+-\rho_{i,j} H_{i,j} = R_{i,j}.
 \end{equation}$
 
 Rewriting this in a matrix-compatible form leads to: 
@@ -474,7 +474,7 @@ aT_{i,j-1}^{n+1}
 +dT_{i+1,j}^{n+1} 
 +eT_{i,j+1}^{n+1} 
 +fT_{i,j}^{n} 
--\rho_{i,j} H_{i,j} = R,
+-\rho_{i,j} H_{i,j} = R_{i,j},
 \end{equation}$
 
 where

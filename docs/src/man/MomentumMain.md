@@ -54,7 +54,7 @@ $\begin{equation}
 In the mantle, inertial forces are typically negligible compared to viscous and gravitational forces. Under this **Stokes flow** approximation, the momentum equation simplifies to:
 
 $\begin{equation}
-0 = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\tau_{ij}}{\partial{x_j}} + \rho g_{i},
+0 = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}} + \rho g_{i},
 \end{equation}$
 
 Using the constitutive relation, we obtain:
