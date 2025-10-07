@@ -52,7 +52,7 @@ end
     ΔT          ::Float64 = 2500                # Temperature difference [ K ]
     Ttop        ::Float64 = 273.15              # Temperature at the top [ K ]
     Tbot        ::Float64 = Ttop + ΔT           # Temperature at the bottom [ K ] 
-    Ra          ::Float64 = 1e5                 # Rayleigh number
+    Ra          ::Float64 = -9999               # Rayleigh number
 end
 
 """

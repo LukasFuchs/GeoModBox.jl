@@ -1,8 +1,8 @@
 # [12 – 2D Thermal Convection (scaled)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_Convection_scaled_en.ipynb)
 
-This exercise revisits **2-D thermal convection** in a fully **nondimensional** (scaled) framework. You will define scaling constants, transform the governing equations, and study how the flow depends on the **Rayleigh number**. The setup follows the **Boussinesq approximation** with isoviscous rheology and bottom heating.
+This exercise revisits **2-D thermal convection** in a fully **nondimensional** (scaled) framework. You will define scaling constants and transform the governing equations, and study how the flow depends on the **Rayleigh number**. The setup follows the **Boussinesq approximation** with isoviscous rheology and bottom heating.
 
-## Objectives
+**Objectives**
 
 1. Define physically motivated **scaling constants** and apply the **nondimensional transformations** to the PDEs.  
 2. Formulate the **dimensionless** energy, momentum, and mass conservation equations (incl. buoyancy term $Ra,T'$).  
@@ -11,12 +11,18 @@ This exercise revisits **2-D thermal convection** in a fully **nondimensional** 
 5. Run and compare models for **$Ra = 10^4, 10^5, 10^6$**; discuss plume/slab scale and flow vigor.  
 6. Compute diagnostics such as **Nusselt number** and **RMS velocity**; assess approach to steady state.
 
-## Notes for students
+As the Rayleigh number increases:
 
-- In the scaled form we assume reference parameters $\eta_0 = 1, g = 1,\kappa = 1,c_p = 1$.  
-- If $Ra$ is specified, adjust $\eta_0$ accordingly; otherwise compute $Ra$ from the reference set.  
-- Higher $Ra$ requires **finer grids** to maintain stability and accuracy; balance resolution vs. runtime.  
-- Keep the documentation for the exercise **brief**: show the key equations, the scaling you used, and a **visualization** (animation or snapshot) of the final temperature/velocity fields.
+- **flow velocities** increase,  
+- **convection becomes more vigorous**, and  
+- structures such as *slabs* and *plumes* become **finer**.
+
+Therefore, the **grid resolution** must be adjusted accordingly to ensure **numerical stability** and **accuracy**.
+
+> However, higher resolution significantly increases computational cost!
+
+The resolution provided here is sufficient for the Rayleigh numbers listed.  
+That said, some numerical methods already show **initial inaccuracies**, so in practice a **higher resolution** is often advisable.
 
 ![Exercise12a](../../assets/12_ThermalConvection_1.0e6_150_50_lineara_semilag_CNA_dc.gif)
 
@@ -28,4 +34,4 @@ This exercise revisits **2-D thermal convection** in a fully **nondimensional** 
 
 ![Exercise12c](../../assets/12_ThermalConvection_iterations_1.0e6_150_50_lineara_semilag_CNA_dc.png)
 
-**Figure 3.** Variation in the root mean square velocity with numerical iterations. Empirically, a tolerance of $10^{-15}$ was chosen to define steady state. Low-$Ra$ cases typically reach steady state in fewer than 3000 iterations.  
+**Figure 3.** Variation in the root mean square velocity with numerical iterations. Empirically, a tolerance of $3.8^{-3}$ was chosen to define steady state. Low-$Ra$ cases typically reach steady state in fewer than 3000 iterations.  
