@@ -49,7 +49,7 @@ makedocs(
             "10 - 2D Falling Block (time-dep)" => "man/exercises/10_2D_Falling_Block_td.md", # Checked!
             "11 - 2D Thermal Convection" => "man/exercises/11_2D_Thermal_Convection.md", # Checked!
             "12 - 2D Thermal Convection (scaled)" => "man/exercises/12_2D_Thermal_Convection_scaled.md", # Checked!
-            # "13 - Blankenbach Benchmark" => "man/exercises/12_Blankenbach_Benchmark.md",
+            "13 - Blankenbach Benchmark" => "man/exercises/13_Blankenbach_Benchmark.md", # Checked!
         ],
         "Examples" => Any[
             "General" => "man/Examples.md",
