@@ -24,6 +24,27 @@ path        =   string("./exercises/Correction/Results/")
 anim        =   Plots.Animation(path, String[] )
 save_fig    =   1
 # ----------------------------------------------------------------------- #
+# Benchmark Values ====================================================== # 
+# Taken from Gerya (2019), Introduction to numerical geodynamic modelling
+B       =   (
+    Nr      =   1,
+    # Nusselt Number at the top
+    Nu      =   [4.8844,10.534,21.972,10.066,6.9229],   
+    # Root Mean Square Velocity-scaled
+    Vrms    =   [42.865,193.21,833.99,480.43,171.76],   
+    # Non-dimensional temperature gradients in the model corner
+    q1      =   [8.0593,19.079,45.964,17.531,18.484],
+    q2      =   [0.5888,0.7228,0.8772,1.0085,0.1774],
+    q3      =   [8.0593,19.079,45.964,26.809,14.168], 
+    q4      =   [0.5888,0.7228,0.8772,0.4974,0.6177],
+    # Local minimum along the central vertical temperature profile 
+    Tmin    =   [0.4222,0.4284,0.4322,0.7405,0.3970],
+    ymin    =   [0.2249,0.1118,0.0577,0.0623,0.1906],
+    # Local maximum algon the central vertical temperature profile
+    Tmax    =   [0.5778,0.5716,0.5678,0.8323,0.5758],
+    ymax    =   [0.7751,0.8882,0.9423,0.8243,0.7837],
+)
+# ----------------------------------------------------------------------- #
 # Geometry ============================================================== #
 M   =   Geometry(
     xmin    =   0.0,                #   [ m ] 
@@ -40,13 +61,13 @@ P   =   Physics(
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.5e-5,             #   THermal Expansion [ K^-1 ]
     Q₀      =   0.0,                #   Volumetric Heat Production rate [W/m^3]
-    η₀      =   1e21,               #   Reference Viscosity [ Pa*s ]
+    η₀      =   1e23,               #   Reference Viscosity [ Pa*s ]
     ΔT      =   1000.0,             #   Temperature Difference
     # If Ra < 0, Ra will be calculated from the reference parameters.
     # If Ra is defined, the reference viscosity will be adjusted such that
     # the scaling parameters result in the given Ra.
     Ra      =   -9999,              #   Rayleigh number
-    Ttop    =   273.15,             #   Temperature at the surface [ K ]
+    Ttop    =   273,                #   Temperature at the surface [ K ]
 )
 # ----------------------------------------------------------------------- #
 # Define Scaling Constants ============================================== # 
@@ -116,7 +137,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   8000,               #   Maximum iterations; 30000
+    itmax   =   8000,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year   #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -266,20 +287,14 @@ for it = 1:T.itmax
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-                ylims=(M.ymin, M.ymax),
-                layout=(2,1),subplot=1)
-        heatmap!(p,x.c,y.c,D.vc',color=:imola,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin, M.xmax), 
-            ylims=(M.ymin, M.ymax),
-            layout=(2,1),subplot=2)
+                ylims=(M.ymin, M.ymax))
+        contour!(p,x.c,y.c,D.T',lw=1,
+                    color="white",cbar=false,alpha=0.5)
         quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-            la=0.5,color="black",
-            layout=(2,1),subplot=2)
+            la=0.5,color="black",alpha=0.5)
         if save_fig == 1
             Plots.frame(anim)
         elseif save_fig == 0
@@ -293,15 +308,50 @@ for it = 1:T.itmax
     # Diffusion ========================================================= #
     CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
     # ------------------------------------------------------------------- #
-    # Surface Heat Flow ================================================= #
-    @. D.ΔTbot  =   
-         (((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,3])/2.0) - 
-        ((D.T_ex[2:end-1,2]+D.T_ex[2:end-1,1])/2.0)) / Δ.y
-    @. D.ΔTtop  =   
-        (((D.T_ex[2:end-1,end-2]+D.T_ex[2:end-1,end-1]) / 2.0) - 
-        ((D.T_ex[2:end-1,end-1]+D.T_ex[2:end-1,end]) / 2.0)) / Δ.y
-    Nus[it]     =   mean(D.ΔTtop)
+    # Nusselt Number ==================================================== #
+    # Grid structure at the surface ---
+    #   o - Centroids
+    #   x - Vertices 
+    #   □ - Ghost Nodes
+    #
+    #   □          □           □            □
+    #   
+    #        x --------- x --------- x
+    #        |           |           |
+    #   □    |     o     |     o     |      □ 
+    #        |           |           |
+    #        x --------- x --------- x      
+    #        |           |           |
+    #   □    |     o     |     o     |      □
+    # --- 
+    # Get temperature at the vertices 
+    Tv1     =   zeros(NV.x,1)
+    Tv2     =   zeros(NV.x,1)
+    @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
+                    D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
+    @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
+                    D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
+    # Calculate temperature gradient --- 
+    dTdy    =   zeros(NV.x,1)
+    @. dTdy =   -(Tv1 - Tv2)/Δ.y
+    # Calculate Nusselt number ---
+    # Midpoint integration -
+    # for i=1:NC.x
+    #     Nus[it] +=   ((dTdy[i]+dTdy[i+1])/2)*Δ.x
+    # end
+    # Trapezoidal integration -
+    for i = 1:NV.x
+        if i == 1 || i == NV.x
+            afac = 1
+        else
+            afac = 2
+        end
+        Nus[it]     += afac * dTdy[i]
+    end
+    Nus[it]     *=   Δ.x/2
+    # Mean Temperature ---
     meanT[it,:] =   mean(D.T_ex,dims=1)
+    # Root Mean Square Velocity ---
     meanV[it]   =   mean(D.vc)
     # ------------------------------------------------------------------- #
     # Check break ======================================================= #
@@ -339,28 +389,24 @@ if save_fig == 1
 end
 # Save final figure ===================================================== #
 p2 = heatmap(x.c,y.c,D.T',
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            xlabel="x",ylabel="y",colorbar=true,
             title="Temperature",color=cgrad(:lajolla),
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-            ylims=(M.ymin, M.ymax),
-            layout=(2,1),subplot=1)
-    heatmap!(p2,x.c,y.c,D.vc',color=:imola,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Velocity",aspect_ratio=:equal,
-            xlims=(M.xmin, M.xmax), 
-            ylims=(M.ymin, M.ymax),
-            layout=(2,1),subplot=2)
+            ylims=(M.ymin, M.ymax))
+    contour!(p2,x.c,y.c,D.T',lw=1,
+                    color="white",cbar=false,
+                    alpha=0.5)
     quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
             la=0.5,color="black",
-            layout=(2,1),subplot=2)
+            alpha=0.5)
 if save_fig == 1
-    savefig(k,string("./exercises/Correction/Results/13_BlankenbachBenchmark_Scaled_iterations_",@sprintf("%.2e",P.Ra),
+    savefig(k,string("./exercises/Correction/Results/13_BlankenbachBenchmark_iterations_",@sprintf("%.2e",P.Ra),
             "_",NC.x,"_",NC.y,
             "_",Ini.T,".png"))
-    savefig(p2,string("./exercises/Correction/Results/13_BlankenbachBenchmark_Scaled_Final_Stage_",@sprintf("%.2e",P.Ra),
+    savefig(p2,string("./exercises/Correction/Results/13_BlankenbachBenchmark_Final_Stage_",@sprintf("%.2e",P.Ra),
             "_",NC.x,"_",NC.y,"_it_",find,"_",
             Ini.T,".png"))
 elseif save_fig == 0
@@ -371,16 +417,41 @@ end
 q2  =   plot(Time[1:find],Nus[1:find],
             xlabel="Time [ non-dim ]", ylabel="Nus",label="",
             layout=(2,1),suplot=1)
+plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
+            lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
+            layout=(2,1),suplot=1)
 plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
+plot!(q2,Time[1:find],B.Vrms[B.Nr].*ones(find,1),
+            lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
+            layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string("./exercises/Correction/Results/13_BlankenbachBenchmarkTimeSeries_Scaled_",@sprintf("%.2e",P.Ra),
+    savefig(q2,string("./exercises/Correction/Results/13_BlankenbachBenchmark_TimeSeries_",@sprintf("%.2e",P.Ra),
                         "_",NC.x,"_",NC.y,"_",Ini.T,".png"))
 elseif save_fig == 0
     display(q2)
 end
-# ======================================================================= #
+# ----------------------------------------------------------------------- #
+# Vertical temperature profiles ========================================= #
+ind1    =   Int64((M.xmax-M.xmin)/2/Δ.x+1)
+ind2    =   Int64((M.xmax-M.xmin)/2/Δ.x)
+Tprof   =   (D.T[ind1,:]+D.T[ind2,:])/2
+q3  =   plot(Tprof,y.c,
+        xlabel="T",ylabel="y",label=false)
+scatter!(q3,(B.Tmin[B.Nr],-(1-B.ymin[B.Nr])),
+            markershape=:rect,markersize=3,
+            markercolor=:black,label=false)
+scatter!(q3,(B.Tmax[B.Nr],-(1-B.ymax[B.Nr])),
+            markershape=:rect,markersize=3,
+            markercolor=:black,label=false)
+if save_fig == 1
+    savefig(q3,string("./exercises/Correction/Results/13_BlankenbachBenchmark_Profiles_",@sprintf("%.2e",P.Ra),
+                        "_",NC.x,"_",NC.y,"_",Ini.T,".png"))
+elseif save_fig == 0
+    display(q3)
+end
+# ----------------------------------------------------------------------- #
 end
 
 BlankenbachBenchmark()
