@@ -32,3 +32,7 @@ Models run until a steady state is reached or up to a maximum of 8000 iterations
 ![Exercise13d](../../assets/13_BlankenbachBenchmark_iterations_1.00e+06_100_100_lineara.png)
 
 **Figure 4.** Variation in root-mean-square velocity with numerical iterations. Empirically, a tolerance of $3.8^{-3}$ was chosen to define steady state. Low-$Ra$ cases typically reach steady state in fewer than 3000 iterations.
+
+![Exercise13e](../../assets/13_BlankenbachBenchmark_RestTest_Ra_1.00e+04.png)
+
+**Figure 5.** Nusselt number, root mean square velocity, and mean temperature for a resolution test for $Ra = 10^4$. The black marker show the final value of a numerical run and the red dashed line show the benachmark values. 
