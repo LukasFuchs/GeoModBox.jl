@@ -28,14 +28,14 @@ function RTI_GrowthRate()
     ρ₀          =   3000.0                  #   Density composition 0 [ kg/m^3 ]
     # ---
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
-    ηᵣ          =   [1e-6 1 10 100 500]     #   Viscosity ratio
+    ηᵣ          =   1 # [1e-6 1 10 100 500]     #   Viscosity ratio
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Plotting factors following Gerya (2009) --------------------------- #
-    b1          =   [0.5 1 5 50 250]
-    b2          =   [0.2 0.15 0.1 0.05 0]
+    b1          =   1.0 # [0.5 1 5 50 250]
+    b2          =   0.15 # [0.2 0.15 0.1 0.05 0]
     # Divisional factor of the amplitude following Gerya (2009) --------- #
-    delfac      =   150 # [15 150] # [150 1500] # 1500 15
+    delfac      =   15 # [15 150] # [150 1500] # 1500 15
     ms          =   zeros(3)
     ms          =   [6,4,2]
     # Analytical Solution ----------------------------------------------- #
@@ -213,7 +213,7 @@ function RTI_GrowthRate()
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
                 # Iterations
-                niter       =   10
+                niter       =   50
                 ϵ           =   1e-10
                 # Numbering, without ghost nodes! ---
                 off    = [  NV.x*NC.y,                          # vx
