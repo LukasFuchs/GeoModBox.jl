@@ -28,12 +28,12 @@ function RTI_GrowthRate()
     ρ₀          =   3000.0                  #   Density composition 0 [ kg/m^3 ]
     # ---
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
-    ηᵣ          =   1 # [1e-6 1 10 100 500]     #   Viscosity ratio
+    ηᵣ          =   [1e-6 1 10 100 500]     #   Viscosity ratio
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Plotting factors following Gerya (2009) --------------------------- #
-    b1          =   1 #[0.5 1 5 50 250]
-    b2          =   0.15 # [0.2 0.15 0.1 0.05 0]
+    b1          =   [0.5 1 5 50 250]
+    b2          =   [0.2 0.15 0.1 0.05 0]
     # Divisional factor of the amplitude following Gerya (2009) --------- #
     delfac      =   150 # [15 150] # [150 1500] # 1500 15
     ms          =   zeros(3)
@@ -100,12 +100,14 @@ function RTI_GrowthRate()
                 # ---
                 ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  #   aspect ratio
                 M.xmax      =   (M.ymax-M.ymin)*ar
+                @printf("xmax: %g \n",M.xmax)
                 # ------------------------------------------------------- #
                 # Grid ================================================== # 
                 NC  =   (
                     x   =   50, #*ar,
                     y   =   50,
                 )
+                # @printf("Resolution: %g, %g",NC.x, NC.y)
                 NV  =   (
                     x   =   NC.x + 1,
                     y   =   NC.y + 1,
@@ -121,7 +123,7 @@ function RTI_GrowthRate()
                 )
                 y       =   (
                     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-                    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+                    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
                     v   =   LinRange(M.ymin,M.ymax,NV.y),
                 )
                 x1      =   (
@@ -142,6 +144,7 @@ function RTI_GrowthRate()
                 # Allocation ============================================ #
                 D       =   (
                     ρ       =   zeros(Float64,(NC...)),
+                    ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
                     p       =   zeros(Float64,(NC...)),
                     cp      =   zeros(Float64,(NC...)),
                     vx      =   zeros(Float64,(NV.x,NV.y+1)),
@@ -150,9 +153,10 @@ function RTI_GrowthRate()
                     vxc     =   zeros(Float64,(NC...)),
                     vyc     =   zeros(Float64,(NC...)),
                     vc      =   zeros(Float64,(NC...)),
-                    wt      =   zeros(Float64,(NC.x,NC.y)),
+                    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     wtv     =   zeros(Float64,(NV.x,NV.y)),
                     ηc      =   zeros(Float64,NC...),
+                    ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     ηv      =   zeros(Float64,NV...),
                 )
                 # ------------------------------------------------------- #
@@ -186,27 +190,26 @@ function RTI_GrowthRate()
                     th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
                     thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
                 )
-                MPC1        = (
-                    PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
+                MAVG        = (
+                    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],   # per thread
                     PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-                    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+                    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],   # per thread
                     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
                 )
-                MPC     =   merge(MPC,MPC1)
+                # MPC     =   merge(MPC,MPC1)
                 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
-                # RK4 weights ---
-                rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-                rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepπng
+                # # RK4 weights ---
+                # rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+                # rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepπng
                 # Count marker per cell ---
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
                 # Interpolate from markers to cell ---
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-                Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-                # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                #                         D.ηv[2:end-0,1:end-1] + 
-                #                         D.ηv[1:end-1,2:end-0] + 
-                #                         D.ηv[2:end-0,2:end-0])
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+                D.ρ     .=   D.ρe[2:end-1,2:end-1]                
+                # @show D.wte[1,1],D.wte[1,2],D.wte[2,1],D.wte[2,2]                
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+                D.ηc    .=   D.ηce[2:end-1,2:end-1]
+                Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)                
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
                 # Iterations

@@ -8,7 +8,7 @@ using Base.Threads
 using Printf, LinearAlgebra
 
 function RTI()
-    save_fig    =   1
+    save_fig    =   0
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
     λ           =   3.0e3           #   Perturbation wavelength[ m ]
@@ -89,9 +89,8 @@ function RTI()
                             "_tracers_DC")
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
-    D       =   (
-        ρ       =   zeros(Float64,(NC...)),
-        p       =   zeros(Float64,(NC...)),
+    D       =   DataFields(
+        ρ       =   zeros(Float64,(NC...)),        
         cp      =   zeros(Float64,(NC...)),
         vx      =   zeros(Float64,(NV.x,NV.y+1)),
         vy      =   zeros(Float64,(NV.x+1,NV.y)),    
@@ -128,7 +127,7 @@ function RTI()
     T   =   TimeParameter(
         tmax    =   4500.0,         #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   50,             #   Maximum iterations; 30000
+        itmax   =   1,             #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -163,16 +162,11 @@ function RTI()
     # Interpolate from markers to cell ---
     Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
     Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-    # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
     Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-    # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-    #                         D.ηv[2:end-0,1:end-1] + 
-    #                         D.ηv[1:end-1,2:end-0] + 
-    #                         D.ηv[2:end-0,2:end-0])
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
     # Iterations
-    niter   =   10
+    niter   =   50
     ϵ       =   1e-8
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
@@ -296,13 +290,8 @@ function RTI()
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-        # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
+        Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)        
         Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-        # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-        #                     D.ηv[2:end-0,1:end-1] + 
-        #                     D.ηv[1:end-1,2:end-0] + 
-        #                     D.ηv[2:end-0,2:end-0])
     end # End Time Loop
     # Save Animation ---
     if save_fig == 1

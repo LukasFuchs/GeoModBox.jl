@@ -73,6 +73,8 @@ end
     T0          ::Matrix{Float64}   = zeros(1,1)
     T_ex        ::Matrix{Float64}   = zeros(1,1)
     T_exo       ::Matrix{Float64}   = zeros(1,1)
+    ηc          ::Matrix{Float64}   = zeros(1,1)
+    ηv          ::Matrix{Float64}   = zeros(1,1)
     ρ           ::Matrix{Float64}   = zeros(1,1)
     cp          ::Matrix{Float64}   = zeros(1,1)
     vx          ::Matrix{Float64}   = zeros(1,1)
