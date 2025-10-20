@@ -36,7 +36,7 @@ save_fig    =   1
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:upwind,),)
+FD          =   (Method     = (Adv=:tracers,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
@@ -119,6 +119,7 @@ D       =   (
     vyc     =   zeros(Float64,(NC.x,NC.y)),
     vc      =   zeros(Float64,(NC.x,NC.y)),
     wt      =   zeros(Float64,(NC.x,NC.y)),
+    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wtv     =   zeros(Float64,(NV...)),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
@@ -135,7 +136,7 @@ D.Tmax[1]   =   maximum(D.T_ex)
 D.Tmin[1]   =   minimum(D.T_ex)
 D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 # Velocity ---
-IniVelocity!(Ini.V,D,BC,NC,NV,Δ,M,x,y)            # [ m/s ]
+IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
 @threads for i = 1:NC.x
     for j = 1:NC.y
@@ -169,13 +170,12 @@ if FD.Method.Adv==:tracers
         th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
         thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
     )
-    MPC1        = (
-        PG_th   =   [similar(D.T) for _ = 1:nthreads()],    # per thread
+    MAVG        = (
+        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
-        wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -237,12 +237,11 @@ for i=2:nt
     elseif FD.Method.Adv==:tracers
         # Advect tracers ---
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
         
         # Interpolate temperature from tracers to grid ---
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam,0)           
-        D.T_ex[2:end-1,2:end-1]     .= D.T
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
+        D.T     .=  D.T_ex[2:end-1,2:end-1]
     end
     
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))

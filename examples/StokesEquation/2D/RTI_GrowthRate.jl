@@ -8,16 +8,22 @@ using Base.Threads
 using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
-    plot_fields     =:yes
-    save_fig        = 0
+    plot_fields     =:no
+    save_fig        = 1
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
     )
     # Define Initial Condition ========================================== #
+    # Density Averaging ---
+    #   centroids or vertices
+    ρavg        =   :centroids
+    # nm          =   [2 4 6 8]
+    nm          =   5
+    # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
     # Perturbation wavelength [ m ]
-    λᵣ          =   [1 3 4 5 6 8 10 12 14]*1e3
+    λᵣ          =   [3 4 5 6 8 9 10 12 14]*1e3
     # ------------------------------------------------------------------- #
     # Physics =========================================================== #
     g           =   9.81                    #   Gravitational acceleration [ m/s^2 ]
@@ -28,16 +34,17 @@ function RTI_GrowthRate()
     ρ₀          =   3000.0                  #   Density composition 0 [ kg/m^3 ]
     # ---
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
-    ηᵣ          =   1 # [1e-6 1 10 100 500]     #   Viscosity ratio
+    ηᵣ          =   [1e-6 1 10 100 500]     #   Viscosity ratio
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Plotting factors following Gerya (2009) --------------------------- #
-    b1          =   1 #[0.5 1 5 50 250]
-    b2          =   0.15 # [0.2 0.15 0.1 0.05 0]
+    b1          =   [0.5 1 5 50 250]
+    b2          =   [0.2 0.15 0.1 0.05 0]
     # Divisional factor of the amplitude following Gerya (2009) --------- #
-    delfac      =   150 # [15 150] # [150 1500] # 1500 15
+    delfac      =   [15 150 1500]
     ms          =   zeros(3)
-    ms          =   [6,4,2]
+    ms          =   [8,6,4,2]
+    mc          =   ["black","red","yellow","green"]
     # Analytical Solution ----------------------------------------------- #
     λₐ          =   collect(LinRange(0.5,18,51)).*1e3        # [ m ]
     ϕ₁          =   zeros(length(λₐ))
@@ -65,13 +72,18 @@ function RTI_GrowthRate()
         xmin    =   0.0,
     )
     # ------------------------------------------------------------------- #
+    # for k in eachindex(nm)
     for k in eachindex(delfac)
+        # @printf("δA = %g\n",delfac[1])
+        @printf("δA = %g\n",delfac[k])
         for i in eachindex(ηᵣ)
             # Physics =================================================== #
             # 0 - upper layer; 1 - lower layer
             η₀      =   η₁*ηᵣ[i]        #   Viscosity composition 0 [ Pa s ]
             η       =   [η₀,η₁]         #   Viscosity for phases 
+            @printf("   η₀ = %g\n",η₀)
             # ----------------------------------------------------------- #
+            # Analytical Solution ======================================= #
             @. ϕ₁      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
             @. ϕ₂      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
             @. c11     =   (η₀*2*ϕ₁^2)/
@@ -93,17 +105,22 @@ function RTI_GrowthRate()
             
             @. PP.Kₐ[:,i]   =   -d12/(c11*j22 - d12*i21)
             @. PP.ϕₐ        =   ϕ₁
+            # ----------------------------------------------------------- #
             for j in eachindex(λᵣ)
                 # Perturbation properties ---
                 λ           =   λᵣ[j]                           #   [ m ]
+                # δA          =   -(M.ymax-M.ymin)/2/delfac[1]    #   Amplitude [ m ]
                 δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
+                @printf("δA = %g\n",δA)
                 # ---
-                ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  #   aspect ratio
+                ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  # aspect ratio
                 M.xmax      =   (M.ymax-M.ymin)*ar
+                @printf("       xmax: %g \n",M.xmax)
+                @printf("       λ = %g\n",λ)
                 # ------------------------------------------------------- #
                 # Grid ================================================== # 
                 NC  =   (
-                    x   =   50, #*ar,
+                    x   =   50,#*ar,
                     y   =   50,
                 )
                 NV  =   (
@@ -121,7 +138,7 @@ function RTI_GrowthRate()
                 )
                 y       =   (
                     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-                    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+                    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
                     v   =   LinRange(M.ymin,M.ymax,NV.y),
                 )
                 x1      =   (
@@ -142,6 +159,8 @@ function RTI_GrowthRate()
                 # Allocation ============================================ #
                 D       =   (
                     ρ       =   zeros(Float64,(NC...)),
+                    ρv      =   zeros(Float64,NV...),
+                    ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
                     p       =   zeros(Float64,(NC...)),
                     cp      =   zeros(Float64,(NC...)),
                     vx      =   zeros(Float64,(NV.x,NV.y+1)),
@@ -150,9 +169,10 @@ function RTI_GrowthRate()
                     vxc     =   zeros(Float64,(NC...)),
                     vyc     =   zeros(Float64,(NC...)),
                     vc      =   zeros(Float64,(NC...)),
-                    wt      =   zeros(Float64,(NC.x,NC.y)),
+                    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     wtv     =   zeros(Float64,(NV.x,NV.y)),
                     ηc      =   zeros(Float64,NC...),
+                    ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     ηv      =   zeros(Float64,NV...),
                 )
                 # ------------------------------------------------------- #
@@ -176,7 +196,8 @@ function RTI_GrowthRate()
                 )
                 # ------------------------------------------------------- #
                 # Tracer Advection ====================================== #
-                nmx,nmy     =   5,5
+                # nmx,nmy     =   nm[k],nm[k]
+                nmx,nmy     =   nm,nm
                 noise       =   0
                 nmark       =   nmx*nmy*NC.x*NC.y
                 Aparam      =   :phase
@@ -186,31 +207,49 @@ function RTI_GrowthRate()
                     th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
                     thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
                 )
-                MPC1        = (
-                    PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
+                MAVG        = (
+                    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                     PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-                    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+                    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
                 )
-                MPC     =   merge(MPC,MPC1)
+                # Initialize Tracer Position ---
                 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
-                # RK4 weights ---
-                rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-                rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepπng
-                # Count marker per cell ---
+                # Count tracer per cell ---
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
-                # Interpolate from markers to cell ---
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-                Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-                # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                #                         D.ηv[2:end-0,1:end-1] + 
-                #                         D.ηv[1:end-1,2:end-0] + 
-                #                         D.ηv[2:end-0,2:end-0])
+                # Interpolate density --- 
+                if ρavg==:centroids
+                    # Interpolate density from markers to cell ---
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+                    D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+                elseif ρavg==:vertices 
+                    # Interpolate density from markers to vertices ---
+                    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ρv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,ρ)
+                    for i = 1:NC.x
+                        D.ρ[i,:]    .=   (D.ρv[i,1:end-1] .+ 
+                                            D.ρv[i,2:end,:] .+ 
+                                            D.ρv[i+1,1:end-1] .+ 
+                                            D.ρv[i+1,2:end])./4
+                    end
+                end     
+                # pl5 = scatter()
+                # scatter!(pl5,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1],
+                #             markersize=3,markershape=:circle,label="",
+                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
+                #             ylims=(-1600,-1400))
+                # scatter!(pl5,Ma.x[Ma.phase.==0],Ma.y[Ma.phase.==0],
+                #             markersize=3,markershape=:circle,label="",markercolor=:red,
+                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
+                #             ylims=(-1600,-1400))
+                # display(pl5)
+                # Interpolate Viscosity ---
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+                D.ηc    .=   D.ηce[2:end-1,2:end-1]
+                Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
                 # Iterations
-                niter       =   10
+                niter       =   50
                 ϵ           =   1e-10
                 # Numbering, without ghost nodes! ---
                 off    = [  NV.x*NC.y,                          # vx
@@ -256,6 +295,7 @@ function RTI_GrowthRate()
                 end
                 # ------------------------------------------------------- #
                 # Get the velocity on the centroids ---
+                # Just for visualization purposes
                 for i = 1:NC.x
                     for j = 1:NC.y
                         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -264,7 +304,8 @@ function RTI_GrowthRate()
                 end
                 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
                 # ---
-                xwave       =   (M.xmax-M.xmin)/2   # [ m ]
+                # Calculate diapir growth rate ---
+                xwave       =   (M.xmax-M.xmin)/2  
                 ywave       =   (M.ymax-M.ymin)/2 + δA
 
                 xn          =   Int64(floor((xwave+Δ.x/2)/Δ.x))
@@ -272,19 +313,15 @@ function RTI_GrowthRate()
 
                 dx          =   (xwave+Δ.x/2)/Δ.x - xn
                 dy          =   abs(((M.ymax-M.ymin)-ywave)/Δ.y - yn)
-                @show dx, dy
-                # @show D.vy[xn+1,yn]
 
                 wvy     =   (1.0-dx)*(1.0-dy) * D.vy[xn+1,yn] + 
                                 dx*(1.0-dy) * D.vy[xn+2,yn] + 
                                 (1.0-dx)*dy * D.vy[xn+1,yn+1] + 
                                 dx*dy * D.vy[xn+2,yn+1]
-                # @show wvy
-                @show D.vy[xn+1,yn], D.vy[xn+2,yn], D.vy[xn+1,yn+1], D.vy[xn+2,yn+1]
+
                 PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                 PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                 PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
-                @show PP.Q[1], PP.K[1],PP.ϕ[1]
 
                 if plot_fields==:yes
                     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
@@ -331,20 +368,22 @@ function RTI_GrowthRate()
                 end
                 scatter!(q,(PP.ϕ[1],b1[i]*PP.K[1] + b2[i]),
                     ms=ms[k],markershape=:circle,label="",
-                    color=:black)
+                    color=mc[k])
             end # Loop λ - j
             if k == 1
                 plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],
                             xlabel="ϕ₁ = 2πh₁/λ",
                             ylabel="b₁K + b₂", 
                             title="",
-                            xlims=(0.5,4),ylims=(0.05,0.4),
+                            xlims=(0.5,4),ylims=(0.05,0.5),
                             label=string("ηᵣ = ", ηᵣ[i]))
             end
         end # Loop ηᵣ - i 
     end # Loop delfac - k 
     if save_fig == 1
-        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate.png"))
+        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
+                            "_nmy_",nm,".png"))
+        # savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_delfac_",delfac,"_noise.png"))
     else
         display(q)
     end
