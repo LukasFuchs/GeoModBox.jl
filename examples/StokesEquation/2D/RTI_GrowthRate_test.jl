@@ -6,10 +6,11 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
+using MAT
 
 function RTI_GrowthRate()
-    plot_fields     =:no
-    save_fig        = 1
+    plot_fields     =:yes
+    save_fig        = 0
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -18,8 +19,6 @@ function RTI_GrowthRate()
     # Density Averaging ---
     #   centroids or vertices
     ρavg        =   :centroids
-    # nm          =   [2 4 6 8]
-    nm          =   5
     # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
     # Perturbation wavelength [ m ]
@@ -40,11 +39,61 @@ function RTI_GrowthRate()
     # Plotting factors following Gerya (2009) --------------------------- #
     b1          =   [0.5 1 5 50 250]
     b2          =   [0.2 0.15 0.1 0.05 0]
+    # # Density on the vertices
+    # file        =   matopen("./examples/StokesEquation/2D/rho1.mat")
+    # rho1        =   read(file,"rho1")
+    # close(file)
+    # rho1        =   rho1'
+    # rho2        =   copy(rho1)
+    # for i=1:size(rho1,1)
+    #     for j = 1:size(rho1,2)
+    #         rho2[i,j]   = rho1[i,end-j+1]
+    #     end
+    # end
+    # file2       =   matopen("./examples/StokesEquation/2D/wt.mat")
+    # wt          =   read(file2,"wtnodes")
+    # close(file2)
+    # wt          =   wt'
+    # wt2         =   copy(wt)
+    # for i=1:size(wt,1)
+    #     for j = 1:size(wt,2)
+    #         wt2[i,j]   = wt[i,end-j+1]
+    #     end
+    # end
+    # file3       =   matopen("./examples/StokesEquation/2D/MX.mat")
+    # MX          =   read(file3,"MX")
+    # close(file3)
+    # # MX          =   MX'
+    # # MX2         =   copy(MX)
+    # # for i=1:size(MX,1)
+    # #     for j = 1:size(MX,2)
+    # #         MX2[i,j]   = MX[i,end-j+1]
+    # #     end
+    # # end
+    # file4       =   matopen("./examples/StokesEquation/2D/MY.mat")
+    # MY          =   read(file4,"MY")
+    # close(file4)
+    # # MY          =   MY'
+    # # MY2         =   copy(MY)
+    # # for i=1:size(MY,1)
+    # #     for j = 1:size(MY,2)
+    # #         MY2[i,j]   = MY[i,end-j+1]
+    # #     end
+    # # end
+    # file5       =   matopen("./examples/StokesEquation/2D/MI.mat")
+    # MI          =   read(file5,"MI")
+    # close(file5)
+    # # MI          =   MI'
+    # # MI2         =   copy(MI)
+    # # for i=1:size(MI,1)
+    # #     for j = 1:size(MI,2)
+    # #         MI2[i,j]   = MI[i,end-j+1]
+    # #     end
+    # # end
     # Divisional factor of the amplitude following Gerya (2009) --------- #
-    delfac      =   [15 150 1500]
+    delfac      =   1500 # [15 150] # [150 1500] # 1500 15
     ms          =   zeros(3)
-    ms          =   [8,6,4,2]
-    mc          =   ["black","red","yellow","green"]
+    ms          =   [6,4,2]
     # Analytical Solution ----------------------------------------------- #
     λₐ          =   collect(LinRange(0.5,18,51)).*1e3        # [ m ]
     ϕ₁          =   zeros(length(λₐ))
@@ -72,9 +121,7 @@ function RTI_GrowthRate()
         xmin    =   0.0,
     )
     # ------------------------------------------------------------------- #
-    # for k in eachindex(nm)
     for k in eachindex(delfac)
-        # @printf("δA = %g\n",delfac[1])
         @printf("δA = %g\n",delfac[k])
         for i in eachindex(ηᵣ)
             # Physics =================================================== #
@@ -83,7 +130,6 @@ function RTI_GrowthRate()
             η       =   [η₀,η₁]         #   Viscosity for phases 
             @printf("   η₀ = %g\n",η₀)
             # ----------------------------------------------------------- #
-            # Analytical Solution ======================================= #
             @. ϕ₁      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
             @. ϕ₂      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
             @. c11     =   (η₀*2*ϕ₁^2)/
@@ -105,24 +151,23 @@ function RTI_GrowthRate()
             
             @. PP.Kₐ[:,i]   =   -d12/(c11*j22 - d12*i21)
             @. PP.ϕₐ        =   ϕ₁
-            # ----------------------------------------------------------- #
             for j in eachindex(λᵣ)
                 # Perturbation properties ---
                 λ           =   λᵣ[j]                           #   [ m ]
-                # δA          =   -(M.ymax-M.ymin)/2/delfac[1]    #   Amplitude [ m ]
-                δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
-                @printf("δA = %g\n",δA)
+                δA          =   -(M.ymax-M.ymin)/2/delfac[k]     #   Amplitude [ m ]
                 # ---
-                ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  # aspect ratio
+                ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  #   aspect ratio
                 M.xmax      =   (M.ymax-M.ymin)*ar
-                @printf("       xmax: %g \n",M.xmax)
+                # @show ar
+                # @printf("xmax: %g \n",M.xmax)
                 @printf("       λ = %g\n",λ)
                 # ------------------------------------------------------- #
                 # Grid ================================================== # 
                 NC  =   (
-                    x   =   50,#*ar,
+                    x   =   50, #*ar,
                     y   =   50,
                 )
+                # @printf("Resolution: %g, %g",NC.x, NC.y)
                 NV  =   (
                     x   =   NC.x + 1,
                     y   =   NC.y + 1,
@@ -196,9 +241,8 @@ function RTI_GrowthRate()
                 )
                 # ------------------------------------------------------- #
                 # Tracer Advection ====================================== #
-                # nmx,nmy     =   nm[k],nm[k]
-                nmx,nmy     =   nm,nm
-                noise       =   0
+                nmx,nmy     =   5,5
+                noise       =   1
                 nmark       =   nmx*nmy*NC.x*NC.y
                 Aparam      =   :phase
                 MPC         =   (
@@ -208,45 +252,85 @@ function RTI_GrowthRate()
                     thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
                 )
                 MAVG        = (
-                    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],   # per thread
                     PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-                    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],   # per thread
                     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
                 )
-                # Initialize Tracer Position ---
                 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
-                # Count tracer per cell ---
+                # # RK4 weights ---
+                # rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
+                # rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepπng
+                # Count marker per cell ---
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
                 # Interpolate density --- 
                 if ρavg==:centroids
                     # Interpolate density from markers to cell ---
                     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
                     D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+                    # ρ1      =   copy(D.ρ)
+                    # ρ1     .=   D.ρe[2:end-1,2:end-1] 
                 elseif ρavg==:vertices 
-                    # Interpolate density from markers to vertices ---
                     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ρv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,ρ)
+                    # ρ2  =   copy(D.ρ)
                     for i = 1:NC.x
                         D.ρ[i,:]    .=   (D.ρv[i,1:end-1] .+ 
                                             D.ρv[i,2:end,:] .+ 
                                             D.ρv[i+1,1:end-1] .+ 
                                             D.ρv[i+1,2:end])./4
                     end
-                end     
-                # pl5 = scatter()
-                # scatter!(pl5,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1],
+                end
+                # for i = 1:NC.x
+                #     ρ2[i,:]    .=   (D.ρv[i,1:end-1] .+ 
+                #                         D.ρv[i,2:end,:] .+ 
+                #                         D.ρv[i+1,1:end-1] .+ 
+                #                         D.ρv[i+1,2:end])./4
+                # end
+                # # Interpolate density from Gerya file to the centroids
+                # for i = 1:NC.x
+                #                         rho2[i,2:end,:] .+ 
+                #                         rho2[i+1,1:end-1] .+ 
+                #                         rho2[i+1,2:end])./4
+                # end
+                # pl2 = plot()
+                # plot!(pl2,D.ρ[10,:],y.c,label="",markershape=:square,title="Gerya")
+                # plot!(pl2,D.ρ[25,:],y.c,label="",markershape=:square,title="Gerya")
+                # plot!(pl2,D.ρ[40,:],y.c,label="",markershape=:square,title="Gerya")
+                # display(pl2)
+                # pl3 = plot()
+                # plot!(pl3,ρ1[10,:],y.c,label="",markershape=:square,title="Centroids")
+                # plot!(pl3,ρ1[25,:],y.c,label="",markershape=:square,title="Centroids")
+                # plot!(pl3,ρ1[40,:],y.c,label="",markershape=:square,title="Centroids")
+                # display(pl3)
+                # pl4 = plot()
+                # plot!(pl4,ρ2[10,:],y.c,label="",markershape=:square,title="Vertices")
+                # plot!(pl4,ρ2[25,:],y.c,label="",markershape=:square,title="Vertices")
+                # plot!(pl4,ρ2[40,:],y.c,label="",markershape=:square,title="Vertices")
+                # display(pl4)
+                # # @show D.wte[1,1],D.wte[1,2],D.wte[2,1],D.wte[2,2]      
+                pl5 = scatter()
+                scatter!(pl5,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1],
+                            markersize=3,markershape=:circle,label="",
+                            xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
+                            ylims=(-1600,-1400))
+                scatter!(pl5,Ma.x[Ma.phase.==0],Ma.y[Ma.phase.==0],
+                            markersize=3,markershape=:circle,label="",markercolor=:red,
+                            xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
+                            ylims=(-1600,-1400))
+                display(pl5)
+                # pl6 = scatter()
+                # scatter!(pl6,MX[MI.==2],-MY[MI.==2],
                 #             markersize=3,markershape=:circle,label="",
-                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
-                #             ylims=(-1600,-1400))
-                # scatter!(pl5,Ma.x[Ma.phase.==0],Ma.y[Ma.phase.==0],
+                #             xlims=(1500,4500),ylims=(-1600,-1400))
+                # scatter!(pl6,MX[MI.==1],-MY[MI.==1],
                 #             markersize=3,markershape=:circle,label="",markercolor=:red,
-                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
-                #             ylims=(-1600,-1400))
-                # display(pl5)
-                # Interpolate Viscosity ---
+                #             xlims=(1500,4500),ylims=(-1600,-1400))
+                # display(pl6)
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
                 D.ηc    .=   D.ηce[2:end-1,2:end-1]
                 Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
                 # ------------------------------------------------------- #
+                # @. D.ρ  =   ρ1
                 # System of Equations =================================== #
                 # Iterations
                 niter       =   50
@@ -295,7 +379,6 @@ function RTI_GrowthRate()
                 end
                 # ------------------------------------------------------- #
                 # Get the velocity on the centroids ---
-                # Just for visualization purposes
                 for i = 1:NC.x
                     for j = 1:NC.y
                         D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -304,24 +387,28 @@ function RTI_GrowthRate()
                 end
                 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
                 # ---
-                # Calculate diapir growth rate ---
-                xwave       =   (M.xmax-M.xmin)/2  
+                xwave       =   (M.xmax-M.xmin)/2   # [ m ]
                 ywave       =   (M.ymax-M.ymin)/2 + δA
 
                 xn          =   Int64(floor((xwave+Δ.x/2)/Δ.x))
                 yn          =   Int64(floor(((M.ymax-M.ymin)-ywave)/Δ.y)) + 1
+                # @show xn,yn
 
                 dx          =   (xwave+Δ.x/2)/Δ.x - xn
                 dy          =   abs(((M.ymax-M.ymin)-ywave)/Δ.y - yn)
+                # @show dx, dy
+                # # @show D.vy[xn+1,yn]
 
                 wvy     =   (1.0-dx)*(1.0-dy) * D.vy[xn+1,yn] + 
                                 dx*(1.0-dy) * D.vy[xn+2,yn] + 
                                 (1.0-dx)*dy * D.vy[xn+1,yn+1] + 
                                 dx*dy * D.vy[xn+2,yn+1]
-
+                # @show wvy
+                # @show D.vy[xn+1,yn], D.vy[xn+2,yn], D.vy[xn+1,yn+1], D.vy[xn+2,yn+1]
                 PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                 PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                 PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
+                # @show PP.Q[1], PP.K[1],PP.ϕ[1],b1[1]*PP.K[1]+b2[1]
 
                 if plot_fields==:yes
                     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
@@ -368,9 +455,11 @@ function RTI_GrowthRate()
                 end
                 scatter!(q,(PP.ϕ[1],b1[i]*PP.K[1] + b2[i]),
                     ms=ms[k],markershape=:circle,label="",
-                    color=mc[k])
+                    color=:black)
             end # Loop λ - j
             if k == 1
+                # @show PP.ϕₐ,PP.Kₐ
+                # scatter!(q,(PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i]))
                 plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],
                             xlabel="ϕ₁ = 2πh₁/λ",
                             ylabel="b₁K + b₂", 
@@ -381,9 +470,7 @@ function RTI_GrowthRate()
         end # Loop ηᵣ - i 
     end # Loop delfac - k 
     if save_fig == 1
-        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
-                            "_nmy_",nm,".png"))
-        # savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_delfac_",delfac,"_noise.png"))
+        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate.png"))
     else
         display(q)
     end
