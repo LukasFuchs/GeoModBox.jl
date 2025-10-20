@@ -38,6 +38,10 @@ The parameters for an initial cosinusoidal tracer perturbation are defined for a
 
 ```Julia
 # Define Initial Condition ========================================== #
+# Density Averaging ---
+#   centroids or vertices
+ρavg        =   :centroids
+nm          =   5
 Ini         =   (p=:RTI,) 
 # Perturbation wavelength [ m ]
 λᵣ          =   [1 3 4 5 6 8 10 12 14]*1e3
@@ -68,9 +72,10 @@ In the following, the parameters for the analytical solution are initialized, so
 b1          =   [0.5 1 5 50 250]
 b2          =   [0.2 0.15 0.1 0.05 0]
 # Divisional factor of the amplitude following Gerya (2009) --------- #
-delfac      =   15 #[15 150] # [150 1500] # 1500 15
+delfac      =   [15 150 1500]
 ms          =   zeros(3)
-ms          =   [6,4,2]
+ms          =   [8,6,4,2]
+mc          =   ["black","red","yellow","green"]
 # Analytical Solution ----------------------------------------------- #
 λₐ          =   collect(LinRange(0.5,18,51)).*1e3        # [ m ]
 ϕ₁          =   zeros(length(λₐ))
@@ -109,17 +114,20 @@ If multiple perturbation amplitudes are specified, a loop is initiated over them
 
 ```Julia
 for k in eachindex(delfac)
+    @printf("δA = %g\n",delfac[k])
     for i in eachindex(ηᵣ)
         # Physics =================================================== #
         # 0 - upper layer; 1 - lower layer
         η₀      =   η₁*ηᵣ[i]        #   Viscosity composition 0 [ Pa s ]
         η       =   [η₀,η₁]         #   Viscosity for phases 
+        @printf("   η₀ = %g\n",η₀)
         # ----------------------------------------------------------- #
 ```
 
 The variables required for the analytical solution are calculated for each model configuration. 
 
 ```Julia
+        # Analytical Solution ======================================= #
         @. ϕ₁      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
         @. ϕ₂      =   (2*π*((M.ymax-M.ymin)/2))/λₐ
         @. c11     =   (η₀*2*ϕ₁^2)/
@@ -150,9 +158,12 @@ Because the analytical solution is independent of perturbation amplitude, the lo
             # Perturbation properties ---
             λ           =   λᵣ[j]                           #   [ m ]
             δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
+            @printf("δA = %g\n",δA)
             # ---
             ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  #   aspect ratio
             M.xmax      =   (M.ymax-M.ymin)*ar
+            @printf("       xmax: %g \n",M.xmax)
+            @printf("       λ = %g\n",λ)
             # ------------------------------------------------------- #
             # Grid ================================================== # 
             NC  =   (
@@ -200,6 +211,8 @@ Let's initialize all the required data array in the following.
             # Allocation ============================================ #
             D       =   (
                 ρ       =   zeros(Float64,(NC...)),
+                ρv      =   zeros(Float64,NV...),
+                ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
                 p       =   zeros(Float64,(NC...)),
                 cp      =   zeros(Float64,(NC...)),
                 vx      =   zeros(Float64,(NV.x,NV.y+1)),
@@ -208,9 +221,10 @@ Let's initialize all the required data array in the following.
                 vxc     =   zeros(Float64,(NC...)),
                 vyc     =   zeros(Float64,(NC...)),
                 vc      =   zeros(Float64,(NC...)),
-                wt      =   zeros(Float64,(NC.x,NC.y)),
+                wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
                 wtv     =   zeros(Float64,(NV.x,NV.y)),
                 ηc      =   zeros(Float64,NC...),
+                ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
                 ηv      =   zeros(Float64,NV...),
             )
             # ------------------------------------------------------- #
@@ -244,7 +258,7 @@ To setup the perturbation, the markers are initialized in the following.
 
 ```Julia
             # Tracer Advection ====================================== #
-            nmx,nmy     =   5,5
+            nmx,nmy     =   nm,nm
             noise       =   0
             nmark       =   nmx*nmy*NC.x*NC.y
             Aparam      =   :phase
@@ -254,27 +268,35 @@ To setup the perturbation, the markers are initialized in the following.
                 th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
                 thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
             )
-            MPC1        = (
-                PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
+            MAVG        = (
+                PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                 PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-                wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+                wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                 wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
             )
-            MPC     =   merge(MPC,MPC1)
+            # Initialize Tracer Position ---
             Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
-            # RK4 weights ---
-            rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-            rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepπng
-            # Count marker per cell ---
+            # Count tracer per cell ---
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
-            # Interpolate from markers to cell ---
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-            Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-            @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                                    D.ηv[2:end-0,1:end-1] + 
-                                    D.ηv[1:end-1,2:end-0] + 
-                                    D.ηv[2:end-0,2:end-0])
+            # Interpolate density --- 
+            if ρavg==:centroids
+                # Interpolate density from markers to cell ---
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+                D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+            elseif ρavg==:vertices 
+                # Interpolate density from markers to vertices ---
+                Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ρv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,ρ)
+                for i = 1:NC.x
+                    D.ρ[i,:]    .=   (D.ρv[i,1:end-1] .+ 
+                                        D.ρv[i,2:end,:] .+ 
+                                        D.ρv[i+1,1:end-1] .+ 
+                                        D.ρv[i+1,2:end])./4
+                end
+            end    
+            # Interpolate Viscosity ---
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+            D.ηc    .=   D.ηce[2:end-1,2:end-1]
+            Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η) 
             # ------------------------------------------------------- #
 ```
 
@@ -283,7 +305,7 @@ The parameters for solving the linear system using the defect correction method 
 ```Julia
             # System of Equations =================================== #
             # Iterations
-            niter       =   10
+            niter       =   50
             ϵ           =   1e-10
             # Numbering, without ghost nodes! ---
             off    = [  NV.x*NC.y,                          # vx
@@ -352,9 +374,10 @@ For visualization purposes, the centroid velocities are computed.
 In the following, one defines the parameters to calculate the rising velocity at the tip of the perturbation in the center of the model domain. The vertical velocity at the perturbation tip is calculated using bilinear interpolation from surrounding velocity grid points. 
 
 ```Julia
-            xwave       =   (M.xmax-M.xmin)/2   # [ m ]
+            # Calculate diapir growth rate ---
+            xwave       =   (M.xmax-M.xmin)/2  
             ywave       =   (M.ymax-M.ymin)/2 + δA
-            
+
             xn          =   Int64(floor((xwave+Δ.x/2)/Δ.x))
             yn          =   Int64(floor(((M.ymax-M.ymin)-ywave)/Δ.y)) + 1
 
@@ -362,10 +385,10 @@ In the following, one defines the parameters to calculate the rising velocity at
             dy          =   abs(((M.ymax-M.ymin)-ywave)/Δ.y - yn)
 
             wvy     =   (1.0-dx)*(1.0-dy) * D.vy[xn+1,yn] + 
-                            dx*(1.0-dy) * D.vy[xn+1+2,yn] + 
-                            (1.0-dx)*dy * D.vy[xn+1,yn-1] + 
-                            dx*dy * D.vy[xn+2,yn-1]
-            
+                            dx*(1.0-dy) * D.vy[xn+2,yn] + 
+                            (1.0-dx)*dy * D.vy[xn+1,yn+1] + 
+                            dx*dy * D.vy[xn+2,yn+1]
+
             PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
             PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
             PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
@@ -431,12 +454,12 @@ Finally, the rising velocity is plotted over the analytical solution for the giv
 
 ```Julia
         if k == 1
-            plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],color=:black,
+            plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],
                         xlabel="ϕ₁ = 2πh₁/λ",
                         ylabel="b₁K + b₂", 
                         title="",
-                        xlims=(0.5,4),ylims=(0.05,0.4),
-                        label="")
+                        xlims=(0.5,4),ylims=(0.05,0.5),
+                        label=string("ηᵣ = ", ηᵣ[i]))
         end
     end # Loop ηᵣ - i 
 end # Loop delfac - k 
@@ -446,13 +469,14 @@ The final figure is stored in the given directory.
 
 ```Julia
 if save_fig == 1
-    savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate.png"))
+    savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
+                            "_nmy_",nm,".png"))
 else
     display(q)
 end
 ```
 
-![RTI_GrowthRate](../../assets/RTI_Growth_Rate.png)
+![RTI_GrowthRate](../../assets/RTI_Growth_Rate_nmx_5_nmy_5.png)
 
-**Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the black circles show the corresponding numerical results. The rising velocity is numerically calculated following the approach shown in Figure 1. 
+**Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - scaled by 15, red - scaled by 150, yellow - scaled by 1500). The rising velocity is numerically calculated following the approach shown in Figure 1. 
 

@@ -83,7 +83,9 @@ phase   =   [0,1]
 # Allocation ============================================================ #
 D       =   (
     ρ       =   zeros(Float64,(NC...)),
+    ρ_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     p       =   zeros(Float64,(NC...)),
+    p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     cp      =   zeros(Float64,(NC...)),
     vx      =   zeros(Float64,(NV.x,NV.y+1)),
     vy      =   zeros(Float64,(NV.x+1,NV.y)),    
@@ -92,8 +94,10 @@ D       =   (
     vyc     =   zeros(Float64,(NC...)),
     vc      =   zeros(Float64,(NC...)),
     wt      =   zeros(Float64,(NC.x,NC.y)),
+    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wtv     =   zeros(Float64,(NV.x,NV.y)),
     ηc      =   zeros(Float64,NC...),
+    η_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     ηv      =   zeros(Float64,NV...),
 )
 # ----------------------------------------------------------------------- #
@@ -118,7 +122,7 @@ VBC     =   (
 )
 # ----------------------------------------------------------------------- #
 # Initial Condition ===================================================== #
-IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y;Ini.ε)
+IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
 # Get analytical Solution
 AnaSol  =   (
     Pa      =   zeros(Float64,NC...),
@@ -162,28 +166,32 @@ noise       =   0
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :phase
 MPC         =   (
-    c       =   zeros(Float64,(NC.x,NC.y)),
-    v       =   zeros(Float64,(NV.x,NV.y)),
-    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+        c       =   zeros(Float64,(NC.x,NC.y)),
+        v       =   zeros(Float64,(NV.x,NV.y)),
+        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
 )
-MPC1        = (
-    PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-    PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+MAVG        = (
+        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-MPC     =   merge(MPC,MPC1)
+# MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
                 ellA=EllA,ellB=EllB,α=α)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+# Interpolate from markers to cell ---
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+D.p     .=  D.p_ex[2:end-1,2:end-1]
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 # ----------------------------------------------------------------------- #
 # System of Equations =================================================== #
 # Iterations
-niter   =   20
+niter   =   50
 ϵ       =   1e-8
 # Numbering, without ghost nodes! ---
 off    = [  NV.x*NC.y,                          # vx

@@ -45,8 +45,8 @@ end
     # add noise ---
     if noise==1
         @threads for k=1:nmark
-            Ma.x[k] += (rand()-0.5)*Δxm
-            Ma.y[k] += (rand()-0.5)*Δym
+            Ma.x[k] += (rand()-0.5)*Δxm # * 3.0 / 4.0
+            Ma.y[k] += (rand()-0.5)*Δym # * 3.0 / 4.0
         end
     end
 
@@ -69,10 +69,18 @@ end
         @threads for k=1:nmark
             # Layer interface  --- 
             δAm     =   cos(2*π*((Ma.x[k] - 0.5*(M.xmax-M.xmin))/λ))*δA
-            if abs(Ma.y[k]) >  (M.ymax-M.ymin)/2 + δAm
+            if abs(Ma.y[k]) >=  (M.ymax-M.ymin)/2
                 Ma.phase[k]     =   phase[2]    #   Lower layer
             else
                 Ma.phase[k]     =   phase[1]    #   Upper layer
+            end            
+            Ma.y[k]     -= δAm
+            if Ma.y[k] > M.ymax 
+                Ma.y[k] += M.ymin
+                Ma.phase[k] = phase[2]
+            elseif Ma.y[k] < M.ymin
+                Ma.y[k] -= M.ymin
+                Ma.phase[k] = phase[1]
             end
         end
     elseif ini==:Inclusion
@@ -373,9 +381,9 @@ end
 """
     Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
 """
-@views function Markers2Cells(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
-    PG0     =   copy(PG)
-    PG      .*=     0.0
+@views function Markers2Cells(Ma,nmark,PC_th,PC,weight_th,weight,x,y,Δ,param,param2)
+    PC0     =   copy(PC)
+    PC      .*=     0.0
     weight  .*=     0.0
     if param==:thermal
         PM  =       copy(Ma.T)
@@ -383,22 +391,29 @@ end
         @sync for chunk in chunks
             @spawn begin
                 tid = threadid()
-                fill!(PG_th[tid], 0)
+                fill!(PC_th[tid], 0)
                 fill!(weight_th[tid], 0)
                 for k in chunk
+                    # Distance to the upper right corner ---
                     # Get the column:
-                    dstx = Ma.x[k] - x.c[1]
-                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    dstx = Ma.x[k] - x.ce[1]
+                    i = ceil(Int64, dstx / Δ.x) + 1                   
                     # Get the line:
-                    dsty = Ma.y[k] - y.c[1]
-                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    dsty = Ma.y[k] - y.ce[1]
+                    j = ceil(Int64, dsty /  Δ.y) + 1 
                     # Relative distances
-                    Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
-                    Δym = 2.0 * abs(y.c[j] - Ma.y[k])
+                    Δxm = abs(x.ce[i] - Ma.x[k])/Δ.x
+                    Δym = abs(y.ce[j] - Ma.y[k])/Δ.y
                     # Increment cell counts
-                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                    PG_th[tid][i, j] += PM[k] * area
-                    weight_th[tid][i, j] += area
+                    PC_th[tid][i-1,j-1] += PM[k] * Δxm * Δym
+                    PC_th[tid][i  ,j-1] += PM[k] * (1.0 - Δxm) * Δym
+                    PC_th[tid][i-1,j  ] += PM[k] * Δxm * (1.0 - Δym)
+                    PC_th[tid][i  ,j  ] += PM[k] * (1.0 - Δxm) * (1.0 - Δym)
+                    
+                    weight_th[tid][i-1,j-1]    += Δxm * Δym
+                    weight_th[tid][i  ,j-1]    += (1.0 - Δxm) * Δym
+                    weight_th[tid][i-1,j  ]    += Δxm * (1.0 - Δym)
+                    weight_th[tid][i  ,j  ]    += (1.0 - Δxm) * (1.0 - Δym)
                 end
             end
         end
@@ -408,35 +423,42 @@ end
         @sync for chunk in chunks
             @spawn begin
                 tid = threadid()
-                fill!(PG_th[tid], 0)
+                fill!(PC_th[tid], 0)
                 fill!(weight_th[tid], 0)
                 for k in chunk
+                    # Distance to the upper right corner ---
                     # Get the column:
-                    dstx = Ma.x[k] - x.c[1]
-                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    dstx = Ma.x[k] - x.ce[1]
+                    i = ceil(Int64, dstx / Δ.x) + 1                   
                     # Get the line:
-                    dsty = Ma.y[k] - y.c[1]
-                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    dsty = Ma.y[k] - y.ce[1]
+                    j = ceil(Int64, dsty /  Δ.y) + 1 
                     # Relative distances
-                    Δxm = 2.0 * abs(x.c[i] - Ma.x[k])
-                    Δym = 2.0 * abs(y.c[j] - Ma.y[k])
+                    Δxm = abs(x.ce[i] - Ma.x[k])/Δ.x
+                    Δym = abs(y.ce[j] - Ma.y[k])/Δ.y
                     # Increment cell counts
-                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                    PG_th[tid][i, j] += param2[PM[k]+1] * area
-                    weight_th[tid][i, j] += area
+                    PC_th[tid][i-1,j-1] += param2[PM[k]+1] * Δxm * Δym
+                    PC_th[tid][i  ,j-1] += param2[PM[k]+1] * (1.0 - Δxm) * Δym
+                    PC_th[tid][i-1,j  ] += param2[PM[k]+1] * Δxm * (1.0 - Δym)
+                    PC_th[tid][i  ,j  ] += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
+                    
+                    weight_th[tid][i-1,j-1]    += Δxm * Δym
+                    weight_th[tid][i  ,j-1]    += (1.0 - Δxm) * Δym
+                    weight_th[tid][i-1,j  ]    += Δxm * (1.0 - Δym)
+                    weight_th[tid][i  ,j  ]    += (1.0 - Δxm) * (1.0 - Δym)
                 end
             end
         end
     end
     
-    PG      .= reduce(+, PG_th)
-    #phase  .= reduce(+, phase_th)
+    PC      .= reduce(+, PC_th)
     weight  .= reduce(+, weight_th)
-    PG ./= weight
+        
+    PC ./= weight
 
-    if sum(isnan.(PG))>0
-        @printf("%i number(s) of cells without markers\n", sum(isnan.(PG)))
-        PG[isnan.(PG)]     .=  PG0[isnan.(PG)]
+    if sum(isnan.(PC))>0
+        @printf("%i number(s) of cells without markers\n", sum(isnan.(PC)))
+        PC[isnan.(PC)]     .=  PC0[isnan.(PC)]
     end
 
     return
@@ -458,19 +480,26 @@ end
                 fill!(PG_th[tid], 0)
                 fill!(weight_th[tid], 0)
                 for k in chunk
+                    # Get upper left corner ---
                     # Get the column:
                     dstx = Ma.x[k] - x.v[1]
-                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    i = ceil(Int64, dstx / Δ.x )
                     # Get the line:
                     dsty = Ma.y[k] - y.v[1]
-                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    j = ceil(Int64, dsty /  Δ.y ) + 1
                     # Relative distances
-                    Δxm = 2.0 * abs(x.v[i] - Ma.x[k])
-                    Δym = 2.0 * abs(y.v[j] - Ma.y[k])
+                    Δxm = abs(x.v[i] - Ma.x[k])/ Δ.x
+                    Δym = abs(y.v[j] - Ma.y[k])/ Δ.y
                     # Increment cell counts
-                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                    PG_th[tid][i, j] += PM[k] * area
-                    weight_th[tid][i, j] += area
+                    PG_th[tid][i  ,j  ]    += PM[k] * (1.0 - Δxm) * (1.0 - Δym)
+                    PG_th[tid][i  ,j-1]    += PM[k] * (1.0 - Δxm) * Δym
+                    PG_th[tid][i+1,j  ]    += PM[k] * Δxm * (1.0 - Δym)
+                    PG_th[tid][i+1,j-1]    += PM[k] * Δxm * Δym
+                    
+                    weight_th[tid][i  ,j  ] += (1.0 - Δxm) * (1.0 - Δym)
+                    weight_th[tid][i  ,j-1] += (1.0 - Δxm) * Δym
+                    weight_th[tid][i+1,j  ] += Δxm * (1.0 - Δym)
+                    weight_th[tid][i+1,j-1] += Δxm * Δym
                 end
             end
         end
@@ -483,26 +512,32 @@ end
                 fill!(PG_th[tid], 0)
                 fill!(weight_th[tid], 0)
                 for k in chunk
+                    # Get upper left corner ---
                     # Get the column:
                     dstx = Ma.x[k] - x.v[1]
-                    i = ceil(Int, dstx / Δ.x + 0.5)
+                    i = ceil(Int64, dstx / Δ.x )
                     # Get the line:
                     dsty = Ma.y[k] - y.v[1]
-                    j = ceil(Int, dsty /  Δ.y + 0.5)
+                    j = ceil(Int64, dsty /  Δ.y ) + 1
                     # Relative distances
-                    Δxm = 2.0 * abs(x.v[i] - Ma.x[k])
-                    Δym = 2.0 * abs(y.v[j] - Ma.y[k])
+                    Δxm = abs(x.v[i] - Ma.x[k])/ Δ.x
+                    Δym = abs(y.v[j] - Ma.y[k])/ Δ.y
                     # Increment cell counts
-                    area = (1.0 - Δxm / Δ.x) * (1.0 - Δym / Δ.y)
-                    PG_th[tid][i, j] += param2[PM[k]+1] * area
-                    weight_th[tid][i, j] += area
+                    PG_th[tid][i  ,j  ]    += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
+                    PG_th[tid][i  ,j-1]    += param2[PM[k]+1] * (1.0 - Δxm) * Δym
+                    PG_th[tid][i+1,j  ]    += param2[PM[k]+1] * Δxm * (1.0 - Δym)
+                    PG_th[tid][i+1,j-1]    += param2[PM[k]+1] * Δxm * Δym
+
+                    weight_th[tid][i  ,j  ] += (1.0 - Δxm) * (1.0 - Δym)
+                    weight_th[tid][i  ,j-1] += (1.0 - Δxm) * Δym
+                    weight_th[tid][i+1,j  ] += Δxm * (1.0 - Δym)
+                    weight_th[tid][i+1,j-1] += Δxm * Δym
                 end
             end
         end
     end
     
     PG      .= reduce(+, PG_th)
-    #phase  .= reduce(+, phase_th)
     weight  .= reduce(+, weight_th)
     PG ./= weight
 

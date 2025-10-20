@@ -168,6 +168,7 @@ D       =   (
     vxc     =   zeros(Float64,(NC.x,NC.y)),
     vyc     =   zeros(Float64,(NC.x,NC.y)),
     vc      =   zeros(Float64,(NC.x,NC.y)),
+    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wt      =   zeros(Float64,(NC.x,NC.y)),
     wtv     =   zeros(Float64,(NV...)),
     Tmax    =   [0.0],
@@ -220,7 +221,7 @@ In case tracer are required one needs to initialize them in the following. For m
 ```Julia
 # Tracer Advection =================================================== #
 if FD.Method.Adv==:tracers 
-    # Tracer Initialization ---
+# Tracer Initialization ---
     nmx,nmy     =   3,3
     noise       =   1
     nmark       =   nmx*nmy*NC.x*NC.y
@@ -231,13 +232,12 @@ if FD.Method.Adv==:tracers
         th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
         thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
     )
-    MPC1        = (
-        PG_th   =   [similar(D.T) for _ = 1:nthreads()],    # per thread
+    MAVG        = (
+        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
-        wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
+        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -315,8 +315,8 @@ for i=2:nt
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
         
         # Interpolate temperature from tracers to grid ---
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam,0)           
-        D.T_ex[2:end-1,2:end-1]     .= D.T
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
+        D.T     .=  D.T_ex[2:end-1,2:end-1]
     end
     
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
