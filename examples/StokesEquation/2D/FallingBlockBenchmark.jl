@@ -19,7 +19,7 @@ function FallingBlockBenchmark(td)
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
     #   Attention: Tracers are the only method that work well.
-    FD          =   (Method     = (Adv=:tracers,),)
+    FD          =   (Method     = (Adv=:semilag,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -127,6 +127,7 @@ function FallingBlockBenchmark(td)
             vyc     =   zeros(Float64,NC...),
             vc      =   zeros(Float64,NC...),
             wt      =   zeros(Float64,(NC.x,NC.y)),
+            wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
             wtv     =   zeros(Float64,(NV.x,NV.y)),
             ηc      =   zeros(Float64,NC...),
             ηv      =   zeros(Float64,NV...),
@@ -156,18 +157,18 @@ function FallingBlockBenchmark(td)
             nmark       =   nmx*nmy*NC.x*NC.y
             Aparam      =   :phase
             MPC         =   (
-                c       =   zeros(Float64,(NC.x,NC.y)),
-                v       =   zeros(Float64,(NV.x,NV.y)),
-                th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-                thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+                    c       =   zeros(Float64,(NC.x,NC.y)),
+                    v       =   zeros(Float64,(NV.x,NV.y)),
+                    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+                    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
             )
-            MPC1        = (
-                PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-                PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-                wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-                wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+            MAVG        = (
+                    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                    PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+                    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
             )
-            MPC     =   merge(MPC,MPC1)
+            # MPC     =   merge(MPC,MPC1)
             Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
             # RK4 weights ---
             rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -175,14 +176,13 @@ function FallingBlockBenchmark(td)
             # Count marker per cell ---
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
             # Interpolate from markers to cell ---
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-            Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-            # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-            Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-            # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-            #                         D.ηv[2:end-0,1:end-1] + 
-            #                         D.ηv[1:end-1,2:end-0] + 
-            #                         D.ηv[2:end-0,2:end-0])
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+            D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+            D.p     .=  D.p_ex[2:end-1,2:end-1]
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+            D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+            Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
         else
             # ----------------------------------------------------------- #
             # Initial Condition ========================================= #
@@ -350,14 +350,13 @@ function FallingBlockBenchmark(td)
                 AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
                 # Interpolate phase from tracers to grid ---
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-                Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-                # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-                Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-                # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                #                     D.ηv[2:end-0,1:end-1] + 
-                #                     D.ηv[1:end-1,2:end-0] + 
-                #                     D.ηv[2:end-0,2:end-0])
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+                D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+                D.p     .=  D.p_ex[2:end-1,2:end-1]
+                Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+                D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+                Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
             end
             if FD.Method.Adv!=:tracers
                 # --- Vertices -

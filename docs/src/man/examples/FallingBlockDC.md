@@ -376,13 +376,17 @@ D   =   (
     vy      =   zeros(Float64,NC.x+2,NV.y),
     Pt      =   zeros(Float64,NC...),
     p       =   zeros(Float64,NC...),
+    p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     ρ       =   zeros(Float64,NC...),
+    ρ_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     vxc     =   zeros(Float64,NC...),
     vyc     =   zeros(Float64,NC...),
     vc      =   zeros(Float64,NC...),
     wt      =   zeros(Float64,(NC.x,NC.y)),
+    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wtv     =   zeros(Float64,(NV.x,NV.y)),
     ηc      =   zeros(Float64,NC...),
+    η_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     ηv      =   zeros(Float64,NV...),
 )
 # Needed for the defect correction solution ---
@@ -434,18 +438,18 @@ noise       =   0
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :phase
 MPC         =   (
-    c       =   zeros(Float64,(NC.x,NC.y)),
-    v       =   zeros(Float64,(NV.x,NV.y)),
-    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+        c       =   zeros(Float64,(NC.x,NC.y)),
+        v       =   zeros(Float64,(NV.x,NV.y)),
+        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
 )
-MPC1        = (
-    PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-    PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+MAVG        = (
+        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-MPC     =   merge(MPC,MPC1)
+# MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -453,19 +457,23 @@ rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 # Count marker per cell ---
 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
 # Interpolate from markers to cell ---
-Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-@. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                        D.ηv[2:end-0,1:end-1] + 
-                        D.ηv[1:end-1,2:end-0] + 
-                        D.ηv[2:end-0,2:end-0])
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+D.p     .=  D.p_ex[2:end-1,2:end-1]
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 # System of Equations =============================================== #
 ```
 
 To solve the linear system of equations, one needs to initialize the correspondig arrays as well. 
 
 ```Julia
+# System of Equations =============================================== #
+# Iterations --- 
+niter       =   50
+ϵ           =   1e-8
 # Numbering, without ghost nodes! ---
 off    = [  NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
@@ -506,22 +514,24 @@ First the momentum equation is solved.
     D.vx    .=  0.0
     D.vy    .=  0.0
     D.Pt    .=  0.0
-    Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-    F[Num.Vx]   =   Fm.x[:]
-    F[Num.Vy]   =   Fm.y[:]
-    F[Num.Pt]   =   FPt[:]
-    # Assemble Coefficients ========================================= #
-    K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-    # --------------------------------------------------------------- #
-    # Solution of the linear system ================================= #
-    δx      =   - K \ F
-    # --------------------------------------------------------------- #
-    # Update Unknown Variables ====================================== #
-    D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-    D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-    D.Pt                .+=  δx[Num.Pt]
-    # Final Residual ================================================ #
-    Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+    for iter = 1:niter
+        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+        F[Num.Vx]   =   Fm.x[:]
+        F[Num.Vy]   =   Fm.y[:]
+        F[Num.Pt]   =   FPt[:]
+        @printf("||R|| = %1.4e\n", norm(F)/length(F))
+        norm(F)/length(F) < ϵ ? break : nothing
+        # Assemble Coefficients ===================================== #
+        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+        # ----------------------------------------------------------- #
+        # Solution of the linear system ============================= #
+        δx      =   - K \ F
+        # ----------------------------------------------------------- #
+        # Update Unknown Variables ================================== #
+        D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+        D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+        D.Pt                .+=  δx[Num.Pt]
+    end
     # --------------------------------------------------------------- #
 ```
 
@@ -615,13 +625,13 @@ Finally the tracers are advected and the information on the numerical grid is up
     AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
     # Interpolate phase from tracers to grid ---
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-    Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-    @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                        D.ηv[2:end-0,1:end-1] + 
-                        D.ηv[1:end-1,2:end-0] + 
-                        D.ηv[2:end-0,2:end-0])
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+    D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+    D.p     .=  D.p_ex[2:end-1,2:end-1]
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+    D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 end # End Time Loop
 ```
 

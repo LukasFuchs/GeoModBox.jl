@@ -8,7 +8,7 @@ using Base.Threads
 using Printf, LinearAlgebra
 
 function RTI()
-    save_fig    =   0
+    save_fig    =   1
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
     λ           =   3.0e3           #   Perturbation wavelength[ m ]
@@ -89,8 +89,9 @@ function RTI()
                             "_tracers_DC")
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
-    D       =   DataFields(
-        ρ       =   zeros(Float64,(NC...)),        
+    D       =   (
+        ρ       =   zeros(Float64,(NC...)),  
+        ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),      
         cp      =   zeros(Float64,(NC...)),
         vx      =   zeros(Float64,(NV.x,NV.y+1)),
         vy      =   zeros(Float64,(NV.x+1,NV.y)),    
@@ -99,8 +100,10 @@ function RTI()
         vyc     =   zeros(Float64,(NC...)),
         vc      =   zeros(Float64,(NC...)),
         wt      =   zeros(Float64,(NC.x,NC.y)),
+        wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
         wtv     =   zeros(Float64,(NV.x,NV.y)),
         ηc      =   zeros(Float64,NC...),
+        ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
         ηv      =   zeros(Float64,NV...),
     )
     # ------------------------------------------------------------------- #
@@ -127,7 +130,7 @@ function RTI()
     T   =   TimeParameter(
         tmax    =   4500.0,         #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   1,             #   Maximum iterations; 50
+        itmax   =   100,             #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -141,18 +144,17 @@ function RTI()
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :phase
     MPC         =   (
-        c       =   zeros(Float64,(NC.x,NC.y)),
-        v       =   zeros(Float64,(NV.x,NV.y)),
-        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+            c       =   zeros(Float64,(NC.x,NC.y)),
+            v       =   zeros(Float64,(NV.x,NV.y)),
+            th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+            thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
     )
-    MPC1        = (
-        PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-        wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+    MAVG        = (
+            PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+            PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+            wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+            wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -160,14 +162,16 @@ function RTI()
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
     # Interpolate from markers to cell ---
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-    Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+    D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+    D.ηc    .=   D.ηce[2:end-1,2:end-1]
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
     # Iterations
     niter   =   50
-    ϵ       =   1e-8
+    ϵ       =   1e-10
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -289,9 +293,11 @@ function RTI()
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv,1)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
         # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)        
-        Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+        D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+        D.ηc    .=   D.ηce[2:end-1,2:end-1]
+        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
     end # End Time Loop
     # Save Animation ---
     if save_fig == 1

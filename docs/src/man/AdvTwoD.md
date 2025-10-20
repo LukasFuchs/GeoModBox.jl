@@ -107,7 +107,7 @@ The tracers can also be advected parallel by defining the maximum number of thre
 
 Tracers can carry different properties such as absolute temperature or phase identification number (ID). For temperature, interpolation between centroids and tracer positions is required. Note that this implementation currently does not support fully coupled temperature-momentum simulations.
 
-Alternatively, phase IDs (linked to properties like constant density or viscosity) can be advected to simulate compositional heterogeneity. Property interpolation is performed at vertices or centroids depending on the required context (e.g., viscosity for the momentum equations).
+Alternatively, phase IDs (linked to properties like constant density or viscosity) can be advected to simulate compositional heterogeneity. Property interpolation is performed at vertices or centroids depending on the required context (e.g., viscosity for the momentum equations). For the centroids, the extended centroid field must be used.
 
 Caution is required when interpolating properties between the grid and tracers, especially when those properties influence the governing equations (e.g., viscosity in momentum conservation).
 
