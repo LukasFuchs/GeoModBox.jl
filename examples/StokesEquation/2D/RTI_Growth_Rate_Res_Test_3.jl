@@ -9,7 +9,7 @@ using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
     plot_fields     =:no
-    save_fig        = 1
+    save_fig        = 0
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -18,12 +18,12 @@ function RTI_GrowthRate()
     addnoise    =   [0 1]
     # Density Averaging ---
     #   centroids or vertices
-    ρavg        =   :centroids
-    nm          =   [2 4 6 8 10 12 14 16 18 20]
+    ρavg        =   :centroids  
+    nc          =   [10 20 40 60 80 100 120 140 160 180 200]
     # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
     # Perturbation wavelength [ m ]
-    λᵣ          =   4e3 #[3 4 5 6 8 9 10 12 14]*1e3
+    λᵣ          =   4e3
     # ------------------------------------------------------------------- #
     # Physics =========================================================== #
     g           =   9.81                    #   Gravitational acceleration [ m/s^2 ]
@@ -40,8 +40,8 @@ function RTI_GrowthRate()
     # Divisional factor of the amplitude following Gerya (2009) --------- #
     delfac      =   [15 150 1500]
     ms          =   zeros(3)
-    ms          =   [4]
-    mc          =   ["black","red","yellow"] # viscosity
+    ms          =   [3]
+    mc          =   ["black","red","yellow"] # δA
     # Plot Settings ===================================================== #
     q   =   plot(layout=(size(addnoise,2),size(ηᵣ,2)))
     # ------------------------------------------------------------------- #
@@ -59,82 +59,6 @@ function RTI_GrowthRate()
     @printf("   xmax: %g \n",M.xmax)
     @printf("   λ = %g\n",λ)
     # ------------------------------------------------------------------- #
-    # Grid ============================================================== # 
-    NC  =   (
-        x   =   50,
-        y   =   50,
-    )
-    NV  =   (
-        x   =   NC.x + 1,
-        y   =   NC.y + 1,
-    )
-    Δ       =   GridSpacing(
-        x   =   (M.xmax - M.xmin)/NC.x,
-        y   =   (M.ymax - M.ymin)/NC.y,
-    )
-    x       =   (
-        c   =   LinRange(M.xmin+Δ.x/2,M.xmax-Δ.x/2,NC.x),
-        ce  =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
-        v   =   LinRange(M.xmin,M.xmax,NV.x),
-    )
-    y       =   (
-        c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
-        v   =   LinRange(M.ymin,M.ymax,NV.y),
-    )
-    x1      =   (
-        c2d     =   x.c .+ 0*y.c',
-        v2d     =   x.v .+ 0*y.v', 
-        vx2d    =   x.v .+ 0*y.ce',
-        vy2d    =   x.ce .+ 0*y.v',
-    )
-    x   =   merge(x,x1)
-    y1      =   (
-        c2d     =   0*x.c .+ y.c',
-        v2d     =   0*x.v .+ y.v',
-        vx2d    =   0*x.v .+ y.ce',
-        vy2d    =   0*x.ce .+ y.v',
-    )
-    y   =   merge(y,y1)
-    # ------------------------------------------------------------------- #
-    # Allocation ======================================================== #
-    D       =   (
-        ρ       =   zeros(Float64,(NC...)),
-        ρv      =   zeros(Float64,NV...),
-        ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
-        p       =   zeros(Float64,(NC...)),
-        cp      =   zeros(Float64,(NC...)),
-        vx      =   zeros(Float64,(NV.x,NV.y+1)),
-        vy      =   zeros(Float64,(NV.x+1,NV.y)),    
-        Pt      =   zeros(Float64,(NC...)),
-        vxc     =   zeros(Float64,(NC...)),
-        vyc     =   zeros(Float64,(NC...)),
-        vc      =   zeros(Float64,(NC...)),
-        wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
-        wtv     =   zeros(Float64,(NV.x,NV.y)),
-        ηc      =   zeros(Float64,NC...),
-        ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
-        ηv      =   zeros(Float64,NV...),
-    )
-    # ------------------------------------------------------------------- #
-    # Needed for the defect correction solution ---
-    divV        =   zeros(Float64,NC...)
-    ε           =   (
-        xx      =   zeros(Float64,NC...), 
-        yy      =   zeros(Float64,NC...), 
-        xy      =   zeros(Float64,NV...),
-    )
-    τ           =   (
-        xx      =   zeros(Float64,NC...), 
-        yy      =   zeros(Float64,NC...), 
-        xy      =   zeros(Float64,NV...),
-    )
-    # ------------------------------------------------------------------- #
-    # Boundary Conditions =============================================== #
-    VBC     =   (
-        type    =   (E=:freeslip,W=:freeslip,S=:noslip,N=:noslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
-    )
     # Analytical Solution =============================================== #
     λₐ          =   λᵣ                      # [ m ]
     ϕ₁          =   0.0
@@ -150,82 +74,160 @@ function RTI_GrowthRate()
         Q       =   [0.0],
         ϕₐ      =   [0.0],
         Kₐ      =   zeros(1,length(ηᵣ)),
+        ε       =   [0.0],
     )
     ϕ₁          =   (2*π*((M.ymax-M.ymin)/2))/λₐ
     ϕ₂          =   (2*π*((M.ymax-M.ymin)/2))/λₐ
     # ------------------------------------------------------------------- #
-    MPC         =   (
-        c       =   zeros(Float64,(NC.x,NC.y)),
-        v       =   zeros(Float64,(NV.x,NV.y)),
-        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
-    )
-    MAVG        = (
-        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
-        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
-        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
-    )
-    # System of Equations =============================================== #
-    # Iterations
-    niter       =   50
-    ϵ           =   1e-10
-    # Numbering, without ghost nodes! ---
-    off    = [  NV.x*NC.y,                          # vx
-                NV.x*NC.y + NC.x*NV.y,              # vy
-                NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
-
-    Num    =    (
-        Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
-        Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
-        Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-                )
-    δx      =   zeros(maximum(Num.Pt))
-    F       =   zeros(maximum(Num.Pt))
-    # Residuals ---
-    Fm     =    (
-        x       =   zeros(Float64,NV.x, NC.y), 
-        y       =   zeros(Float64,NC.x, NV.y)
-    )
-    FPt     =   zeros(Float64,NC...)      
     for n in eachindex(addnoise)
-        for o in eachindex(ηᵣ) # Loop over viscosity ratio
-            @printf("    ηᵣ = %g\n",ηᵣ[o])
-            # Physics =================================================== #
-            # 0 - upper layer; 1 - lower layer
-            η₀      =   η₁*ηᵣ[o]    #   Viscosity composition 0 [ Pa s ]
-            η       =   [η₀,η₁]     #   Viscosity for phases 
-            @printf("    η₀ = %g\n",η₀)
+        for k in eachindex(nc)
+            @printf("    nc = %g\n",nc[k])
+            # Grid ====================================================== # 
+            NC  =   (
+                x   =   nc[k],
+                y   =   nc[k],
+            )
+            NV  =   (
+                x   =   NC.x + 1,
+                y   =   NC.y + 1,
+            )
+            Δ       =   GridSpacing(
+                x   =   (M.xmax - M.xmin)/NC.x,
+                y   =   (M.ymax - M.ymin)/NC.y,
+            )
+            @printf("    Δx = %g, Δy = %g\n",Δ.x,Δ.y)
+            x       =   (
+                c   =   LinRange(M.xmin+Δ.x/2,M.xmax-Δ.x/2,NC.x),
+                ce  =   LinRange(M.xmin - Δ.x/2.0, M.xmax + Δ.x/2.0, NC.x+2),
+                v   =   LinRange(M.xmin,M.xmax,NV.x),
+            )
+            y       =   (
+                c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
+                ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
+                v   =   LinRange(M.ymin,M.ymax,NV.y),
+            )
+            x1      =   (
+                c2d     =   x.c .+ 0*y.c',
+                v2d     =   x.v .+ 0*y.v', 
+                vx2d    =   x.v .+ 0*y.ce',
+                vy2d    =   x.ce .+ 0*y.v',
+            )
+            x   =   merge(x,x1)
+            y1      =   (
+                c2d     =   0*x.c .+ y.c',
+                v2d     =   0*x.v .+ y.v',
+                vx2d    =   0*x.v .+ y.ce',
+                vy2d    =   0*x.ce .+ y.v',
+            )
+            y   =   merge(y,y1)
             # ----------------------------------------------------------- #
-            # Analytical Solution ======================================= #
-            c11     =   (η₀*2*ϕ₁^2)/
-                            (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) - 
-                            (2*ϕ₂^2)/
-                            (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
-            d12     =   (η₀*(sinh(2*ϕ₁) - 2*ϕ₁))/
-                            (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) + 
-                            (sinh(2*ϕ₂) - 2*ϕ₂)/
-                            (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
-            i21     =   (η₀*ϕ₂*(sinh(2*ϕ₁) + 2*ϕ₁))/
-                            (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) + 
-                            (ϕ₂*(sinh(2*ϕ₂) + 2*ϕ₂))/
-                            (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
-            j22     =   (η₀*2*ϕ₁^2*ϕ₂)/
-                            (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) - 
-                            (2*ϕ₂^3)/
-                            (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
-            
-            PP.Kₐ[o]    =   -d12/(c11*j22 - d12*i21)
-            PP.ϕₐ[1]    =   ϕ₁
+            # Allocation ================================================ #
+            D       =   (
+                ρ       =   zeros(Float64,(NC...)),
+                ρv      =   zeros(Float64,NV...),
+                ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
+                p       =   zeros(Float64,(NC...)),
+                cp      =   zeros(Float64,(NC...)),
+                vx      =   zeros(Float64,(NV.x,NV.y+1)),
+                vy      =   zeros(Float64,(NV.x+1,NV.y)),    
+                Pt      =   zeros(Float64,(NC...)),
+                vxc     =   zeros(Float64,(NC...)),
+                vyc     =   zeros(Float64,(NC...)),
+                vc      =   zeros(Float64,(NC...)),
+                wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
+                wtv     =   zeros(Float64,(NV.x,NV.y)),
+                ηc      =   zeros(Float64,NC...),
+                ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
+                ηv      =   zeros(Float64,NV...),
+            )
             # ----------------------------------------------------------- #
-            for l in eachindex(delfac) # Loop over perturbation amplitude
-                δA          =   -(M.ymax-M.ymin)/2/delfac[l]    #   Amplitude [ m ]
-                @printf("    δA = %g\n",δA)
-                # @printf("δA = %g\n",delfac[l])
-                for k in eachindex(nm) # Loop over marker numbers
-                    @printf("    nm = %g\n",nm[k])
+            # Needed for the defect correction solution ---
+            divV        =   zeros(Float64,NC...)
+            ε           =   (
+                xx      =   zeros(Float64,NC...), 
+                yy      =   zeros(Float64,NC...), 
+                xy      =   zeros(Float64,NV...),
+            )
+            τ           =   (
+                xx      =   zeros(Float64,NC...), 
+                yy      =   zeros(Float64,NC...), 
+                xy      =   zeros(Float64,NV...),
+            )
+            # ----------------------------------------------------------- #
+            # Boundary Conditions ======================================= #
+            VBC     =   (
+                type    =   (E=:freeslip,W=:freeslip,S=:noslip,N=:noslip),
+                val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+            )
+            # Marker Allocation ========================================= #
+            MPC         =   (
+                c       =   zeros(Float64,(NC.x,NC.y)),
+                v       =   zeros(Float64,(NV.x,NV.y)),
+                th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+                thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+            )
+            MAVG        = (
+                PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+                wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+                wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+            )
+            # System of Equations ======================================= #
+            # Iterations
+            niter       =   10
+            ϵ           =   1e-10
+            # Numbering, without ghost nodes! ---
+            off    = [  NV.x*NC.y,                          # vx
+                        NV.x*NC.y + NC.x*NV.y,              # vy
+                        NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
+
+            Num    =    (
+                Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
+                Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
+                Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
+                        )
+            δx      =   zeros(maximum(Num.Pt))
+            F       =   zeros(maximum(Num.Pt))
+            # Residuals ---
+            Fm     =    (
+                x       =   zeros(Float64,NV.x, NC.y), 
+                y       =   zeros(Float64,NC.x, NV.y)
+            )
+            FPt     =   zeros(Float64,NC...)      
+            for o in eachindex(ηᵣ) # Loop over viscosity ratio
+                @printf("    ηᵣ = %g\n",ηᵣ[o])
+                # Physics =================================================== #
+                # 0 - upper layer; 1 - lower layer
+                η₀      =   η₁*ηᵣ[o]    #   Viscosity composition 0 [ Pa s ]
+                η       =   [η₀,η₁]     #   Viscosity for phases 
+                @printf("    η₀ = %g\n",η₀)
+                # ----------------------------------------------------------- #
+                # Analytical Solution ======================================= #
+                c11     =   (η₀*2*ϕ₁^2)/
+                                (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) - 
+                                (2*ϕ₂^2)/
+                                (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
+                d12     =   (η₀*(sinh(2*ϕ₁) - 2*ϕ₁))/
+                                (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) + 
+                                (sinh(2*ϕ₂) - 2*ϕ₂)/
+                                (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
+                i21     =   (η₀*ϕ₂*(sinh(2*ϕ₁) + 2*ϕ₁))/
+                                (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) + 
+                                (ϕ₂*(sinh(2*ϕ₂) + 2*ϕ₂))/
+                                (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
+                j22     =   (η₀*2*ϕ₁^2*ϕ₂)/
+                                (η₁*(cosh(2*ϕ₁) - 1 - 2*ϕ₁^2)) - 
+                                (2*ϕ₂^3)/
+                                (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
+                
+                PP.Kₐ[o]    =   -d12/(c11*j22 - d12*i21)
+                PP.ϕₐ[1]    =   ϕ₁
+                # ------------------------------------------------------- #
+                for l in eachindex(delfac) # Loop over perturbation amplitude
+                    δA          =   -(M.ymax-M.ymin)/2/delfac[l]    #   Amplitude [ m ]
+                    @printf("    δA = %g\n",δA)
                     # Tracer Advection ================================== #
-                    nmx,nmy =   nm[k],nm[k]
+                    nmx,nmy =   5,5
                     noise   =   addnoise[n]
                     nmark   =   nmx*nmy*NC.x*NC.y
                     Aparam  =   :phase
@@ -254,7 +256,7 @@ function RTI_GrowthRate()
                     D.ηc    .=   D.ηce[2:end-1,2:end-1]
                     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
                     # --------------------------------------------------- #
-                    # ------------------------------------------------------- #
+                    # --------------------------------------------------- #
                     # Momentum Equation ===
                     D.vx    .=  0.0
                     D.vy    .=  0.0
@@ -262,25 +264,25 @@ function RTI_GrowthRate()
                     @. δx   =   0.0
                     @. F    =   0.0
                     for iter=1:niter
-                        # Initial Residual -------------------------------------- #
+                        # Initial Residual ------------------------------ #
                         Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
                         F[Num.Vx]   =   Fm.x[:]
                         F[Num.Vy]   =   Fm.y[:]
                         F[Num.Pt]   =   FPt[:]
                         @printf("||R|| = %1.4e\n", norm(F)/length(F))
                         norm(F)/length(F) < ϵ ? break : nothing
-                        # Assemble Coefficients ================================= #
+                        # Assemble Coefficients ========================= #
                         K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-                        # ------------------------------------------------------- #
-                        # Solution of the linear system ========================= #
+                        # ----------------------------------------------- #
+                        # Solution of the linear system ================= #
                         δx      =   - K \ F
-                        # ------------------------------------------------------- #
-                        # Update Unknown Variables ============================== #
+                        # ----------------------------------------------- #
+                        # Update Unknown Variables ====================== #
                         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
                         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
                         D.Pt                .+=  δx[Num.Pt]
                     end
-                    # ------------------------------------------------------- #
+                    # --------------------------------------------------- #
                     # Get the velocity on the centroids ---
                     # Just for visualization purposes
                     for i = 1:NC.x
@@ -309,35 +311,8 @@ function RTI_GrowthRate()
                     PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                     PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                     PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
-
-                    if l == 1 && k == 1 && n == 1 && o == 1
-                        # @show l,k,n,o
-                        # @show (n-1)*size(ηᵣ,2)+o
-                        scatter!(q,(1/(maximum(nm)+2)/(maximum(nm)+2),
-                                    PP.Kₐ[o]),
-                                    ms=ms[1],markershape=:circle,
-                                    color="green",
-                                    xlabel="1/nmx/nmy",ylabel="K=v_y/δA/Q",
-                                    label="analytical",
-                                    title=string("ηᵣ = ",ηᵣ[o]),
-                                    layout=(size(addnoise,2),size(ηᵣ,2)),
-                                    subplot=((n-1)*size(ηᵣ,2)+o),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
-                                    )
-                    elseif l == 1 && k == 1 
-                        scatter!(q,(1/(maximum(nm)+2)/(maximum(nm)+2),
-                                    PP.Kₐ[o]),
-                                    ms=ms[1],markershape=:circle,
-                                    color="green",label="",
-                                    xlabel="1/nmx/nmy",ylabel="K=v_y/δA/Q",
-                                    title=string("ηᵣ = ",ηᵣ[o]),
-                                    layout=(size(addnoise,2),size(ηᵣ,2)),
-                                    subplot=((n-1)*size(ηᵣ,2)+o),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
-                                    )
-                    end
+                    PP.ε[1] =   abs((PP.Kₐ[o]-PP.K[1])/PP.Kₐ[o])*100.0
+                    
                     if plot_fields==:yes
                         p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                                     xlabel="x[km]",ylabel="y[km]",colorbar=true,
@@ -382,26 +357,34 @@ function RTI_GrowthRate()
                         display(p)
                     end
                     if k == 1 && n == 1 && o == 1
-                        scatter!(q,(1/nm[k]/nm[k],PP.K[1]),
+                        scatter!(q,(1/nc[k]/nc[k],PP.ε[1]),
                                     ms=ms[1],markershape=:circle,
-                                    label=string(δA," [m]"),color=mc[l],
-                                    xscale=:log10,yscale=:log10,
+                                    label=string(-δA," [m]"),color=mc[l],
+                                    xlabel="1/ncx/ncy",ylabel="ε [ % ]",
+                                    xscale=:log10, yscale=:log10,
+                                    title=string("ηᵣ = ",ηᵣ[o]),
+                                    xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
+                                    ylims=(1e-2, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     else
-                        scatter!(q,(1/nm[k]/nm[k],PP.K[1]),
+                        scatter!(q,(1/nc[k]/nc[k],PP.ε[1]),
                                     ms=ms[1],markershape=:circle,
                                     color=mc[l],label="",
+                                    xlabel="1/ncx/ncy",ylabel="ε [ % ]",
                                     xscale=:log10,yscale=:log10,
+                                    title=string("ηᵣ = ",ηᵣ[o]),
+                                    xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
+                                    ylims=(1e-2, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     end
                 end # Loop δA - l
-            end # Loop nm - k 
-        end # Loop ηᵣ - o
+            end # Loop ηᵣ - o
+        end # Loop nc - k
     end # Loop addnoise - n
     if save_fig == 1
-        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test.png"))
+        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test_const_NM.png"))
     else
         display(q)
     end
