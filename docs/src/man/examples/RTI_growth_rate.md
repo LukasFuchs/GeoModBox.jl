@@ -480,3 +480,6 @@ end
 
 **Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - scaled by 15, red - scaled by 150, yellow - scaled by 1500). The rising velocity is numerically calculated following the approach shown in Figure 1. 
 
+![RTI_Growth_Rate_Res_test](../../assets/RTI_Growth_Rate_Res_Test.png)
+
+**Figure 3. RTI Resolution Test.** Resolution test for the RTI growth rate using a fixed layer thickness (1500 km), a fixed wavelength $\lambda = 4000 \text{ km}$ and fixed numerical resolution of 50x50 centroids for different numbers of markers per cell $\left(nm_x,nm_y\right)$, different perturbation amplitudes $\left(\delta{A}\right)$ (colored markers), different viscosity ratios $\eta_r$, and without (top row) and with (bottom row) additional noise ontop of the initial marker position (before assigning the layer phases).

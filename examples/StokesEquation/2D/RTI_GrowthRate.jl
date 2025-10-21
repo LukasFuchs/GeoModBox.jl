@@ -9,7 +9,7 @@ using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
     plot_fields     =:no
-    save_fig        = 1
+    save_fig        = 0
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -18,7 +18,6 @@ function RTI_GrowthRate()
     # Density Averaging ---
     #   centroids or vertices
     ρavg        =   :centroids
-    # nm          =   [2 4 6 8]
     nm          =   5
     # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
@@ -74,7 +73,6 @@ function RTI_GrowthRate()
     # ------------------------------------------------------------------- #
     # for k in eachindex(nm)
     for k in eachindex(delfac)
-        # @printf("δA = %g\n",delfac[1])
         @printf("δA = %g\n",delfac[k])
         for i in eachindex(ηᵣ)
             # Physics =================================================== #
@@ -109,7 +107,6 @@ function RTI_GrowthRate()
             for j in eachindex(λᵣ)
                 # Perturbation properties ---
                 λ           =   λᵣ[j]                           #   [ m ]
-                # δA          =   -(M.ymax-M.ymin)/2/delfac[1]    #   Amplitude [ m ]
                 δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
                 @printf("δA = %g\n",δA)
                 # ---
@@ -196,7 +193,6 @@ function RTI_GrowthRate()
                 )
                 # ------------------------------------------------------- #
                 # Tracer Advection ====================================== #
-                # nmx,nmy     =   nm[k],nm[k]
                 nmx,nmy     =   nm,nm
                 noise       =   0
                 nmark       =   nmx*nmy*NC.x*NC.y
@@ -383,7 +379,6 @@ function RTI_GrowthRate()
     if save_fig == 1
         savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
                             "_nmy_",nm,".png"))
-        # savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_delfac_",delfac,"_noise.png"))
     else
         display(q)
     end
