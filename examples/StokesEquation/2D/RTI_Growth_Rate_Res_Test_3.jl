@@ -9,7 +9,7 @@ using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
     plot_fields     =:no
-    save_fig        = 0
+    save_fig        = 1
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
