@@ -363,7 +363,7 @@ function RTI_GrowthRate()
                                     xscale=:log10, yscale=:log10,
                                     title=string("ηᵣ = ",ηᵣ[o]),
                                     xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(1e-2, 1e2),
+                                    ylims=(1e-1, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     else
@@ -374,7 +374,7 @@ function RTI_GrowthRate()
                                     xscale=:log10,yscale=:log10,
                                     title=string("ηᵣ = ",ηᵣ[o]),
                                     xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(1e-2, 1e2),
+                                    ylims=(1e-1, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     end

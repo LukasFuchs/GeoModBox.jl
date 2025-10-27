@@ -16,7 +16,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc        =   5,
-        qsc         =   1.0e-3
+        qsc         =   1.0e-4
     )
     # ------------------------------------------------------------------- #
     # Benchmark values ================================================== # 
@@ -196,7 +196,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Linear System of Equations ======================================== #
     # Momentum Conservation Equation (MCE) ------
     niter  =   50
-    ϵ      =   1e-10
+    ϵ      =   1e-8
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
                 NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
@@ -390,7 +390,7 @@ start=time()
 save_fig    =   1
 # Rayleigh Number ======================================================= #
 #   Here, only for 1e4, 1e5, 1e6
-Ra      =   1e4
+Ra      =   1e6
 # ----------------------------------------------------------------------- #
 # Benchmark Values ====================================================== # 
 # Taken from Gerya (2019), Introduction to numerical geodynamic 
@@ -424,7 +424,7 @@ B       =   (
 )
 # ----------------------------------------------------------------------- #
 # Number of grid points in upper thermal boundary layer ================= #
-n   =   [2,3,4,5,6,7,8,9,10]
+n   =   [2,3,4,5,6]
 # ----------------------------------------------------------------------- #
 # Grid Resultion ======================================================== #
 ncy     =   zeros(Int64,length(n))
