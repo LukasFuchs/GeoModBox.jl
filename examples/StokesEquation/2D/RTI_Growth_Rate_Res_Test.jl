@@ -9,7 +9,8 @@ using Printf, LinearAlgebra
 
 function RTI_GrowthRate()
     plot_fields     =:no
-    save_fig        = 0
+    save_fig        = 1
+    avgm            =:arith     # Averaging Method for η - default arith
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -250,9 +251,9 @@ function RTI_GrowthRate()
                         end
                     end     
                     # Interpolate Viscosity ---
-                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm)
                     D.ηc    .=   D.ηce[2:end-1,2:end-1]
-                    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+                    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm)
                     # --------------------------------------------------- #
                     # ------------------------------------------------------- #
                     # Momentum Equation ===
@@ -311,8 +312,6 @@ function RTI_GrowthRate()
                     PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
 
                     if l == 1 && k == 1 && n == 1 && o == 1
-                        # @show l,k,n,o
-                        # @show (n-1)*size(ηᵣ,2)+o
                         scatter!(q,(1/(maximum(nm)+2)/(maximum(nm)+2),
                                     PP.Kₐ[o]),
                                     ms=ms[1],markershape=:circle,
@@ -322,8 +321,8 @@ function RTI_GrowthRate()
                                     title=string("ηᵣ = ",ηᵣ[o]),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
+                                    # xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
+                                    # ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
                                     )
                     elseif l == 1 && k == 1 
                         scatter!(q,(1/(maximum(nm)+2)/(maximum(nm)+2),
@@ -334,8 +333,8 @@ function RTI_GrowthRate()
                                     title=string("ηᵣ = ",ηᵣ[o]),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
+                                    # xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
+                                    # ylims=(PP.Kₐ[o]-0.5*PP.Kₐ[o], PP.Kₐ[o]+0.5*PP.Kₐ[o])
                                     )
                     end
                     if plot_fields==:yes
@@ -401,7 +400,7 @@ function RTI_GrowthRate()
         end # Loop ηᵣ - o
     end # Loop addnoise - n
     if save_fig == 1
-        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test.png"))
+        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test_",avgm,".png"))
     else
         display(q)
     end
