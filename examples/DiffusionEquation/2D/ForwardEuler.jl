@@ -1,7 +1,9 @@
 using GeoModBox.HeatEquation.TwoD
 using Plots
+using TimerOutputs
 
 function HeatEquation()
+    to  =   TimerOutput()
     # Spatial domain
     xlim = (min=-1/2, max=1/2)
     ylim = (min=-1/2, max=1/2)
@@ -39,6 +41,7 @@ function HeatEquation()
     @. Cp  = 1.0
     Δt = max(Δ...)^2/(maximum(k.x)/minimum(ρ)/minimum(Cp))/4.1
     # Time integration
+    @timeit to "TimeLoop" begin
     @views for it=1:nt
         t += Δt
         # Exact solution on cell centroids
@@ -66,6 +69,8 @@ function HeatEquation()
             display(plot(p1, p2, p3, layout=(2,2)))
         end
     end
+    end
+    display(to)
 end
 
 HeatEquation()
