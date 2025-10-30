@@ -1,17 +1,9 @@
 using Plots, SpecialFunctions
 using GeoModBox.HeatEquation.OneD
+using TimerOutputs
 
-@doc raw"""
-    OceanicGeotherm_1D()
-
-Function to calculate the 1D geotherm for an oceanic lithosphere. 
-Temperature is calculated by solving the 1-D heat equation assuming
-variable thermal parameters and a radiogenic heat source.
-The equation is solved using a proper conserving finite difference
-scheme.
-
-"""
 function OceanicGeotherm_1D()
+to  =   TimerOutput()
 # ------------------------------------------------------------------- #
 #    LF - 22.10.2024 - juila                                          #
 # ------------------------------------------------------------------- #
@@ -100,6 +92,7 @@ nit     =   ceil(Int64,age/Δt)      #   Number of iterations
 time    =   zeros(1,nit)            #   Time array
 # ------------------------------------------------------------------- #
 # Calculate 1-D temperature profile --------------------------------- #
+@timeit to "TimeLoop" begin
 count   =   1
 for i = 1:nit
     if i > 1
@@ -119,6 +112,7 @@ for i = 1:nit
         display(q)
         count = count + 1
     end
+end
 end
 # ------------------------------------------------------------------- #
 # Calculate heaf flow ----------------------------------------------- #
@@ -160,6 +154,7 @@ display(p)
 savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
 savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
+display(to)
 end
 
 OceanicGeotherm_1D()
