@@ -6,10 +6,13 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function RTI_GrowthRate()
+    to              = TimerOutput()
+    @timeit to "Ini" begin
     plot_fields     =:no
-    save_fig        = 0
+    save_fig        = 1
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -187,8 +190,11 @@ function RTI_GrowthRate()
         x       =   zeros(Float64,NV.x, NC.y), 
         y       =   zeros(Float64,NC.x, NV.y)
     )
-    FPt     =   zeros(Float64,NC...)      
+    FPt     =   zeros(Float64,NC...) 
+    end
+    @timeit to "Noise Loop" begin     
     for n in eachindex(addnoise)
+        @timeit to "ηr Loop" begin     
         for o in eachindex(ηᵣ) # Loop over viscosity ratio
             @printf("    ηᵣ = %g\n",ηᵣ[o])
             # Physics =================================================== #
@@ -218,13 +224,16 @@ function RTI_GrowthRate()
             PP.Kₐ[o]    =   -d12/(c11*j22 - d12*i21)
             PP.ϕₐ[1]    =   ϕ₁
             # ----------------------------------------------------------- #
+            @timeit to "δA Loop" begin
             for l in eachindex(delfac) # Loop over perturbation amplitude
                 δA          =   -(M.ymax-M.ymin)/2/delfac[l]    #   Amplitude [ m ]
                 @printf("    δA = %g\n",δA)
                 # @printf("δA = %g\n",delfac[l])
+                @timeit to "Marker number Loop" begin
                 for k in eachindex(nm) # Loop over marker numbers
                     @printf("    nm = %g\n",nm[k])
                     # Tracer Advection ================================== #
+                    @timeit to "Tracer Ini" begin
                     nmx,nmy =   nm[k],nm[k]
                     noise   =   addnoise[n]
                     nmark   =   nmx*nmy*NC.x*NC.y
@@ -253,32 +262,41 @@ function RTI_GrowthRate()
                     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
                     D.ηc    .=   D.ηce[2:end-1,2:end-1]
                     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+                    end
                     # --------------------------------------------------- #
-                    # ------------------------------------------------------- #
+                    # --------------------------------------------------- #
                     # Momentum Equation ===
                     D.vx    .=  0.0
                     D.vy    .=  0.0
                     D.Pt    .=  0.0
                     @. δx   =   0.0
                     @. F    =   0.0
+                    @timeit to "Solution Iteration" begin
                     for iter=1:niter
                         # Initial Residual -------------------------------------- #
+                        @timeit to "Residual" begin
                         Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
                         F[Num.Vx]   =   Fm.x[:]
                         F[Num.Vy]   =   Fm.y[:]
                         F[Num.Pt]   =   FPt[:]
                         @printf("||R|| = %1.4e\n", norm(F)/length(F))
                         norm(F)/length(F) < ϵ ? break : nothing
+                        end
                         # Assemble Coefficients ================================= #
+                        @timeit to "Assembly" begin
                         K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                        end
                         # ------------------------------------------------------- #
                         # Solution of the linear system ========================= #
+                        @timeit to "Solution" begin
                         δx      =   - K \ F
+                        end
                         # ------------------------------------------------------- #
                         # Update Unknown Variables ============================== #
                         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
                         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
                         D.Pt                .+=  δx[Num.Pt]
+                    end
                     end
                     # ------------------------------------------------------- #
                     # Get the velocity on the centroids ---
@@ -291,6 +309,7 @@ function RTI_GrowthRate()
                     end
                     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
                     # ---
+                    @timeit to "Calculate GR" begin
                     # Calculate diapir growth rate ---
                     xwave       =   (M.xmax-M.xmin)/2  
                     ywave       =   (M.ymax-M.ymin)/2 + δA
@@ -309,6 +328,7 @@ function RTI_GrowthRate()
                     PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                     PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                     PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
+                    end
 
                     if l == 1 && k == 1 && n == 1 && o == 1
                         # @show l,k,n,o
@@ -397,14 +417,19 @@ function RTI_GrowthRate()
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     end
                 end # Loop δA - l
+                end
             end # Loop nm - k 
+            end
         end # Loop ηᵣ - o
+        end
     end # Loop addnoise - n
+    end
     if save_fig == 1
         savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test.png"))
     else
         display(q)
     end
+    display(to)
 end # function
 
 RTI_GrowthRate()
