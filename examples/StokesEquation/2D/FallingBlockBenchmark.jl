@@ -5,8 +5,11 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf
+using TimerOutputs
 
 function FallingBlockBenchmark(td)
+    to      =   TimerOutput()
+    @timeit to "Ini" begin
     # Benchmark parameter =============================================== #
     ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
     # ηᵣ      =   6.0
@@ -19,7 +22,7 @@ function FallingBlockBenchmark(td)
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
     #   Attention: Tracers are the only method that work well.
-    FD          =   (Method     = (Adv=:semilag,),)
+    FD          =   (Method     = (Adv=:tracers,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -102,6 +105,8 @@ function FallingBlockBenchmark(td)
                     vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     # ------------------------------------------------------------------- #
+    end
+    @timeit to "η loop" begin
     for mn in eachindex(ηᵣ)     #   Loop over ηᵣ
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("Falling_",Ini.p,"_ηr_",round(ηᵣ[mn]),
@@ -151,6 +156,7 @@ function FallingBlockBenchmark(td)
         # --------------------------------------------------------------- #
         # Tracer Advection ============================================== #
         if FD.Method.Adv==:tracers 
+            @timeit to "Tracer Ini" begin
             # Tracer Initialization ---
             nmx,nmy     =   3,3
             noise       =   0
@@ -183,7 +189,9 @@ function FallingBlockBenchmark(td)
             Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
             D.ηc    .=  D.η_ex[2:end-1,2:end-1]
             Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+            end
         else
+            @timeit to "Phase Ini" begin
             # ----------------------------------------------------------- #
             # Initial Condition ========================================= #
             IniPhase!(Ini.p,D,M,x,y,NC;phase)
@@ -211,6 +219,7 @@ function FallingBlockBenchmark(td)
                                     D.η_ex[2:end-0,1:end-1] + 
                                     D.η_ex[1:end-1,2:end-0] + 
                                     D.η_ex[2:end-0,2:end-0])
+            end
         end
         # --------------------------------------------------------------- #
         # System of Equations =========================================== #
@@ -225,6 +234,7 @@ function FallingBlockBenchmark(td)
             Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
         )
         # --------------------------------------------------------------- #
+        @timeit to "Time Loop" begin
         # Time Loop ===================================================== #
         for it = 1:nt
             χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector
@@ -235,11 +245,17 @@ function FallingBlockBenchmark(td)
                         T.time[1]/(60*60*24*365.25)/1.0e6)
             # Momentum Equation =======
             # Update K ---
+            @timeit to "Assembly" begin
             K       =   Assembly( NC, NV, Δ, D.ηc, D.ηv, VBC, Num )
+            end
             # Update RHS ---
+            @timeit to "Update RHS" begin
             rhs     =   updaterhs( NC, NV, Δ, D.ηc, D.ηv, D.ρ, g, VBC, Num )
+            end
             # Solve System of Equations ---
+            @timeit to "Solution" begin
             χ       =   K \ rhs
+            end
             # Update Unknown Variables ---
             D.vx[:,2:end-1]     .=  χ[Num.Vx]
             D.vy[2:end-1,:]     .=  χ[Num.Vy]
@@ -367,6 +383,7 @@ function FallingBlockBenchmark(td)
             end
             @printf("\n")
         end     # End Time Loop
+        end
         if ηᵣ[mn] == 0.0 || ηᵣ[mn] == 1.0 || ηᵣ[mn] == 2.0 || 
                         ηᵣ[mn] == 3.0 || ηᵣ[mn] == 4.0 || ηᵣ[mn] == 6.0
             count = count + 1
@@ -396,6 +413,7 @@ function FallingBlockBenchmark(td)
             end
         end
     end # End ηᵣ Loop
+    end
     if td == 0
         q = scatter(ηᵣ,sv,marker=4,
                         ylabel="block velocity [m/s]",
@@ -419,6 +437,7 @@ function FallingBlockBenchmark(td)
             display(p2)
         end
     end
+    display(to)
 end
 # ======================================================================= #
 # Define if the problem is time-dependent (1) or if you want to have the  #

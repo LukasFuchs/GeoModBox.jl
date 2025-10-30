@@ -1,7 +1,8 @@
 using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots
+using TimerOutputs
 
 function Poisson_variable_k()
-
+to      =   TimerOutput()
 # Physikalischer Parameter ---------------------------------------------- #
 P       =   (
     L           =   4e3,      #   [m]
@@ -75,9 +76,10 @@ K       =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(ndof)
 # ------------------------------------------------------------------- #
 # Solve equation ---------------------------------------------------- #
+@timeit to "Solution" begin
 Poisson2D!(D.T, D.Q, D.kx, D.ky, Δ.x, Δ.y, NC, BC, K, rhs, Num )
+end
 # ------------------------------------------------------------------- #
-
 # Plot solution --------------------------------------------------------- #
 p = heatmap(x.c ./ 1e3, y.c ./ 1e3, D.T', 
         color=:viridis, colorbar=true, aspect_ratio=:equal, 
@@ -108,6 +110,7 @@ display(q)
 savefig(p,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_01.png")
 savefig(q,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
+display(to)
 end
 
 Poisson_variable_k()

@@ -5,8 +5,11 @@
 # ======================================================================= #
 using Plots, Printf, LinearAlgebra, ExtendableSparse
 using GeoModBox.HeatEquation.OneD
+using TimerOutputs
 
 function Heat_1D_discretization()
+to  =   TimerOutput()
+@timeit to "Ini" begin
 # Physical Parameters --------------------------------------------------- #
 L           =   100.0               # Length [ m ]
 Trock       =   300.0               # Background temperature [ C ]
@@ -56,6 +59,7 @@ cna.T                   .=  T.ini
 @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
 # ----------------------------------------------------------------------- #
+end
 # Boundary conditions --------------------------------------------------- #
 BC          =   (
                     type = (W=:Dirichlet, E=:Dirichlet),
@@ -100,13 +104,19 @@ else
 end
 # ----------------------------------------------------------------------- #
 # Time loop ------------------------------------------------------------- #
+@timeit to "TimeLoop" begin
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
+    @timeit to "ForwardEuler" begin
     ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
+    end
     # Implicit, Backward Euler ------------------------------------------ #
+    @timeit to "BackwardEuler" begin
     BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC, K, implicit.rhs )
+    end
     # Defection correction method --------------------------------------- #
+    @timeit to "DC" begin
     for iter = 1:niter
         # Residual iteration
         ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
@@ -120,9 +130,12 @@ for n=1:nt
         δT = -(Kc\dc.R[:])          
         # Update temperature            
         dc.T .= dc.T .+ δT            
-    end        
+    end
+    end
     # Crank-Nicolson method --------------------------------------------- #
+    @timeit to "CNA" begin
     CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+    end
     # Update temperature ------------------------------------------------ #
     dc.T0           .=  dc.T
     # Update time ------------------------------------------------------- #
@@ -165,6 +178,7 @@ for n=1:nt
         end
     end
 end
+end
 # Speicher Animation ---------------------------------------------------- #
 if save_fig == 1
     # Write the frames to a GIF file
@@ -174,6 +188,7 @@ else
 end
 foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 # ----------------------------------------------------------------------- #
+display(to)
 end
 # Call function --------------------------------------------------------- #
 Heat_1D_discretization()
