@@ -10,16 +10,21 @@ using Interpolations
 """
 function upwindc2D!(P,P_ex,vxc,vyc,NC,Δt,Δx,Δy)
 
-    indx    =   2:(NC.x+1)
-    indy    =   2:(NC.y+1)
+    # indx    =   2:(NC.x+1)
+    # indy    =   2:(NC.y+1)
 
-    @. P     =  P_ex[indx,indy] - 
-            (vxc>0)*(vxc*Δt/Δx*(P_ex[indx,indy  ] - P_ex[indx-1,indy])) - 
-            (vxc<0)*(vxc*Δt/Δx*(P_ex[indx+1,indy] - P_ex[indx,indy  ])) - 
-            (vyc>0)*(vyc*Δt/Δy*(P_ex[indx,indy  ] - P_ex[indx,indy-1])) - 
-            (vyc<0)*(vyc*Δt/Δy*(P_ex[indx,indy+1] - P_ex[indx,indy  ]))
+    # @. P     =  P_ex[2:(NC.x+1),indy] - 
+    #         (vxc>0)*(vxc*Δt/Δx*(P_ex[indx,indy  ] - P_ex[indx-1,indy])) - 
+    #         (vxc<0)*(vxc*Δt/Δx*(P_ex[indx+1,indy] - P_ex[indx,indy  ])) - 
+    #         (vyc>0)*(vyc*Δt/Δy*(P_ex[indx,indy  ] - P_ex[indx,indy-1])) - 
+    #         (vyc<0)*(vyc*Δt/Δy*(P_ex[indx,indy+1] - P_ex[indx,indy  ]))
+    @. P     =  P_ex[2:(NC.x+1),2:(NC.y+1)] - 
+            (vxc>0)*(vxc*Δt/Δx*(P_ex[2:(NC.x+1),2:(NC.y+1)] - P_ex[1:NC.x,2:(NC.y+1)])) - 
+            (vxc<0)*(vxc*Δt/Δx*(P_ex[3:(NC.x+2),2:(NC.y+1)] - P_ex[2:(NC.x+1),2:(NC.y+1)])) - 
+            (vyc>0)*(vyc*Δt/Δy*(P_ex[2:(NC.x+1),2:(NC.y+1)] - P_ex[2:(NC.x+1),1:NC.y])) - 
+            (vyc<0)*(vyc*Δt/Δy*(P_ex[2:(NC.x+1),3:(NC.y+2)] - P_ex[2:(NC.x+1),2:(NC.y+1)]))
     # Update extende temperature field ------------------------------- #
-    P_ex[indx,indy]     .=  P
+    P_ex[2:(NC.x+1),2:(NC.y+1)]     .=  P
     # ---------------------------------------------------------------- #
 end
 

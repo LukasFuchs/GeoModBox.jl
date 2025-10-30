@@ -6,9 +6,10 @@ using GeoModBox.Scaling
 # using GeoModBox.Tracers.TwoD
 # using Base.Threads
 using Statistics, LinearAlgebra
-using Printf
+using Printf, TimerOutputs
 
 function MixedHeated()
+to      =   TimerOutput()
 # Define Initial Condition ========================================== #
 # Temperature - 
 #   1) circle, 2) gaussian, 3) block, 4) linear, 5) lineara
@@ -26,6 +27,7 @@ path        =   string("./examples/MixedHeatedConvection/Results/")
 anim        =   Plots.Animation(path, String[] )
 save_fig    =   1
 # ------------------------------------------------------------------- #
+@timeit to "Ini" begin
 # Modellgeometrie Konstanten ======================================== #
 M   =   Geometry(
     xmin    =   0.0,                #   [ m ] 
@@ -115,7 +117,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   1.0,                #   Courant time factor
     Δfacd   =   1.0,                #   Diffusion time factor
-    itmax   =   6000,              #   Maximum iterations; 30000
+    itmax   =   8000,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -159,10 +161,14 @@ y1      =   (
 )
 y   =   merge(y,y1)
 # ------------------------------------------------------------------- #
+end
 # Anfangsbedingungen ================================================ #
+@timeit to "IniCondition" begin
 IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
+end
 # ------------------------------------------------------------------- #
 # Randbedingungen =================================================== #
+@timeit to "BoundaryCondition" begin
 # Temperatur ------
 TBC     = (
     type    = (W=:Neumann, E=:Neumann,N=:Dirichlet,S=:Dirichlet),
@@ -173,6 +179,7 @@ VBC     =   (
     type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
     val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
 )
+end
 # ------------------------------------------------------------------- # 
 # Rayleigh Zahl Bedingungen ========================================= #
 if P.Ra < 0
@@ -189,6 +196,7 @@ filename    =   string("Mixed_Heated_",P.Ra[1],
                         "_",Ini.T)
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
+@timeit to "EquationSetup" begin
 # Impulserhaltung (IEG) ------
 # Iterations --- 
 niter   =   50
@@ -208,8 +216,10 @@ ndof    =   maximum(Num.T)
 K1      =   ExtendableSparseMatrix(ndof,ndof)
 K2      =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(ndof)
+end
 # ------------------------------------------------------------------- #
 # Zeitschleife ====================================================== #
+@timeit to "Time Loop" begin
 for it = 1:T.itmax
     χ       =   zeros(maximum(Num.Pt))      #   Unbekannten Vektor IEG
     rhsM    =   zeros(maximum(Num.Pt))      #   Rechte Seite IEG
@@ -224,23 +234,33 @@ for it = 1:T.itmax
     D.Pt    .=  0.0
     # Anfangsresiduum ------
     @. D.ρ  =   -P.Ra*D.T
+    @timeit to "Residual Iteration" begin
     for iter = 1:niter
+        @timeit to "Residual" begin
         Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
         rhsM[Num.Vx]    =   Fm.x[:]
         rhsM[Num.Vy]    =   Fm.y[:]
         rhsM[Num.Pt]    =   FPt[:]
         @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
                 norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+        end
         # Update K ------
+        @timeit to "Assembly" begin
         K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+        end
         # Lösen des lineare Gleichungssystems ------
+        @timeit to "Solution" begin
         χ      =   - K \ rhsM
+        end
         # Update unbekante Variablen ------
+        @timeit to "Update Solution" begin
         D.vx[:,2:end-1]     .+=  χ[Num.Vx]
         D.vy[2:end-1,:]     .+=  χ[Num.Vy]
         D.Pt                .+=  χ[Num.Pt]
+        end
     end
     D.ρ  =   ones(NC...)
+    end
     # ======
     # Berechnung der Geschwindikeit auf den Centroids ------
     for i = 1:NC.x
@@ -302,10 +322,14 @@ for it = 1:T.itmax
     end
     # --------------------------------------------------------------- #
     # Advektion ===================================================== #
+    @timeit to "Advection" begin
     semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
+    end
     # --------------------------------------------------------------- #
     # Diffusion ===================================================== #
+    @timeit to "Diffusion" begin
     CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
+    end
     # --------------------------------------------------------------- #
     # Check break =================================================== #
     # If the maximum time is reached or if the models reaches steady 
@@ -336,6 +360,7 @@ for it = 1:T.itmax
     end
     # --------------------------------------------------------------- #
     @printf("\n")
+end
 end
 if save_fig == 1
     # Write the frames to a GIF file
@@ -384,6 +409,7 @@ if save_fig == 1
 elseif save_fig == 0
     display(q2)
 end
+display(to)
 # ======================================================================= #
 end
 

@@ -419,7 +419,8 @@ end
 # --------------------------------------------------------------------- #
 ```
 
-![AdvResFinal](../../assets/2D_advection_circle_RigidBody_ResTest.png)
+<!-- ![AdvResFinal](../../assets/2D_advection_circle_RigidBody_ResTest.png) -->
+![AdvResFinalA](../../../../examples/AdvectionEquation/Results/2D_advection_circle_RigidBody_ResTest.png)
 
 **Figure 2. Advection Resolution Test.**  
 Deviation, maximum, and mean temperature for each advection scheme across increasing grid resolutions. 
