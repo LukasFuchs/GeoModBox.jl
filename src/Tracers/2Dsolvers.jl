@@ -381,7 +381,7 @@ end
 """
     Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
 """
-@views function Markers2Cells(Ma,nmark,PC_th,PC,weight_th,weight,x,y,Δ,param,param2)
+@views function Markers2Cells(Ma,nmark,PC_th,PC,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
     PC0     =   copy(PC)
     PC      .*=     0.0
     weight  .*=     0.0
@@ -437,11 +437,22 @@ end
                     Δxm = abs(x.ce[i] - Ma.x[k])/Δ.x
                     Δym = abs(y.ce[j] - Ma.y[k])/Δ.y
                     # Increment cell counts
-                    PC_th[tid][i-1,j-1] += param2[PM[k]+1] * Δxm * Δym
-                    PC_th[tid][i  ,j-1] += param2[PM[k]+1] * (1.0 - Δxm) * Δym
-                    PC_th[tid][i-1,j  ] += param2[PM[k]+1] * Δxm * (1.0 - Δym)
-                    PC_th[tid][i  ,j  ] += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
-                    
+                    if avgm==:arith
+                        PC_th[tid][i-1,j-1] += param2[PM[k]+1] * Δxm * Δym
+                        PC_th[tid][i  ,j-1] += param2[PM[k]+1] * (1.0 - Δxm) * Δym
+                        PC_th[tid][i-1,j  ] += param2[PM[k]+1] * Δxm * (1.0 - Δym)
+                        PC_th[tid][i  ,j  ] += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
+                    elseif avgm==:harm
+                        PC_th[tid][i-1,j-1] += (Δxm * Δym) / param2[PM[k]+1] 
+                        PC_th[tid][i  ,j-1] += ((1.0 - Δxm) * Δym) / param2[PM[k]+1]
+                        PC_th[tid][i-1,j  ] += (Δxm * (1.0 - Δym)) / param2[PM[k]+1]
+                        PC_th[tid][i  ,j  ] += ((1.0 - Δxm) * (1.0 - Δym)) / param2[PM[k]+1]
+                    elseif avgm==:geom
+                        PC_th[tid][i-1,j-1] += log(param2[PM[k]+1]) * (Δxm * Δym)
+                        PC_th[tid][i  ,j-1] += log(param2[PM[k]+1]) * ((1.0 - Δxm) * Δym)
+                        PC_th[tid][i-1,j  ] += log(param2[PM[k]+1]) * (Δxm * (1.0 - Δym))
+                        PC_th[tid][i  ,j  ] += log(param2[PM[k]+1]) * ((1.0 - Δxm) * (1.0 - Δym))
+                    end
                     weight_th[tid][i-1,j-1]    += Δxm * Δym
                     weight_th[tid][i  ,j-1]    += (1.0 - Δxm) * Δym
                     weight_th[tid][i-1,j  ]    += Δxm * (1.0 - Δym)
@@ -453,8 +464,14 @@ end
     
     PC      .= reduce(+, PC_th)
     weight  .= reduce(+, weight_th)
-        
-    PC ./= weight
+    
+    if avgm==:arith
+        PC      ./= weight
+    elseif avgm ==:harm
+        @. PC   =   weight / PC
+    elseif avgm==:geom
+        @. PC   =   exp(PC/weight) # PC^(1/weight)
+    end
 
     if sum(isnan.(PC))>0
         @printf("%i number(s) of cells without markers\n", sum(isnan.(PC)))
@@ -467,7 +484,7 @@ end
 """
     Markers2Vertices(Ma,nmark,PG,weight,x,y,Δ,param)
 """
-@views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2)
+@views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
     PG0     =   copy(PG)
     PG      .*=     0.0
     weight  .*=     0.0
@@ -523,11 +540,22 @@ end
                     Δxm = abs(x.v[i] - Ma.x[k])/ Δ.x
                     Δym = abs(y.v[j] - Ma.y[k])/ Δ.y
                     # Increment cell counts
-                    PG_th[tid][i  ,j  ]    += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
-                    PG_th[tid][i  ,j-1]    += param2[PM[k]+1] * (1.0 - Δxm) * Δym
-                    PG_th[tid][i+1,j  ]    += param2[PM[k]+1] * Δxm * (1.0 - Δym)
-                    PG_th[tid][i+1,j-1]    += param2[PM[k]+1] * Δxm * Δym
-
+                    if avgm==:arith
+                        PG_th[tid][i  ,j  ]    += param2[PM[k]+1] * (1.0 - Δxm) * (1.0 - Δym)
+                        PG_th[tid][i  ,j-1]    += param2[PM[k]+1] * (1.0 - Δxm) * Δym
+                        PG_th[tid][i+1,j  ]    += param2[PM[k]+1] * Δxm * (1.0 - Δym)
+                        PG_th[tid][i+1,j-1]    += param2[PM[k]+1] * Δxm * Δym
+                    elseif avgm==:harm
+                        PG_th[tid][i  ,j  ]    += ((1.0 - Δxm) * (1.0 - Δym)) / param2[PM[k]+1]
+                        PG_th[tid][i  ,j-1]    += ((1.0 - Δxm) * Δym) / param2[PM[k]+1]
+                        PG_th[tid][i+1,j  ]    += (Δxm * (1.0 - Δym)) / param2[PM[k]+1]
+                        PG_th[tid][i+1,j-1]    += (Δxm * Δym) / param2[PM[k]+1]
+                    elseif avgm==:geom
+                        PG_th[tid][i  ,j  ]    += log(param2[PM[k]+1]) * (1.0 - Δxm) * (1.0 - Δym)
+                        PG_th[tid][i  ,j-1]    += log(param2[PM[k]+1]) * (1.0 - Δxm) * Δym
+                        PG_th[tid][i+1,j  ]    += log(param2[PM[k]+1]) * Δxm * (1.0 - Δym)
+                        PG_th[tid][i+1,j-1]    += log(param2[PM[k]+1]) * Δxm * Δym
+                    end
                     weight_th[tid][i  ,j  ] += (1.0 - Δxm) * (1.0 - Δym)
                     weight_th[tid][i  ,j-1] += (1.0 - Δxm) * Δym
                     weight_th[tid][i+1,j  ] += Δxm * (1.0 - Δym)
@@ -539,7 +567,14 @@ end
     
     PG      .= reduce(+, PG_th)
     weight  .= reduce(+, weight_th)
-    PG ./= weight
+
+    if avgm==:arith
+        PG      ./= weight
+    elseif avgm ==:harm
+        @. PG   =   weight / PG
+    elseif avgm==:geom
+        @. PG   =   exp(PG/weight) # PC^(1/weight)
+    end
 
     if sum(isnan.(PG))>0
         @printf("%i number(s) of vertices without markers\n",sum(isnan.(PG)))
