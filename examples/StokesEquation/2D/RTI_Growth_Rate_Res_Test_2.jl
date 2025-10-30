@@ -13,6 +13,7 @@ function RTI_GrowthRate()
     @timeit to "Ini" begin
     plot_fields     =:no
     save_fig        = 1
+    avgm            =:geom     # Averaging Method for η - default arith
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
@@ -261,7 +262,7 @@ function RTI_GrowthRate()
                         end
                     end     
                     # Interpolate Viscosity ---
-                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm)
                     D.ηc    .=   D.ηce[2:end-1,2:end-1]
                     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
                     end
@@ -383,8 +384,8 @@ function RTI_GrowthRate()
                                     xlabel="1/nmx/nmy",ylabel="ε [ % ]",
                                     xscale=:log10, yscale=:log10,
                                     title=string("ηᵣ = ",ηᵣ[o]),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(1e-1, 1e2),
+                                    # xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
+                                    # ylims=(1e-1, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     else
@@ -394,8 +395,8 @@ function RTI_GrowthRate()
                                     xlabel="1/nmx/nmy",ylabel="ε [ % ]",
                                     xscale=:log10,yscale=:log10,
                                     title=string("ηᵣ = ",ηᵣ[o]),
-                                    xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
-                                    ylims=(1e-1, 1e2),
+                                    # xlims=(1/(maximum(nm)+3)/(maximum(nm)+3), .5),
+                                    # ylims=(1e-1, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
                                     subplot=((n-1)*size(ηᵣ,2)+o))
                     end
@@ -408,7 +409,7 @@ function RTI_GrowthRate()
     end # Loop addnoise - n
     end
     if save_fig == 1
-        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test_const_NC.png"))
+        savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test_const_NC_",avgm,".png"))
     else
         display(q)
     end
