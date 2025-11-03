@@ -1,17 +1,9 @@
 using Plots
 using GeoModBox.HeatEquation.OneD
+using TimerOutputs
 
-@doc raw"""
-    ContinentalGeotherm_1D()
-
-Function to calculate the 1D geotherm for a continental lithosphere. 
-Temperature is calculated by solving the 1-D heat equation assuming
-variable thermal parameters and a radiogenic heat source.
-The equation is solved using a proper conserving finite difference
-scheme.
-
-"""
 function ContinentalGeotherm_1D()
+to = TimerOutput()
 # ------------------------------------------------------------------- #
 #    LF - 24.10.2024 - julia                                          #
 # ------------------------------------------------------------------- #
@@ -133,6 +125,7 @@ time    =   zeros(1,nit)            #   Time array
 # ------------------------------------------------------------------- #
 # Time Loop --------------------------------------------------------- #
 count   =   1
+@timeit to "TimeLoop" begin
 for i = 1:nit
     if i > 1
         time[i]     =   time[i-1] + Δt
@@ -151,6 +144,7 @@ for i = 1:nit
         display(p)
         count = count + 1
     end
+end
 end
 # ------------------------------------------------------------------- #
 # Calculate heaf flow ----------------------------------------------- #
@@ -194,6 +188,7 @@ display(q)
 savefig(q,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D.png")
 savefig(p,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D_evolve.png")
 # ------------------------------------------------------------------- #
+display(to)
 end
     
 ContinentalGeotherm_1D()

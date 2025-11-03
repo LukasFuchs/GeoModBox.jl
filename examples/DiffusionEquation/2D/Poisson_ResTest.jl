@@ -1,8 +1,9 @@
 using GeoModBox.HeatEquation.TwoD, ExtendableSparse, Plots, Statistics
 using GLM, DataFrames
+using TimerOutputs
 
 function Poisson_ResTest()
-
+to      =   TimerOutput()
 # Physical Parameters --------------------------------------------------- #
 P       = ( 
     L       =   4.0e3,      #   [m]
@@ -33,6 +34,7 @@ ST      =   (
 )
 # ----------------------------------------------------------------------- #
 # Loop over the resolutions --------------------------------------------- #
+@timeit to "Resolution Loop" begin
 for k = 1:n
     # Numerical Parameters ---------------------------------------------- #
     NC      = (
@@ -76,10 +78,13 @@ for k = 1:n
     rhs     =   zeros(ndof)
     # ------------------------------------------------------------------- #
     # Solve equation ---------------------------------------------------- #
+    @timeit to "Solution" begin
     Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
+    end
     # ------------------------------------------------------------------- #
     ST.Tmax[k]      =   maximum(D.T[:])
     ST.Tmean[k]     =   mean(D.T[:])
+end
 end
 # Linear fit ------------------------------------------------------------ #
 df_max      =   DataFrame(x = ST.x, Tmax = ST.Tmax)
@@ -116,6 +121,7 @@ plot!(p,ST.x, linfit1, color="black", label="",
 display(p)
 savefig("./examples/DiffusionEquation/2D/Results/Poisson_ResTest.png")
 # ----------------------------------------------------------------------- #
+display(to)
 end
 
 Poisson_ResTest()

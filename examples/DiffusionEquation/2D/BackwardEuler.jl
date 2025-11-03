@@ -1,7 +1,9 @@
 using GeoModBox.HeatEquation.TwoD
 using ExactFieldSolutions, LinearAlgebra, Plots, Printf
+using TimerOutputs
 
 function HeatEquation()
+    to  =   TimerOutput()
     # Spatial domain
     xlim = (min=-1/2, max=1/2)
     ylim = (min=-1/2, max=1/2)
@@ -48,6 +50,7 @@ function HeatEquation()
     @. Cp  = 1.0
     Δt = max(Δ...)^2/(maximum(k.x)/minimum(ρ)/minimum(Cp))/4.1
     # Time integration Loop
+    @timeit to "TimeLoop" begin
     for it=1:nt
         @printf("Time step = %05d\n", it)
         t += Δt
@@ -57,19 +60,27 @@ function HeatEquation()
         # Exact solution on cell boundaries
         BoundaryConditions2D!(BC, x.c, y.c, t,(T0=1.0,K=1e-6,σ=0.1))
         # Iteration loop
+        @timeit to "Iteration" begin
         for iter=1:niter
             # Evaluate residual
+            @timeit to "Residual" begin
             ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
             @printf("||R|| = %1.4e\n", norm(R)/length(R))
             norm(R)/length(R) < ϵ ? break : nothing
+            end
             # Assemble linear system
+            @timeit to "Assembly" begin
             K  = AssembleMatrix2D(ρ, Cp, k, BC, Num, nc, Δ, Δt)
+            end
+            @timeit to "Solution" begin
             # Solve for temperature correction: Cholesky factorisation
             Kc = cholesky(K.cscmatrix)
             # Solve for temperature correction: Back substitutions
             δT = -(Kc\R[:])
+            end
             # Update temperature
             @. T += δT[Num.T]
+        end
         end
         # Visualisation
         if mod(it, nout)==0
@@ -82,6 +93,8 @@ function HeatEquation()
             display(plot(p1, p2, p3, layout=(2,2)))
         end
     end
+    end
+    display(to)
 end
 
 HeatEquation()

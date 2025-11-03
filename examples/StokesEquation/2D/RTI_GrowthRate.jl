@@ -6,8 +6,11 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function RTI_GrowthRate()
+    to              = TimerOutput()
+    @timeit to "Ini" begin
     plot_fields     =:no
     save_fig        = 1
     Pl  =   (
@@ -71,9 +74,12 @@ function RTI_GrowthRate()
         xmin    =   0.0,
     )
     # ------------------------------------------------------------------- #
+    end
     # for k in eachindex(nm)
+    @timeit to "δA Loop" begin
     for k in eachindex(delfac)
         @printf("δA = %g\n",delfac[k])
+        @timeit to "ηr Loop" begin
         for i in eachindex(ηᵣ)
             # Physics =================================================== #
             # 0 - upper layer; 1 - lower layer
@@ -104,7 +110,9 @@ function RTI_GrowthRate()
             @. PP.Kₐ[:,i]   =   -d12/(c11*j22 - d12*i21)
             @. PP.ϕₐ        =   ϕ₁
             # ----------------------------------------------------------- #
+            @timeit to "λ Loop" begin
             for j in eachindex(λᵣ)
+                @timeit to "Ini2" begin
                 # Perturbation properties ---
                 λ           =   λᵣ[j]                           #   [ m ]
                 δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
@@ -193,6 +201,7 @@ function RTI_GrowthRate()
                 )
                 # ------------------------------------------------------- #
                 # Tracer Advection ====================================== #
+                @timeit to "Tracer Ini" begin
                 nmx,nmy     =   nm,nm
                 noise       =   0
                 nmark       =   nmx*nmy*NC.x*NC.y
@@ -242,6 +251,7 @@ function RTI_GrowthRate()
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
                 D.ηc    .=   D.ηce[2:end-1,2:end-1]
                 Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+                end
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
                 # Iterations
@@ -266,28 +276,37 @@ function RTI_GrowthRate()
                 )
                 FPt     =   zeros(Float64,NC...)      
                 # ------------------------------------------------------- #
+                end
                 # Momentum Equation ===
                 D.vx    .=  0.0
                 D.vy    .=  0.0
                 D.Pt    .=  0.0
+                @timeit to "Solution Iteration" begin
                 for iter=1:niter
                     # Initial Residual -------------------------------------- #
+                    @timeit to "Residual" begin
                     Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
                     F[Num.Vx]   =   Fm.x[:]
                     F[Num.Vy]   =   Fm.y[:]
                     F[Num.Pt]   =   FPt[:]
                     @printf("||R|| = %1.4e\n", norm(F)/length(F))
                     norm(F)/length(F) < ϵ ? break : nothing
+                    end
                     # Assemble Coefficients ================================= #
+                    @timeit to "Assembly" begin
                     K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                    end
                     # ------------------------------------------------------- #
                     # Solution of the linear system ========================= #
+                    @timeit to "Solution" begin
                     δx      =   - K \ F
+                    end
                     # ------------------------------------------------------- #
                     # Update Unknown Variables ============================== #
                     D.vx[:,2:end-1]     .+=  δx[Num.Vx]
                     D.vy[2:end-1,:]     .+=  δx[Num.Vy]
                     D.Pt                .+=  δx[Num.Pt]
+                end
                 end
                 # ------------------------------------------------------- #
                 # Get the velocity on the centroids ---
@@ -300,6 +319,7 @@ function RTI_GrowthRate()
                 end
                 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
                 # ---
+                @timeit to "Calc GR" begin
                 # Calculate diapir growth rate ---
                 xwave       =   (M.xmax-M.xmin)/2  
                 ywave       =   (M.ymax-M.ymin)/2 + δA
@@ -318,6 +338,7 @@ function RTI_GrowthRate()
                 PP.Q[1] =   (ρ₀-ρ₁)*(M.ymax-M.ymin)/2.0*g/2.0/η₁
                 PP.K[1] =   abs(wvy)/abs(δA)/PP.Q[1]
                 PP.ϕ[1] =   2*π*(M.ymax-M.ymin)/2/λ
+                end
 
                 if plot_fields==:yes
                     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
@@ -366,6 +387,7 @@ function RTI_GrowthRate()
                     ms=ms[k],markershape=:circle,label="",
                     color=mc[k])
             end # Loop λ - j
+            end
             if k == 1
                 plot!(q,PP.ϕₐ,b1[i].*PP.Kₐ[:,i] .+ b2[i],
                             xlabel="ϕ₁ = 2πh₁/λ",
@@ -375,13 +397,16 @@ function RTI_GrowthRate()
                             label=string("ηᵣ = ", ηᵣ[i]))
             end
         end # Loop ηᵣ - i 
+        end
     end # Loop delfac - k 
+    end
     if save_fig == 1
         savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
                             "_nmy_",nm,".png"))
     else
         display(q)
     end
+    display(to)
 end # function
 
 RTI_GrowthRate()

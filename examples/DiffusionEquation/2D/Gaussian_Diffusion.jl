@@ -1,8 +1,9 @@
 using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
 using Statistics, Printf, LinearAlgebra
+using TimerOutputs
 
 function Gaussian_Diffusion()
-
+to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CNA","ADI","dc"]
 # Schema      =   ["ADI"]
 ns          =   size(Schema,1)
@@ -38,10 +39,13 @@ St      = (
 )
 # -------------------------------------------------------------------- #
 # Loop over different discretization schemes ------------------------- #
+@timeit to "Discretization Loop" begin
 for m = 1:ns
     FDSchema = Schema[m]
     display(FDSchema)
+    @timeit to "Resolution Loop" begin
     for l = 1:nrnxny
+        @timeit to "Ini" begin
         # Numerical Parameters --------------------------------------- #
         NC  = (
             x       =   l*20,       #   Number of Centroids in x
@@ -188,18 +192,29 @@ for m = 1:ns
             ∂T          =   (∂x=zeros(NC.x+1, NC.x), ∂y=zeros(NC.x, NC.x+1))
             q           =   (x=zeros(NC.x+1, NC.x), y=zeros(NC.x, NC.x+1))
         end
+        end
+        @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
         for n = 1:nt
             if n>1
                 if FDSchema == "explicit"
+                    @timeit to "Explicit" begin
                     ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    end
                 elseif FDSchema == "implicit"
+                    @timeit to "Implicit" begin
                     BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
+                    end
                 elseif FDSchema == "CNA"
+                    @timeit to "CNA" begin
                     CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+                    end
                 elseif FDSchema == "ADI"
+                    @timeit to "ADI" begin
                     ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    end
                 elseif FDSchema == "dc"
+                    @timeit to "DC" begin
                     for iter = 1:niter
                         # Evaluate residual
                         ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, BC, Δ, T.Δ[1])
@@ -215,6 +230,7 @@ for m = 1:ns
                         @. D.T += δT[Num.T]
                     end
                     D.T0    .= D.T
+                    end
                 end
                 time[n]     =   time[n-1] + T.Δ[1]
                 if time[n] > T.tmax 
@@ -288,6 +304,7 @@ for m = 1:ns
         end        
         display("Time loop finished ...")
         display("-> Use new grid size...")
+        end
         # Save Animation ---
         if save_fig == 1
             # Write the frames to a GIF file
@@ -306,6 +323,8 @@ for m = 1:ns
         St.Tmean[1]     =   mean(D.Tana)
         # ------------------------------------------------------------ #
     end
+    end
+end
 end
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3))
@@ -334,6 +353,7 @@ if save_fig == -1
     savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
 end
 # --------------------------------------------------------------------- #
+display(to)
 end
 
 Gaussian_Diffusion()
