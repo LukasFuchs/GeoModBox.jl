@@ -12,18 +12,18 @@ function RTI_GrowthRate()
     to              = TimerOutput()
     @timeit to "Ini" begin
     plot_fields     =:no
-    save_fig        = 1
-    avgm            =:geom     # Averaging Method for η - default arith
+    save_fig        = 0
+    avgm            =:arith     # Averaging Method for η - default arith
     Pl  =   (
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
     )
     # Define Initial Condition ========================================== #
-    addnoise    =   [0 1]
+    addnoise    =   0 # [0 1]
     # Density Averaging ---
     #   centroids or vertices
     ρavg        =   :centroids  
-    nc          =   [10 20 40 60 80 100 120 140 160 180 200]
+    nc          =   [20 40 60 80 100 120 140]
     # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
     # Perturbation wavelength [ m ]
@@ -38,7 +38,7 @@ function RTI_GrowthRate()
     ρ₀          =   3000.0                  #   Density composition 0 [ kg/m^3 ]
     # ---
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
-    ηᵣ          =   [1e-6 1 500]            #   Viscosity ratio
+    ηᵣ          =   1e-6 #[1e-6 1 500]            #   Viscosity ratio
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Divisional factor of the amplitude following Gerya (2009) --------- #
@@ -48,6 +48,7 @@ function RTI_GrowthRate()
     mc          =   ["black","red","yellow"] # δA
     # Plot Settings ===================================================== #
     q   =   plot(layout=(size(addnoise,2),size(ηᵣ,2)))
+    v   =   plot(layout=(size(addnoise,2),size(ηᵣ,2)))
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
     M       =   Geometry(
@@ -383,7 +384,17 @@ function RTI_GrowthRate()
                                     label=string(-δA," [m]"),color=mc[l],
                                     xlabel="1/ncx/ncy",ylabel="ε [ % ]",
                                     xscale=:log10, yscale=:log10,
-                                    title=string("ηᵣ = ",ηᵣ[o]),
+                                    title=string("ηᵣ = ",ηᵣ[o],", ",avgm),
+                                    # xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
+                                    # ylims=(1e-2, 1e2),
+                                    layout=(size(addnoise,2),size(ηᵣ,2)),
+                                    subplot=((n-1)*size(ηᵣ,2)+o))
+                        scatter!(v,(1/nc[k]/nc[k],wvy),
+                                    ms=ms[1],markershape=:circle,
+                                    label=string(-δA," [m]"),color=mc[l],
+                                    xlabel="1/ncx/ncy",ylabel="v_y",
+                                    xscale=:log10, yscale=:log10,
+                                    title=string("ηᵣ = ",ηᵣ[o],", ",avgm),
                                     # xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
                                     # ylims=(1e-2, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
@@ -392,9 +403,20 @@ function RTI_GrowthRate()
                         scatter!(q,(1/nc[k]/nc[k],PP.ε[1]),
                                     ms=ms[1],markershape=:circle,
                                     color=mc[l],label="",
-                                    xlabel="1/ncx/ncy",ylabel="ε [ % ]",
-                                    xscale=:log10,yscale=:log10,
-                                    title=string("ηᵣ = ",ηᵣ[o]),
+                                    # xlabel="1/ncx/ncy",ylabel="ε [ % ]",
+                                    # xscale=:log10,yscale=:log10,
+                                    # title=string("ηᵣ = ",ηᵣ[o]," ",avgm),
+                                    # xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
+                                    # ylims=(1e-2, 1e2),
+                                    layout=(size(addnoise,2),size(ηᵣ,2)),
+                                    subplot=((n-1)*size(ηᵣ,2)+o))
+                        scatter!(v,(1/nc[k]/nc[k],wvy),
+                                    ms=ms[1],markershape=:circle,label="",
+                                    color=mc[l],
+                                    # label=string(-δA," [m]"),color=mc[l],
+                                    # xlabel="1/ncx/ncy",ylabel="^v_y",
+                                    # xscale=:log10, yscale=:log10,
+                                    # title=string("ηᵣ = ",ηᵣ[o],", ",avgm),
                                     # xlims=(1/(maximum(nc)+20)/(maximum(nc)+20), .1),
                                     # ylims=(1e-2, 1e2),
                                     layout=(size(addnoise,2),size(ηᵣ,2)),
@@ -412,6 +434,7 @@ function RTI_GrowthRate()
         savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_Res_Test_const_NM_",avgm,".png"))
     else
         display(q)
+        display(v)
     end
     display(to)
 end # function
