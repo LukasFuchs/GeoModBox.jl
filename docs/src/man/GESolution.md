@@ -2,9 +2,9 @@
 
 ## Governing Equations
 
-The governing equations for solving geodynamical problems—neglecting adiabatic effects and assuming only radioactive heat sources—are given by the conservation laws of 
+The governing equations for solving geodynamical problems — **neglecting adiabatic effects** and assuming **only radioactive heat sources—are** given by the conservation laws of 
 
-**Momentum**
+**=== Momentum ===**
 
 $\begin{equation}
 \rho \left(\frac{\partial{v_{i}}}{\partial{t}} + v_{j}\frac{\partial{v_{i}}}{\partial{x_{j}}}\right) = -\frac{\partial{P_t}}{\partial{x_{i}}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}} + \rho g_{i},
@@ -20,7 +20,7 @@ $P_t$ is the total pressure [Pa],
 $\tau_{ij}$ is the deviatoric stress tensor [Pa], and 
 $\boldsymbol{g}$ is the gravitational acceleration vector [m/s²]. 
 
-**Energy**
+**=== Energy ===**
 
 $\begin{equation}
 \rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H,
@@ -32,7 +32,7 @@ $T$ is temperature [K],
 $q_i$ is the heat flux [W/m²] in direction $i$,
 $H$ is the internal heat production per unit mass [W/kg]. 
 
-**Mass**
+**=== Mass ===**
 
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
@@ -44,13 +44,13 @@ Ordinary and partial differential equations (ODEs and PDEs) can be solved throug
 
 ## Finite Difference Method
 
-The ```GeoModBox.jl``` framework employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
+The `GeoModBox.jl` framework employs the **finite difference method**. While each numerical approach has its own strengths and limitations, the choice often depends on the user's familiarity and comfort with the method. Nonetheless, the finite difference method is relatively straightforward and pedagogically advantageous, as its discretized form closely resembles the original differential equations. Furthermore, it is computationally efficient, making it well-suited for performance-critical applications.
 
 In general, the finite difference method aims to approximate **differential operators** using finite differences derived from a Taylor series expansion. 
 
 **Mathematical Background**
 
-In infinitesimal calculus,the interest lies in how a quantity, such as $u$, changes in response to a small variation in the variable $x$. If $u$ has a value of $u_0$ at position $x_0$ and changes to $u_0 + \delta{u}$ when $x$ changes to $x_0 + \delta{x}, the incremental change can be described as follows:
+In infinitesimal calculus, the interest lies in how a quantity, such as $u$, changes in response to a small variation in the variable $x$. If $u$ has a value of $u_0$ at position $x_0$ and changes to $u_0 + \delta{u}$ when $x$ changes to $x_0 + \delta{x}$, the incremental change can be described as follows:
 
 $\begin{equation}
 \delta{u} = \frac{\delta{u}}{\delta{x}}\left(x_0\right)\delta{x}. 
@@ -84,7 +84,8 @@ $\begin{equation}
 
 where $\cal{O}$ indicates the truncation error of the approximation (here, $\Delta{x}$), and the formulation is, by definition, only accurate up to the first order.
 
-The partial derivatives can be approximated via different finite differences as 
+The partial derivatives can be approximated via different finite differences as, where $i,j$  
+defines the central reference point in two dimensions at the position $\left(x_0,y_0\right)$: 
 
 $\begin{equation}\begin{split}
 \textrm{forward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x+\Delta{x})-u(x)}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i+1,j}-u_{i,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\ \newline
@@ -96,7 +97,7 @@ For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.c
 
 ## Staggered Finite Difference
 
-To solve differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
+To solve partial differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
 
 However, in many cases, physical constraints or numerical stability requirements necessitate an alternative arrangement of variable locations. For example, solving the *momentum equation* with **variable viscosity** generally requires a *fully staggered grid* to ensure continuity of stress across adjacent grid points. A similar consideration applies to the *temperature equation* when using **variable thermal conductivity**.
 
@@ -114,7 +115,7 @@ Certain initial conditions and parameter structures are already defined in `GeoM
 
 # Thermal convection
 
-The equations discussed here are used to solve for pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable.
+The equations discussed here are used to solve for temperature, pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable. The following assumptions and approximations are made witin the `GeoModBox.jl` to solve a two-dimensional, thermal convection problem. 
 
 ## Constitutive Relation
 
@@ -124,7 +125,7 @@ $\begin{equation}
 \tau_{ij} = 2\eta \cdot \dot{\varepsilon}_{ij},
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity [Pa·s] and $\tau_{ij}$ is the deviatoric stress tensor [Pa] defined as 
+where $\eta$ is the dynamic viscosity [Pa·s] (constant or variable in space and time) and $\tau_{ij}$ is the deviatoric stress tensor [Pa] defined as 
 
 $\begin{equation}
 \tau_{ij} = \sigma_{ij} + P\delta{}_{ij},

@@ -1,4 +1,4 @@
-# Specific Initialization
+# Specifications
 
 `GeoModBox.jl` includes several [routines](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/InitialCondition/2Dini.jl) or [structures](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Structures.jl) to define certain parameters or initialize specific anomalies. The initial conditions can be specified for properties defined on their corresponding grid (i.e., temperature, velocity, or phase) or for tracers. 
 
@@ -112,7 +112,7 @@ for i in eachindex(phase)
 end
 ```
 
-# Tracer Calculations
+# Tracer Method
 
 Because tracer advection can be performed in parallel, additional parameters must be defined. However, `GeoModBox.jl` provides functionality to initialize tracer positions and rectangular phase anomalies, if needed. Additional initial configuration methods are encouraged and can be integrated. 
 

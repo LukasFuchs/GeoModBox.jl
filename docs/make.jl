@@ -16,7 +16,7 @@ makedocs(
         "Governing Equation" => Any[ # Checked! 
             "Solution" => Any[
                 "General" => "man/GESolution.md", # checked!
-                "Initial Condition" => "man/Ini.md", # Checked!
+                "Specifications" => "man/Ini.md", # Checked!
             ],
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md", # checked!
