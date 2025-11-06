@@ -23,12 +23,12 @@ The input parameters are:
 - NC - Structure or tuple containing the centroids parameter 
 - D - Structure or tuple containing the field arrays
 - x - Structure or tuple containing the x-coordinates
-- y - tructure or tuple containing the y-coordinates
+- y - Structure or tuple containing the y-coordinates
 
 Certain default values can be modified as well: 
 
-- Tb - Scalar value for the background temperature
-- Ta - Scalar value for the maximum (anomaly) temperature
+- Tb - Scalar value for the background (or top) temperature
+- Ta - Scalar value for the maximum (anomaly or bottom) temperature
 - σ - Width of the Gaussian temperature anomaly
 
 The temperature is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
@@ -114,37 +114,46 @@ end
 
 # Tracer Method
 
-Because tracer advection can be performed in parallel, additional parameters must be defined. However, `GeoModBox.jl` provides functionality to initialize tracer positions and rectangular phase anomalies, if needed. Additional initial configuration methods are encouraged and can be integrated. 
+Because tracer advection can be performed in parallel, additional parameters must be defined. `GeoModBox.jl` provides functionality to initialize certain tracer positions. Additional initial configuration methods are encouraged and can be integrated. The properties can either be interpolated from the centroids to the tracers or initialized first on the tracers followed by an interpolation on the grid. 
 
 The following steps are required to use tracers: 
 
 **1. Tracer initialization**
 
-To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected. The tracer properties can be interpolated to the centroids or vertices using a bilinear interpoltion scheme. For the centroids, the extended centroid field must be used. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`.
+To initialize the tracers, one needs to define what property should be advected, the number of markers per cell, the wanted noise, the initial shape, and the phase ID. The tracer properties can be interpolated to the centroids or vertices using a bilinear interpoltion scheme. For the centroids, the extended centroid field must be used. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`.
 
 Following the definition of the required parameters for the tracer advection, the initial tracer position can be defined via the function 
 
 ```julia
-IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
+ IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
 ``` 
 
 The function initializes the position, phase, and memory of the tracers. As initial tracer phase distribution one can choose: 
-- `ini=:block` - a rectangular block
-- `ini=:RTI` - a cosine perturbation with wavelength λ and amplitude δA 
+-   `ini=:block`        : a rectangular block
+-   `ini=:RTI`          : a cosine perturbation with wavelength λ and amplitude δA 
+    `ini:=Inclusion`    : a viscous circular or elliptical inclusion
 
 The input parameters are: 
 
-- Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
-- nmx - number of horizontal tracers per cell
-- nmy - number of vertical tracers per cell
-- Δ - Structure or tuple containing the grid resolution
-- M - Structure or tuple containing the geometry
-- NC - Structure or tuple containing centroids parameter
-- noise - add noise; 1 - yes, 0 - no
-- ini - Initial phase distribution (`block`)
-- phase - Vector with phase IDs, (e.g. [0,1])
-- λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
-- δA - Amplitude [m] of the perturbation
+    - Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
+    - nmx - number of horizontal tracers per cell
+    - nmy - number of vertical tracers per cell
+    - Δ - Structure or tuple containing the grid resolution
+    - M - Structure or tuple containing the geometry
+    - NC - Structure or tuple containing centroids parameter
+    - noise - add noise; 1 - yes, 0 - no
+    - ini - Initial phase distribution (`block`)
+    - phase - Vector with phase IDs, (e.g. [0,1])
+
+Certain default values can be modified as well: 
+
+    - λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
+    - δA - Amplitude [m] of the perturbation
+    - ellA - Major half axis [m] of the elliptical inclusion
+    - ellB - Minor half axis [m] of the elliptical inclusion
+    - α - Rotation angle [°] of the elliptical inclusion  
+
+The output is a tuple including the x-, and y-coordinates of the tracers and the phase ID as one dimensional arrays. If temperature is advected, temperature is also stored for each marker. 
 
 To advect the temperature, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
@@ -170,7 +179,7 @@ MAVG        = (
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
+rkv     =   1.0ftz/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 # Interpolate on centroids ---
 @threads for k = 1:nmark
     Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
@@ -216,6 +225,10 @@ D.ηc    .=  D.η_ex[2:end-1,2:end-1]
 Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 ```
 
+To interpolate a property, like the temperature, from the centroids to the tracers one can use the function `FromCtoM()`. 
+
+To interpolate a property from the tracers back to the centroids or vertices, like the viscosity, one can use the functions `Markers2Cells()` or `Markers2Vertices()`. Per default, an arithmetic averaging scheme is used to inerpolate the property, however, geometric and harmonic means are also available. For more information regarding the functions, please see the help function. 
+
 **2. Tracer advection** 
 
 The tracers are advected using Runge-Kutta 4th order. This is conducted using the function
@@ -240,7 +253,7 @@ The input parameters are:
 
 For more details please refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl).
 
->**Note:** Currently, temperature is not intended to be advected via tracers, as this would require the update of the tracer temperature via incremental changes rather than absolute value. Within the [2-D advection example](./examples/Advection2D.md) temperature advection is only used assuming non-diffusive process. Thus, no update of the tracer temperature is required! 
+>**Note:** Currently, temperature is not intended to be advected via tracers, as this would require the update of the tracer temperature via incremental changes rather than the absolute value. Within the [2-D advection example](./examples/Advection2D.md) temperature advection is only used assuming non-diffusive process. Thus, no update of the tracer temperature is required! 
 
 The advection of temperature and the update of the temperature field on the centroids is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
