@@ -79,7 +79,7 @@ n! = 1 \times 2 \times 3 \times \dots \times n.
 Rearranging the Taylor series extension and neglecting higher order terms one obtains an approximation of the partial derivatives using finite difference formulations as 
 
 $\begin{equation}
-\frac{\partial{u}}{\partial{x}}(x_0) = \frac{u(x_0)-u(x)}{\left(x-x_0\right)} + \cal{O}\left(\Delta{x}\right) = \frac{u(x_0)-u(x_0+\Delta{x})}{\Delta{x}} + \cal{O}\left(\Delta{x}\right),
+\frac{\partial{u}}{\partial{x}}(x_0) = \frac{u(x)-u(x_0)}{\left(x-x_0\right)} + \cal{O}\left(\Delta{x}\right) = \frac{u(x_0+\Delta{x})-u(x_0)}{\Delta{x}} + \cal{O}\left(\Delta{x}\right),
 \end{equation}$
 
 where $\cal{O}$ indicates the truncation error of the approximation (here, $\Delta{x}$), and the formulation is, by definition, only accurate up to the first order.
