@@ -624,7 +624,30 @@ Example:
 end
 
 """
-    Markers2Vertices(Ma,nmark,PG,weight,x,y,Δ,param)
+    Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
+
+Function to interpolate the marker property to the vertices using a weighted bilinear 
+interpolation scheme. 
+
+    Ma          : Tuple or structure containing the marker information 
+    nmark       : Total number of markers 
+    PG_th       : Property on the vertices per thread 
+    PG          : Property on the vertices
+    weight_th   : Weight on the centroids per thread
+    weight      : Weight on the centroids
+    x           : Tuple or structure containing the x-coordinates
+    y           : Tuple or structure containing the y-coordinates
+    Δ           : Tuple or structure containing the grid resolution
+    param       : Switch to define the advected property: :thermal or :phase
+    param2      : Array containing the value for each phase, e.g. [ρ₁ ρ₂]
+
+Certain default values can be modified as well:
+
+    avgm        : Averaging scheme: arithmetic (arith), geometric (geom), or harmonic (harm)
+
+Example: 
+
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 """
 @views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
     PG0     =   copy(PG)
@@ -727,9 +750,26 @@ end
 end
 
 """
-    FromCtoM(Prop, Ma, x, y, Δ, NC)
+    AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+
+Function to advect tracer in 2D using forth order Runge-Kutta.
+
+    Ma      : Tuple or structure containing the marker information 
+    nmark   : Total number of tracers
+    D       : Tuple or structure containing the velocities
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    dt      : Time step 
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+    rkw     : Runge-Kutta coefficients for velocity averaging
+    rkv     : Runge-Kutta coefficients for time stepping
+
+Certain default values can be modified as well:
+    
+    style   : Defines the calculation of the velocity, default 1, (1,2,3)
 """
-@views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+@views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv;style=1)
     @threads for k = 1:nmark
         if (Ma.phase[k]>=0)
             x0  =   Ma.x[k]
