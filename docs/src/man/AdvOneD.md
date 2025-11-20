@@ -34,7 +34,7 @@ $\begin{equation}
 
 which represents the number of grid points traversed in a single time step. 
 
-Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. Furthermore, the central difference at $i$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
+Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. The central difference at $i$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
 
 ## Lax-Friedrichs method
 
@@ -99,7 +99,7 @@ where $x_i$ is the coordinate of the Eulerian grid point $i$, $\Delta{t}$ is the
 
 Interpolate the temperature at $t_n$ from the surrounding Eulerian grid points onto the position $X_i$, e.g., using `cubic_spline_interpolation()`.
 
-**3. Update the Temperature field**
+**3. Update the temperature field**
 
 Assuming the temperature at the grid point at $t_{n+1}$ equals the interpolated value at $X_i$ at time $t_n$:
 

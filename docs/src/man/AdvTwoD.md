@@ -21,12 +21,12 @@ In 2D, the advection equation can be discretized using the upwind scheme as:
 $\begin{equation}
 \frac{T_{i,j}^{n+1}-T_{i,j}^n}{\Delta t} = -v_{x;i,j}
 \begin{cases}
-\frac{T_{i,j}^{n}-T_{i-1,j}^n}{\Delta x} &\text{if } v_{x;i,j} \gt 0 \\ \frac{T_{i+1,j}^{n}-T_{i,j}^n}{\Delta x} &\text{if } v_{x;i,j} \lt <0
+\frac{T_{i,j}^{n}-T_{i-1,j}^n}{\Delta x} &\text{if } v_{x;i,j} \gt 0 \\ \frac{T_{i+1,j}^{n}-T_{i,j}^n}{\Delta x} &\text{if } v_{x;i,j} \lt 0
 \end{cases} 
 -v_{y;i,j}
 \begin{cases}
 \frac{T_{i,j}^{n}-T_{i,j-1}^n}{\Delta y} &\text{if } v_{y;i,j} > 0 \\ 
-\frac{T_{i,j+1}^{n}-T_{i,j}^n}{\Delta y} &\text{if } v_{y;i,j}<0
+\frac{T_{i,j+1}^{n}-T_{i,j}^n}{\Delta y} &\text{if } v_{y;i,j} < 0
 \end{cases},
 \end{equation}$
 
@@ -51,9 +51,11 @@ For implementation details, see the [source code](https://github.com/GeoSci-FFM/
 In 2D, velocity can vary significantly in space and time. Therefore, a modified version of the 1D semi-Lagrangian scheme is used, employing an *iterative midpoint method* to determine the origin of the characteristic trajectory. The following steps are performed:
 
 **1. Mid-point (half time step) origin** 
+
 Estimate the intermediate position $X'$ at time $t_{n+1/2}$ using the velocity at $t_{n+1}$ at point $(i,j)$.
 
 **2. Mid-point velocity** 
+
 Compute the velocity at $X'$ using temporal averaging:
 
 $\begin{equation}
@@ -73,6 +75,7 @@ X(t) = x\left(t+1,(i,j)\right) - \Delta{t}v\left(t_{n+1/2},X'\right).
 This step is performed iteratively (e.g., five iterations or until convergence).
 
 **4. Update temperature** 
+
 Use cubic interpolation to determine the temperature at the origin $X(t)$, which defines the temperature at the final position $x(t_{n+1},(i,j))$.
 
 This scheme assumes no heat sources during advection. It is free from numerical diffusion but introduces interpolation-based inaccuracies. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).   
@@ -109,7 +112,7 @@ Tracers can carry different properties such as absolute temperature or phase ide
 
 Alternatively, phase IDs (linked to properties like constant density or viscosity) can be advected to simulate compositional heterogeneity. Property interpolation is performed at vertices or centroids depending on the required context (e.g., viscosity for the momentum equations). For the centroids, the extended centroid field must be used.
 
-Caution is required when interpolating properties between the grid and tracers, especially when those properties influence the governing equations (e.g., viscosity in momentum conservation).
+Caution is required when interpolating properties between the grid and tracers, especially when those properties influence the governing equations (e.g., viscosity in momentum conservation). The tracer routine enables different averaging schemes (arithmetic, harmonic, and geometric means) to map the tracer properties on the centroids or vertices using a bilinear interpolation scheme considering four surrounding finite difference grid cells for each numerical node. 
 
 Currently, no new tracers are inserted where needed, limiting the applicability of this approach for coupled temperature-momentum models.
 

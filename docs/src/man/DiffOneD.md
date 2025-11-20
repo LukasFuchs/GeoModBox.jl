@@ -32,7 +32,7 @@ To solve Equation (3) numerically, the spatial domain must be discretized, assig
 
 **Figure 1. 1D Discretization.** Conservative finite difference grid used to solve the 1D diffusive part of the temperature equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-The example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defect correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
+The example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md) demonstrates various numerical schemes for solving the diffusive part of the temperature equation, including *explicit*, *implicit*, *Crank–Nicolson*, and *defection correction* methods. Below, these well-known schemes are briefly described and their respective strengths and limitations highlighted.
 
 ## Explicit Finite Difference Scheme (FTCS; Forward Euler)
 
@@ -42,7 +42,7 @@ This method approximates the continuous PDE on a discrete grid and converges to 
 
 However, the FTCS scheme is **conditionally stable**. Its stability is governed by the *heat diffusion stability criterion*, which can be derived via *Von Neumann* analysis. This assesses how numerical perturbations grow or decay over time.
 
-For a uniform grid, the stability condition is:
+For a uniform, one-dimensional grid, the stability condition is:
 
 $\begin{equation}
 \Delta t < \frac{\Delta{x^2}}{2 \kappa}.
@@ -145,15 +145,59 @@ with
 $a = \dfrac{\kappa}{\Delta x^2}$ and
 $b = \dfrac{1}{\Delta t}$.
 
-This equation results in a tridiagonal system of the form:
+These equations result in a tridiagonal system of equations of the form:
 
 $\begin{equation}
-\mathbf{A} \cdot \vec{x} = \vec{\text{rhs}}
+\mathbf{A} \cdot x = b
 \end{equation}$
 
-where $\mathbf{A}$ is the coefficient matrix (with three non-zero diagonals), $\vec{x}$ is the unknown temperature vector at time $n+1$, and $\vec{\text{rhs}}$ is the known right-hand side.
+where $\mathbf{A}$ is the coefficient matrix (with three non-zero diagonals), $x$ is the unknown temperature at time $n+1$, and $b$ is the known right-hand side.
 
-The coefficients are arranged to match the matrix structure used in the *defect correction* method, preserving modularity.
+### General Solution
+
+A general approach to solve this system of linear equations is the so called **defection correction**. The diffusive part of the temperature equation is reformulated by introducing a residual term *R*, which quantifies the deviation from the true solution and can be reduced iteratively to improve accuracy through successive correction steps. The diffusive part of the temperature equation, in implicit form, can be written as:
+
+$\begin{equation}
+\mathbf{A} \cdot x - b = R, 
+\end{equation}$
+
+where $R$ is the residual (or defect). Given an initial temperature guess $T_i$, the initial residual is:
+
+$\begin{equation}
+R_i = \mathbf{A} \cdot T_i - b.
+\end{equation}$
+
+To reduce the residual, a correction $\delta T$ is defined such that:
+
+$\begin{equation}
+0 = \mathbf{A} \left(T_i + \delta{T} \right) - b = \mathbf{A} T_i - b + \mathbf{A} \delta{T} = R_i + \mathbf{A} \delta{T}.
+\end{equation}$
+
+Rearranging gives: 
+
+$\begin{equation}
+R_i = -\mathbf{A} \delta{T}, 
+\end{equation}$
+
+and hence: 
+
+$\begin{equation}
+\delta{T} = -\mathbf{A}^{-1} R_i. 
+\end{equation}$
+
+Thus, the updated solution becomes: 
+
+$\begin{equation}
+T_{i+1} = T_i + \delta T.
+\end{equation}$
+
+In the linear case, this yields the exact solution in a single step. For nonlinear problems, the process is repeated iteratively until the residual is sufficiently small.
+
+
+... If the system is linear, one iteration is sufficient to obtain the exact solution.
+
+...
+
 
 > **Note**: While the implicit method is unconditionally stable, very large time steps may still yield inaccurate results, particularly for resolving small-scale thermal gradients.
 
@@ -196,89 +240,13 @@ $nc$ is the number of centroids.
 
 These adjustments ensure that the boundary conditions are enforced consistently while preserving the symmetry and stability of the implicit solver.
 
-## Defect Correction Method
-
-The **defect correction method** is an iterative scheme that progressively reduces the residual of the diffusive part of the temperature equation using a correction term. If the system is linear, one iteration is sufficient to obtain the exact solution.
-
-### Theory
-
-The diffusive part of the temperature equation, in implicit form, can be written as:
-
-$\begin{equation}
-\mathbf{K} \cdot T - b = R, 
-\end{equation}$
-
-where 
-$\mathbf{K}$ is the coefficient matrix,
-$T$ is the temperature at the new time step,
-$b$ is a known term that includes contributions from the previous time step and internal heat sources, and
-$R$ is the residual (or defect).
-
-Given an initial temperature guess $T_i$, the residual is:
-
-$\begin{equation}
-R_i = \mathbf{K} \cdot T_i - b.
-\end{equation}$
-
-To reduce the residual, a correction $\delta T$ is defined such that:
-
-$\begin{equation}
-0 = \mathbf{K} \left(T_i + \delta{T} \right) - b = \mathbf{K} T_i - b + \mathbf{K} \delta{T} = R_i + \mathbf{K} \delta{T}.
-\end{equation}$
-
-Rearranging gives: 
-
-$\begin{equation}
-R_i = -\mathbf{K} \delta{T}, 
-\end{equation}$
-
-and hence: 
-
-$\begin{equation}
-\delta{T} = -\mathbf{K}^{-1} R_i. 
-\end{equation}$
-
-Thus, the updated solution becomes: 
-
-$\begin{equation}
-T_{i+1} = T_i + \delta T.
-\end{equation}$
-
-In the linear case, this yields the exact solution in a single step. For nonlinear problems, the process is repeated iteratively until the residual is sufficiently small.
-
-### Coefficient Matrix
-
-The matrix $\mathbf{K}$ can be derived from the discretized form of the temperature equation:
-
-$\begin{equation}
-\frac{\partial{T}}{\partial{t}} - \kappa \frac{\partial^2{T}}{\partial{x}^2} = R, 
-\end{equation}$
-
-which discretizes to: 
-
-$\begin{equation}
-\frac{T_i^{n+1}-T_i^{n}}{\Delta{t}} - \kappa \frac{T_{i-1}^{n+1} - 2 T_{i}^{n+1} + T_{i+1}^{n+1}}{\Delta{x}^2} = R,
-\end{equation}$
-
-or equivalently:
-
-$\begin{equation}
--a T_{i-1}^{n+1} + \left(2 a + b \right) T_{i}^{n+1} - a T_{i+1}^{n+1} - b T_{i}^{n} = R, 
-\end{equation}$
-
-where:
-
-$\begin{equation}
-a = \frac{\kappa}{\Delta{x}^2},\ \textrm{and} \ b = \frac{1}{\Delta{t}}. 
-\end{equation}$
-
-This structure defines the coefficients in $\mathbf{K}$.
+...
 
 ### Boundary Conditions
 
-As in the implicit FTCS method, the coefficients in $\mathbf{K}$ must be adjusted for centroids adjacent to the boundaries (see Equations (14)–(17)). However, **the right-hand side vector $b$ remains unchanged** during these modifications.
+As in the implicit method, the coefficients in $\mathbf{A}$ must be adjusted for centroids adjacent to the boundaries (see Equations (14)–(17)). However, **the right-hand side vector $b$ remains unchanged** during these modifications.
 
-This makes the defect correction method efficient and modular, especially when reusing the same matrix structure across iterations or solver variants.
+This makes the defection correction method efficient and modular, especially when reusing the same matrix structure across iterations or solver variants.
 
 ## Crank-Nicolson approach (CNA)
 
@@ -340,13 +308,13 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 ## Temperature Field Management
 
-For the **explicit solver** and the **defect correction method**, the full temperature field—including ghost nodes—is used to evaluate the temperature equation. The old temperature field is assigned to the centroids of the extended grid to compute the new temperature.
+For the **explicit solver** and the **defection correction method**, the full temperature field—including ghost nodes—is used to evaluate the temperature equation. The old temperature field is assigned to the centroids of the extended grid to compute the new temperature.
 
 For the **implicit methods** (Backward Euler, Crank-Nicolson), the current temperature at the centroids is assigned to the right-hand side vector. The coefficient matrix is then assembled, and the new temperature is computed by solving the resulting linear system.
 
 ## Summary
 
-While the **explicit FTCS scheme** is simple and efficient for small time steps, **implicit methods** like Backward Euler and Crank-Nicolson are preferred for their unconditional stability. The Crank-Nicolson scheme further improves accuracy with its second-order time discretization. The **defect correction method** provides a flexible framework for both linear and nonlinear problems, allowing for iterative refinement when needed.
+While the **explicit FTCS scheme** is simple and efficient for small time steps, **implicit methods** like Backward Euler and Crank-Nicolson are preferred for their unconditional stability. The Crank-Nicolson scheme further improves accuracy with its second-order time discretization. The **defection correction method** provides a flexible framework for both linear and nonlinear problems, allowing for iterative refinement when needed.
 
 ---
 
