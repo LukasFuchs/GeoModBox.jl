@@ -4,11 +4,10 @@ using TimerOutputs
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
-Schema  =   ["explicit","implicit","CNA","ADI","dc"]
-# Schema      =   ["dc"]
+Schema  =   ["explicit","implicit","CNA","ADI"]
 ns          =   size(Schema,1)
 nrnxny      =   6
-save_fig    =   1
+save_fig    =   -1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -177,22 +176,6 @@ for m = 1:ns
             K2      =   ExtendableSparseMatrix(ndof,ndof)
             rhs     =   zeros(ndof)
         end
-        if FDSchema == "dc"
-            niter       =   10
-            ϵ           =   1e-25
-            @. D.ρ      =   P.ρ
-            @. D.cp     =   P.cp
-            k           =   (x=zeros(NC.x+1,NC.x), y=zeros(NC.x,NC.x+1))
-            @. k.x      =   P.k
-            @. k.y      =   P.k
-            Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
-            ndof        =   maximum(Num.T)
-            K           =   ExtendableSparseMatrix(ndof,ndof)
-            R           =   zeros(NC...)
-            # ∂T          =   (∂x=zeros(NC.x+1, NC.x), ∂y=zeros(NC.x, NC.x+1))
-            ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y))
-            q           =   (x=zeros(NC.x+1, NC.x), y=zeros(NC.x, NC.x+1))
-        end
         end
         @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
@@ -213,25 +196,6 @@ for m = 1:ns
                 elseif FDSchema == "ADI"
                     @timeit to "ADI" begin
                     ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
-                    end
-                elseif FDSchema == "dc"
-                    @timeit to "DC" begin
-                    for iter = 1:niter
-                        # Evaluate residual
-                        ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, ∂2T, D.Q./D.ρ./D.cp, P.κ, BC, Δ, T.Δ[1])
-                        @printf("||R|| = %1.4e\n", norm(R)/length(R))
-                        norm(R)/length(R) < ϵ ? break : nothing
-                        # Assemble linear system
-                        K  = AssembleMatrix2Dc(P.κ, BC, Num, NC, Δ, T.Δ[1])
-                        # K  = AssembleMatrix2D(D.ρ, D.cp, k, BC, Num, NC, Δ, T.Δ[1])
-                        # Solve for temperature correction: Cholesky factorisation
-                        Kc = cholesky(K.cscmatrix)
-                        # Solve for temperature correction: Back substitutions
-                        δT = -(Kc\R[:])
-                        # Update temperature
-                        @. D.T += δT[Num.T]
-                    end
-                    D.T0    .= D.T
                     end
                 end
                 time[n]     =   time[n-1] + T.Δ[1]

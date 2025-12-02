@@ -47,17 +47,36 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 end
 
 """
-    ComputeResiduals2Dc!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
+    ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C=0)
 """
-function ComputeResiduals2Dc!(R, T, T_ex, T0, ∂2T, Q, κ, BC, Δ, Δt)
-    @. T_ex[2:end-1,2:end-1] = T 
-    @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x*BC.val.W)
-    @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x*BC.val.E)
-    @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y*BC.val.S)
-    @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y*BC.val.N)
-    @. ∂2T.∂x2  = (T_ex[1:end-2,2:end-1] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[3:end,2:end-1])/Δ.x/Δ.x
-    @. ∂2T.∂y2  = (T_ex[2:end-1,1:end-2] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[2:end-1,3:end])/Δ.y/Δ.y
-    @. R     = (T - T0)/Δt - κ*(∂2T.∂x2 + ∂2T.∂y2) - Q
+function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C=0)
+    if C < 1
+        @. T_ex[2:end-1,2:end-1] = T 
+        @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x*BC.val.W)
+        @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x*BC.val.E)
+        @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y*BC.val.S)
+        @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y*BC.val.N)
+        @. ∂2T.∂x2  = (T_ex[1:end-2,2:end-1] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[3:end,2:end-1])/Δ.x/Δ.x
+        @. ∂2T.∂y2  = (T_ex[2:end-1,1:end-2] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[2:end-1,3:end])/Δ.y/Δ.y
+        if C==0.5
+            @. T_ex0[2:end-1,2:end-1] = T0 
+            @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x*BC.val.W)
+            @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x*BC.val.E)
+            @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y*BC.val.S)
+            @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y*BC.val.N)
+            @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
+            @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
+        end
+    else
+        @. T_ex0[2:end-1,2:end-1] = T0 
+            @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x*BC.val.W)
+            @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x*BC.val.E)
+            @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y*BC.val.S)
+            @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y*BC.val.N)
+            @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
+            @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
+    end
+    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q
 end
 
 """
@@ -474,23 +493,61 @@ end
 """
     ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
 """
-function ComputeResiduals2D!(R, T, T_ex, T0, ∂T, Q, q, ρ, Cp, k, BC, Δ, Δt)
-    @. T_ex[2:end-1,2:end-1] = T 
-    @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
-    @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
-    @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
-    @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
-    @. ∂T.∂x = (T_ex[2:end,2:end-1] - T_ex[1:end-1,2:end-1])/Δ.x
-    @. ∂T.∂y = (T_ex[2:end-1,2:end] - T_ex[2:end-1,1:end-1])/Δ.y
-    @. q.x   = -k.x * ∂T.∂x
-    @. q.y   = -k.y * ∂T.∂y
-    @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y - Q
+function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0)
+    if C < 1
+        @. T_ex[2:end-1,2:end-1] = T 
+        @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
+        @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
+        @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
+        @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
+        @. ∂T.∂x = (T_ex[2:end,2:end-1] - T_ex[1:end-1,2:end-1])/Δ.x
+        @. ∂T.∂y = (T_ex[2:end-1,2:end] - T_ex[2:end-1,1:end-1])/Δ.y
+        @. q.x   = -k.x * ∂T.∂x
+        @. q.y   = -k.y * ∂T.∂y
+        if C==0.5
+            @. T_ex0[2:end-1,2:end-1] = T0 
+            @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
+            @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
+            @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
+            @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
+            @. ∂T.∂x = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
+            @. ∂T.∂y = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
+            @. q.x0  = -k.x * ∂T.∂x
+            @. q.y0  = -k.y * ∂T.∂y
+        end
+    else
+        @. T_ex0[2:end-1,2:end-1] = T0 
+        @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
+        @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
+        @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
+        @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
+        @. ∂T.∂x = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
+        @. ∂T.∂y = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
+        @. q.x0  = -k.x * ∂T.∂x
+        @. q.y0  = -k.y * ∂T.∂y
+    end
+    # @. R     = (T - T0)/Δt - ((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q
+    @. R     = ρ*Cp*(T - T0)/Δt + 
+                    (1-C)*((q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y) + 
+                    C*((q.x0[2:end,:] - q.x0[1:end-1,:])/Δ.x + (q.y0[:,2:end] - q.y0[:,1:end-1])/Δ.y) - 
+                    Q
+
+    # @. T_ex[2:end-1,2:end-1] = T 
+    # @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
+    # @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
+    # @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
+    # @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
+    # @. ∂T.∂x = (T_ex[2:end,2:end-1] - T_ex[1:end-1,2:end-1])/Δ.x
+    # @. ∂T.∂y = (T_ex[2:end-1,2:end] - T_ex[2:end-1,1:end-1])/Δ.y
+    # @. q.x   = -k.x * ∂T.∂x
+    # @. q.y   = -k.y * ∂T.∂y
+    # @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y - Q
 end
 
 """
     AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
 """
-function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
+function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt;C=0)
     # Linear system of equation
     ndof   = maximum(Num.T)
     K      = ExtendableSparseMatrix(ndof, ndof)
@@ -522,10 +579,10 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
             DirN   = (j==nc.y && BC.type.N==:Dirichlet) ? 1. : 0.
             NeuN   = (j==nc.y && BC.type.N==:Neumann  ) ? 1. : 0.
             # Material coefficient
-            kW = k.x[i,j]
-            kE = k.x[i+1,j]
-            kS = k.y[i,j]
-            kN = k.y[i,j+1]
+            kW = k.x[i,j]*(1-C)
+            kE = k.x[i+1,j]*(1-C)
+            kS = k.y[i,j]*(1-C)
+            kN = k.y[i,j+1]*(1-C)
             ρ  = rho[i,j]
             Cp = cp[i,j]
             # Linear system coefficients

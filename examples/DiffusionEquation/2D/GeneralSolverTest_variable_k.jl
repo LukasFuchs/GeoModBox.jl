@@ -6,8 +6,8 @@ function Gaussian_Diffusion()
 to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CNA"]
 ns          =   size(Schema,1)
-nrnxny      =   6
-save_fig    =   0
+nrnxny      =   10
+save_fig    =   1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -117,15 +117,19 @@ for m = 1:ns
                                 N=D.Tana[:,end],S=D.Tana[:,1]))
         # ------------------------------------------------------------ #
         niter       =   10
-        ϵ           =   1e-25
+        ϵ           =   1e-20
         @. D.ρ      =   P.ρ
         @. D.cp     =   P.cp
+        k           =   (x=zeros(NC.x+1,NC.x), y=zeros(NC.x,NC.x+1))
+        @. k.x      =   P.k
+        @. k.y      =   P.k
         Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
         ndof        =   maximum(Num.T)
         K           =   ExtendableSparseMatrix(ndof,ndof)
         R           =   zeros(NC...)
-        ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
-                            ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
+        ∂T          =   (∂x=zeros(NC.x+1, NC.x), ∂y=zeros(NC.x, NC.x+1))
+        q           =   (x=zeros(NC.x+1, NC.x), y=zeros(NC.x, NC.x+1),
+                            x0=zeros(NC.x+1, NC.x), y0=zeros(NC.x, NC.x+1),)
         if FDSchema == "implicit"
             C = 0
         elseif FDSchema == "CNA"
@@ -141,12 +145,12 @@ for m = 1:ns
                 @timeit to "Solution" begin
                 for iter = 1:niter
                     # Evaluate residual
-                    ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
-                            D.Q./D.ρ./D.cp, P.κ, BC, Δ, T.Δ[1];C)
+                    ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, D.T_ex0, D.Q, ∂T, 
+                            q, D.ρ, D.cp, k, BC, Δ, T.Δ[1];C)
                     # @printf("||R|| = %1.4e\n", norm(R)/length(R))
                     norm(R)/length(R) < ϵ ? break : nothing
                     # Assemble linear system
-                    K  = AssembleMatrix2Dc(P.κ*(1-C), BC, Num, NC, Δ, T.Δ[1])
+                    K  = AssembleMatrix2D(D.ρ, D.cp, k, BC, Num, NC, Δ, T.Δ[1];C)
                     # Solve for temperature correction: Cholesky factorisation
                     Kc = cholesky(K.cscmatrix)
                     # Solve for temperature correction: Back substitutions
@@ -218,7 +222,7 @@ end
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
 if save_fig == 1
-    savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest_General.png")
+    savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest_General_variable_k.png")
 end
 # --------------------------------------------------------------------- #
 display(to)
