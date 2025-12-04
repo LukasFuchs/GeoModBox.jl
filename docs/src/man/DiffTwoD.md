@@ -17,7 +17,7 @@ $Q$ is the volumetric heat production rate [W/m³].
 By applying Fourier’s law and allowing for spatially variable thermal conductivity $k$, the equation becomes:
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k \frac{\partial T}{\partial x}\right) + \frac{\partial}{\partial y}\left(k \frac{\partial T}{\partial y}\right) + Q.
+\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k_x \frac{\partial T}{\partial x}\right) + \frac{\partial}{\partial y}\left(k_y \frac{\partial T}{\partial y}\right) + Q.
 \end{equation}$
 
 If thermal parameters are assumed constant, this simplifies to:
@@ -215,7 +215,7 @@ $\begin{equation}
 \mathbf{K} \cdot \bm{x} = \bm{b}
 \end{equation}$
 
-where $\mathbf{K}$ is the coefficient matrix (with five non-zero diagonals), $\bm{x}$ is the unknown solution vector, that is the temperature at time step $n+1$, and $\bm{b}$ is the known right-hand side.
+where $\mathbf{K}$ is the coefficient matrix (with five non-zero diagonals), $\bm{x}$ is the unknown solution vector, that is the temperature at the interior centroids at time step $n+1$, and $\bm{b}$ is the known right-hand side.
 
 ### General Solution
 
@@ -237,22 +237,22 @@ $\begin{equation}
 \bm{T}^{k+1} = \bm{T}^k + \delta \bm{T}.
 \end{equation}$
 
-Within `GeoModBox.jl` the residual $\bm{r}$ is calculated on the interior centroids using the extended temperature field including the ghost nodes of the current time step as an initial guess: 
+Within `GeoModBox.jl` the residual $\bm{r}$ is calculated on the **interior centroids** using the extended temperature field including the ghost nodes temperature values of the current time step as an initial guess: 
 
 
 $\begin{equation}
-\frac{\partial{T_{\textrm{ext}}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext}}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext}}}}{\partial{y}^2} \right) - \frac{Q}{\rho c_p} = r.
+\frac{\partial{T_{\textrm{ext},ii}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},ii}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},ii}}}{\partial{y}^2} \right) - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{equation}$
 
-Discretizing the equation in space and time using implicit finite differences yields:
+where $ii$ is the equation number. Discretizing the equation in space and time using implicit finite differences yields:
 
 $\begin{equation}
 \frac{T_{\textrm{ext},iC}^{n+1}-T_{\textrm{ext},iC}^{n}}{\Delta{t}} - \kappa 
 \left( \frac{T_{\textrm{ext},iW}^{n+1} - 2 T_{\textrm{ext},iC}^{n+1} + T_{\textrm{ext},iE}^{n+1}}{\Delta{x}^2} + \frac{T_{\textrm{ext},iS}^{n+1} - 2 T_{\textrm{ext},iC}^{n+1} + T_{\textrm{ext},iN}^{n+1}}{\Delta{y}^2}  
-\right) - \frac{Q}{\rho c_p} = r_{ii},
+\right) - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{equation}$
 
-where $iC$ is the central reference point of the five-point stencil on the extended temperature field and $ii$ is the equation number. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
+where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the **interior centroids**. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
 
 $\begin{equation}
 -b T_{\textrm{ext},iS}^{n+1} - a T_{\textrm{ext},iW}^{n+1} + 
@@ -262,13 +262,15 @@ c T_{\textrm{ext},iC}^n - \frac{Q}{\rho c_p} =
 r_{ii},
 \end{equation}$
 
-which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},i}^{n+1}$ is the unknown vector $x$,$-cT_{\textrm{ext},i}^n -\frac{Q}{\rho c_p}$ is the known vector $b$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix. With the residual vector $r$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). 
+which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},i}^{n+1}$ is the unknown vector $x$,$-cT_{\textrm{ext},i}^n -\frac{Q}{\rho c_p}$ is the known vector $b$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix $\bm{K}$. With the residual vector $r$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). 
+
+>Note: The residdum is only caluclated for the interoir centroids using the extended temperature field including the ghost node values. For the centroids adjacent to the boundary, one needs to use the values of the temperature ghost nodes, which leads to a modification of the coeffients in the coefficient matrix. Thus, the unknown vector $x$ has only the dimenions of the number of equations, which corresponds to the temperature at the interior centroids. 
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Boundary Conditions
 
-The boundary conditions are implemented using the temperatures values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix the coefficients must be modified for the nodes adjacent to the boundaries. The equations for the interior centroids adjacent to the boundary are then given by: 
+The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the interior centroids adjacent to the boundary are then given by: 
 
 **Dirichlet Boundary Conditions**
 
@@ -377,7 +379,7 @@ r_{ii},
 
 where 
 $T_{\textrm{BC},W}$, $T_{\textrm{BC},E}$, $T_{\textrm{BC},S}$, and $T_{\textrm{BC},N}$ are the prescribed boundary temperatures,
-$c_W$, $c_E$, $c_S$, and $c_N$ are the prescribed temperature gradients at the West, East, South, and North boundary, respectively. These adjustments ensure that the boundary conditions are enforced consistently while preserving the symmetry of the implicit solver.
+$c_W$, $c_E$, $c_S$, and $c_N$ are the prescribed temperature gradients at the West, East, South, and North boundary, respectively. While rearranging the entire equations is mathematically correct, the boundary conditions are implemented within `GeoModBox.jl` by simply using the ghost node temperatures values to calculate the residuum for the centroids adjacent to the boundaries. Equations (29)-(36) are shown to highlight the modified coefficients of the matrix. These adjustments ensure that the boundary conditions are enforced consistently while preserving the symmetry of the implicit solver.
 
 ### Special Case - A Linear Problem 
 
@@ -492,9 +494,9 @@ c T_{\textrm{ext},iC}^{n}
 +\frac{Q}{\rho c_p}
 \end{equation}$
 
-## Cranck-Nicolson Approach (CNA)
+## Crank-Nicolson Approach (CNA)
 
-In 2D, the heat diffusion equation (Equation (3)) using the Cranck–Nicolson discretization is written as:
+In 2D, the heat diffusion equation (Equation (3)) using the Crank–Nicolson discretization is written as:
 
 $\begin{equation}\begin{gather*}
 & \frac{T_{iC}^{n+1} - T_{iC}^{n}}{\Delta t} = \\ &
@@ -526,25 +528,25 @@ where $\mathbf{K_i}$ are the coefficient matrices (with five non-zero diagonals)
 
 ### General Solution 
 
-The residual for the Cranck-Nicolson discretization is calculated via: 
+The residual on the interior centroids using the Crank-Nicolson discretization is calculated via: 
 
 $\begin{equation}
-\mathbf{K_1}\cdot{\bm{x}}-\mathbf{K_2}\cdot{T^n}-\bm{b}=\bm{r}.
+\mathbf{K_1}\cdot{\bm{x}}-\mathbf{K_2}\cdot{T_{}^n}-\bm{b}=\bm{r}.
 \end{equation}$
 
 The correction term and the updated temperature within the iteration for the solution is caluclated as in the implicit general solution (Equations (24) and (25)). 
 
-Within `GeoModBox.jl` the extended temperature field is used to discretize the equation in space and time, leading to: 
+Within `GeoModBox.jl` the extended temperature field is used  to discretize the equation in space and time to calculate the residuum on the interior centroids, leading to: 
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},iS}^{n+1} -aT_{\textrm{ext},iW}^{n+1}+\left(2a + 2b + c\right)T_{\textrm{ext},iC}^{n+1} -aT_{\textrm{ext},iE}^{n+1} -b T_{\textrm{ext},iN}^{n+1} \\ & -b T_{\textrm{ext},iS}^{n} -aT_{\textrm{ext},iW}^{n}+\left(2a + 2b - c\right)T_{\textrm{ext},iC}^{n} -aT_{\textrm{ext},iE}^{n} -b T_{\textrm{ext},iN}^{n} - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{gather*}\end{equation}$
 
-which corresponds to the matrix form of Equation (50). 
+where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the interior centroids and $ii$ is the equation number. This corresponds to the matrix form of Equation (50). 
 
 ### Boundary Conditions
 
-As with the implicit method, to maintain symmetry in the coefficient matrices the coefficients must be modified for the nodes adjacent to the boundaries. The equations for the interior centroids adjacent to the boundary are then given by:
+As with the implicit method, to maintain symmetry in the coefficient matrices the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the **interior centroids adjacent to the boundary** are then given by:
 
 **Dirichlet Boundary Conditions**
 
@@ -619,18 +621,7 @@ Similar to the pure implicit scheme, there is a *special case* solving this syst
 
 ---
 
-Within `GeoModBox.jl` the general solution to solve a non-linear system of equations using the *explicit*, *implicit* or *Cranck-Nicolson* discretization, assuming constant and variable thermal parameters, is implemented in a combined form as: 
-
-**Variable Thermal Parameters** 
-
-$\begin{equation}
-\rho c_p \frac{\partial{T}}{\partial{t}} 
-+\left(1-C\right)\frac{\partial{q_{i}^{n+1}}}{\partial{x_i}} 
-+C\frac{\partial{q_{i}}^{n}}{\partial{x_i}}
--Q=\bm{r}, 
-\end{equation}$
-
-**Constant Thermal Parameters** 
+Within `GeoModBox.jl` the general solution to solve a non-linear system of equations using either the *explicit*, *implicit* or *Crank-Nicolson* discretization scheme, assuming constant thermal parameters and using the extended temperature field including the ghost nodes, is implemented in a combined form as: 
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} 
@@ -647,14 +638,29 @@ C = \begin{cases}
     0\text{, for implicit} \\
     0.5\text{, for CNA} \\ 
     1\text{, for explicit}
-\end{cases},
+\end{cases}.
 \end{equation}$
 
-and $q_i$ is the heat flux in the direction of $i$ calculated in between the vertices and using the ghost node temperature values to include the corresponding thermal boundary conditions. Fully extended and seperating the knowns and unknowns, those equations correspond to Equation (50) in matrix form. 
+Fully extended and seperating the knowns and unknowns leads to:
 
->Note: To assemble the coefficient matrix $\mathbf{K_1}$ with the build in function `AssembleMatrix2Dc` or `AssembleMatrix2D`, one needs to multiply κ with $(1-C)$. The remaining steps remain the same. 
+$\begin{equation}\begin{gather*}
+& -b T_{\textrm{ext},iS}^{n+1} -aT_{\textrm{ext},iW}^{n+1}+cT_{\textrm{ext},iC}^{n+1} -aT_{\textrm{ext},iE}^{n+1} -b T_{\textrm{ext},iN}^{n+1} \\ & -e T_{\textrm{ext},iS}^{n} -dT_{\textrm{ext},iW}^{n}+fT_{\textrm{ext},iC}^{n} -dT_{\textrm{ext},iE}^{n} -e T_{\textrm{ext},iN}^{n} - \frac{Q}{\rho c_p} = \bm{r}_{ii},
+\end{gather*}\end{equation}$
 
-With the residual vector $r$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (24). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), and an example on how to use the general solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl).
+where the coefficients are: 
+
+$\begin{equation}\begin{split}
+    \begin{split}
+        a & = \frac{\left(1-C\right)\kappa}{\Delta{x^2}} \\ 
+        b & = \frac{\left(1-C\right)\kappa}{\Delta{y^2}} \\ 
+        c & = 2a+2b+\frac{1}{\Delta{t}} \\ \end{split} 
+    \quad\quad \begin{split}
+        d & = \frac{C\kappa}{\Delta{x^2}} \\ 
+        e & = \frac{C\kappa}{\Delta{y^2}} \\
+        f & = 2e+2d-\frac{1}{\Delta{t}} \\ \end{split}
+\end{split}.\end{equation}$
+
+Equation (62) corresponds to the matrix form Equation (50). With the residual vector $r$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (24). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), and an example on how to use the general solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl).
 
 For the sake of simplicity and since most of the problems within `GeoModBox.jl`, so far, are of linear nature, the *special case* formulation is applied to the last additional method.  
 
@@ -691,7 +697,7 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 ## Variable Thermal Parameters 
 
-To solve the 2D heat diffusion equation including variable thermal parameters, we focus on the general solution, as described in Equation (60): 
+To solve the 2D heat diffusion equation including variable thermal parameters, we focus on the general solution in a combined form, as described as: 
 
 $\begin{equation}
 \rho c_p \frac{\partial{T}}{\partial{t}} 
@@ -706,24 +712,22 @@ $\begin{equation}
 q_i = - k_i\frac{\partial{T}}{\partial{x_i}},
 \end{equation}$
 
-where $k_i$ is the thermal conductivity in the direction of $i$. This combined formulation of the heat diffusion equation enables a solution using an *explicit*, *implicit*, or *CNA* discretization. 
+and $k_i$ is the thermal conductivity in the direction of $i$. This combined formulation of the heat diffusion equation enables a solution using either the *explicit*, *implicit*, or *CNA* discretization scheme. 
 
-Discretizing the equation in space and timeyields: 
+Discretizing the equation in space and time yields: 
 
 $\begin{equation}\begin{gather*}
-& \rho_{i,j} c_{p,(i,j)}\left(\frac{T_{i,j}^{n+1} - T_{i,j}^{n}}{\Delta{t}}\right) \\ &
+& \rho_{iC} c_{p,iC}\left(\frac{T_{iC}^{n+1} - T_{iC}^{n}}{\Delta{t}}\right) \\ &
 +\left(1-C\right)\left(
-    \frac{q_{x,(i+1,j)}^{n+1} - q_{x,(i,j)}^{n+1}}{\Delta{x}} 
-    +\frac{q_{y,(i,j+1)}^{n+1} - q_{y,(i,j)}^{n+1}}{\Delta{y}}\right) \\ &
+    \frac{q_{x,iE}^{n+1} - q_{x,iC}^{n+1}}{\Delta{x}} 
+    +\frac{q_{y,iN}^{n+1} - q_{y,iC}^{n+1}}{\Delta{y}}\right) \\ &
 +C\left(
-    \frac{q_{x,(i+1,j)}^{n} - q_{x,(i,j)}^{n}}{\Delta{x}} 
-    +\frac{q_{y,(i,j+1)}^{n} - q_{y,(i,j)}^{n}}{\Delta{y}}\right) \\ &
+    \frac{q_{x,iE}^{n} - q_{x,iC}^{n}}{\Delta{x}} 
+    +\frac{q_{y,iN}^{n} - q_{y,iC}^{n}}{\Delta{y}}\right) \\ &
 -Q_{i,j} = r_{ii}, 
 \end{gather*}\end{equation}$
 
-$ii$ is the equation number and $i$ and $j$ the horizontal and vertical indices of the corresponding field (see Figure 1). The indices of each field are in the following given by the global index as described in Equations (4) and (5).  
-
-By applying Fourier's law and substituting the index the equation results in:
+where $ii$ is the equation number and $iC$ the central reference point of the numerical stencil on the corresponding field (see Figure 1). By applying Fourier's law the equation results in:
 
 $\begin{equation}\begin{gather*}
 & \rho_{iC} c_{p,iC}\left(
@@ -750,16 +754,16 @@ $\begin{equation}\begin{gather*}
 Rewriting this in a matrix-compatible form leads to: 
 
 $\begin{equation}\begin{gather*}
-& aT_{iS}^{n+1} 
-+bT_{iW}^{n+1} 
+& -aT_{iS}^{n+1} 
+-bT_{iW}^{n+1} 
 +cT_{iC}^{n+1} 
-+dT_{iE}^{n+1} 
-+eT_{iN}^{n+1} \\ &
-+fT_{iS}^{n} 
-+gT_{iW}^{n} 
+-dT_{iE}^{n+1} 
+-eT_{iN}^{n+1} \\ &
+-fT_{iS}^{n} 
+-gT_{iW}^{n} 
 +hT_{iC}^{n} 
-+iT_{iE}^{n} 
-+jT_{iN}^{n} \\ &
+-iT_{iE}^{n} 
+-jT_{iN}^{n} \\ &
 -Q_{iC} = r_{ii}
 \end{gather*},\end{equation}$
 
@@ -772,28 +776,28 @@ $\begin{equation}
 The coefficients of the matrix $\mathbf{K_1}$ for the unknown $x$ are: 
 
 $\begin{equation}\begin{split}
-a & = -\frac{\left(1-C\right)k_{y,(i,j)}}{\Delta{y^2}} \\ 
-b & = -\frac{\left(1-C\right)k_{x,(i,j)}}{\Delta{x^2}} \\ 
-c & = \frac{\rho_{i,j} c_{p,(i,j)}}{\Delta{t}}  
-+\left(1-C\right)\left(\frac{k_{x,(i+1,j)}}{\Delta{x^2}} + \frac{k_{x,(i,j)}}{\Delta{x^2}} 
-+\frac{k_{y,(i,j+1)}}{\Delta{y^2}} + \frac{k_{y,(i,j)}}{\Delta{y^2}}\right) \\ 
-d & = -\frac{\left(1-C\right)k_{x,(i+1,j)}}{\Delta{x^2}} \\ 
-e & = -\frac{\left(1-C\right)k_{y,(i,j+1)}}{\Delta{y^2}} \\
+a & = \frac{\left(1-C\right)k_{y,iC}}{\Delta{y^2}} \\ 
+b & = \frac{\left(1-C\right)k_{x,iC}}{\Delta{x^2}} \\ 
+c & = \frac{\rho_{iC} c_{p,iC}}{\Delta{t}}  
++\left(1-C\right)\left(\frac{k_{x,iE}}{\Delta{x^2}} + \frac{k_{x,iC}}{\Delta{x^2}} 
++\frac{k_{y,iN}}{\Delta{y^2}} + \frac{k_{y,iC}}{\Delta{y^2}}\right) \\ 
+d & = \frac{\left(1-C\right)k_{x,iE}}{\Delta{x^2}} \\ 
+e & = \frac{\left(1-C\right)k_{y,iN}}{\Delta{y^2}} \\
 \end{split}\end{equation}$
 
 and the coefficients of the matrix $\mathbf{K_2}$ for the known $T^n$ are: 
 
 $\begin{equation}\begin{split}
-f & = -\frac{Ck_{y,(i,j)}}{\Delta{y^2}} \\ 
-g & = -\frac{Ck_{x,(i,j)}}{\Delta{x^2}} \\ 
-h & = \frac{\rho_{i,j} c_{p,(i,j)}}{\Delta{t}}  
-+C\left(\frac{k_{x,(i+1,j)}}{\Delta{x^2}} + \frac{k_{x,(i,j)}}{\Delta{x^2}} 
-+\frac{k_{y,(i,j+1)}}{\Delta{y^2}} + \frac{k_{y,(i,j)}}{\Delta{y^2}}\right) \\ 
-i & = -\frac{Ck_{x,(i+1,j)}}{\Delta{x^2}} \\ 
-j & = -\frac{Ck_{y,(i,j+1)}}{\Delta{y^2}} \\
+f & = \frac{Ck_{y,iC}}{\Delta{y^2}} \\ 
+g & = \frac{Ck_{x,iC}}{\Delta{x^2}} \\ 
+h & = \frac{\rho_{iC} c_{p,iC}}{\Delta{t}}  
++C\left(\frac{k_{x,iE}}{\Delta{x^2}} + \frac{k_{x,iC}}{\Delta{x^2}} 
++\frac{k_{y,iN}}{\Delta{y^2}} + \frac{k_{y,iC}}{\Delta{y^2}}\right) \\ 
+i & = \frac{Ck_{x,iE}}{\Delta{x^2}} \\ 
+j & = \frac{Ck_{y,iN}}{\Delta{y^2}} \\
 \end{split}.\end{equation}$
 
-With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (24). Here, to setup the coefficient matrix $\mathbf{K_1}$ correctly, one needs to multiply the thermal conductivity with $\left(1-C\right)$. 
+With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (24).  
 
 --- 
 
