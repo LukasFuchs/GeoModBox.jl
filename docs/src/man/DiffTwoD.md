@@ -35,11 +35,11 @@ To numerically solve Equation (3), the spatial domain must be discretized and th
 
 ![2DDiffusionGrid](../assets/2D_Diffusion_Grid.jpg)
 
-**Figure 1. 2D Discretization.** *Conservative finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 2D Discretization.** *Conservative finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points inbetween the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
-To solve each equation at the interior centroid one needs to also consider the temperature information of the adjacent points. The position of these points in a finite difference scheme is usually defined by the numerical stencil. For the 2D heat diffusion equation, this is a five-point stencil, which includes a central point, the reference centroid, a point north, east, south, and west thereof. The index of these points, which also defines the position of the coefficients, can be defined using the local indices $i$ and $j$, which are the indices of the number of centroids in the horizonal and vertical direction, respectively. 
+To solve each equation at the centroid one needs to also consider the temperature information of the adjacent points. The position of these points in a finite difference (FD) scheme is usually defined by the numerical stencil. For the 2D heat diffusion equation, this is a five-point stencil, which includes a central point, the reference centroid, a point north, east, south, and west thereof. The index of these points, which also defines the position of the coefficients in the coefficient matrix for each equation in the system of equations, can be defined using the local indices $i$ and $j$. The local indices are the indices of the number of centroids in the horizonal and vertical direction, respectively. 
 
-The number of an equation $ii$ in the system of equations assuming a horizontal running scheme of the stencil through the model domain is defined as: 
+The equation number $ii$ in the system of equations assuming a horizontal running scheme of the stencil through the model domain is defined as: 
 
 $\begin{equation}
 ii = \left(j-1\right)\cdot{nc_x}+i,
@@ -52,12 +52,12 @@ iS & = ii - nc_x,\\\
 iW & = ii - 1,\\\   
 iC & = ii, \\\
 iE & = ii + 1,\\\
-iN & = ii + nc_x.
+iN & = ii + nc_x,
 \end{split}\end{equation}$
 
-These are the global indices of the position of the five-point stencil used in the discretized finite difference equations. 
+where $iC$, $iS$, $iW$, $iE$, $iN$ are the central reference centroid and the points South, West, East, and North thereof, respectively. These are the global indices of the position of the five-point stencil used in the discretized FD equations. 
 
-A detailed implementation of various numerical schemes is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). This example demonstrates the application of several methods for solving the 2D heat diffusion equation:
+A detailed implementation of various numerical schemes to solve a linear problem is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). A additional [scritps]() test the general solver on the Gaussian diffusion problem (for more details on the different solvers see description below). This example demonstrates the application of several methods for solving the 2D heat diffusion equation:
 
 - **Explicit scheme**
 - **Implicit scheme**
@@ -70,9 +70,13 @@ Each numerical scheme is briefly outlined in the following sections. For further
 
 ## Temperature Field Management
 
-In the **explicit solver** and the **defect correction method**, the *extended temperature field*, which includes ghost nodes, is required to compute the temperature at the new time step. The current temperature values at the centroids are assigned to this extended field to serve as the *old* temperature.
+Within `GeoModBox.jl` one needs to distinguish between the centroid field and the extended centroid field, which includes the ghost nodes as well. 
 
-For the remaining solvers, the current temperature field at the centroids is used to construct the known right-hand side vector. The corresponding coefficient matrices are assembled to solve for the unknown temperature at the next time step.
+The extended field is used in the linear solver of the **explicit** (forward Euler) scheme and in the **residuum calculation** for the non-linear solvers using the defection correction. For those sovlers, the ghost node temperature values are internally calculated, based on the thermal boundary condition, and the extended field is used to numerically solve the PDE. 
+
+For the solvers, which include a **coefficient matrix** (e.g., linear implicit, non-linear solver for constant and variable parameters), the centroids are used. That is, the size of the coefficient matrix is determined by the total number of centroids. These solvers internally update the centroid temperature values of the extended field following the solution of the PDEs. 
+
+For more details, please see the following or refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ## Boundary Conditions
 
@@ -106,7 +110,7 @@ $\begin{equation}
 T_{\textrm{G},N} = 2T_{\textrm{BC},N} - T_{:,\textrm{ncy}}
 \end{equation}$
 
-Here, $T_{\textrm{BC},W}$, $T_{\textrm{BC},E}$, $T_{\textrm{BC},S}$, and $T_{\textrm{BC},N}$ are the prescribed boundary temperatures on the west, east, south, and north boundaries, respectively. The notation $T_{i,:}$ and $T_{:,j}$ refers to slices along rows and columns.
+Here, $T_{\textrm{BC},W}$, $T_{\textrm{BC},E}$, $T_{\textrm{BC},S}$, and $T_{\textrm{BC},N}$ are the prescribed boundary temperatures on the West, East, South, and North boundaries, respectively. The notation $T_{i,:}$ and $T_{:,j}$ refers to slices along rows and columns.
 
 **Neumann Boundary Conditions**
 
@@ -144,11 +148,13 @@ $\begin{equation}
 \left. c_{N} = \frac{\partial{T}}{\partial{y}} \right\vert_{N},
 \end{equation}$
 
-are the specified temperature gradients (or fluxes) at each boundary.
+are the specified temperature gradients (or fluxes) at each boundary. 
+
+>Note: If variable thermal parameters are assumed, one should include the thermal conductivity k in the flux definition. 
 
 ## Explicit Scheme (Forward Time, Centered Space; FTCS)
 
-For an explicit finite difference discretization, the numerical stability criterion (heat diffusion condition) is given by:
+For an explicit FD discretization, the numerical stability criterion (heat diffusion condition) is given by:
 
 $\begin{equation}
 \Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
@@ -156,7 +162,7 @@ $\begin{equation}
 
 where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
 
-In two dimensions, the partial derivatives in Equation (3) can be approximated using an explicit FTCS (Forward Time, Centered Space) finite difference scheme:
+In two dimensions, the partial derivatives in Equation (3) are approximated using an explicit FTCS (Forward Time, Centered Space) FD scheme:
 
 $\begin{equation}
 \frac{T_{iC}^{n+1} - T_{iC}^{n} }{\Delta t} = \kappa \left( \frac{T_{iW}^{n} - 2T_{iC}^{n} + T_{iE}^{n}}{\Delta{x}^2} + \frac{T_{iS}^{n} - 2T_{iC}^{n} + T_{iN}^{n}}{\Delta{z^2}} \right) + \frac{Q}{\rho c_p}, 
@@ -177,7 +183,7 @@ a = \frac{\kappa \Delta{t}}{\Delta{x^2}}, \quad
 b = \frac{\kappa \Delta{t}}{\Delta{y^2}}.
 \end{equation}$
 
-Equation (17) is solved for all interior nodes at each time step, assuming initial and boundary conditions are specified. The boundary conditions are implemented using the temperature values calculated for the ghost nodes. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+Equation (17) is solved for all centroids at each time step, assuming initial and boundary conditions are specified. The boundary conditions are implemented using the temperature values calculated for the ghost nodes (Equations (6)-(13)). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ## Implicit Scheme (Backward Euler)
 
@@ -201,7 +207,7 @@ a T_{iE}^{n+1} - b T_{iN}^{n+1} =
 c T_{iC}^n + \frac{Q}{\rho c_p},
 \end{equation}$
 
-where 
+where the coefficients are: 
 
 $\begin{equation}\begin{split}
 a & = \frac{\kappa}{\Delta{x^2}}, \\
@@ -215,7 +221,7 @@ $\begin{equation}
 \mathbf{K} \cdot \bm{x} = \bm{b}
 \end{equation}$
 
-where $\mathbf{K}$ is the coefficient matrix (with five non-zero diagonals), $\bm{x}$ is the unknown solution vector, that is the temperature at the interior centroids at time step $n+1$, and $\bm{b}$ is the known right-hand side.
+where $\mathbf{K}$ is the coefficient matrix (with five non-zero diagonals), $\bm{x}$ is the unknown solution vector, that is the temperature at the centroids at time step $n+1$, and $\bm{b}$ is the known right-hand side.
 
 ### General Solution
 
@@ -225,7 +231,7 @@ $\begin{equation}
 \mathbf{K} \cdot \bm{x} - \bm{b} = \bm{r}, 
 \end{equation}$
 
-which, following some [algebra](DiffOneD.md), results in the correction term:
+which, following some [algebra](DiffOneD.md), results in the correction term of the initial temperature guess:
 
 $\begin{equation}
 \delta \bm{T} = -\mathbf{K}^{-1} \bm{r}^k 
@@ -237,14 +243,14 @@ $\begin{equation}
 \bm{T}^{k+1} = \bm{T}^k + \delta \bm{T}.
 \end{equation}$
 
-Within `GeoModBox.jl` the residual $\bm{r}$ is calculated on the **interior centroids** using the extended temperature field including the ghost nodes temperature values of the current time step as an initial guess: 
+Within `GeoModBox.jl` the residual $\bm{r}$ is calculated on the **centroids** using the extended temperature field of the current time step, which includs the ghost nodes temperature values, as an initial temperature guess: 
 
 
 $\begin{equation}
 \frac{\partial{T_{\textrm{ext},ii}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},ii}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},ii}}}{\partial{y}^2} \right) - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{equation}$
 
-where $ii$ is the equation number. Discretizing the equation in space and time using implicit finite differences yields:
+where $ii$ is the equation number. Discretizing the equation in space and time using implicit FDs yields:
 
 $\begin{equation}
 \frac{T_{\textrm{ext},iC}^{n+1}-T_{\textrm{ext},iC}^{n}}{\Delta{t}} - \kappa 
@@ -252,7 +258,7 @@ $\begin{equation}
 \right) - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{equation}$
 
-where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the **interior centroids**. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
+where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the **centroids**. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
 
 $\begin{equation}
 -b T_{\textrm{ext},iS}^{n+1} - a T_{\textrm{ext},iW}^{n+1} + 
@@ -262,15 +268,15 @@ c T_{\textrm{ext},iC}^n - \frac{Q}{\rho c_p} =
 r_{ii},
 \end{equation}$
 
-which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},i}^{n+1}$ is the unknown vector $x$,$-cT_{\textrm{ext},i}^n -\frac{Q}{\rho c_p}$ is the known vector $b$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix $\bm{K}$. With the residual vector $r$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). 
+which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},i}^{n+1}$ is the unknown vector $x$ (only using the centroids),$-cT_{\textrm{ext},i}^n -\frac{Q}{\rho c_p}$ is the known vector $b$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix $\bm{K}$. With the residual vector $r$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). The correction is then used to update the initial temperature guess. This is repeated until the residuum is considered small enough. 
 
->Note: The residdum is only caluclated for the interoir centroids using the extended temperature field including the ghost node values. For the centroids adjacent to the boundary, one needs to use the values of the temperature ghost nodes, which leads to a modification of the coeffients in the coefficient matrix. Thus, the unknown vector $x$ has only the dimenions of the number of equations, which corresponds to the temperature at the interior centroids. 
+>Note: The residdum is only caluclated for the centroids using the extended temperature field including the ghost node values. For the centroids adjacent to the boundary, one needs to use the values of the temperature ghost nodes, which leads to a modification of the coeffients in the coefficient matrix. Thus, the unknown vector $x$ has only the dimenions of the number of equations, which corresponds to the temperature at the centroids. 
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Boundary Conditions
 
-The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the interior centroids adjacent to the boundary are then given by: 
+The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the centroids adjacent to the boundary are then given by: 
 
 **Dirichlet Boundary Conditions**
 
@@ -391,7 +397,7 @@ $\begin{equation}
 
 ### Boundary Conditions
 
-The coefficient matrix remains the same, even for the given boundary conditions. However, the right-hand side needs to be updated accordingly (simply setting $\bm{r}=0$ and adding the known parameters to the right-hand side of the equations). Thus, the equations for the interior centroids adjacent to the boundaries are defined as: 
+The coefficient matrix remains the same, even for the given boundary conditions. However, the right-hand side needs to be updated accordingly (simply setting $\bm{r}=0$ and adding the known parameters to the right-hand side of the equations). Thus, the equations for the centroids adjacent to the boundaries are defined as: 
 
 
 **Dirichlet Boundary Conditions**
@@ -526,9 +532,11 @@ $\begin{equation}
 
 where $\mathbf{K_i}$ are the coefficient matrices (with five non-zero diagonals), $x$ is the unknown solution vector, that is the temperature at time step $n+1$, and $b$ is the heat generation term.
 
+>Note: Here, $\bm{b}$ only contains radiogenic heat soureces. Additional heat sources, like shear heating, or latent heat, can simply be added to the vector. 
+
 ### General Solution 
 
-The residual on the interior centroids using the Crank-Nicolson discretization is calculated via: 
+The residual on the centroids using the Crank-Nicolson discretization is calculated via: 
 
 $\begin{equation}
 \mathbf{K_1}\cdot{\bm{x}}-\mathbf{K_2}\cdot{T_{}^n}-\bm{b}=\bm{r}.
@@ -536,17 +544,17 @@ $\begin{equation}
 
 The correction term and the updated temperature within the iteration for the solution is caluclated as in the implicit general solution (Equations (24) and (25)). 
 
-Within `GeoModBox.jl` the extended temperature field is used  to discretize the equation in space and time to calculate the residuum on the interior centroids, leading to: 
+Within `GeoModBox.jl` the extended temperature field is used  to discretize the equation in space and time to calculate the residuum on the centroids, leading to: 
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},iS}^{n+1} -aT_{\textrm{ext},iW}^{n+1}+\left(2a + 2b + c\right)T_{\textrm{ext},iC}^{n+1} -aT_{\textrm{ext},iE}^{n+1} -b T_{\textrm{ext},iN}^{n+1} \\ & -b T_{\textrm{ext},iS}^{n} -aT_{\textrm{ext},iW}^{n}+\left(2a + 2b - c\right)T_{\textrm{ext},iC}^{n} -aT_{\textrm{ext},iE}^{n} -b T_{\textrm{ext},iN}^{n} - \frac{Q}{\rho c_p} = \bm{r}_{ii},
 \end{gather*}\end{equation}$
 
-where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the interior centroids and $ii$ is the equation number. This corresponds to the matrix form of Equation (50). 
+where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids and $ii$ is the equation number. This corresponds to the matrix form of Equation (50). 
 
 ### Boundary Conditions
 
-As with the implicit method, to maintain symmetry in the coefficient matrices the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the **interior centroids adjacent to the boundary** are then given by:
+As with the implicit method, to maintain symmetry in the coefficient matrices the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the **centroids adjacent to the boundary** are then given by:
 
 **Dirichlet Boundary Conditions**
 
@@ -660,7 +668,7 @@ $\begin{equation}\begin{split}
         f & = 2e+2d-\frac{1}{\Delta{t}} \\ \end{split}
 \end{split}.\end{equation}$
 
-Equation (62) corresponds to the matrix form Equation (50). With the residual vector $r$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (24). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), and an example on how to use the general solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl).
+Equation (62) corresponds to the matrix form of Equation (50). With the residual vector $r$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (24). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), and an example on how to use the general solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl).
 
 For the sake of simplicity and since most of the problems within `GeoModBox.jl`, so far, are of linear nature, the *special case* formulation is applied to the last additional method.  
 
@@ -727,7 +735,7 @@ $\begin{equation}\begin{gather*}
 -Q_{i,j} = r_{ii}, 
 \end{gather*}\end{equation}$
 
-where $ii$ is the equation number and $iC$ the central reference point of the numerical stencil on the corresponding field (see Figure 1). By applying Fourier's law the equation results in:
+where $ii$ is the equation number and $iC$ the central reference point of the numerical stencil of the corresponding field (see Figure 1). By applying Fourier's law the equation results in:
 
 $\begin{equation}\begin{gather*}
 & \rho_{iC} c_{p,iC}\left(
@@ -767,7 +775,7 @@ $\begin{equation}\begin{gather*}
 -Q_{iC} = r_{ii}
 \end{gather*},\end{equation}$
 
-which corresponds to the matrix form Equation (50) of: 
+which corresponds to the matrix form of Equation (50) of: 
 
 $\begin{equation}
 \mathbf{K_1}\cdot{\bm{x}}-\mathbf{K_2}\cdot{T^n}-\bm{b}=\bm{r}.
@@ -797,17 +805,17 @@ i & = \frac{Ck_{x,iE}}{\Delta{x^2}} \\
 j & = \frac{Ck_{y,iN}}{\Delta{y^2}} \\
 \end{split}.\end{equation}$
 
-With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (24).  
+With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (24). The correction is then used to update the initial temperature guess. This is repeated until the residuum is considered small enough.  
 
 --- 
 
 # Steady State Solution 
 
-In steady state, the temperature field does not vary with time (i.e., $\partial T/\partial t = 0$), and the heat equation simplifies to an *elliptic partial differential equation*, also known as the *Poisson equation*.
+In steady state, the temperature field does not vary with time (i.e., $\partial T/\partial t = 0$), and the heat diffusion equation simplifies to an *elliptic partial differential equation*, also known as the *Poisson equation*.
 
 ## Poisson Equation (Constant $k$)
 
-For constant thermal conductivity, the steady-state heat equation is given by:
+For constant thermal conductivity, the steady-state heat diffusion equation is given by:
 
 $\begin{equation}
 0 = \left( 
@@ -815,20 +823,20 @@ $\begin{equation}
     \right) + \frac{Q}{k}.
 \end{equation}$
 
-Using central finite differences to approximate the spatial derivatives, this becomes:
+Using central FDs to approximate the spatial derivatives, this becomes:
 
 $\begin{equation}
 0 = \left( 
-\frac{T_{i-1,j} - 2T_{i,j} + T_{i+1,j}}{\Delta x^2} + \frac{T_{i,j-1} - 2T_{i,j} + T_{i,j+1}}{\Delta y^2}
+\frac{T_{iW} - 2T_{iC} + T_{iE}}{\Delta x^2} + \frac{T_{iS} - 2T_{iC} + T_{iN}}{\Delta y^2}
 \right) + \frac{Q}{k},
 \end{equation}$
 
-where $i$ and $j$ denote the indices in the $x$- and $y$-directions, respectively.
+where $iC$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids.
 
 Rearranging the terms yields a linear system of the form:
 
 $\begin{equation} 
-bT_{i,j-1} + aT_{i-1,j} - 2(a+b)T_{i,j} + aT_{i+1,j} + bT_{i,j+1} = -\frac{Q}{k},
+bT_{iS} + aT_{iW} - 2(a+b)T_{iC} + aT_{iE} + bT_{iN} = -\frac{Q}{k},
 \end{equation}$
 
 with
@@ -847,25 +855,25 @@ Boundary conditions are enforced using ghost nodes, requiring modifications to b
 **West boundary**
 
 $\begin{equation}
-bT_{1,j-1} - (3a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{\textrm{BC},W}.
+bT_{iS} - (3a + 2b)T_{iC} + bT_{iN} + aT_{iE} = -\frac{Q_{iC}}{k_{iC}} - 2aT_{\textrm{BC},W}.
 \end{equation}$
 
 **East boundary**
 
 $\begin{equation}
-aT_{\textrm{ncx}-1,j} + bT_{\textrm{ncx},j-1} - (3a + 2b)T_{\textrm{ncx},j} + bT_{\textrm{ncx},j+1} = -\frac{Q_{i,j}}{k_{i,j}} - 2aT_{\textrm{BC},E}.
+aT_{iW} + bT_{iS} - (3a + 2b)T_{iC} + bT_{iN} = -\frac{Q_{iC}}{k_{iC}} - 2aT_{\textrm{BC},E}.
 \end{equation}$
 
 **South boundary**
 
 $\begin{equation}
-aT_{i-1,1} - (2a + 3b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{\textrm{BC},S}.
+aT_{iS} - (2a + 3b)T_{iC} + bT_{iN} + aT_{iE} = -\frac{Q_{iC}}{k_{iC}} - 2bT_{\textrm{BC},S}.
 \end{equation}$
 
 **North boundary**
 
 $\begin{equation}
-aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - 2bT_{\textrm{BC},N}.
+aT_{iW} + bT_{iS} - (2a + 3b)T_{iC} + aT_{iE} = -\frac{Q_{iC}}{k_{iC}} - 2bT_{\textrm{BC},N}.
 \end{equation}$
 
 **Neumann Boundary Condtions**
@@ -873,25 +881,25 @@ aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + 3b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}
 **West boundary**
 
 $\begin{equation}
-bT_{1,j-1} - (a + 2b)T_{1,j} + bT_{1,j+1} + aT_{2,j} = -\frac{Q_{i,j}}{k_{i,j}} + ac_W\Delta{x}.
+bT_{iS} - (a + 2b)T_{iC} + bT_{iN} + aT_{iE} = -\frac{Q_{iC}}{k_{iC}} + ac_W\Delta{x}.
 \end{equation}$
 
 **East boundary**
 
 $\begin{equation}
-aT_{\textrm{ncx}-1,j} + bT_{\textrm{ncx},j-1} - (a + 2b)T_{\textrm{ncx},j} + bT_{\textrm{ncx},j+1} = -\frac{Q_{i,j}}{k_{i,j}} - ac_E\Delta{x}.
+aT_{iW} + bT_{iS} - (a + 2b)T_{iC} + bT_{iN} = -\frac{Q_{iC}}{k_{iC}} - ac_E\Delta{x}.
 \end{equation}$
 
 **South boundary**
 
 $\begin{equation}
-aT_{i-1,1} - (2a + b)T_{1,1} + bT_{i,2} + aT_{i+1,1} = -\frac{Q_{i,j}}{k_{i,j}} + bc_S\Delta{y}.
+aT_{iW} - (2a + b)T_{iC} + bT_{iN} + aT_{iE} = -\frac{Q_{iC}}{k_{iC}} + bc_S\Delta{y}.
 \end{equation}$
 
 **North boundary**
 
 $\begin{equation}
-aT_{i-1,ncy} + bT_{i,ncy-1} - (2a + b)T_{1,ncy} + aT_{i+1,ncy} = -\frac{Q_{i,j}}{k_{i,j}} - bc_N\Delta{y}.
+aT_{iW} + bT_{iS} - (2a + b)T_{iC} + aT_{iE} = -\frac{Q_{C}}{k_{iC}} - bc_N\Delta{y}.
 \end{equation}$
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
@@ -905,12 +913,12 @@ $\begin{equation}
 \frac{\partial}{\partial y}\left(k_y\frac{\partial T}{\partial y}\right) + Q_{i,j}. 
 \end{equation}$
 
-To discretize this equation conservatively, a staggered finite difference scheme is used: the heat flux $q_i = k_i \frac{\partial T}{\partial i}$ is defined **between** centroids, while the temperature is defined **at** the centroids.
+To discretize this equation conservatively, a staggered FD scheme is used: the heat flux $q_i = k_i \frac{\partial T}{\partial i}$ is defined **between** centroids, while the temperature is defined **at** the centroids (see Figure 1).
 
 This yields the discretized form:
 
 $\begin{equation} 
-b k_{y;i,j} T_{i,j-1} + a k_{x;i,j} T_{i-1,j} + c T_{i,j} + a k_{x;i+1,j} T_{i+1,j} + b k_{y;i,j+1} T_{i,j+1} + Q_{i,j} = 0,  
+b k_{y;iC} T_{iS} + a k_{x;iC} T_{iW} + c T_{iC} + a k_{x;iE} T_{iE} + b k_{y;iN} T_{iN} + Q_{iC} = 0,  
 \end{equation}$
 
 where:
@@ -918,7 +926,7 @@ where:
 $\begin{equation}
 a = \frac{1}{\Delta{x^2}}, \quad
 b = \frac{1}{\Delta{y^2}}, \textrm{and} \ \quad
-c = -a\left(k_{x;i+1,j}+k_{x;i,j}\right) - b\left(k_{y;i,j+1}+k_{y;i,j}\right).
+c = -a\left(k_{x;iE}+k_{x;iC}\right) - b\left(k_{y;iN}+k_{y;iC}\right).
 \end{equation}$
 
 For further implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
