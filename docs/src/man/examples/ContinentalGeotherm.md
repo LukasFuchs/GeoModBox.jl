@@ -20,6 +20,8 @@ where $\rho$, $c_{p}$, $T$, $t$, $k$, $H$, $y$, and $nv$ represent the density [
 
 For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme see the [documentation](../DiffOneD.md).
 
+An additional script on how to solve the 1D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal parameters can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D_dc.jl).
+
 ---
 
 First one needs to load the required packages: 

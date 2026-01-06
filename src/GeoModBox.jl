@@ -27,7 +27,8 @@ module GeoModBox
 
             # 2D solver ---
             include("./HeatEquation/2Dsolvers.jl")
-            export ComputeResiduals2D!, AssembleMatrix2D, BackwardEuler2Dc!, 
+            export ComputeResiduals2Dc!, ComputeResiduals2D!, 
+                AssembleMatrix2Dc, AssembleMatrix2D, BackwardEuler2Dc!, 
                 ForwardEuler2Dc!, CNA2Dc!, ADI2Dc!,
                 Poisson2Dc!, Poisson2D!
         end
@@ -37,7 +38,7 @@ module GeoModBox
             include("./HeatEquation/1Dsolvers.jl")
             export ForwardEuler1Dc!, BackwardEuler1Dc!,
                 ComputeResiduals1Dc!, AssembleMatrix1Dc!, CNA1Dc!,
-                ForwardEuler1D!
+                ForwardEuler1D!, ComputeResiduals1D!, AssembleMatrix1D
         end                
     end
 

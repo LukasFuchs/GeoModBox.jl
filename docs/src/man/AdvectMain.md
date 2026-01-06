@@ -1,10 +1,10 @@
 # Advection Equation
 
-In cases where the material remains stationary (e.g., during the thermal evolution of intrusions or within a non-deforming lithosphere), it is sufficient to solve only the diffusive term of the energy equation. However, in most geodynamical contexts, material is in motion, and physical properties such as temperature, density, or composition must be advected with the flow.
+In most geodynamical contexts, material is in motion, and physical properties such as temperature, density, or composition must be advected with the flow.
 
 ## Eulerian and Lagrangian Formulations
 
-Advection describes the transport of scalar or vector quantities due to the motion of a fluid. Depending on the reference frame, the governing equations take different forms.
+Advection describes the transport of scalar or vector quantities due to the motion of a fluid. Depending on the reference frame, the governing equation takes a different form.
 
 ### Eulerian Formulation
 
