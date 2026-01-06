@@ -4,20 +4,21 @@
 using Interpolations
 
 """
-    upwindc2D!()
+    upwindc2D!(P,P_ex,vxc,vyc,NC,Δt,Δx,Δy)
 
-    Using the velocity on the centroids! 
+Function to advect a property using the upwind method in two dimensions. 
+
+    P       : 2-D array of the advected property on the centroids
+    P_ex    : 2-D array including the ghost nodes
+    vxc     : 2-D array of the horizontal velocity on the centroids
+    vyc     : 2-D array of the vertical velocity on the centroids
+    NC      : Structure or Tuple containing the number of centroids
+    Δt      : Time step
+    Δx      : Horizontal grid spacing
+    Δy      : Vertical grid spacing
 """
 function upwindc2D!(P,P_ex,vxc,vyc,NC,Δt,Δx,Δy)
 
-    # indx    =   2:(NC.x+1)
-    # indy    =   2:(NC.y+1)
-
-    # @. P     =  P_ex[2:(NC.x+1),indy] - 
-    #         (vxc>0)*(vxc*Δt/Δx*(P_ex[indx,indy  ] - P_ex[indx-1,indy])) - 
-    #         (vxc<0)*(vxc*Δt/Δx*(P_ex[indx+1,indy] - P_ex[indx,indy  ])) - 
-    #         (vyc>0)*(vyc*Δt/Δy*(P_ex[indx,indy  ] - P_ex[indx,indy-1])) - 
-    #         (vyc<0)*(vyc*Δt/Δy*(P_ex[indx,indy+1] - P_ex[indx,indy  ]))
     @. P     =  P_ex[2:(NC.x+1),2:(NC.y+1)] - 
             (vxc>0)*(vxc*Δt/Δx*(P_ex[2:(NC.x+1),2:(NC.y+1)] - P_ex[1:NC.x,2:(NC.y+1)])) - 
             (vxc<0)*(vxc*Δt/Δx*(P_ex[3:(NC.x+2),2:(NC.y+1)] - P_ex[2:(NC.x+1),2:(NC.y+1)])) - 
@@ -30,6 +31,18 @@ end
 
 """
     slfc2D!
+
+Function to advect a property using the staggered-leaped frog method in two dimensions. 
+
+    P       : 2-D array of the advecte property on the centroids
+    P_ex    : 2-D array including the ghost nodes
+    P_exo   : 2-D array of the previous time step including the ghost nodes 
+    vxc     : 2-D array of the horizontal velocity on the centroids
+    vyc     : 2-D array of the vertical velocity on the centroids
+    NC      : Structure or Tuple containing the number of centroids
+    Δt      : Time step
+    Δx      : Horizontal grid spacing
+    Δy      : Vertical grid spacing
 """
 function slfc2D!(P,P_ex,P_exo,vxc,vyc,NC,Δt,Δx,Δy)
 
@@ -47,6 +60,21 @@ end
 
 """
     semilagc2D!()
+
+Function to advect a property using the semi-lagrange method in two dimensions. 
+
+    P       : 2-D array of the advecte property on the centroids
+    P_ex    : 2-D array including the ghost nodes
+    vxc     : 2-D array of the horizontal velocity on the centroids
+    vyc     : 2-D array of the vertical velocity on the centroids
+    vxo     : 2-D array of the horizontal velocity of the previous time step on the centroids
+    vyo     : 2-D array of the vertical velocity of the previous time step on the centroids
+    x       : Structure or Tuple containing the 2-D horizontal coordinates of the centroids
+    y       : Structure or Tuple containing the 2-D vertical coordinates of the centroids
+    Δt      : Time step
+
+The function calculates a mean velocity of the previous and current velocity field, if needed, 
+and advects the property using a mid-point iteration scheme. 
 """
 function semilagc2D!(P,P_ex,vxc,vyc,vxo,vyo,x,y,Δt)
     # mid-point iteration scheme ---

@@ -4,10 +4,10 @@ using TimerOutputs
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
-Schema  =   ["explicit","implicit","CNA","ADI"]
+Schema  =   ["explicit","implicit","CNA"]
 ns          =   size(Schema,1)
 nrnxny      =   6
-save_fig    =   -1
+save_fig    =   0
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -55,13 +55,7 @@ for m = 1:ns
             y       =   P.H/NC.y    #   Grid Spacing in y
         )
         display(string("nx = ",NC.x,", ny = ",NC.y))
-        # ------------------------------------------------------------ #
-        # Animationssettings ----------------------------------------- #
-        path        =   string("./examples/DiffusionEquation/2D/Results/")
-        anim        =   Plots.Animation(path, String[] )
-        filename    =   string("Gaussian_Diffusion_",FDSchema,
-                            "_nx_",NC.x,"_ny_",NC.y)
-        # ------------------------------------------------------------ #        
+        # ------------------------------------------------------------ #      
         # Grid coordinates ------------------------------------------- #
         x       = (
             c       =   LinRange(-P.L/2+ Δ.x/2.0, P.L/2 - Δ.x/2.0, NC.x),
@@ -91,6 +85,7 @@ for m = 1:ns
             T           =   zeros(NC...),
             T0          =   zeros(NC...),
             T_ex        =   zeros(NC.x+2,NC.y+2),
+            T_ex0       =   zeros(NC.x+2,NC.y+2),
             Tana        =   zeros(NC...),
             RMS         =   zeros(1,nt),
             εT          =   zeros(NC...),
@@ -115,88 +110,51 @@ for m = 1:ns
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
         # Heat production rate ---
         @. D.Q          = P.Q0
-        # Visualize initial condition ---
-        # subplot 1 ---
-        p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
-                color=:viridis, colorbar=false, aspect_ratio=:equal, 
-                xlabel="x [km]", ylabel="z [km]", 
-                title="Temperature", 
-                xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
-                subplot=1)
-            contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
-                    levels=:5,linecolor=:black,subplot=1)
-            contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
-                    levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
-        # subplot 2 ---
-        heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
-                color=:viridis, colorbar=true, aspect_ratio=:equal, 
-                xlabel="x [km]", ylabel="z [km]", 
-                title="Deviation", 
-                xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3),  
-                clims=(-1,1),layout=(2,2),
-                subplot=2)
-        # subplot 3 ---
-        plot!(p,D.Tprofile[:,1],y.c./1e3,
-                linecolor=:black,
-                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
-                label="",
-                subplot=3)
-        plot!(p,D.Tprofilea[:,1],y.c./1e3,
-                linestyle=:dash,linecolor=:yellow,
-                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
-                label="",
-                subplot=3)
-        # subplot 4 ---
-        plot!(p,time[1:end]./T.year./1e6,D.RMS[1:end],
-                label="",
-                xlabel="Time [ Myrs ]",ylabel="RMS",
-                subplot=4)
-        if save_fig == 0
-            display(p)
-        end
         # Boundary Conditions ---------------------------------------- #
         BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
                                 N=:Dirichlet, S=:Dirichlet),
                     val     = (W=D.Tana[1,:],E=D.Tana[end,:],
                                 N=D.Tana[:,end],S=D.Tana[:,1]))
         # ------------------------------------------------------------ #
+        niter       =   10
+        ϵ           =   1e-25
+        @. D.ρ      =   P.ρ
+        @. D.cp     =   P.cp
+        Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
+        ndof        =   maximum(Num.T)
+        K           =   ExtendableSparseMatrix(ndof,ndof)
+        R           =   zeros(NC...)
+        ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
+                            ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
         if FDSchema == "implicit"
-            # Linear System of Equations ----------------------------- #
-            Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
-            ndof    =   maximum(Num.T)
-            K       =   ExtendableSparseMatrix(ndof,ndof)
-            rhs     =   zeros(ndof)
-        end
-        if FDSchema == "CNA"
-            # Linear System of Equations ----------------------------- #
-            Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
-            ndof    =   maximum(Num.T)
-            K1      =   ExtendableSparseMatrix(ndof,ndof)
-            K2      =   ExtendableSparseMatrix(ndof,ndof)
-            rhs     =   zeros(ndof)
+            C = 0
+        elseif FDSchema == "CNA"
+            C = 0.5
+        elseif FDSchema == "explicit"
+            C = 1
         end
         end
         @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
         for n = 1:nt
             if n>1
-                if FDSchema == "explicit"
-                    @timeit to "Explicit" begin
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
-                    end
-                elseif FDSchema == "implicit"
-                    @timeit to "Implicit" begin
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
-                    end
-                elseif FDSchema == "CNA"
-                    @timeit to "CNA" begin
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
-                    end
-                elseif FDSchema == "ADI"
-                    @timeit to "ADI" begin
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
-                    end
+                @timeit to "Solution" begin
+                for iter = 1:niter
+                    # Evaluate residual
+                    ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
+                            D.Q,D.ρ,D.cp, P.κ, BC, Δ, T.Δ[1];C)
+                    # @printf("||R|| = %1.4e\n", norm(R)/length(R))
+                    norm(R)/length(R) < ϵ ? break : nothing
+                    # Assemble linear system
+                    K  = AssembleMatrix2Dc(P.κ, BC, Num, NC, Δ, T.Δ[1];C)
+                    # Solve for temperature correction: Cholesky factorisation
+                    Kc = cholesky(K.cscmatrix)
+                    # Solve for temperature correction: Back substitutions
+                    δT = -(Kc\R[:])
+                    # Update temperature
+                    @. D.T += δT[Num.T]
+                end
+                D.T0    .= D.T
                 end
                 time[n]     =   time[n-1] + T.Δ[1]
                 if time[n] > T.tmax 
@@ -220,65 +178,10 @@ for m = 1:ns
             @. D.εT     =   (D.Tana - D.T)
             # RMS ---
             D.RMS[n]    =   sqrt(sum(D.εT.^2)/(NC.x*NC.y))
-            # Plot Solution ---
-            if mod(n,2) == 0 || n == nt
-                # subplot 1 ---
-                p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
-                    color=:viridis, colorbar=false, aspect_ratio=:equal, 
-                    xlabel="x [km]", ylabel="z [km]", 
-                    title="Temperature", 
-                    xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                    clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
-                    subplot=1)
-
-                contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
-                            levels=:5,linecolor=:black,subplot=1)
-                contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
-                            levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
-                # subplot 2 ---
-                heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
-                        color=:viridis, colorbar=true, aspect_ratio=:equal, 
-                        xlabel="x [km]", ylabel="z [km]", 
-                        title="Deviation", 
-                        xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                        clims=(-1,1),
-                        subplot=2)
-                # subplot 3 ---
-                plot!(p,D.Tprofile[:,n],y.c./1e3,
-                    linecolor=:black, ylim=(-P.H/2/1e3,P.H/2/1e3),
-                    xlim=(0,P.Tamp),
-                    xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
-                    label="",
-                    subplot=3)
-                plot!(p,D.Tprofilea[:,n],y.c./1e3,
-                    linestyle=:dash,linecolor=:yellow,
-                    xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
-                    label="",
-                    subplot=3)
-                # subplot 4 ---
-                plot!(p,time[1:n]./T.year./1e6,D.RMS[1:n],
-                    label="",
-                    xlabel="Time [ Myrs ]",ylabel="RMS",
-                    subplot=4)
-                if save_fig == 1
-                    Plots.frame(anim)
-                elseif save_fig == 0
-                    display(p)                        
-                end
-            end
-            # End Time Loop ---
         end        
         display("Time loop finished ...")
         display("-> Use new grid size...")
         end
-        # Save Animation ---
-        if save_fig == 1
-            # Write the frames to a GIF file
-            Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-        elseif save_fig == 0
-            display(plot(p))
-        end
-        foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
         # ------------------------------------------------------------ #
         # Statistical Values for Each Scheme and Resolution ---
         St.ε[m,l]       =   maximum(D.RMS[:])
@@ -295,7 +198,6 @@ end
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3))
 for m = 1:ns
-#    subplot(1,3,1)
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
                 xaxis=:log,yaxis=:log,
@@ -315,8 +217,8 @@ for m = 1:ns
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
-if save_fig == -1
-    savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
+if save_fig == 1
+    savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest_General.png")
 end
 # --------------------------------------------------------------------- #
 display(to)

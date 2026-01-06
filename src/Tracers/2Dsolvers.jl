@@ -2,7 +2,17 @@ using Base.Threads
 using Statistics, Printf
 
 """
-    TMarkers()
+    Ma = TMarkers(xmi,ymi,T,phase)
+
+Function to allocate the marker arrays to advect the absolute temperature. 
+
+    xmi     : Initial horizontal marker coordinates
+    ymi     : Initial vertical marker coordinates
+    T       : Initial marker temperature
+    phase   : Initial marker phase ID
+
+Example: 
+    Ma = TMarkers( vec(xmi), vec(ymi), zeros(Float64, nmark), zeros(Int64, nmark) )
 """
 mutable struct TMarkers
     x       ::  Array{Float64,1}
@@ -12,7 +22,16 @@ mutable struct TMarkers
 end
 
 """
-    Markers()
+    Ma = Markers(xmi,ymi,phase)
+
+Function to allocate the marker arrays to advect the phase ID. 
+
+    xmi     : Initial horizontal marker coordinates
+    ymi     : Initial vertical marker coordinates
+    phase   : Initial marker phase ID
+
+Example: 
+    Ma = TMarkers( vec(xmi), vec(ymi), zeros(Int64, nmark) )
 """
 mutable struct Markers
     x       ::  Array{Float64,1}
@@ -21,9 +40,34 @@ mutable struct Markers
 end
 
 """
-    IniTracer2D(nmx,nmy,Δ,M,NC,noise)
+    IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ,δA,ellA,ellB,α)
+
+Function to setup the initial tracer distribution. 
+
+    Aparam  : Defines if temperature (thermal) or phase (phase) is advected
+    nmx     : Number of horizontal tracers per cell
+    nmy     : Number of vertical tracers per cell
+    Δ       : Structure or tuple containing the grid resolution
+    M       : Structure or tuple containing the geometry
+    NC      : Structure or tuple containing centroids parameter
+    noise   : add noise; 1 - yes, 0 - no
+    ini     : Initial phase distribution (e.g., block)
+    phase   : Vector with phase IDs, (e.g. [0,1])
+
+Certain default values can be modified as well: 
+
+    λ       : Wavelength [m] for a cosine perturbation, e.g. for the RTI
+    δA      : Amplitude [m] of the perturbation
+    ellA    : Major half axis [m] of the elliptical inclusion
+    ellB    : Minor half axis [m] of the elliptical inclusion
+    α       : Rotation angle [°] of the elliptical inclusion 
+
+Example: 
+    Ma = IniTracer2D(:phase,nmx,nmy,Δ,M,NC,1,RTI,[0 1])
+
 """
-@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
+@views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;
+                    λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -105,8 +149,25 @@ end
 
 """
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+
+Function to count the marker per cell. 
+
+    Ma      : Tuple or structure containing the marker properties
+    nmark   : Total number of markers
+    MPC     : Tuple or structure containing marker per node per thread information
+    M       : Tuple or structure containing the model geometry
+    x       : Tuple or sturcture containing the x-coordinates
+    y       : Tuple or sturcture containing the y-coordinates
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+    NV      : Tuple or structure containing the number of vertices
+
+Example: 
+
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,)
+
 """
-@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
      # Disable markers outside of the domain
      @threads for k=1:nmark
         if (Ma.x[k]<M.xmin || Ma.x[k]>M.xmax || Ma.y[k]<M.ymin || Ma.y[k]>M.ymax) 
@@ -160,11 +221,6 @@ end
         end
     end
 
-    # MPC.min[it]         = minimum(MPC.c)
-    # MPC.max[it]         = maximum(MPC.c)
-    # MPC.mean[it]        = mean(MPC.c)
-    #MPC.tot_reseed[it] = nmark_add
-
     # Initialize marker per vertex per thread array ---
     @threads for j = 1:NV.y
         for i = 1:NV.x
@@ -208,6 +264,22 @@ end
 
 """
     VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
+
+Function to calculate horizontal marker velocities from the vx staggered nodes. 
+Modified from https://github.com/tduretz/M2Dpt_Julia/blob/master/Markers2D/Main_Taras_v6_Hackathon.jl
+
+    Vx      : Horizontal velocity field
+    k       : Marker number 
+    Ma      : Tuple or structure containing marker information
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+    new     : Switch to activate updated velocity calculation
+
+Example: 
+
+    vxm = VxFromVxNodes(D.vx, k, Ma, x, y, Δ, NC, 0)
 """
 @views function VxFromVxNodes(Vx, k, Ma, x, y, Δ, NC, new)
     # Interpolate vx
@@ -257,6 +329,22 @@ end
 
 """
     VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
+
+Function to calculate vertical marker velocities from the vy staggered nodes. 
+Modified from https://github.com/tduretz/M2Dpt_Julia/blob/master/Markers2D/Main_Taras_v6_Hackathon.jl
+
+    Vy      : Vertical velocity field
+    k       : Marker number 
+    Ma      : Tuple or structure containing marker information
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+    new     : Switch to activate updated velocity calculation
+
+Example: 
+
+    vym = VyFromVyNodes(D.vy, k, Ma, x, y, Δ, NC, 0)
 """
 @views function VyFromVyNodes(Vy, k, Ma, x, y, Δ, NC, new)
     # Interpolate vy
@@ -306,6 +394,22 @@ end
 
 """
     VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC )
+
+Function to calculate horizontal and vertical marker velocities from the centroids. 
+Modified from https://github.com/tduretz/M2Dpt_Julia/blob/master/Markers2D/Main_Taras_v6_Hackathon.jl
+
+    Vxp     : Horizontal velocity field at the centroids
+    Vyp     : Vertical velocity field at the centroids
+    k       : Marker number 
+    Ma      : Tuple or structure containing marker information
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+
+Example: 
+
+    vxp, vyp = VxVyFromPrNodes(D.vxc ,D.vyc, k, Ma, x, y, Δ, NC)
 """
 @views function VxVyFromPrNodes(Vxp ,Vyp, k, Ma, x, y, Δ, NC)
     # Interpolate vx, vy
@@ -342,6 +446,20 @@ end
 
 """
     FromCtoM(Prop, Ma, x, y, Δ, NC)
+
+Function to interpolate the centroid property onto the tracers.
+
+    Prop    : Property array on the centroids
+    Ma      : Tuple or structure containing marker information
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+
+Example: 
+    for k = 1:nmark
+        Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
+    end
 """
 @views function FromCtoM(Prop, k, Ma, x, y, Δ, NC)
     # Interpolate Property from Centroids to Marker ---
@@ -379,7 +497,31 @@ end
 end
 
 """
-    Markers2Cells(Ma,nmark,PG,weight,x,y,Δ,param)
+    Markers2Cells(Ma,nmark,PC_th,PC,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
+
+Function to interpolate the marker property to the centroids using a weighted bilinear 
+interpolation scheme. 
+
+    Ma          : Tuple or structure containing the marker information 
+    nmark       : Total number of markers 
+    PC_th       : Property on the centroids per thread 
+    PC          : Property on the centroids
+    weight_th   : Weight on the centroids per thread
+    weight      : Weight on the centroids
+    x           : Tuple or structure containing the x-coordinates
+    y           : Tuple or structure containing the y-coordinates
+    Δ           : Tuple or structure containing the grid resolution
+    param       : Switch to define the advected property: :thermal or :phase
+    param2      : Array containing the value for each phase, e.g. [ρ₁ ρ₂]
+
+Certain default values can be modified as well:
+
+    avgm        : Averaging scheme: arithmetic (arith), geometric (geom), or harmonic (harm)
+
+Example: 
+
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+    D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
 """
 @views function Markers2Cells(Ma,nmark,PC_th,PC,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
     PC0     =   copy(PC)
@@ -482,7 +624,30 @@ end
 end
 
 """
-    Markers2Vertices(Ma,nmark,PG,weight,x,y,Δ,param)
+    Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
+
+Function to interpolate the marker property to the vertices using a weighted bilinear 
+interpolation scheme. 
+
+    Ma          : Tuple or structure containing the marker information 
+    nmark       : Total number of markers 
+    PG_th       : Property on the vertices per thread 
+    PG          : Property on the vertices
+    weight_th   : Weight on the centroids per thread
+    weight      : Weight on the centroids
+    x           : Tuple or structure containing the x-coordinates
+    y           : Tuple or structure containing the y-coordinates
+    Δ           : Tuple or structure containing the grid resolution
+    param       : Switch to define the advected property: :thermal or :phase
+    param2      : Array containing the value for each phase, e.g. [ρ₁ ρ₂]
+
+Certain default values can be modified as well:
+
+    avgm        : Averaging scheme: arithmetic (arith), geometric (geom), or harmonic (harm)
+
+Example: 
+
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 """
 @views function Markers2Vertices(Ma,nmark,PG_th,PG,weight_th,weight,x,y,Δ,param,param2;avgm=:arith)
     PG0     =   copy(PG)
@@ -585,9 +750,26 @@ end
 end
 
 """
-    FromCtoM(Prop, Ma, x, y, Δ, NC)
+    AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+
+Function to advect tracer in 2D using forth order Runge-Kutta.
+
+    Ma      : Tuple or structure containing the marker information 
+    nmark   : Total number of tracers
+    D       : Tuple or structure containing the velocities
+    x       : Tuple or structure containing the x-coordinates
+    y       : Tuple or structure containing the y-coordinates
+    dt      : Time step 
+    Δ       : Tuple or structure containing the grid resolution
+    NC      : Tuple or structure containing the number of centroids
+    rkw     : Runge-Kutta coefficients for velocity averaging
+    rkv     : Runge-Kutta coefficients for time stepping
+
+Certain default values can be modified as well:
+    
+    style   : Defines the calculation of the velocity, default 1, (1,2,3)
 """
-@views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+@views function AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv;style=1)
     @threads for k = 1:nmark
         if (Ma.phase[k]>=0)
             x0  =   Ma.x[k]

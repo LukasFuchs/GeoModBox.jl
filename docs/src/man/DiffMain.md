@@ -14,7 +14,7 @@ $\partial/\partial t$ is the time derivative,
 $t$ is time [s],
 $v_j$ is the velocity [m/s] in direction $j$,
 $q_i$ is the heat flux [W/m²] in direction $i$,
-$\partial/\partial x_i$ is a directional derivative in $i$,
+$\partial/\partial x_i$ is a directional derivative in $i$, and
 $H$ is the internal heat production per unit mass [W/kg]. Repeated indices imply summation.
 
 The heat flux $q_i$ is described by **Fourier’s law**:
@@ -28,30 +28,27 @@ where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to 
 Substituting Fourier’s law into the energy equation yields the **temperature conservation equation** in Eulerian form:
 
 $\begin{equation}
-\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H.
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = \frac{\partial}{\partial x_i}\left(k\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
 \end{equation}$
 
 This equation captures temperature changes due to **diffusion** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and diffusion steps sequentially. If internal heat production varies spatially, a more advanced advection scheme is required to account for source term integration.
 
 # Heat Diffusion Equation
 
-Neglecting the advection part of the temperature equation, the heat diffusion equation is defined as: 
+In cases where the material remains stationary (e.g., during the thermal evolution of intrusions or within a non-deforming lithosphere), it is sufficient to solve only the diffusive term of the energy equation. Neglecting the advection part of the temperature conservation equation, the heat diffusion equation is defined as: 
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_i}{\partial x_i} + \rho H.
+\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
 \end{equation}$
 
-```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the diffusive component of the time-dependent or steady-state temperature equation—including optional radioactive heating—in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
+```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the heat diffusion equation of the time-dependent or steady-state temperature conservation equation—including optional radioactive heating and variable thermal parameters—in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
 
 - Forward Euler  
 - Backward Euler  
 - Crank–Nicolson  
 - Alternating Direction Implicit (ADI)
-- Defection Correction
 
-See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
-
-Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, although certain 1-D and 2-D solvers allow for variable parameters. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
+Except for ADI, all solvers are implemented for constant and variable thermal parameters to solve a linear problem using a left-matrix division and a non-linear problem using the defection correction. See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method. Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
 ## Examples
 
@@ -73,14 +70,14 @@ For more details, see the full [example directory](https://github.com/GeoSci-FFM
 
 # Heat Advection Equation
 
-To solve the **advective** component of the temperature equation, ```GeoModBox.jl``` offers several schemes:
+See the [advection documentation](./AdvectMain.md) for more theoretical and associated source codes for method-specific details. To solve the **advective** component of the temperature conservation equation, ```GeoModBox.jl``` offers several schemes:
 
 - Upwind scheme  
 - Staggered leapfrog scheme  
 - Semi-Lagrangian scheme  
 - Passive tracers/markers
 
-See the [advection documentation](./AdvectMain.md) and associated source code for method-specific details. Tracer-related functionality is located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), whereas other advection schemes are implemented in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
+Tracer-related functionality is located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), whereas other advection schemes are implemented in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
 ## Examples
 

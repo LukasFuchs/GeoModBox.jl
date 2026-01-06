@@ -8,23 +8,30 @@ Function to setup an initial temperature condition for a two dimensional
 problem. The temperature is defined on the centroids of a regular finite 
 difference grid. 
 
-    type    : 
-    M       : 
-    NC      : 
-    Δ       : 
-    D       : 
-    x       : 
-    y       : 
+    type    : Parameter defining the anomaly type
+    M       : Structure or tuple containing the geometry
+    NC      : Structure or tuple containing the centroids parameter
+    D       : Structure or tuple containing the field arrays
+    x       : Structure or tuple containing the x-coordinates
+    y       : Structure or tuple containing the y-coordinates
 
-    Tb      : Hintergrund Temperatur
-    Ta      : Amplitude der Anomalie
-    σ       : Breite der Gaussian Anomalie
+Certain default values can be modified as well: 
 
-Possible initial temperature conditions are: 
+    Tb      : Scalar value for the background (or top) temperature
+    Ta      : Scalar value for the maximum (bottom or anomaly) temperature
+    σ       : Width of the Gaussian temperature anomaly    
 
-    1) Circle/elliptical anomaly
-    2) Gaussian anomaly
-    3) Block anomaly
+Possible anomaly types are: 
+
+    1) A circular anomaly with a constant background (circle)
+    2) A Gaussian anomaly (gaussian)
+    3) A rectangular shaped anomaly with a constant background (block)
+    4) A linear increasing temperature with depth (linear)
+    5) A linear increasing temperature with depth including an elliptical anomaly (lineara)
+
+Example: 
+
+    IniTemperature!(:circle,M,NC,D,x,y;Tb=1200,Ta=0)
 """
 @views function IniTemperature!(type,M,NC,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
     if type==:circle 
@@ -107,9 +114,6 @@ Possible initial temperature conditions are:
             end
         end
     end
-    # D.Tmax[1]   =   maximum(D.T_ex)
-    # D.Tmin[1]   =   minimum(D.T_ex)
-    # D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
     return D
@@ -117,6 +121,37 @@ end
 
 """
     IniVelocity!(type,D,NC,Δ,M,x,y)
+
+Function to setup an initial velocity field for a two dimensional 
+problem. The velocity is defined on a staggered finite difference grid, 
+that is inbetween the vertices of the regular grid. 
+
+    type    : Parameter defining the velocity type
+    D       : Structure or tuple containing the field arrays
+    BC      : Structure or tuple containing the velocity boundary conditions
+    NV      : Structure or tuple containing the vertices parameter
+    Δ       : Structure or tuple containing the grid resolution
+    M       : Structure or tuple containing the geometry
+    x       : Structure or tuple containing the x-coordinates
+    y       : tructure or tuple containing the y-coordinates
+
+Certain default values can be modified as well:
+
+    ε       : Background strain rate for pure shear or simple shear
+
+The following velocity configurations are currently supported:
+
+    1) A rigid-body rotation (RigidBody)
+    2) A shear cell (ShearCell)
+    3) Simple Shear (SimpleShear)
+    4) Pure Shear (PureShear)
+
+For Pure Shear and Simple Shear the boundary velocity values are
+updated accordingly. 
+
+Example: 
+
+    IniVelocity!(:PureShear,D,VBC,NV,Δ,M,x,y;ε=1e-15)
 """
 @views function IniVelocity!(type,D,BC,NV,Δ,M,x,y;ε=1e-15)
     if type==:RigidBody
@@ -196,6 +231,31 @@ end
 
 """
     IniPhase!(type,D,M,x,y,NC;phase=0)
+
+Function to setup an initial phase field for a two dimensional 
+problem. The phase ID is defined on a the centroids of a regular
+finite difference grid. The function is outdated. Better to use 
+the tracers to define the phase distributions and to inerpolate 
+the phase ID from the tracers to the grid. 
+
+    type    : Parameter defining the phase type
+    D       : Structure or tuple containing the field arrays
+    M       : Structure or tuple containing the geometry
+    x       : Structure or tuple containing the x-coordinates
+    y       : Structure or tuple containing the y-coordinates
+    NC      : Structure or tuple containing the centroids parameter
+
+Certain default values can be modified as well:
+
+    phase   : Vector containing the phase ID numbers (e.g. phase=[0,1])
+
+Currently, only one initial phase configuration is available:
+
+    1) A rectangular shaped anomaly (block)
+
+Example: 
+
+    IniPhase!(:block,D,M,x,y,NC;phase=[0 1])
 """
 @views function IniPhase!(type,D,M,x,y,NC;phase=0)
 
