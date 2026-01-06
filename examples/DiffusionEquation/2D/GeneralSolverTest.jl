@@ -142,11 +142,11 @@ for m = 1:ns
                 for iter = 1:niter
                     # Evaluate residual
                     ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
-                            D.Q./D.ρ./D.cp, P.κ, BC, Δ, T.Δ[1];C)
+                            D.Q,D.ρ,D.cp, P.κ, BC, Δ, T.Δ[1];C)
                     # @printf("||R|| = %1.4e\n", norm(R)/length(R))
                     norm(R)/length(R) < ϵ ? break : nothing
                     # Assemble linear system
-                    K  = AssembleMatrix2Dc(P.κ*(1-C), BC, Num, NC, Δ, T.Δ[1])
+                    K  = AssembleMatrix2Dc(P.κ, BC, Num, NC, Δ, T.Δ[1];C)
                     # Solve for temperature correction: Cholesky factorisation
                     Kc = cholesky(K.cscmatrix)
                     # Solve for temperature correction: Back substitutions

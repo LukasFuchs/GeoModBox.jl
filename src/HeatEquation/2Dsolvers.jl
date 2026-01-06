@@ -5,6 +5,25 @@ using ExtendableSparse
 # ======================================================================= #
 """
     ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+
+Solves the two dimensional heat diffusion equation assuming constant thermal 
+parameters using an explicit, forward Euler finite difference scheme.
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. 
+
+    D           : Tuple, containing the regular temperature array T and 
+                  the extended array containing the ghost nodes T_ex
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Horizontal grid spacing [ m ]
+    Δy          : Vertical grid spacing [ m ]
+    Δt          : Time step [ s ]
+    ρ           : Density [ kg/m³ ]
+    cp          : Specific heat capacity [ J/kg/K ]
+    NC          : Tuple containing the numer of centroids in x- and y-direction
+    BC          : Tuple for the boundary condition
 """
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the explicit finite
@@ -48,9 +67,42 @@ end
 
 """
     ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C=0)
+
+Function to calculate the residual of the two dimensional heat diffusion equation assuming 
+constant thermal parameters and radiogenic heating only. The residual is required for 
+defection correction to solve the linear system of equations. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. The caluclated residual is used in an iteration loop to calculate 
+the correction term of the initial temperature guess. The coefficient matrix is build 
+via `AssembleMatrix2Dc()`. 
+
+    R           : 2D array for the residual
+    T           : 2D centroid temperature field of the next time step
+    T_ex        : 2D extended centroid temperature field including the ghost nodes
+    T_0         : 2D centroid temperature field of the current time step
+    T_ex0       : 2D extended centroid temperature field of the current time step
+    ∂2T         : Tuple containing the second space derivatives of the temperature
+                  in the horizontal and vertical direction
+    Q           : Volumetric heat production rate [ W/m³ ]
+    κ           : Diffusivity [ m²/s ]
+    BC          : Tuple for the boundary condition
+    Δ           : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
+    Δt          : Time step [ s ]
+
+Optional input values: 
+    C           : Constant defining the residual for a certain finite difference discretization 
+                  method, i.e.: 
+                        C = 0   -> implicit, backward Euler discretization (default)
+                        C = 0.5 -> Crank-Nicolson discretization
+                        C = 1   -> explicit, forward Euler discretization
+    
 """
-function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C=0)
+function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, ρ, cp, κ, BC, Δ, Δt;C=0)
     if C < 1
+        # Implicit 
         @. T_ex[2:end-1,2:end-1] = T 
         @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x*BC.val.W)
         @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x*BC.val.E)
@@ -59,6 +111,7 @@ function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C
         @. ∂2T.∂x2  = (T_ex[1:end-2,2:end-1] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[3:end,2:end-1])/Δ.x/Δ.x
         @. ∂2T.∂y2  = (T_ex[2:end-1,1:end-2] - 2.0 * T_ex[2:end-1,2:end-1] + T_ex[2:end-1,3:end])/Δ.y/Δ.y
         if C==0.5
+            # CNA
             @. T_ex0[2:end-1,2:end-1] = T0 
             @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x*BC.val.W)
             @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x*BC.val.E)
@@ -68,28 +121,42 @@ function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C
             @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
         end
     else
+        # explicit
         @. T_ex0[2:end-1,2:end-1] = T0 
-            @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x*BC.val.W)
-            @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x*BC.val.E)
-            @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y*BC.val.S)
-            @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y*BC.val.N)
-            @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
-            @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
+        @. T_ex0[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex0[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex0[    2,2:end-1] - Δ.x*BC.val.W)
+        @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x*BC.val.E)
+        @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y*BC.val.S)
+        @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y*BC.val.N)
+        @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
+        @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
     end
-    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q
+    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ/cp
 end
 
 """
     AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt )
+
+Function to build the coefficient matrix K for the unknown centroid temperature field in the 
+2D heat diffusion equation assuming constant thermal parameter and radiogenig heating only. 
+
+The coefficient matrix is build using a five-point finite difference stencil, resulting in 
+a five, non-zero diagonal matrix to solve the system of equations. 
+
+    κ       : Diffusivity [ m²/s ]
+    BC      : Tuple for the boundary condition
+    Num     : Tuple or structure containing the global numbering of the centroids
+    nc      : Tuple or structure containing the number of centroids in the horizontal and vertical direction 
+    Δ       : Tuple or structure containint the horizontal and vertical grid resolution
+    Δt      : Time step [ s ]
 """
-function AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt )
+function AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt;C=0 )
     # Linear system of equation
     ndof   = maximum(Num.T)
     K      = ExtendableSparseMatrix(ndof, ndof)
     # dx, dy = Δ.x, Δ.y
     # Define coefficients ---
-    a   =   κ / Δ.x^2
-    b   =   κ / Δ.y^2
+    a   =   (κ*(1-C)) / Δ.x^2
+    b   =   (κ*(1-C)) / Δ.y^2
     c   =   1 / Δt
     #############################
     #       Heat equation       #
@@ -134,9 +201,31 @@ end
 
 """
     BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+
+Solves the two dimensional heat diffusion equation assuming constant thermal 
+parameters using an implicit, backward Euler finite difference scheme for a 
+linear problem, i.e. a left-matrix division. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Boundary conditions
+are directly implemented within the system of equations.  
+
+    D           : Tuple, containing the regular temperature array T and 
+                  the extended array containing the ghost nodes T_ex
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Horizontal grid spacing [ m ]
+    Δy          : Vertical grid spacing [ m ]
+    Δt          : Time step [ s ]
+    ρ           : Density [ kg/m³ ]
+    cp          : Specific heat capacity [ J/kg/K ]
+    NC          : Tuple containing the numer of centroids in x- and y-direction
+    BC          : Tuple for the boundary condition
+    rhs         : Known right-hand side vector
+    K           : Coefficient matrix in sparse format
+    Num         : Tuple or structure containing the global centroid numbering
 """
 function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
-# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
+# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
 a   =   κ / Δx^2
@@ -201,9 +290,32 @@ end
 
 """
     CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
+
+Solves the two dimensional heat diffusion equation assuming constant thermal 
+parameters using the Crank-Nicolson finite difference scheme for a 
+linear problem, i.e. a left-matrix division. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Boundary conditions
+are directly implemented within the system of equations.  
+
+    D           : Tuple, containing the regular temperature array T and 
+                  the extended array containing the ghost nodes T_ex
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Horizontal grid spacing [ m ]
+    Δy          : Vertical grid spacing [ m ]
+    Δt          : Time step [ s ]
+    ρ           : Density [ kg/m³ ]
+    cp          : Specific heat capacity [ J/kg/K ]
+    NC          : Tuple containing the numer of centroids in x- and y-direction
+    BC          : Tuple for the boundary condition
+    rhs         : Known right-hand side vector
+    K1          : Coefficient matrix in sparse format for the unknown temperature
+    K1          : Coefficient matrix in sparse format for the known temperature
+    Num         : Tuple or structure containing the global centroid numbering
 """
 function CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
-# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
+# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
 # ----------------------------------------------------------------------- #
 
 # Define coefficients ---
@@ -299,12 +411,32 @@ end
 
 """
     ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+
+Solves the two dimensional heat diffusion equation assuming constant thermal 
+parameters using the alternating-direction implicit finite difference scheme for a 
+linear problem, i.e. a left-matrix division. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Boundary conditions
+are directly implemented within the system of equations.  
+
+    T           : Tuple, containing the regular temperature array T, 
+                  the extended array containing the ghost nodes T_ex, and 
+                  the volumentric heat production rate Q 
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Horizontal grid spacing [ m ]
+    Δy          : Vertical grid spacing [ m ]
+    Δt          : Time step [ s ]
+    ρ           : Density [ kg/m³ ]
+    cp          : Specific heat capacity [ J/kg/K ]
+    NC          : Tuple containing the numer of centroids in x- and y-direction
+    BC          : Tuple for the boundary condition
 """
 function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     # Function to solve 2D heat diffusion equation using the alternating direct
     # implicit finite difference scheme.
-    # assuming constant k, rho, cp
-    # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/rho/cp
+    # assuming constant k, ρ, cp
+    # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
     # ----------------------------------------------------------------------- #
     # Erstellung der durchlaufenden Indizes ----------------------------- #
     # Gleichungssystem fuer ADI Solver:
@@ -491,7 +623,42 @@ end
 # Time-dependent solvers, variable thermal parameters =================== #
 # ======================================================================= #
 """
-    ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
+    ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0)
+
+Function to calculate the residual of the two dimensional heat diffusion equation assuming 
+variable thermal parameters and radiogenic heating only. The residual is required for 
+defection correction to solve the linear system of equations. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
+temperature nodes requires external ghost nodes, which are used to define the 
+boundary conditions. The caluclated residual is used in an iteration loop to calculate 
+the correction term of the initial temperature guess. The coefficient matrix is build 
+via `AssembleMatrix2D()`. 
+
+    R           : 2D array for the residual
+    T           : 2D centroid temperature field of the next time step
+    T_ex        : 2D extended centroid temperature field including the ghost nodes
+    T_0         : 2D centroid temperature field of the current time step
+    T_ex0       : 2D extended centroid temperature field of the current time step
+    Q           : Volumetric heat production rate [ W/m³ ]
+    ∂T          : Tuple containing the first space derivatives of the temperature
+                  in the horizontal and vertical direction
+    q           : Tuple or structure containing the 2D horizontal and vertical heat flux
+    ρ           : Density [ kg/m³ ]
+    Cp          : Specific heat capacity [ J/kg/K ]
+    k           : Thermal conductivity [ W/m/K ]
+    BC          : Tuple for the boundary condition
+    Δ           : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
+    Δt          : Time step [ s ]
+
+Optional input values: 
+    C           : Constant defining the residual for a certain finite difference discretization 
+                  method, i.e.: 
+                        C = 0   -> implicit, backward Euler discretization (default)
+                        C = 0.5 -> Crank-Nicolson discretization
+                        C = 1   -> explicit, forward Euler discretization
+    
 """
 function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0)
     if C < 1
@@ -545,9 +712,31 @@ function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, �
 end
 
 """
-    AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt)
+    AssembleMatrix2D(ρ, cp, k, BC, Num, nc, Δ, Δt;C=0)
+
+Function to build the coefficient matrix K for the unknown centroid temperature field in the 
+2D heat diffusion equation assuming variable thermal parameter and radiogenig heating only. 
+
+The coefficient matrix is build using a five-point finite difference stencil, resulting in 
+a five, non-zero diagonal matrix to solve the system of equations. 
+
+    ρ       : Density [ kg/m³ ]
+    cp      : Specific heat capacity [ J/kg/K ]
+    k       : Thermal conductivity [ W/m/K ]
+    BC      : Tuple for the boundary condition
+    Num     : Tuple or structure containing the global numbering of the centroids
+    nc      : Tuple or structure containing the number of centroids in the horizontal and vertical direction 
+    Δ       : Tuple or structure containint the horizontal and vertical grid resolution
+    Δt      : Time step [ s ]
+
+Optional input values: 
+    C           : Constant defining the residual for a certain finite difference discretization 
+                  method, i.e.: 
+                        C = 0   -> implicit, backward Euler discretization (default)
+                        C = 0.5 -> Crank-Nicolson discretization
+                        C = 1   -> explicit, forward Euler discretization
 """
-function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt;C=0)
+function AssembleMatrix2D(ρ, cp, k, BC, Num, nc, Δ, Δt;C=0)
     # Linear system of equation
     ndof   = maximum(Num.T)
     K      = ExtendableSparseMatrix(ndof, ndof)
@@ -583,12 +772,12 @@ function AssembleMatrix2D(rho, cp, k, BC, Num, nc, Δ, Δt;C=0)
             kE = k.x[i+1,j]*(1-C)
             kS = k.y[i,j]*(1-C)
             kN = k.y[i,j+1]*(1-C)
-            ρ  = rho[i,j]
-            Cp = cp[i,j]
+            # ρ  = ρ[i,j]
+            # Cp = cp[i,j]
             # Linear system coefficients
             if inS K[ii,iS] = kS .* (DirS + NeuS - 1) ./ dy .^ 2 end
             if inW K[ii,iW] = kW .* (DirW + NeuW - 1) ./ dx .^ 2 end
-            K[ii,iC] = Cp .* ρ ./ Δt + (-kN .* (-DirN + NeuN - 1) ./ dy + kS .* (DirS - NeuS + 1) ./ dy) ./ dy + (-kE .* (-DirE + NeuE - 1) ./ dx + kW .* (DirW - NeuW + 1) ./ dx) ./ dx
+            K[ii,iC] = Cp[i,j] .* ρ[i,j] ./ Δt + (-kN .* (-DirN + NeuN - 1) ./ dy + kS .* (DirS - NeuS + 1) ./ dy) ./ dy + (-kE .* (-DirE + NeuE - 1) ./ dx + kW .* (DirW - NeuW + 1) ./ dx) ./ dx
             if inE K[ii,iE] = -kE .* (-DirE - NeuE + 1) ./ dx .^ 2 end
             if inN K[ii,iN] = -kN .* (-DirN - NeuN + 1) ./ dy .^ 2 end
         end
@@ -601,6 +790,25 @@ end
 # ======================================================================= #
 """
     Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
+
+Function to solve the two dimensional poisson equation of the steady state 
+heat diffusion equation assuming constant thermal parameters and radiogenic 
+heat sources only. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Boundary conditions
+are directly implemented within the system of equations.  
+
+    D       : Tuple or structure containing the centroid temperature field 
+              and volumetic heat production rate. 
+    NC      : Tuple or structure containing the number of horizontal and vertical 
+              centroids.
+    P       : Tuple or structure containing the thermal conductivity [ W/m/K ].
+    BC      : Tuple or structure containint the boundary conditions.
+    Δ       : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
+    K       : Coefficient matrix in sparse format
+    rhs     : Known right-hand side vector
+    Num     : Tuple or structure containing the global centroid numbering
 """
 function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
 # Function to solve 2D heat diffusion equation using the explicit finite
@@ -669,6 +877,27 @@ end
 # ======================================================================= #
 """
     Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
+
+Function to solve the two dimensional poisson equation of the steady state 
+heat diffusion equation assuming variable thermal parameters and radiogenic 
+heat sources only. 
+
+The temperature is defined on central nodes and the heat flux on the vertices. 
+Boundary conditions are currently limited to Dirichlet and Neumann. Boundary conditions
+are directly implemented within the system of equations.  
+
+    T       : Tuple or structure containing the centroid temperature field. 
+    Q       : Tuple or structure containing the centroid volumentric heat prodcution rate [ W/m³ ].
+    kx      : Thermal conductivity in the horizontal direction [ W/m/K ].
+    ky      : Thermal conductivity in the vertical direction [ W/m/K ].
+    Δx      : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
+    Δy      : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
+    NC      : Tuple or structure containing the number of horizontal and vertical 
+              centroids.
+    BC      : Tuple or structure containint the boundary conditions.    
+    K       : Coefficient matrix in sparse format
+    rhs     : Known right-hand side vector
+    Num     : Tuple or structure containing the global centroid numbering
 """
 function Poisson2D!( T, Q, kx, ky, Δx, Δy, NC, BC, K, rhs, Num ) 
     #  --------------------------------------------- #

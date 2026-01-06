@@ -48,9 +48,7 @@ $\begin{equation}
 - Crank–Nicolson  
 - Alternating Direction Implicit (ADI)
 
-See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method.
-
-Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. Most implementations assume constant thermal properties, although certain 1-D and 2-D solvers allow for variable parameters. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
+Except for ADI, all solvers are implemented for constant and variable thermal parameters to solve a linear problem using a left-matrix division and a non-linear problem using the defection correction. See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method. Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
 ## Examples
 
@@ -72,14 +70,14 @@ For more details, see the full [example directory](https://github.com/GeoSci-FFM
 
 # Heat Advection Equation
 
-To solve the **advective** component of the temperature conservation equation, ```GeoModBox.jl``` offers several schemes:
+See the [advection documentation](./AdvectMain.md) for more theoretical and associated source codes for method-specific details. To solve the **advective** component of the temperature conservation equation, ```GeoModBox.jl``` offers several schemes:
 
 - Upwind scheme  
 - Staggered leapfrog scheme  
 - Semi-Lagrangian scheme  
 - Passive tracers/markers
 
-See the [advection documentation](./AdvectMain.md) and associated source code for method-specific details. Tracer-related functionality is located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), whereas other advection schemes are implemented in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
+Tracer-related functionality is located in [src/Tracers](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/), whereas other advection schemes are implemented in [src/AdvectionEquation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/).
 
 ## Examples
 

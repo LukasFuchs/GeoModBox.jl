@@ -19,9 +19,9 @@ makedocs(
                 "Specifications" => "man/Ini.md", # Checked!
             ],
             "Heat Diffusion Equation" => Any[
-                "General" => "man/DiffMain.md", # checked!
-                "1D" => "man/DiffOneD.md", # checked!
-                "2D" => "man/DiffTwoD.md", # checked! 
+                "General" => "man/DiffMain.md", # checked! Checked!! Checked!!!
+                "1D" => "man/DiffOneD.md", # checked! Checked!! Checked!!!
+                "2D" => "man/DiffTwoD.md", # checked! Checked!!!
             ],
             "Advection Equation" => Any[
                 "General" => "man/AdvectMain.md", # Checked! 
