@@ -625,7 +625,7 @@ e & = -\frac{\rho_{I^\textrm{C}} c_{p,I^\textrm{C}}}{\Delta{t}}
 f & = \frac{\mathbb{C}k_{x,I^\textrm{E}}}{\Delta{x^2}} \\ 
 \end{split}.\end{equation}$
 
-With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (23). The correction is then used to update the initial temperature guess. This process is repeated until the residual is considered sufficiently small.  
+With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one can calculate the correction term for the temperature via Equation (23). The correction is then used to update the initial temperature guess. This process is repeated until the residual is considered sufficiently small.
 
 ### Boundary Conditions
 

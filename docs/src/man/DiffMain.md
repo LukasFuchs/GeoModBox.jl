@@ -33,6 +33,8 @@ $\begin{equation}
 
 This equation captures temperature changes due to **diffusion** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and diffusion steps sequentially. If internal heat production varies spatially, a more advanced advection scheme is required to account for source term integration.
 
+> **Note:** The energy equation can also be solved for diffusion and advection simultaneously using combined schemes. Interestingly, the *Forward in Time and Centered in Space (FTCS)* scheme—although unstable for pure advection—can exhibit numerical stability due to diffusion when both processes are active.
+
 # Heat Diffusion Equation
 
 In cases where the material remains stationary (e.g., during the thermal evolution of intrusions or within a non-deforming lithosphere), it is sufficient to solve only the diffusive term of the energy equation. Neglecting the advection part of the temperature conservation equation, the heat diffusion equation is defined as: 

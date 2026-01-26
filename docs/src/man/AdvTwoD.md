@@ -1,6 +1,6 @@
 # Advection Equation (2D)
 
-In two dimensions ($x$ and $y$), the advection equation for the temperature conservation equation, for example, is given as follows 
+In two dimensions ($x$ and $y$), the advection equation for the temperature is given as follows 
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} = -v_x \left(\frac{\partial{T}}{\partial{x}}\right) - v_y \left(\frac{\partial{T}}{\partial{y}}\right),
@@ -14,23 +14,34 @@ The following sections provide a brief overview of the available 2D discretizati
 
 # Discretization Schemes
 
+The global indexing of the central reference point $I^C$ used in the advection equation follows the indexing as described in the [general solution section](./GESolution.md). The indices of the adjacent points are then defined by:
+
+$\begin{equation}\begin{split}
+I^\textrm{S} & = I^\textrm{C} - nc_x,\\\
+I^\textrm{W} & = I^\textrm{C} - 1,\\\   
+I^\textrm{E} & = I^\textrm{C} + 1,\\\
+I^\textrm{N} & = I^\textrm{C} + nc_x,
+\end{split}\end{equation}$
+
+where $I^\textrm{S}$, $I^\textrm{W}$, $I^\textrm{E}$, and $I^\textrm{N}$ are the points South, West, East, and North of it, respectively. These are the global indices of the five-point stencil used in the discretized FD equations below.
+
 ## Upwind
 
 In 2D, the advection equation can be discretized using the upwind scheme as:
 
 $\begin{equation}
-\frac{T_{i,j}^{n+1}-T_{i,j}^n}{\Delta t} = -v_{x;i,j}
+\frac{T_{I^C}^{n+1}-T_{I^C}^n}{\Delta t} = -v_{x;I^C}
 \begin{cases}
-\frac{T_{i,j}^{n}-T_{i-1,j}^n}{\Delta x} &\text{if } v_{x;i,j} \gt 0 \\ \frac{T_{i+1,j}^{n}-T_{i,j}^n}{\Delta x} &\text{if } v_{x;i,j} \lt 0
+\frac{T_{I^C}^{n}-T_{I^W}^n}{\Delta x} &\text{if } v_{x;I^C} \gt 0 \\ \frac{T_{I^E}^{n}-T_{I^C}^n}{\Delta x} &\text{if } v_{x;I^C} \lt 0
 \end{cases} 
--v_{y;i,j}
+-v_{y;I^C}
 \begin{cases}
-\frac{T_{i,j}^{n}-T_{i,j-1}^n}{\Delta y} &\text{if } v_{y;i,j} > 0 \\ 
-\frac{T_{i,j+1}^{n}-T_{i,j}^n}{\Delta y} &\text{if } v_{y;i,j} < 0
+\frac{T_{I^C}^{n}-T_{I^S}^n}{\Delta y} &\text{if } v_{y;I^C} > 0 \\ 
+\frac{T_{I^N}^{n}-T_{I^C}^n}{\Delta y} &\text{if } v_{y;I^C} < 0
 \end{cases},
 \end{equation}$
 
-where $T$ is the temperature, $v$ the velocity, $n$ is the current time step, $\Delta t$ the time step increment, and $i$, $j$ are the spatial indices in the $x$- and $y$-directions, respectively. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
+where $T$ is the temperature, $v$ the velocity, $n$ is the current time step, and $\Delta t$ the time step increment. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
 
 This method is stable and effective but introduces numerical diffusion if the Courant condition is not satisfied. It is also only first-order accurate in space.
    
@@ -39,9 +50,9 @@ This method is stable and effective but introduces numerical diffusion if the Co
 The 2D staggered leapfrog discretization is given by:
 
 $\begin{equation}
-\frac{T_{i,j}^{n+1} - T_{i,j}^{n-1}}{2\Delta t} = 
--v_{x;i,j}\frac{T_{i+1,j}^{n} - T_{i-1,j}^{n}}{2\Delta x} 
--v_{y;i,j}\frac{T_{i,j+1}^{n} - T_{i,j-1}^{n}}{2\Delta y}.
+\frac{T_{I^C}^{n+1} - T_{I^C}^{n-1}}{2\Delta t} = 
+-v_{x;I^C}\frac{T_{I^E}^{n} - T_{I^W}^{n}}{2\Delta x} 
+-v_{y;I^C}\frac{T_{I^N}^{n} - T_{I^S}^{n}}{2\Delta y}.
 \end{equation}$
 
 For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).
@@ -52,33 +63,32 @@ In 2D, velocity can vary significantly in space and time. Therefore, a modified 
 
 **1. Mid-point (half time step) origin** 
 
-Estimate the intermediate position $X'$ at time $t_{n+1/2}$ using the velocity at $t_{n+1}$ at point $(i,j)$.
+Estimate the intermediate position $X'$ at time step $n+1/2$ using the velocity at the time step $n+1$ at point $I^C$.
 
 **2. Mid-point velocity** 
 
 Compute the velocity at $X'$ using temporal averaging:
 
 $\begin{equation}
-v\left(t_{n+1/2},(i,j)\right) = \frac{v\left(t_{n+1},(i,j)\right) + v\left(t_{n},(i,j)\right)}{2}.
+v_{I^C}^{n+1/2} = \frac{v_{I^C}^{n+1} + v_{I^C}^{n}}{2}.
 \end{equation}$
 
-The velocity at $X'$ can be interpolated linearly from the surrounding grid points.
+The velocity at $X'$ can be interpolated linearly from the surrounding grid points. Now, we neew do go back to the first point and update the actual origin $X'$ for the final position $x_{I^C}^{n+1}$ using the velocity at half the time step. This step is performed iteratively (e.g., five iterations or until convergence). This gives fairly accurate centered velocity. 
 
 **3. Actual origin point** 
 
-Calculate the actual origin $X(t)$ for the position $x(t_{n+1},(i,j))$ using:
+Then, we can compute the location $X^n$ at the time step $n$ with the centered velocity: 
 
 $\begin{equation}
-X(t) = x\left(t+1,(i,j)\right) - \Delta{t}v\left(t_{n+1/2},X'\right).
+X^n = x_{I^C}^{n+1} - \Delta{t}v_{X'}^{n+1/2}.
 \end{equation}$
-
-This step is performed iteratively (e.g., five iterations or until convergence).
 
 **4. Update temperature** 
 
-Use cubic interpolation to determine the temperature at the origin $X(t)$, which defines the temperature at the final position $x(t_{n+1},(i,j))$.
+Use cubic interpolation to determine the temperature at the origin $X^n$, which defines the temperature at the final position $x_{I^C}^{n+1}$.
 
 This scheme assumes no heat sources during advection. It is free from numerical diffusion but introduces interpolation-based inaccuracies. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/AdvectionEquation/2Dsolvers.jl).   
+
 ## Passive tracers
 
 Tracers are advected in 2D using fourth-oder Runge-Kutta method: 
