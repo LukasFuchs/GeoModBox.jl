@@ -21,7 +21,8 @@ boundary conditions.
     Δx          : Grid spacing [ m ]
     BC          : Tuple for the boundary condition
 """
-function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
+function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC; 
+                                Q = zeros(nc), ρ=3200.0, cp=1200.0 )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -35,7 +36,8 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
     for i = 1:nc
         # Calculate temperature at point i for the new time ---        
         explicit.T[i] =   explicit.T_ex[i+1] + κ * Δt * 
-                (explicit.T_ex[i + 2] - 2.0 * explicit.T_ex[i+1] + explicit.T_ex[i]) / Δx^2
+                (explicit.T_ex[i + 2] - 2.0 * explicit.T_ex[i+1] + explicit.T_ex[i]) / Δx^2 
+                + Q[i] * Δt / ρ / cp
     end
     explicit.T_ex[2:end-1]  .=  explicit.T
 end
@@ -60,7 +62,8 @@ boundary conditions.
     Δt          : Time step [ s ]       
     BC          : Tuple for the boundary condition
 """
-function ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, Q, ρ, cp, κ, BC, Δx, Δt;C=0)
+function ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt;
+                C=0,Q=0.0,ρ=3200.0,cp=1200.0)
     if C < 1
         # Implicit
         T_ex[2:end-1]   .=  T    
@@ -148,7 +151,8 @@ boundary conditions.
     BC          : Tuple for the boundary condition
     K           : Coefficient matrix for linear system of equations
 """
-function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs)
+function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs; 
+                                Q=0.0,ρ=3200.0,cp=1200.0)
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -156,7 +160,7 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs)
     a   =   κ / Δx^2
     b   =   1 / Δt
     # Multiply rhs with 1/Δt ---    
-    rhs  .=   b .* implicit.T
+    @. rhs  =   b * implicit.T + Q/ρ/cp 
     # Loop over the grid points ---
     for i = 1:nc  
         # Equation number ---
@@ -211,7 +215,8 @@ boundary conditions.
     K1          : Coefficient matrix for the unknow variables 
     K2          : Coefficient matrix for the know variables
 """
-function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2; 
+                        Q=0.0,ρ=3200.0,cp=1200.0 )
 # ======================================================================= #
 # LF; 19.09.2024 - Version 1.0 - Julia                                    #
 # ======================================================================= #    
@@ -249,7 +254,7 @@ function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
     end
     # ------------------------------------------------------------------- #
     # Berechnung der rechten Seite -------------------------------------- #
-    rhs     .=   K2 * cna.T
+    rhs     .=   K2 * cna.T .+ Q/ρ/cp
     # ------------------------------------------------------------------- #        
     # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
     for i = 1:nc        

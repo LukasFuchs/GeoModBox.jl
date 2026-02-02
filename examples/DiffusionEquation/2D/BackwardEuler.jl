@@ -23,15 +23,19 @@ function HeatEquation()
     ϵ     = 1e-10
     # Primitive variables
     T_ex  = zeros(nc.x+2, nc.y+2)
+    T_ex0 = zeros(nc.x+2, nc.y+2)
     T     = zeros(nc...)
     T0    = zeros(nc...)
     Te    = zeros(nc...)
     # Derived fields
-    ∂T    = (∂x=zeros(nv.x, nc.x), ∂y=zeros(nc.x, nv.x))
-    q     = (x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x))
+    ∂T    = (∂x=zeros(nv.x, nc.x), ∂y=zeros(nc.x, nv.x),
+                ∂x0=zeros(nv.x, nc.x), ∂y0=zeros(nc.x, nv.x))
+    q     = (x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x),
+                x0=zeros(nv.x, nc.x), y0=zeros(nc.x, nv.x))
     # Material parameters
     ρ     = zeros(nc...)
     Cp    = zeros(nc...)
+    Q     = zeros(nc...)
     k     = (x=zeros(nv.x, nc.x), y=zeros(nc.x, nv.x))
     # Residuals
     R     = zeros(nc...)
@@ -64,7 +68,7 @@ function HeatEquation()
         for iter=1:niter
             # Evaluate residual
             @timeit to "Residual" begin
-            ComputeResiduals2D!(R, T, T_ex, T0, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
+            ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt)
             @printf("||R|| = %1.4e\n", norm(R)/length(R))
             norm(R)/length(R) < ϵ ? break : nothing
             end
