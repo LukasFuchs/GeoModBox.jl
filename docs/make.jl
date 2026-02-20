@@ -12,8 +12,8 @@ makedocs(
     warnonly = [:missing_docs],
     modules = [GeoModBox],
     pages = [
-        "Home" => "index.md", # Checked! 
-        "Governing Equation" => Any[ # Checked! 
+        "Home" => "index.md", 
+        "Governing Equation" => Any[
             "Solution" => Any[
                 "General" => "man/GESolution.md", # checked!
                 "Specifications" => "man/Ini.md", # Checked!
@@ -21,7 +21,7 @@ makedocs(
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md", # checked! Checked!! Checked!!!
                 "1D" => "man/DiffOneD.md", # checked! Checked!! Checked!!!
-                "2D" => "man/DiffTwoD.md", # checked! Checked!!!
+                "2D" => "man/DiffTwoD.md", # checked! Checked!!! Checked!!!
             ],
             "Advection Equation" => Any[
                 "General" => "man/AdvectMain.md", # Checked! 
@@ -36,12 +36,12 @@ makedocs(
         ],
         "Exercises" => Any[
             "General" => "man/Exercises.md",
-            "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md", # Checked! 
-            "02 - 1D Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md", # Checked! 
-            "03 - 1D Heat Diffusion (implicit)" => "man/exercises/03_1D_Heat_implicit.md", # Checked!
-            "04 - 2D Heat Diffusion (stationary)" => "man/exercises/04_2D_Diffusion_Stationary.md", # Checked!
-            "05a - 2D Heat Diffusion (Plume)" => "man/exercises/05_2D_Diffusion_TD_Plume.md", # Checked! 
-            "05b - 2D Heat Diffusion (Sill)" => "man/exercises/05_2D_Diffusion_TD_Sill.md", # Checked!
+            "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md", # Checked! Checked! 
+            "02 - 1D Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md", # Checked! Checked!  
+            "03 - 1D Heat Diffusion (implicit)" => "man/exercises/03_1D_Heat_implicit.md", # Checked! Checked!
+            "04 - 2D Heat Diffusion (stationary)" => "man/exercises/04_2D_Diffusion_Stationary.md", # Checked! Checked! 
+            "05a - 2D Heat Diffusion (Plume)" => "man/exercises/05_2D_Diffusion_TD_Plume.md", # Checked! Checked! 
+            "05b - 2D Heat Diffusion (Sill)" => "man/exercises/05_2D_Diffusion_TD_Sill.md", # Checked! Checked!
             "06 - 1D Advection" => "man/exercises/06_1D_Advection.md", # Checked!
             "07 - 2D Energy Conservation" => "man/exercises/07_2D_Energy_Equation.md", # Checked!
             "08 - 1D Stokes" => "man/exercises/08_1D_Stokes.md", # Checked!

@@ -10,7 +10,10 @@
 -> Script to solve a 2D gaussian diffusion using multiple different finite difference schemes to solve a **linear** problem and resolutions. The results are compared to the analytical solution and the final plot shows a resolution test including each finite difference scheme.
 
 [Gaussian Diffusion - General Solvert](./GeneralSolverTest.jl)<br>
--> Script to solve a 2D gaussian diffusion using the solvers for a **non-linear** problem and resolutions. The results are compared to the analytical solution and the final plot shows a resolution test including each finite difference scheme.
+-> Script to solve a 2D gaussian diffusion using the general combined solvers for a **non-linear** problem and and for different resolutions. The results are compared to the analytical solution and the final plot shows a resolution test including each finite difference scheme.
+
+[Gaussian Diffusion - General Solvert](./GeneralSolverTest_variable_k.jl)<br>
+-> Script to solve a 2D gaussian diffusion using the general combined solvers for a **non-linear** problem assuming variable thermal properties and for different resolutions. The results are compared to the analytical solution and the final plot shows a resolution test including each finite difference scheme.
 
 [Resolution Test Poisson Problem](./Poisson_ResTest.jl)<br>
 -> Resolution test for a 2-D Poisson Problem.

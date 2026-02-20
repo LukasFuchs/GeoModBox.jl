@@ -7,7 +7,7 @@ to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CNA"]
 ns          =   size(Schema,1)
 nrnxny      =   6
-save_fig    =   0
+save_fig    =   1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -16,7 +16,6 @@ P       = (
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
     K0      =   273.15,         #   Kelvin at 0 °C
-    Q0      =   0               #   Heat production rate
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -81,7 +80,6 @@ for m = 1:ns
         # ------------------------------------------------------------ #
         # Initial Conditions  ---------------------------------------- #
         D       = (
-            Q           =   zeros(NC...),
             T           =   zeros(NC...),
             T0          =   zeros(NC...),
             T_ex        =   zeros(NC.x+2,NC.y+2),
@@ -93,11 +91,8 @@ for m = 1:ns
             Tmean       =   zeros(1,nt),
             Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
-            Tprofilea   =   zeros(NC.y,nt),
-            ρ           =   zeros(NC...),
-            cp          =   zeros(NC...)            
+            Tprofilea   =   zeros(NC.y,nt),           
         )
-        @. D.ρ  =   P.ρ
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana                   =   D.T
@@ -108,8 +103,6 @@ for m = 1:ns
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
         D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
-        # Heat production rate ---
-        @. D.Q          = P.Q0
         # Boundary Conditions ---------------------------------------- #
         BC     = (type    = (W=:Dirichlet, E=:Dirichlet, 
                                 N=:Dirichlet, S=:Dirichlet),
@@ -118,8 +111,6 @@ for m = 1:ns
         # ------------------------------------------------------------ #
         niter       =   10
         ϵ           =   1e-25
-        @. D.ρ      =   P.ρ
-        @. D.cp     =   P.cp
         Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
         ndof        =   maximum(Num.T)
         K           =   ExtendableSparseMatrix(ndof,ndof)
@@ -142,7 +133,7 @@ for m = 1:ns
                 for iter = 1:niter
                     # Evaluate residual
                     ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
-                            D.Q,D.ρ,D.cp, P.κ, BC, Δ, T.Δ[1];C)
+                            P.κ, BC, Δ, T.Δ[1];C)
                     # @printf("||R|| = %1.4e\n", norm(R)/length(R))
                     norm(R)/length(R) < ϵ ? break : nothing
                     # Assemble linear system

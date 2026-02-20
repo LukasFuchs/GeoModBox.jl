@@ -6,7 +6,7 @@ function Gaussian_Diffusion()
 to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CNA"]
 ns          =   size(Schema,1)
-nrnxny      =   10
+nrnxny      =   6
 save_fig    =   1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 

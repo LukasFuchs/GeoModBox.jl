@@ -16,7 +16,6 @@ P       = (
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
     K0      =   273.15,         #   Kelvin at 0 °C
-    Q0      =   0               #   Heat production rate
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -87,7 +86,6 @@ for m = 1:ns
         # ------------------------------------------------------------ #
         # Initial Conditions  ---------------------------------------- #
         D       = (
-            Q           =   zeros(NC...),
             T           =   zeros(NC...),
             T0          =   zeros(NC...),
             T_ex        =   zeros(NC.x+2,NC.y+2),
@@ -98,11 +96,8 @@ for m = 1:ns
             Tmean       =   zeros(1,nt),
             Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
-            Tprofilea   =   zeros(NC.y,nt),
-            ρ           =   zeros(NC...),
-            cp          =   zeros(NC...)            
+            Tprofilea   =   zeros(NC.y,nt),           
         )
-        @. D.ρ  =   P.ρ
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana                   =   D.T
@@ -113,8 +108,6 @@ for m = 1:ns
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
         D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
-        # Heat production rate ---
-        @. D.Q          = P.Q0
         # Visualize initial condition ---
         # subplot 1 ---
         p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
@@ -183,19 +176,19 @@ for m = 1:ns
             if n>1
                 if FDSchema == "explicit"
                     @timeit to "Explicit" begin
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                     end
                 elseif FDSchema == "implicit"
                     @timeit to "Implicit" begin
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
+                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
                     end
                 elseif FDSchema == "CNA"
                     @timeit to "CNA" begin
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
                     end
                 elseif FDSchema == "ADI"
                     @timeit to "ADI" begin
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                     end
                 end
                 time[n]     =   time[n-1] + T.Δ[1]
@@ -295,7 +288,6 @@ end
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3))
 for m = 1:ns
-#    subplot(1,3,1)
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
                 xaxis=:log,yaxis=:log,
