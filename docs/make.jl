@@ -12,8 +12,8 @@ makedocs(
     warnonly = [:missing_docs],
     modules = [GeoModBox],
     pages = [
-        "Home" => "index.md", # Checked! 
-        "Governing Equation" => Any[ # Checked! 
+        "Home" => "index.md", 
+        "Governing Equation" => Any[
             "Solution" => Any[
                 "General" => "man/GESolution.md", # checked!
                 "Specifications" => "man/Ini.md", # Checked!
@@ -21,7 +21,7 @@ makedocs(
             "Heat Diffusion Equation" => Any[
                 "General" => "man/DiffMain.md", # checked! Checked!! Checked!!!
                 "1D" => "man/DiffOneD.md", # checked! Checked!! Checked!!!
-                "2D" => "man/DiffTwoD.md", # checked! Checked!!!
+                "2D" => "man/DiffTwoD.md", # checked! Checked!!! Checked!!!
             ],
             "Advection Equation" => Any[
                 "General" => "man/AdvectMain.md", # Checked! 
