@@ -24,11 +24,17 @@ boundary conditions.
     cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
+
+Optional input values (to include a heat source): 
+    Q           : Volumetric heat production rate [ W/m^3 ]
+    ρ₀          : Reference density [ kg/m^3 ]
+    cp          : Specific heat capacity [ J/kg/K ]
+
 """
-function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; 
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
     # Function to solve 2D heat diffusion equation using the explicit finite
     # difference scheme
-    # Q - Waermeproduktionsrate pro Volumen [W/m^3]
     # ------------------------------------------------------------------- #
     
     sx      = κ * Δt / Δx^2
@@ -56,7 +62,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
             D.T[i,j] = D.T_ex[i1,j1] + 
                 sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
                 sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
-                D.Q[i,j] * Δt / ρ[i,j] / cp
+                Q[i,j] * Δt / ρ₀ / cp
         end
     end
     # ------------------------------------------------------------------- #
@@ -98,9 +104,13 @@ Optional input values:
                         C = 0   -> implicit, backward Euler discretization (default)
                         C = 0.5 -> Crank-Nicolson discretization
                         C = 1   -> explicit, forward Euler discretization
+    Q           : Volumetric heat production rate [ W/m^3 ]
+    ρ₀          : Reference density [ kg/m^3 ]
+    cp          : Specific heat capacity [ J/kg/K ]
     
 """
-function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, ρ, cp, κ, BC, Δ, Δt;C=0)
+function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
+                C = 0, Q = 0.0, ρ₀ = 3300.0, cp = 1200.0 )
     if C < 1
         # Implicit 
         @. T_ex[2:end-1,2:end-1] = T 
@@ -130,7 +140,7 @@ function ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, ρ, cp, κ, BC, �
         @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
         @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
     end
-    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ/cp
+    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ₀/cp
 end
 
 """
@@ -223,18 +233,24 @@ are directly implemented within the system of equations.
     rhs         : Known right-hand side vector
     K           : Coefficient matrix in sparse format
     Num         : Tuple or structure containing the global centroid numbering
+
+Optional input values (to include a heat source): 
+    Q           : Volumetric heat production rate [ W/m^3 ]
+    ρ₀          : Reference density [ kg/m^3 ]
+    cp          : Specific heat capacity [ J/kg/K ]
+
 """
-function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num; 
+                        Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
 a   =   κ / Δx^2
 b   =   κ / Δy^2
 c   =   1 / Δt
-# temp    =   copy(rhs)
-# Multiply rhs with 1/Δt and add Q/ρ/cp ---    
+
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ 
-            reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
+            reshape(Q,NC.x*NC.y)./ρ₀./cp
 
 # Loop over the grid points ---
 for i = 1:NC.x
@@ -313,8 +329,14 @@ are directly implemented within the system of equations.
     K1          : Coefficient matrix in sparse format for the unknown temperature
     K1          : Coefficient matrix in sparse format for the known temperature
     Num         : Tuple or structure containing the global centroid numbering
+
+Optional input values (to include a heat source): 
+    Q           : Volumetric heat production rate [ W/m^3 ]
+    ρ₀          : Reference density [ kg/m^3 ]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
-function CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
+function CNA2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
 # ----------------------------------------------------------------------- #
 
@@ -374,7 +396,7 @@ end
 # ------------------------------------------------------------------- #
 # Berechnung der rechten Seite -------------------------------------- #
 rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ 
-                reshape(D.Q,NC.x*NC.y)./reshape(ρ,NC.x*NC.y)./cp
+                reshape(Q,NC.x*NC.y)./ρ₀./cp
 # ------------------------------------------------------------------- #        
 # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
 for i = 1:NC.x
@@ -431,8 +453,14 @@ are directly implemented within the system of equations.
     cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
+
+Optional input values (to include a heat source): 
+    Q           : Volumetric heat production rate [ W/m^3 ]
+    ρ₀          : Reference density [ kg/m^3 ]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
-function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC; 
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
     # Function to solve 2D heat diffusion equation using the alternating direct
     # implicit finite difference scheme.
     # assuming constant k, ρ, cp
@@ -501,7 +529,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
     end
     
     rhs  .=   B * reshape(T.T',(NC.y*NC.x,1)) .+ 
-                    reshape(T.Q',(NC.y*NC.x,1))./reshape(ρ',(NC.y*NC.x,1))./cp
+                    reshape(Q',(NC.y*NC.x,1))./ρ₀./cp
 
     # Update rhs from the boundary conditions ---
     for i = 1:NC.x
@@ -582,7 +610,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
 
     # Update rhs to T^{n+1/2} --- 
     rhs  .=   D * reshape(T.T,(NC.y*NC.x,1)) .+ 
-                    reshape(T.Q,(NC.y*NC.x,1))./reshape(ρ,(NC.y*NC.x,1))./cp
+                    reshape(Q,(NC.y*NC.x,1))./ρ₀./cp
     
     # Update rhs from the boundary conditions ---
     for j = 1:NC.y
@@ -777,7 +805,7 @@ function AssembleMatrix2D(ρ, cp, k, BC, Num, nc, Δ, Δt;C=0)
             # Linear system coefficients
             if inS K[ii,iS] = kS .* (DirS + NeuS - 1) ./ dy .^ 2 end
             if inW K[ii,iW] = kW .* (DirW + NeuW - 1) ./ dx .^ 2 end
-            K[ii,iC] = Cp[i,j] .* ρ[i,j] ./ Δt + (-kN .* (-DirN + NeuN - 1) ./ dy + kS .* (DirS - NeuS + 1) ./ dy) ./ dy + (-kE .* (-DirE + NeuE - 1) ./ dx + kW .* (DirW - NeuW + 1) ./ dx) ./ dx
+            K[ii,iC] = cp[i,j] .* ρ[i,j] ./ Δt + (-kN .* (-DirN + NeuN - 1) ./ dy + kS .* (DirS - NeuS + 1) ./ dy) ./ dy + (-kE .* (-DirE + NeuE - 1) ./ dx + kW .* (DirW - NeuW + 1) ./ dx) ./ dx
             if inE K[ii,iE] = -kE .* (-DirE - NeuE + 1) ./ dx .^ 2 end
             if inN K[ii,iN] = -kN .* (-DirN - NeuN + 1) ./ dy .^ 2 end
         end

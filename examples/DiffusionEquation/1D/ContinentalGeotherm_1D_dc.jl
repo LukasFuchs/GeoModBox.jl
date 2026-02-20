@@ -1,4 +1,4 @@
-using Plots
+using Plots, ExtendableSparse, LinearAlgebra
 using GeoModBox.HeatEquation.OneD
 using TimerOutputs
 #CHECK HEAT FLUX CALUCLATION!!!

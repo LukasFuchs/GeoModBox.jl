@@ -2,7 +2,7 @@
 
 ## Governing Equations
 
-The governing equations for solving geodynamical problems — **neglecting adiabatic effects** and assuming **only radioactive heat sources—are** given by the conservation laws of 
+The governing equations for solving geodynamical problems, **neglecting adiabatic effects** and assuming **only radioactive heat sources**, are given by the conservation laws of 
 
 **=== Momentum ===**
 
@@ -40,7 +40,7 @@ $\begin{equation}
 
 Repeated indices imply summation.
 
-Ordinary and partial differential equations (ODEs and PDEs) can be solved through various approaches—occasionally *analytically*, but more commonly *numerically* due to their inherent complexity. Among numerical methods, prominent techniques include *integral*-based methods, such as the *finite element* and *spectral* methods, as well as the *finite difference* method.
+Ordinary and partial differential equations (ODEs and PDEs) can be solved through various approaches, occasionally *analytically*, but more commonly *numerically* due to their inherent complexity. Among numerical methods, prominent techniques include *integral*-based methods, such as the *finite element* and *spectral* methods, as well as the *finite difference* method.
 
 ## Finite Difference Method
 
@@ -84,8 +84,7 @@ $\begin{equation}
 
 where $\cal{O}$ indicates the truncation error of the approximation (here, $\Delta{x}$), and the formulation is, by definition, only accurate up to the first order.
 
-The partial derivatives can be approximated via different finite differences as, where $i,j$  
-defines the central reference point in two dimensions at the position $\left(x_0,y_0\right)$: 
+The partial derivatives can be approximated via different finite differences, where $i,j$ defines the central reference point in two dimensions at the position $\left(x_0,y_0\right)$: 
 
 $\begin{equation}\begin{split}
 \textrm{forward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x+\Delta{x})-u(x)}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i+1,j}-u_{i,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\ \newline
@@ -93,7 +92,7 @@ $\begin{equation}\begin{split}
 \textrm{backward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x)-u(x-\Delta{x})}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i,j}-u_{i-1,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\
 \end{split}\end{equation}$
 
-For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below.
+<!-- For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below. -->
 
 ## Staggered Finite Difference
 
@@ -108,6 +107,14 @@ For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temper
 ![2DGrid_total](../assets/Grid_total.png)
 
 **Figure 1. Staggered Finite Difference Grid used in ´GeoModBox.jl`.**
+
+To solve each equation at the according central reference point $(i,j)$ one needs to consider the information at their adjacent points. The index of each central reference point for each governing equation can be defined by a global index, which corresponds to the equation number in the linear system of equations. The equation number I assuming a horizontal numbering scheme is then defined as:
+
+$\begin{equation}
+I^C = \left(j-1\right) \cdot nc_x+i,
+\end{equation}$
+
+where $i$ and $j$ are the local indices in the horizonal and vertical direction, respectively, $C$ donates the central position of the stencil, and $nc_x$ is the number of the corresponding central reference point in horizontal direction (Figure 1). The index and position of adjacent points in a FD scheme is defined by a numerical stencil, which varies in required numbers of nodes depending on the governing equation to be solved (see the corresponding documentation for more details).
 
 # Initial Conditions 
 

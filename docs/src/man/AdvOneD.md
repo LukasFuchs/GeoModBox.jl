@@ -10,20 +10,29 @@ where $T$ is the temperature [K], $t$ is the time [s], and $v_x$ is the velocity
 
 # Discretization Schemes
 
+The global indexing of the central reference point $I^C$ used in the advection equation follows the indexing as described in the [general solution section](./GESolution.md). The indices of the adjacent points are then defined by:
+
+$\begin{equation}\begin{split}
+I^\textrm{W} & = I^\textrm{C} - 1,\\\   
+I^\textrm{E} & = I^\textrm{C} + 1,
+\end{split}\end{equation}$
+
+where $I$ is the equation number, which corresponds to the local index $i$ and the central position of the three-point stencil ($C$), and $I^\textrm{W}$, and $I^\textrm{E}$, are the points West and East of it. These are the indices of the three-point stencil used in the discretized FD equations below.
+
 ## Forward in Time and Centered in Space (FTCS)
 
 Let's begin with the seemingly simplest approach. Approximating the partial derivatives using a *FTCS* scheme results in
 
 $\begin{equation}
-\frac{T_{i}^{n+1}-T_{i}^{n}}{\Delta{t}} = -v_x\left(\frac{T_{i+1}^{n}-T_{i-1}^{n}}{2\Delta{x}}\right),
+\frac{T_{I^C}^{n+1}-T_{I^C}^{n}}{\Delta{t}} = -v_x\left(\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}\right),
 \end{equation}$
 
-where $\Delta{t}$ and $\Delta{x}$ are the time step and grid resolution, respectively, and $i$ and $n$ denote the spatial and temporal indices. This scheme is first-order accurate in time and second-order accurate in space. 
+where $\Delta{t}$ and $\Delta{x}$ are the time step and grid resolution, respectively, $I^C$ is the central reference point, and $n$ denotes the temporal index. This scheme is first-order accurate in time and second-order accurate in space. 
 
 Rearranging gives the solution for the temperature at the next time step:
 
 $\begin{equation}
-T_i^{n+1} = T_i^n - v_x \Delta{t}\frac{T_{i+1}^n - T_{i-1}^n}{2\Delta{x}}.
+T_{I^C}^{n+1} = T_{I^C}^n - v_x \Delta{t}\frac{T_{I^E}^n - T_{I^W}^n}{2\Delta{x}}.
 \end{equation}$
 
 The right-hand side can be simplified using the so-called *Courant number*:
@@ -34,21 +43,21 @@ $\begin{equation}
 
 which represents the number of grid points traversed in a single time step. 
 
-Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. The central difference at $i$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
+Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. The central difference at $I^C$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
 
 ## Lax-Friedrichs method
 
-One way to suppress the instability of the FTCS scheme is the *Lax-Friedrichs* method. This replaces the term $T_{i}^{n}$ with its spatial average at the same time level, resulting in:
+One way to suppress the instability of the FTCS scheme is the *Lax-Friedrichs* method. This replaces the term $T_{I^C}^{n}$ with its spatial average at the same time level, resulting in:
 
 $\begin{equation}
-\frac{T_{i}^{n+1}-\left(T_{i+1}^{n}+T_{i-1}^{n}\right)/2}{\Delta{t}}=-v_x\frac{T_{i+1}^{n}-T_{i-1}^{n}}{2\Delta{x}}.
+\frac{T_{I^C}^{n+1}-\left(T_{I^E}^{n}+T_{I^W}^{n}\right)/2}{\Delta{t}}=-v_x\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}.
 \end{equation}$
 
 Rearanging gives:
 
 $\begin{equation}
-T_{i}^{n+1} = \frac{1}{2}\left(T_{i+1}^{n}+T_{i-1}^{n}\right)-
-\frac{v_x \Delta{t}}{2\Delta{x}} \left(T_{i+1}^{n}-T_{i-1}^{n}\right).
+T_{I^C}^{n+1} = \frac{1}{2}\left(T_{I^E}^{n}+T_{I^W}^{n}\right)-
+\frac{v_x \Delta{t}}{2\Delta{x}} \left(T_{I^E}^{n}-T_{I^W}^{n}\right).
 \end{equation}$
 
 This method is stable for $\alpha < 1$ but introduces significant numerical diffusion.
@@ -58,28 +67,28 @@ This method is stable for $\alpha < 1$ but introduces significant numerical diff
 Another approach is to consider only upstream information. The *upwind* scheme uses one-sided finite differences, always taken in the upstream direction. This results in a scheme that is first-order accurate in both space and time. The discretized advection equation becomes:
 
 $\begin{equation}
-\frac{T_{i}^{n+1}-T_{i}^n}{\Delta{t}} = -v_{x,i}
+\frac{T_{I^C}^{n+1}-T_{I^C}^n}{\Delta{t}} = -v_{x,I^C}
 \begin{cases}
-\frac{T_{i}^{n}-T_{i-1}^{n}}{\Delta{x}} &\text{if } v_{x,i} \gt 0\\
-\frac{T_{i+1}^{n}-T_{i}^{n}}{\Delta{x}}&\text{if } v_{x,i} \lt 0 
+\frac{T_{I^C}^{n}-T_{I^W}^{n}}{\Delta{x}} &\text{if } v_{x,I^C} \gt 0\\
+\frac{T_{I^E}^{n}-T_{I^C}^{n}}{\Delta{x}}&\text{if } v_{x,I^C} \lt 0 
 \end{cases}.
 \end{equation}$
 
-The scheme is stable if the *Courant criterion* is satisfied ($\alpha \le 1$), but numerical diffusion remains, which depends on the grid size. A Taylor series expansion shows that, in 1D with constant velocity, the scheme becomes non-diffusive if the time step exactly satisfies the Courant criterion. The method becomes unstable if this criterion is violated.
+The scheme is stable if the CFL-criterion is satisfied ($\alpha \le 1$), but numerical diffusion remains, which depends on the grid size. A Taylor series expansion shows that, in 1D with constant velocity, the scheme becomes non-diffusive if the time step exactly satisfies the CFL-criterion. The method becomes unstable if this criterion is violated.
 
 ## Staggered Leapfrog
 
 All previously discussed explicit schemes are only first-order accurate in time and second-order in space (except upwind, which is first-order in both). To match the temporal and spatial accuracy without choosing a very small time step, one may use the *staggered leapfrog* scheme:
 
 $\begin{equation}
-\frac{T_{i}^{n+1}-T_{i}^{n-1}}{2\Delta{t}}=-v_x\frac{T_{i+1}^{n}-T_{i-1}^{n}}{2\Delta{x}}.
+\frac{T_{I^C}^{n+1}-T_{I^C}^{n-1}}{2\Delta{t}}=-v_x\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}.
 \end{equation}$
 
 This method avoids numerical diffusion, but becomes increasingly unstable when strong gradients in the advected field are present.
 
 ## Semi-Lagrangian
 
-The methods discussed above each have drawbacks. The *semi-Lagrangian* method addresses several of them: it is stable, does not suffer from numerical diffusion, and is not constrained by the Courant criterion. It is related to tracer-based advection schemes and solves ODEs rather than using traditional finite differences. While not inherently conservative and subject to minor interpolation errors, it offers promising accuracy and efficiency.
+The methods discussed above each have drawbacks. The *semi-Lagrangian* method addresses several of them: it is stable, does not suffer from numerical diffusion, and is not constrained by the CFL criterion. It is related to tracer-based advection schemes and solves ODEs rather than using traditional finite differences. While not inherently conservative and subject to minor interpolation errors, it offers promising accuracy and efficiency.
 
 The central idea is to trace an advected particle backward in time to its origin and interpolate the corresponding value from the Eulerian grid.
 
@@ -87,25 +96,27 @@ In 1D, assuming constant velocity in time and space, the procedure is:
 
 **1. Calculate the initial position** 
 
-The initial position $X_i$ of a particle landing on the Eulerian grid point $x_i$ at time $t_{n+1}$ is:
+The initial position $X_{i}$ of a particle landing on the Eulerian grid point $x_{I^C}$ at time step ${n+1}$ is:
 
 $\begin{equation}
-X_i=x_i-\Delta{t}\cdot v_x\left(t_{n+1},x_i\right),
+X_{i}=x_{I^C}-\Delta{t}\cdot v_{x,I^C}^{n+1},
 \end{equation}$
 
-where $x_i$ is the coordinate of the Eulerian grid point $i$, $\Delta{t}$ is the time step, $v_x$ the velocity in $x$-direction, and $t_{n+1}$ is the time at the new time step. 
+where $x_{I^C}$ is the coordinate of the Eulerian grid point $I^C$, $\Delta{t}$ is the time step, $v_x$ the velocity in $x$-direction, and $n+1$ is the time at the new time step. 
 
 **2. Interpolate the temperature**
 
-Interpolate the temperature at $t_n$ from the surrounding Eulerian grid points onto the position $X_i$, e.g., using `cubic_spline_interpolation()`.
+Interpolate the temperature at time step $n$ from the surrounding Eulerian grid points onto the position $X_{i}$, e.g., using `cubic_spline_interpolation()`.
 
 **3. Update the temperature field**
 
-Assuming the temperature at the grid point at $t_{n+1}$ equals the interpolated value at $X_i$ at time $t_n$:
+Assuming the temperature at the grid point $I^C$ at time step $n+1$ equals the interpolated value at $X_{i}$ at time step $n$ results in:
 
 $\begin{equation}
-T\left(t_{n+1},x_i\right) = T\left(t_n,X_i\right)
+T_{I^C}^{n+1} = T_{X_{I^C}}^n
 \end{equation}$
+
+<!-- Stop -->
 
 ## Passive tracers
 

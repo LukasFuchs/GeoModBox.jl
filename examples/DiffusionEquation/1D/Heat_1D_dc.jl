@@ -69,9 +69,6 @@ CNA     = (
     ε       = zeros(nc),
     R       = zeros(nc)
 )
-Q   =   zeros(nc)
-ρ   =   ones(nc).*3300
-cp  =   ones(nc).*1200
 # ----------------------------------------------------------------------- #
 # Initial condition ----------------------------------------------------- #
 # Gaussian temperature distribution ---------
@@ -132,7 +129,7 @@ for n=1:nt
     for iter = 1:niter
         # Residual iteration
         ComputeResiduals1Dc!( expl.R, expl.T, expl.T_ex, expl.T0, expl.T_ex0, 
-                ∂2T, Q, ρ, cp, κ, BC, Δx, Δt; C=1.0 )
+                ∂2T, κ, BC, Δx, Δt; C=1.0 )
         @printf("||R|| = %1.4e\n", norm(expl.R)/length(expl.R))            
         norm(expl.R)/length(expl.R) < ϵ ? break : nothing
         # Assemble linear system
@@ -149,7 +146,7 @@ for n=1:nt
     for iter = 1:niter
         # Residual iteration
         ComputeResiduals1Dc!( imp.R, imp.T, imp.T_ex, imp.T0, imp.T_ex0, 
-                ∂2T, Q, ρ, cp, κ, BC, Δx, Δt; C=0.0 )
+                ∂2T, κ, BC, Δx, Δt; C=0.0 )
         @printf("||R|| = %1.4e\n", norm(imp.R)/length(imp.R))            
         norm(imp.R)/length(imp.R) < ϵ ? break : nothing
         # Assemble linear system
@@ -166,7 +163,7 @@ for n=1:nt
     for iter = 1:niter
         # Residual iteration
         ComputeResiduals1Dc!( CNA.R, CNA.T, CNA.T_ex, CNA.T0, CNA.T_ex0, 
-                ∂2T, Q, ρ, cp, κ, BC, Δx, Δt; C=0.5 )
+                ∂2T, κ, BC, Δx, Δt; C=0.5 )
         @printf("||R|| = %1.4e\n", norm(CNA.R)/length(CNA.R))            
         norm(CNA.R)/length(CNA.R) < ϵ ? break : nothing
         # Assemble linear system

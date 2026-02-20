@@ -4,17 +4,17 @@ In most geodynamical contexts, material is in motion, and physical properties su
 
 ## Eulerian and Lagrangian Formulations
 
-Advection describes the transport of scalar or vector quantities due to the motion of a fluid. Depending on the reference frame, the governing equation takes a different form.
+Advection describes the transport of scalar or vector quantities due to the motion of a fluid. In the following, we focus on the advection of temperature. Depending on the reference frame, the governing equation takes a different form.
 
 ### Eulerian Formulation
 
-In a fixed (Eulerian) reference frame, the local rate of change of temperature, for example, is governed by the advection equation:
+In a fixed (Eulerian) reference frame, the local rate of change of temperature is governed by:
 
 $\begin{equation}
-\frac{\partial T}{\partial t} = - \vec{v} \cdot \nabla{T},
+\frac{\partial T}{\partial t} = - v_i \frac{\partial{T}}{\partial{x_i}},
 \end{equation}$
 
-where $\vec{v}$ is the velocity vector and $T$ is the temperature field. Eulerian formulations are solved on a fixed grid using schemes that aim to balance accuracy, stability, and computational efficiency. `GeoModBox.jl` supports several such schemes appropriate for a range of applications.
+where $v_i$ is the velocity in the direction of $i$ and $T$ is the temperature field. Eulerian formulations are solved on a fixed grid using schemes that aim to balance accuracy, stability, and computational efficiency. `GeoModBox.jl` supports several such schemes appropriate for a range of applications.
 
 ### Lagrangian Formulation
 
@@ -27,26 +27,22 @@ $\begin{equation}
 which relates to the Eulerian description via:
 
 $\begin{equation}
-\frac{DT}{Dt} = \frac{\partial T}{\partial t} + \vec{v} \cdot \nabla{T}.
+\frac{DT}{Dt} = \frac{\partial T}{\partial t} + v_j \frac{\partial{T}}{\partial{x_j}}.
 \end{equation}$
 
 In the Lagrangian frame, advection reduces to solving a system of ordinary differential equations (ODEs) for particle trajectories:
 
 $\begin{equation}
-\frac{Dx_i}{Dt} = v_i,
+\frac{D x_j}{Dt} = v_j,
 \end{equation}$
 
-where $x_i$ are the coordinates and $v_i$ the corresponding velocity components.
+where $x_j$ is the coordinate in the direction of $j$.
 
 ## Discretization Schemes
 
 Although simple in form, the advection equation is challenging to solve numerically. The choice of discretization and interpolation schemes can introduce numerical artifacts such as diffusion, dispersion, or instability.
 
-To promote clarity and modularity, `GeoModBox.jl` employs an **operator-splitting** strategy. This approach decouples the advective and diffusive terms of the temperature conservation equation and solves them sequentially. First, the advective (convective) term is solved, followed by the diffusive term. The latter is handled using the schemes described in the [Diffusion Equation documentation](./DiffMain.md). 
-
-> **Note:** The energy equation can also be solved for diffusion and advection simultaneously using combined schemes. Interestingly, the *Forward in Time and Centered in Space (FTCS)* scheme—although unstable for pure advection—can exhibit numerical stability due to diffusion when both processes are active.
-
-For the advection term, `GeoModBox.jl` includes the following numerical schemes:
+For the advection, `GeoModBox.jl` includes the following numerical schemes:
 
 - Upwind  
 - Lax  
@@ -56,12 +52,12 @@ For the advection term, `GeoModBox.jl` includes the following numerical schemes:
 
 The first four schemes work for any scalar field defined at **centroids**, including ghost nodes, and use centroid-defined velocity fields.
 
-**Passive tracers** can be used to advect temperature or phase identifiers. When advecting phase IDs, the tracer data must also include material parameters such as viscosity or density. These values are interpolated either to centroids or to vertices, depending on the quantity (e.g., viscosity at vertices). The **tracer or marker-in-cell (MIC) method** tracks material properties along particle paths and solves the associated ODE system using standard time integration methods, including:
+**Passive tracers** can be used to advect temperature or phase identifiers (IDs). When advecting phase IDs, the tracer data must also include material parameters such as viscosity or density. The physical tracer properties are interpolated either to centroids or to vertices, depending on the quantity (e.g., viscosity at vertices). The **tracer or marker-in-cell (MIC) method** tracks material properties along particle paths and solves the associated ODE system using standard time integration methods, including:
 
 - Euler method  
 - Runge–Kutta methods
 
-The `GeoModBox.jl` focuses on the tracer advection using a fourth-order Runge–Kutta method, with velocities from the staggered grid.
+The `GeoModBox.jl` focuses on the tracer advection using a fourth-order Runge–Kutta method, with velocities from the staggered grid. For more details on the tracers advection routine and how it is used in `GeoModBox.jl` refer to the [2D advection documentation](AdvTwoD.md).
 
 An important consideration in advection is the **preservation of amplitude and shape**, especially in problems involving rigid body rotation. Numerical diffusion and interpolation artifacts can significantly affect the solution quality depending on the chosen scheme, making the selection of an appropriate method crucial.
 

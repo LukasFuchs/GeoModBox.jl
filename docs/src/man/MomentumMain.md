@@ -1,6 +1,6 @@
 # Momentum Equation
 
-On geological time scales, Earth's mantle and lithosphere behave like a fluid that moves and deforms in response to forces. In general, three major force types influence fluid motion: **inertial**, **surface**, and **body (volumetric)** forces. A commonly used expression to describe such motion is:
+On geological time scales, Earth's mantle and lithosphere behave like a fluid that moves and deforms in response to forces. In general, three major types of forces influence fluid motion: **inertial**, **surface**, and **body (volumetric)** forces. A commonly used expression to describe such motion is:
 
 $\begin{equation}
 \rho \frac{D v_i}{Dt} = \frac{\partial{\sigma_{ij}}}{\partial{x_j}} + \rho g_i,
@@ -14,16 +14,16 @@ $g_i$ is the gravitational acceleration [m/s²] in direction $i$, and
 $\frac{D}{Dt}$ is the Lagrangian (material) time derivative, expressed in Eulerian form as: 
 
 $\begin{equation}
-\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + v_j\frac{\partial}{\partial{x_j}}
-\end{equation}.$
+\frac{D}{Dt} = \frac{\partial{}}{\partial{t}} + v_j\frac{\partial}{\partial{x_j}}.
+\end{equation}$
 
 The Cauchy stress tensor is commonly decomposed as:
 
 $\begin{equation}
-\sigma_{ij} = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}},
+\sigma_{ij} = \tau_{ij} -P_t \delta_{ij},
 \end{equation}$
 
-where $P$ is the total pressure (including dynamic and hydrostatic components), and $\tau_{ij}$ is the **deviatoric stress tensor**.
+where $P_t$ is the total pressure (including dynamic and hydrostatic components), $\tau_{ij}$ is the **deviatoric stress tensor**, and $\delta_{ij}$ is the Kronecker Delta.
 
 Substituting into the momentum equation and expanding the material derivative yields the **Navier–Stokes equation** in Eulerian form:
 
@@ -60,7 +60,7 @@ $\begin{equation}
 Using the constitutive relation, we obtain:
 
 $\begin{equation}
-0 = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\partial}{\partial{x_j}} \eta \left(\frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}}\right) + \rho g_{i}.
+0 = -\frac{\partial{P}}{\partial{x_{i}}} + \frac{\partial}{\partial{x_j}} \left( \eta \left(\frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}}\right)\right) + \rho g_{i}.
 \end{equation}$
 
 Assuming **constant viscosity** simplifies this further to:
