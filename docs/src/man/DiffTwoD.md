@@ -35,13 +35,13 @@ To numerically solve Equation (3), the spatial domain must be discretized and th
 
 ![2DDiffusionGrid](../assets/2D_Diffusion_Grid.png)
 
-**Figure 1. 2D Discretization.** *Staggered finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points between the *vertices* (horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
+**Figure 1. 2D Discretization.** *Staggered finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points between the *vertices* (black circles; horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
-To solve the equation at each centroid, one must also consider the temperature values at the adjacent points. The positions of these points in a finite difference (FD) scheme are determined by the numerical stencil. For the 2D heat diffusion equation, we employ a five-point stencil, which includes a central point (the reference centroid) and points to the North, East, South, and West. This spatial discretisation relies on central finite differences the discretisation of the temperature gradient and the flux divergence. The five point stencil thus delivers second order accuracy in space.    
+To solve the equation at each centroid, one must also consider the temperature values at the adjacent points. The positions of these points in a finite difference (FD) scheme are determined by the numerical stencil. For the 2D heat diffusion equation, we employ a five-point stencil, which includes a central point (the reference centroid) and points to the North, East, South, and West. This spatial discretisation relies on central finite differences, the discretisation of the temperature gradient and the flux divergence. The five point stencil thus delivers second order accuracy in space.    
 
-The indices of these points, which also define the positions of the coefficients in the coefficient matrix for each equation in the linear system, can be expressed using the local indices $i$ and $j$ of the numerical grid. These local indices describe the position in the number of centroids in the horizontal and vertical directions, respectively.
+The indices of these points, which also define the positions of the coefficients in the coefficient matrix for each equation in the system of equations, can be expressed using the local indices $i$ and $j$ of the numerical grid. These local indices describe the position in the number of centroids in the horizontal and vertical directions, respectively.
 
-The equation number $I$ in the system of equations, assuming a horizontal numbering scheme of the stencil through the model domain, is defined as:
+The equation number $I$ in the system of equations, which also represents the central reference centroid, assuming a horizontal numbering scheme of the stencil through the model domain, is defined as:
 
 $\begin{equation}
 I^\textrm{C} = \left(j-1\right)\cdot{nc_x}+i,
@@ -58,14 +58,15 @@ I^\textrm{N} & = I^\textrm{C} + nc_x,
 
 where $I^\textrm{S}$, $I^\textrm{W}$, $I^\textrm{E}$, and $I^\textrm{N}$ are the points South, West, East, and North of it, respectively. These are the global indices of the five-point stencil used in the discretized FD equations below.
 
-A detailed implementation of various numerical schemes to solve a linear problem is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). Additional [scripts]() test the general, combined solver on the Gaussian diffusion problem (for more details on the different solvers see the description below). This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
+A detailed implementation of various numerical schemes to solve a linear problem using a single left-matrix division to solve the system of equations is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
 
 - **Explicit scheme**
 - **Implicit scheme**
 - **Crank–Nicolson approach**
 - **Alternating Direction Implicit (ADI) method**
 
-The numerical results are compared with the analytical solution of a Gaussian temperature distribution to assess accuracy and performance. 
+The numerical results are compared with the analytical solution of a Gaussian temperature distribution to assess accuracy and performance.  Additional [scripts](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) test the general, combined solver on the Gaussian diffusion problem (for more details on the different solvers see the description below).
+
 Each numerical scheme is briefly outlined in the following sections. For further details regarding the numerical background, refer to the [1D solver documentation](DiffOneD.md).
 
 ## Temperature Field Management
@@ -166,7 +167,7 @@ where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $
 In two dimensions, the partial derivatives in Equation (3) are approximated using an explicit FTCS (Forward Time, Centered Space) FD scheme:
 
 $\begin{equation}
-\frac{T_{I^\textrm{C}}^{n+1} - T_{I^\textrm{C}}^{n} }{\Delta t} = \kappa \left( \frac{T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}}{\Delta{x}^2} + \frac{T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}}{\Delta{z^2}} \right) + \frac{Q}{\rho_0 c_p}, 
+\frac{T_{I^\textrm{C}}^{n+1} - T_{I^\textrm{C}}^{n} }{\Delta t} = \kappa \left( \frac{T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}}{\Delta{x}^2} + \frac{T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}}{\Delta{z^2}} \right) + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}, 
 \end{equation}$
 
 where $n$ is the time step index, $\Delta t $ is the time step size, and $\Delta x$, $\Delta y$ are the grid spacings in the horizontal and vertical directions.
@@ -174,7 +175,7 @@ where $n$ is the time step index, $\Delta t $ is the time step size, and $\Delta
 Rearranging this equation to solve for the temperature at the next time step yields:
 
 $\begin{equation}
-T_{I^\textrm{C}}^{n+1} = T_{I^\textrm{C}}^{n} + a\left(T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}\right) + b\left(T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}\right) + \frac{Q \Delta{t}}{\rho_0 c_p}, 
+T_{I^\textrm{C}}^{n+1} = T_{I^\textrm{C}}^{n} + a\left(T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}\right) + b\left(T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}\right) + \frac{Q_{I^\textrm{C}} \Delta{t}}{\rho_0 c_p}, 
 \end{equation}$
 
 where
@@ -196,16 +197,16 @@ $\begin{equation}
     \frac{T_{I^\textrm{W}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{E}}^{n+1}}{\Delta x^2} + 
     \frac{T_{I^\textrm{S}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{N}}^{n+1}}{\Delta y^2} 
     \right) + 
-\frac{Q}{\rho_0 c_p},
+\frac{Q_{I^\textrm{C}}}{\rho_0 c_p},
 \end{equation}$
 
-where $n+1$ denotes the next time step. Rewriting this equation to separate known and unknown terms results in a linear system of equations of the form:
+where $n+1$ denotes the next time step. Rewriting this equation to separate known and unknown terms results in a system of equations of the form:
 
 $\begin{equation}
 -b T_{I^\textrm{S}}^{n+1} - a T_{I^\textrm{W}}^{n+1} + 
 \left(2a + 2b + c \right) T_{I^\textrm{C}}^{n+1} - 
 a T_{I^\textrm{E}}^{n+1} - b T_{I^\textrm{N}}^{n+1} = 
-c T_{I^\textrm{C}}^n + \frac{Q}{\rho_0 c_p},
+c T_{I^\textrm{C}}^n + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p},
 \end{equation}$
 
 where the coefficients are:
@@ -244,12 +245,10 @@ $\begin{equation}
 \bm{T}^{k+1} = \bm{T}^k + \delta \bm{T}.
 \end{equation}$
 
----
-
 Within `GeoModBox.jl`, the residual $\bm{r}$ is calculated at the **centroids** using the extended temperature field of the current time step, which includes the ghost node temperature values, as an initial temperature guess:
 
 $\begin{equation}
-\frac{\partial{T_{\textrm{ext},I}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{y}^2} \right) - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+\frac{\partial{T_{\textrm{ext},I}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{y}^2} \right) - \frac{Q_{I}}{\rho_0 c_p} = \bm{r}_{I},
 \end{equation}$
 
 where $I$ is the equation number. Discretizing the equation in space and time using implicit FDs yields:
@@ -257,28 +256,28 @@ where $I$ is the equation number. Discretizing the equation in space and time us
 $\begin{equation}
 \frac{T_{\textrm{ext},I^\textrm{C}}^{n+1}-T_{\textrm{ext},I^\textrm{C}}^{n}}{\Delta{t}} - \kappa 
 \left( \frac{T_{\textrm{ext},I^\textrm{W}}^{n+1} - 2 T_{\textrm{ext},I^\textrm{C}}^{n+1} + T_{\textrm{ext},I^\textrm{E}}^{n+1}}{\Delta{x}^2} + \frac{T_{\textrm{ext},I^\textrm{S}}^{n+1} - 2 T_{\textrm{ext},I^\textrm{C}}^{n+1} + T_{\textrm{ext},I^\textrm{N}}^{n+1}}{\Delta{y}^2}  
-\right) - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+\right) - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{equation}$
 
-where $I^\textrm{C}$ is the global, central reference point of the five-point stencil on the extended temperature field for the **centroids**. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
+where $I^\textrm{C}$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
 
 $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{S}}^{n+1} - a T_{\textrm{ext},I^\textrm{W}}^{n+1} + 
 \left(2a + 2b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - 
 a T_{\textrm{ext},I^\textrm{E}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} - 
-c T_{\textrm{ext},I^\textrm{C}}^n - \frac{Q}{\rho_0 c_p} = 
+c T_{\textrm{ext},I^\textrm{C}}^n - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = 
 r_{I},
 \end{equation}$
 
-which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},I}^{n+1}$ is the unknown vector $\bm{x}$ (only using the centroids), $-cT_{\textrm{ext},I}^n -\frac{Q}{\rho_0 c_p}$ is the known vector $\bm{b}$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix $\bm{K}$. With the residual vector $\bm{r}$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). The correction is then used to update the initial temperature guess (Equation (25)). This is repeated until the residual is considered sufficiently small.
+which corresponds to the matrix form of Equation (23), where $T_{\textrm{ext},I}^{n+1}$ is the unknown vector $\bm{x}$ (only using the centroids), $-cT_{\textrm{ext},I}^n -\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}$ is the known vector $\bm{b}$, and $-a$, $-b$, and $\left(2a+2b+c\right)$ are the coefficients of the non-zero diagonals of the coefficient matrix $\bm{K}$. With the residual vector $\bm{r}$ and the coefficient matrix $\bm{K}$ one can calculate the correction term for the temperature via Equation (24). The correction is then used to update the initial temperature guess (Equation (25)). This is repeated until the residual is considered sufficiently small.
 
-> **Note:** The residual is calculated only on the centroids, using the extended temperature field including the ghost node values. For the centroids adjacent to the boundary, one needs to use the ghost node temperatures, which leads to a modification of the coefficients in the coefficient matrix. Thus, the unknown vector $\bm{x}$ has only the dimension of the number of equations, corresponding to the temperatures at the centroids.
+> **Note:** The residual is calculated only at the centroids, using the extended temperature field including the ghost node values. For the centroids adjacent to the boundary, one needs to use the ghost node temperatures, which leads to a modification of the coefficients in the coefficient matrix. Thus, the unknown vector $\bm{x}$ has only the dimension of the number of equations, corresponding to the temperatures at the centroids.
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ### Boundary Conditions
 
-The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix, the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the centroids adjacent to the boundary are then given by:
+The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (6)-(13)). To maintain symmetry in the coefficient matrix, the coefficients must be modified for the nodes adjacent to the boundaries. The equations for the centroids adjacent to the boundary are then given by:
 
 **Dirichlet Boundary Conditions**
 
@@ -288,7 +287,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{S}}^{n+1} 
 +\left(3 a + 2b + c\right) T_{\textrm{ext},I^\textrm{C}}^{n+1} 
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1}  
--b T_{\textrm{ext},I^\textrm{N}}^{n+1} - c T_{\textrm{ext},I^\textrm{C}}^{n} - 2 a T_{\textrm{BC}}^W - \frac{Q}{\rho_0 c_p} = 
+-b T_{\textrm{ext},I^\textrm{N}}^{n+1} - c T_{\textrm{ext},I^\textrm{C}}^{n} - 2 a T_{\textrm{BC}}^W - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = 
 r_{I},
 \end{equation}$
 
@@ -301,7 +300,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -2 a T_{\textrm{BC}}^E 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -314,7 +313,7 @@ $\begin{equation}
 -bT_{\textrm{ext},I^\textrm{N}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -2 b T_{\textrm{BC}}^S
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -327,7 +326,7 @@ $\begin{equation}
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -2 b T_{\textrm{BC}}^N 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -342,7 +341,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +a c^W \Delta{x} 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -355,7 +354,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -a c^E \Delta{x} 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -368,7 +367,7 @@ $\begin{equation}
 -bT_{\textrm{ext},I^\textrm{N}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +b c^S \Delta{y} 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -381,7 +380,7 @@ $\begin{equation}
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1} 
 -c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -b c^N \Delta{y} 
--\frac{Q}{\rho_0 c_p}=
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=
 r_{I},
 \end{equation}$
 
@@ -412,7 +411,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +2 a T_{\textrm{BC}}^W 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **East boundary**
@@ -424,7 +423,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +2 a T_{\textrm{BC}}^E +
-\frac{Q}{\rho_0 c_p}
+\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **South boundary**
@@ -436,7 +435,7 @@ $\begin{equation}
 -bT_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +2 b T_{\textrm{BC}}^S 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **North boundary**
@@ -448,7 +447,7 @@ $\begin{equation}
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +2 b T_{\textrm{BC}}^N 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **Neumann Boundary Conditions**
@@ -462,7 +461,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -a c^W \Delta{x} 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **East boundary**
@@ -474,7 +473,7 @@ $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +a c^E \Delta{x} 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **South boundary**
@@ -486,7 +485,7 @@ $\begin{equation}
 -bT_{\textrm{ext},I^\textrm{N}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 -b c^S \Delta{y} 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 **North boundary**
@@ -498,7 +497,7 @@ $\begin{equation}
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1} = 
 c T_{\textrm{ext},I^\textrm{C}}^{n} 
 +b c^N \Delta{y} 
-+\frac{Q}{\rho_0 c_p}
++\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 ## Crank-Nicolson Approach (CNA)
@@ -508,13 +507,13 @@ In 2D, the heat diffusion equation (Equation (3)) using the Crank–Nicolson dis
 $\begin{equation}\begin{gather*}
 & \frac{T_{I^\textrm{C}}^{n+1} - T_{I^\textrm{C}}^{n}}{\Delta t} = \\ &
 \frac{\kappa}{2}\frac{(T_{I^\textrm{W}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{E}}^{n+1})+(T_{I^\textrm{W}}^{n}-2T_{I^\textrm{C}}^{n}+T_{I^\textrm{E}}^{n})}{\Delta x^2} + \\ &
-\frac{\kappa}{2}\frac{(T_{I^\textrm{S}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{N}}^{n+1})+(T_{I^\textrm{S}}^{n}-2T_{I^\textrm{C}}^{n}+T_{I^\textrm{N}}^{n})}{\Delta y^2} + \frac{Q}{\rho_0 c_p}
+\frac{\kappa}{2}\frac{(T_{I^\textrm{S}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{N}}^{n+1})+(T_{I^\textrm{S}}^{n}-2T_{I^\textrm{C}}^{n}+T_{I^\textrm{N}}^{n})}{\Delta y^2} + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{gather*}\end{equation}$
 
 Rearranging into a form that separates known and unknown variables gives the linear system of equations:
 
 $\begin{equation}\begin{gather*}
-& -b T_{I^\textrm{S}}^{n+1} -aT_{I^\textrm{W}}^{n+1}+\left(2a + 2b + c\right)T_{I^\textrm{C}}^{n+1} -aT_{I^\textrm{E}}^{n+1} -b T_{I^\textrm{N}}^{n+1} = \\ &b T_{I^\textrm{S}}^{n} +aT_{I^\textrm{W}}^{n}-\left(2a + 2b - c\right)T_{I^\textrm{C}}^{n} +aT_{I^\textrm{E}}^{n} +b T_{I^\textrm{N}}^{n} + \frac{Q}{\rho_0 c_p}
+& -b T_{I^\textrm{S}}^{n+1} -aT_{I^\textrm{W}}^{n+1}+\left(2a + 2b + c\right)T_{I^\textrm{C}}^{n+1} -aT_{I^\textrm{E}}^{n+1} -b T_{I^\textrm{N}}^{n+1} = \\ &b T_{I^\textrm{S}}^{n} +aT_{I^\textrm{W}}^{n}-\left(2a + 2b - c\right)T_{I^\textrm{C}}^{n} +aT_{I^\textrm{E}}^{n} +b T_{I^\textrm{N}}^{n} + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{gather*}\end{equation}$
 
 where the coefficients are:
@@ -545,19 +544,17 @@ $\begin{equation}
 
 The correction term and the updated temperature within the iteration for the solution are calculated as in the implicit general solution (Equations (24) and (25)).
 
----
-
 Within `GeoModBox.jl`, the extended temperature field is used to discretize the equation in space and time and to calculate the residual at the centroids, leading to:
 
 $\begin{equation}\begin{gather*}
-& -b T_{\textrm{ext},I^\textrm{S}}^{n+1} -aT_{\textrm{ext},I^\textrm{W}}^{n+1}+\left(2a + 2b + c\right)T_{\textrm{ext},I^\textrm{C}}^{n+1} -aT_{\textrm{ext},I^\textrm{E}}^{n+1} -b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & -b T_{\textrm{ext},I^\textrm{S}}^{n} -aT_{\textrm{ext},I^\textrm{W}}^{n}+\left(2a + 2b - c\right)T_{\textrm{ext},I^\textrm{C}}^{n} -aT_{\textrm{ext},I^\textrm{E}}^{n} -b T_{\textrm{ext},I^\textrm{N}}^{n} - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+& -b T_{\textrm{ext},I^\textrm{S}}^{n+1} -aT_{\textrm{ext},I^\textrm{W}}^{n+1}+\left(2a + 2b + c\right)T_{\textrm{ext},I^\textrm{C}}^{n+1} -aT_{\textrm{ext},I^\textrm{E}}^{n+1} -b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & -b T_{\textrm{ext},I^\textrm{S}}^{n} -aT_{\textrm{ext},I^\textrm{W}}^{n}+\left(2a + 2b - c\right)T_{\textrm{ext},I^\textrm{C}}^{n} -aT_{\textrm{ext},I^\textrm{E}}^{n} -b T_{\textrm{ext},I^\textrm{N}}^{n} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 where $I^\textrm{C}$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids and $I$ is the equation number. This corresponds to the matrix form of Equation (50).
 
 ### Boundary Conditions
 
-As with the implicit method, to maintain symmetry in the coefficient matrices the **coefficients** must be modified for the nodes **adjacent** to the boundaries. The equations for the **centroids adjacent to the boundary** are then given by:
+As with the implicit method, to maintain symmetry in the coefficient matrices the coefficients must be modified for the nodes adjacent to the boundaries. The equations for the centroids adjacent to the boundary are then given by:
 
 **Dirichlet Boundary Conditions**
 
@@ -568,7 +565,7 @@ $\begin{equation}\begin{gather*}
 \left(3a + 2b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} 
 -a T_{\textrm{ext},I^\textrm{E}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ &
 -b T_{\textrm{ext},I^\textrm{S}}^{n} +
-\left( 3a + 2b - c \right)T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 a T_{\textrm{BC}}^W - \frac{Q}{\rho_0 c_p} = \rm{r}_{I},
+\left( 3a + 2b - c \right)T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 a T_{\textrm{BC}}^W - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \rm{r}_{I},
 \end{gather*}\end{equation}$
 
 **East boundary**
@@ -578,7 +575,7 @@ $\begin{equation}\begin{gather*}
 \left(3a + 2b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} 
 -b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & 
 -b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} +
-\left( 3a + 2b - c \right)T_{\textrm{ext},I^\textrm{C}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 a T_{\textrm{BC}}^E - \frac{Q}{\rho_0 c_p}=\bm{r}_{I},
+\left( 3a + 2b - c \right)T_{\textrm{ext},I^\textrm{C}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 a T_{\textrm{BC}}^E - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=\bm{r}_{I},
 \end{gather*}\end{equation}$
 
 **South boundary**
@@ -586,14 +583,14 @@ $\begin{equation}\begin{gather*}
 $\begin{equation}\begin{gather*}
 & -a T_{\textrm{ext},I^\textrm{W}}^{n+1} +
 \left(2a + 3b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - a T_{\textrm{ext},I^\textrm{E}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & 
--a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + 3b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 b T_{\textrm{BC}}^S - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+-a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + 3b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 4 b T_{\textrm{BC}}^S - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 **North boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},I^\textrm{S}}^{n+1} + a T_{\textrm{ext},I^\textrm{W}}^{n+1} + \left(2a + 3b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - a T_{\textrm{ext},I^\textrm{E}}^{n+1} \\ &
--b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + 3b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - 4 b T_{\textrm{BC}}^N - \frac{Q}{\rho_0 c_p} = \bm{r}_{I}.
+-b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + 3b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - 4 b T_{\textrm{BC}}^N - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I}.
 \end{gather*}\end{equation}$
 
 **Neumann Boundary Conditions**
@@ -602,35 +599,33 @@ $\begin{equation}\begin{gather*}
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},I^\textrm{S}}^{n+1} + \left(a + 2b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - a T_{\textrm{ext},I^\textrm{E}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ &
--b T_{\textrm{ext},I^\textrm{S}}^{n} + \left( a + 2b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} + 2 a c^W \Delta{x} - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+-b T_{\textrm{ext},I^\textrm{S}}^{n} + \left( a + 2b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} + 2 a c^W \Delta{x} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 **East boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},I^\textrm{S}}^{n+1} - a T_{\textrm{ext},I^\textrm{W}}^{n+1} + \left(a + 2b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ &
--b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( a + 2b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 2 a c^E \Delta{x} - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+-b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( a + 2b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} - 2 a c^E \Delta{x} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 **South boundary**
 
 $\begin{equation}\begin{gather*}
 & -a T_{\textrm{ext},I^\textrm{W}}^{n+1} + \left(2a + b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - a T_{\textrm{ext},I^\textrm{E}}^{n+1} - b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ &
--a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} + 2 b c^S \Delta{y} - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+-a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + b - c \right) T_{\textrm{ext},I^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - b T_{\textrm{ext},I^\textrm{N}}^{n} + 2 b c^S \Delta{y} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 **North boundary**
 
 $\begin{equation}\begin{gather*}
 & -b T_{\textrm{ext},I^\textrm{S}}^{n+1} + a T_{\textrm{ext},I^\textrm{W}}^{n+1} + \left(2a + b + c \right) T_{\textrm{ext},I^\textrm{C}}^{n+1} - a T_{\textrm{ext},I^\textrm{E}}^{n+1} \\ &
--b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + b - c \right) T_{\textrm{ext},i^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - 2 b c^N \Delta{y} - \frac{Q}{\rho_0 c_p} = \bm{r}_{i}.
+-b T_{\textrm{ext},I^\textrm{S}}^{n} - a T_{\textrm{ext},I^\textrm{W}}^{n} + \left( 2a + b - c \right) T_{\textrm{ext},i^\textrm{C}}^{n} - a T_{\textrm{ext},I^\textrm{E}}^{n} - 2 b c^N \Delta{y} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{i}.
 \end{gather*}\end{equation}$
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 Similar to the pure implicit scheme, there is a *special case* for solving this system of equations if the system is linear. In that case, the heat diffusion equation reduces to Equation (49) and can be solved directly via *left matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly (setting $\bm{r}=0$ and adding the known parameters to the right-hand side of the equations).
-
----
 
 Within `GeoModBox.jl`, the general solution to a non-linear system of equations using either the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal parameters and using the extended temperature field (including the ghost nodes), is implemented in a combined form as:
 
@@ -639,7 +634,7 @@ $\begin{equation}
 -\kappa\left(
     \left(1-\mathbb{C}\right)\frac{\partial^2{T_{\textrm{ext}}^{n+1}}}{\partial{x_i^2}} 
     +\mathbb{C}\frac{\partial^2{T_{\textrm{ext}}^{n}}}{\partial{x_i^2}}\right)
--\frac{Q}{\rho_0 c_p}=\bm{r}, 
+-\frac{Q_{I^\textrm{C}}}{\rho_0 c_p}=\bm{r}, 
 \end{equation}$
 
 where $\mathbb{C}$ is a constant defining the discretization approach:
@@ -655,7 +650,7 @@ $\begin{equation}
 Fully expanded and separating the known and unknown terms leads to:
 
 $\begin{equation}\begin{gather*}
-& -b T_{\textrm{ext},I^\textrm{S}}^{n+1} -aT_{\textrm{ext},I^\textrm{W}}^{n+1}+cT_{\textrm{ext},i^\textrm{C}}^{n+1} -aT_{\textrm{ext},I^\textrm{E}}^{n+1} -b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & -e T_{\textrm{ext},I^\textrm{S}}^{n} -dT_{\textrm{ext},I^\textrm{W}}^{n}+fT_{\textrm{ext},I^\textrm{C}}^{n} -dT_{\textrm{ext},I^\textrm{E}}^{n} -e T_{\textrm{ext},I^\textrm{N}}^{n} - \frac{Q}{\rho_0 c_p} = \bm{r}_{I},
+& -b T_{\textrm{ext},I^\textrm{S}}^{n+1} -aT_{\textrm{ext},I^\textrm{W}}^{n+1}+cT_{\textrm{ext},I^\textrm{C}}^{n+1} -aT_{\textrm{ext},I^\textrm{E}}^{n+1} -b T_{\textrm{ext},I^\textrm{N}}^{n+1} \\ & -e T_{\textrm{ext},I^\textrm{S}}^{n} -dT_{\textrm{ext},I^\textrm{W}}^{n}+fT_{\textrm{ext},I^\textrm{C}}^{n} -dT_{\textrm{ext},I^\textrm{E}}^{n} -e T_{\textrm{ext},I^\textrm{N}}^{n} - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{gather*}\end{equation}$
 
 where the coefficients are:
@@ -682,23 +677,23 @@ In 2D, the heat diffusion equation (Equation (3)) is discretized using the Alter
 ### First half-step (implicit in $y$, explicit in $x$):
 
 $\begin{equation}
-\frac{T_{i^\textrm{C}}^{n+1/2}-T_{i^\textrm{C}}^n}{\Delta t/2} = 
+\frac{T_{I^\textrm{C}}^{n+1/2}-T_{I^\textrm{C}}^n}{\Delta t/2} = 
 \kappa 
     \left( 
-    \frac{T_{I^\textrm{W}}^n-2T_{i^\textrm{C}}^n+T_{I^\textrm{E}}^n}{\Delta x^2} +
-    \frac{T_{I^\textrm{S}}^{n+1/2}-2T_{i^\textrm{C}}^{n+1/2}+T_{I^\textrm{N}}^{n+1/2}}{\Delta y^2}
-    \right) + \frac{Q}{\rho_0 c_p}
+    \frac{T_{I^\textrm{W}}^n-2T_{I^\textrm{C}}^n+T_{I^\textrm{E}}^n}{\Delta x^2} +
+    \frac{T_{I^\textrm{S}}^{n+1/2}-2T_{I^\textrm{C}}^{n+1/2}+T_{I^\textrm{N}}^{n+1/2}}{\Delta y^2}
+    \right) + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 ### Second half-step (implicit in $x$, explicit in $y$):
 
 $\begin{equation}
-\frac{T_{i^\textrm{C}}^{n+1}-T_{i^\textrm{C}}^{n+1/2}}{\Delta t/2} = 
+\frac{T_{I^\textrm{C}}^{n+1}-T_{I^\textrm{C}}^{n+1/2}}{\Delta t/2} = 
 \kappa 
     \left( 
-    \frac{T_{I^\textrm{W}}^{n+1}-2T_{i^\textrm{C}}^{n+1}+T_{I^\textrm{E}}^{n+1}}{\Delta x^2} + 
-    \frac{T_{I^\textrm{S}}^{n+1/2}-2T_{i^\textrm{C}}^{n+1/2}+T_{I^\textrm{N}}^{n+1/2}}{\Delta y^2}
-    \right) + \frac{Q}{\rho_0 c_p}
+    \frac{T_{I^\textrm{W}}^{n+1}-2T_{I^\textrm{C}}^{n+1}+T_{I^\textrm{E}}^{n+1}}{\Delta x^2} + 
+    \frac{T_{I^\textrm{S}}^{n+1/2}-2T_{I^\textrm{C}}^{n+1/2}+T_{I^\textrm{N}}^{n+1/2}}{\Delta y^2}
+    \right) + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}
 \end{equation}$
 
 Each fractional step results in a tridiagonal linear system, alternating between the $x$- and $y$-directions. This decomposition improves computational efficiency while retaining the stability benefits of implicit schemes.
@@ -709,7 +704,7 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 # Variable Thermal Parameters
 
-To solve the 2D heat diffusion equation including variable thermal parameters, we focus on the general solution in a combined form, given by:
+To solve the 2D heat diffusion equation including variable thermal properties, we focus on the general solution in a combined form, given by:
 
 $\begin{equation}
 \rho c_p \frac{\partial{T}}{\partial{t}} 
@@ -932,5 +927,3 @@ c = -a\left(k_{x;I^\textrm{E}}+k_{x;I^\textrm{C}}\right) - b\left(k_{y;I^\textrm
 \end{equation}$
 
 For further implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
-
----

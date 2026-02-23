@@ -33,7 +33,7 @@ $\begin{equation}
 
 This equation captures temperature changes due to **diffusion** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and diffusion steps sequentially. If internal heat production varies spatially, a more advanced advection scheme is required to account for source term integration.
 
-> **Note:** The energy equation can also be solved for diffusion and advection simultaneously using combined schemes. Interestingly, the *Forward in Time and Centered in Space (FTCS)* scheme—although unstable for pure advection—can exhibit numerical stability due to diffusion when both processes are active.
+> **Note:** The energy equation can also be solved for diffusion and advection simultaneously using combined schemes. Interestingly, the *Forward in Time and Centered in Space (FTCS)* scheme, although unstable for pure advection, can exhibit numerical stability due to diffusion when both processes are active.
 
 # Heat Diffusion Equation
 
@@ -43,14 +43,14 @@ $\begin{equation}
 \rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
 \end{equation}$
 
-```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the heat diffusion equation of the time-dependent or steady-state temperature conservation equation—including optional radioactive heating and variable thermal parameters—in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
+```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the heat diffusion equation of the time-dependent or steady-state temperature conservation equation, including optional radioactive heating and variable thermal parameters, in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:
 
 - Forward Euler  
 - Backward Euler  
 - Crank–Nicolson  
 - Alternating Direction Implicit (ADI)
 
-Except for ADI, all solvers are implemented for constant and variable thermal parameters to solve a linear problem using a left-matrix division and a non-linear problem using the defection correction. See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method. Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
+Except for ADI, all solvers are implemented for constant and variable thermal properties to solve a linear problem using a left-matrix division and a non-linear problem using the defect correction. See the documentation for the [1-D](./DiffOneD.md) and [2-D](./DiffTwoD.md) solvers for detailed descriptions of each method. Currently, only *Dirichlet* and *Neumann* boundary conditions are supported. See the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/) for implementation details.
 
 ## Examples
 
@@ -64,11 +64,11 @@ For more details, see the full [example directory](https://github.com/GeoSci-FFM
 
 ## Exercises
 
-- [1-D forward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/02_1D_Heat_explicit.ipynb)  
-- [1-D backward Euler](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit.ipynb)  
-- [2-D Poisson equation](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary.ipynb)  
-- [2-D transient plume heating](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Plume.ipynb)  
-- [2-D transient sill heating](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Sill.ipynb)
+- [1-D forward Euler](./exercises/02_1D_Heat_explicit.md)  
+- [1-D backward Euler](./exercises/03_1D_Heat_implicit.md)  
+- [2-D Poisson equation](./exercises/04_2D_Diffusion_Stationary.md)  
+- [2-D transient plume heating](./exercises/05_2D_Diffusion_TD_Plume.md)  
+- [2-D transient sill heating](./exercises/05_2D_Diffusion_TD_Sill.md)
 
 # Heat Advection Equation
 
@@ -89,5 +89,5 @@ Tracer-related functionality is located in [src/Tracers](https://github.com/GeoS
 
 ## Exercises
 
-- [1-D Gaussian or block anomaly advection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/06_1D_Advection.ipynb)  
-- [2-D coupled advection-diffusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/07_2D_Energy_Equation.ipynb)
+- [1-D Gaussian or block anomaly advection](./exercises/06_1D_Advection.md)  
+- [2-D coupled advection-diffusion](./exercises/07_2D_Energy_Equation.md)

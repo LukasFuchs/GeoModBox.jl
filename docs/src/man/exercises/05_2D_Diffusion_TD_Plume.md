@@ -5,10 +5,11 @@ This exercise focuses on solving the transient two-dimensional heat diffusion eq
 The main objectives are:
 
 1. Formulating and discretizing the transient 2D heat diffusion equation,  
-2. Implementing explicit (Forward Euler) and implicit (Backward Euler) schemes,  
-3. Applying Dirichlet and Neumann boundary conditions with ghost nodes,  
-4. Exploring stability constraints of the explicit scheme versus the unconditional stability of the implicit scheme, and  
-5. Visualizing the temporal evolution of the temperature field and extracting diagnostic profiles.  
+2. Implementing the build-in general, combined solver for a non-linear problem using the defect correction method
+3. Implementing the build-in special case solver for a linear problem using a single left matrix divison to solve the system of equations (explicit (Forward Euler) and implicit (Backward Euler))
+4. Applying Dirichlet and Neumann boundary conditions with ghost nodes,  
+5. Exploring stability constraints of the explicit scheme versus the unconditional stability of the implicit scheme, and  
+6. Visualizing the temporal evolution of the temperature field and extracting diagnostic profiles.  
 
 The evolution of the temperature field due to plume heating is illustrated in Figure 1. The vertical profiles and the maximum temperature over time are illustrated in Figure 2. 
 

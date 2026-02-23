@@ -44,7 +44,7 @@ I^\textrm{E} & = I^\textrm{C} + 1,
 
 where $I$ is the equation number, which corresponds to the local index $i$ and the central position of the three-point stencil ($C$), and $I^\textrm{W}$, and $I^\textrm{E}$, are the points West and East of it. These are the indices of the three-point stencil used in the discretized FD equations below.
 
-A detailed implementation of various numerical schemes to solve a linear problem is provided in the example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md). This example demonstrates the application of several discretization methods for solving the 1D heat diffusion equation:
+A detailed implementation of various numerical schemes to solve a linear problem is provided in the example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md). This example demonstrates the application of several discretization methods for solving the 1D heat diffusion equation using the special case solver for a linear problem using a single left-matrix division to solve the system of equations:
 
 - **Explicit scheme**
 - **Implicit scheme**
@@ -58,7 +58,7 @@ Within `GeoModBox.jl`, one needs to distinguish between the centroid field and t
 
 The extended field is used in the linear solver of the **explicit** (forward Euler) scheme and in the **residual calculation** for the non-linear solvers using the defect correction. For these solvers, the ghost node temperature values are calculated internally based on the thermal boundary condition, and the extended field is used to numerically solve the PDE.
 
-For the solvers that involve a **coefficient matrix** (e.g., linear implicit schemes and non-linear solvers for constant and variable parameters), only the centroid values are used. That is, the size of the coefficient matrix is determined by the total number of centroids. These solvers internally update the centroid temperatures of the extended field after solving the PDE.
+For the solvers that involve a **coefficient matrix** (e.g., linear implicit schemes and non-linear solvers for constant and variable thermal properties), only the centroid values are used. That is, the size of the coefficient matrix is determined by the total number of centroids. These solvers internally update the centroid temperatures of the extended field after solving the PDE.
 
 ## Boundary Conditions 
 
@@ -147,7 +147,7 @@ Equation (12) is solved for all centroids at each time step, assuming initial an
 
 ## Implicit Scheme (Backward Euler)
 
-The fully implicit finite difference scheme, also known as the **Backward Euler** method, is **unconditionally stable**, allowing time steps larger than those permitted by the CFL criterion.
+The fully implicit finite difference scheme, also known as the **Backward Euler** method, is **unconditionally stable**, allowing time steps larger than those permitted by the diffusion stability criterion.
 
 In 1D and based on a three-point stencil, the discretized heat diffusion equation becomes:
 
@@ -178,7 +178,7 @@ where $\mathbf{K}$ is the coefficient matrix (with three non-zero diagonals), $\
 
 ### General Solution
 
-A general approach solving this system of equations is the **defect correction**. The heat diffusion equation is reformulated by introducing a residual term $\bm{r}$, which quantifies the deviation from the true solution and can be reduced iteratively to improve accuracy through successive correction steps. In implicit form, Equation (15) can be rewritten as:
+A general approach solving this system of equations is the **defect correction**. The heat diffusion equation is reformulated by introducing a residual term $\bm{r}$, which quantifies the deviation from the true solution and can be reduced iteratively to improve accuracy through successive correction steps. In implicit form, Equation (17) can be rewritten as:
 
 $\begin{equation}
 \mathbf{K} \cdot \bm{x} - \bm{b} = \bm{r}, 
@@ -224,12 +224,10 @@ $\begin{equation}
 
 where $\bm{T}^{k+1}$ is the updated temperature after one iteration step. 
 
----
-
 Within `GeoModBox.jl` the residual $\bm{r}$ is calculated on the centroids using the extended temperature field including the ghost nodes of the current time step as an initial guess: 
 
 $\begin{equation}
-\frac{\partial{T_{\textrm{ext,I}}}}{\partial{t}} - \kappa \frac{\partial^2{T_{\textrm{ext,I}}}}{\partial{x^2}} - \frac{Q}{\rho_0 c_p} = r_{I},  
+\frac{\partial{T_{\textrm{ext,I}}}}{\partial{t}} - \kappa \frac{\partial^2{T_{\textrm{ext,I}}}}{\partial{x^2}} - \frac{Q_I}{\rho_0 c_p} = r_{I},  
 \end{equation}$
 
 and in discretized, implicit finite-difference form: 
@@ -252,7 +250,7 @@ which corresponds to the matrix form of Equation (18), where $T_{\textrm{ext},I^
 
 ### Boundary Condition 
 
-The boundary conditions are implemented using the temperatures values at the ghost nodes (see Equations (5)-(8)). To maintain symmetry in the coefficient matrix, however, the matrix coefficients must be modified for the centroids adjacent to the boundaries. This is done by substituting the equations for the ghost node temperatures into the equations for the points adjacent to the boundaries. The equations for the centroids adjacent to the boundary are then given by: 
+The boundary conditions are implemented using the temperature values at the ghost nodes (see Equations (5)-(8)). To maintain symmetry in the coefficient matrix, however, the matrix coefficients must be modified for the centroids adjacent to the boundaries. This is done by substituting the equations for the ghost node temperatures into the equations for the points adjacent to the boundaries. The equations for the centroids adjacent to the boundary are then given by: 
 
 **Dirichlet Boundary Condition**
 
@@ -368,7 +366,7 @@ $c^W$, $c^E$ are the prescribed temperature gradients at the West and East bound
 
 ### Special Case - A Linear Problem 
 
-If the problem is linear and the exact solution is reached within one single iteration step, the system of equations is reduced to Equation (17). Thus, one can solve the system of equations directly via a *left matrix division*: 
+If the problem is linear and the exact solution is reached within one single iteration step and the system of equations is reduced to Equation (17). Thus, one can solve the system of equations directly via a *left matrix division*: 
 
 $\begin{equation}
 \bf{x} = \mathbf{K}^{-1} \bm{b}. 
@@ -498,9 +496,7 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 Similar to the pure implicit scheme, there is a *special case* for solving this system of equations if the system is linear. In that case, the heat diffusion equation reduces to Equation (48) and can be solved directly via *left matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly (setting $\bm{r}=0$ and adding the known parameters to the right-hand side of the equations).
 
----
-
-Within `GeoModBox.jl`, the general solution to a non-linear system of equations using either the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal parameters and using the extended temperature field (including the ghost nodes), is implemented in a combined form as:
+Within `GeoModBox.jl`, the general solution to a non-linear system of equations using either the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal properties and using the extended temperature field (including the ghost nodes), is implemented in a combined form as:
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} 
@@ -537,7 +533,7 @@ $\begin{equation}\begin{split}
         d & = 2c-\frac{1}{\Delta{t}} \\ \end{split}
 \end{split}.\end{equation}$
 
-Equation (57) corresponds to the matrix form of Equation (49). With the residual vector $\bm{r}$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (23). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl), and an example on how to use the general, combined solver is given [here]().
+Equation (57) corresponds to the matrix form of Equation (49). With the residual vector $\bm{r}$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (23). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl), and an example on how to use the general, combined solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl).
 
 ## Summary
 
@@ -545,9 +541,9 @@ While the **explicit FTCS scheme** is simple and efficient for small time steps,
 
 ---
 
-# Variable Thermal Parameters 
+# Variable Thermal Properties 
 
-To solve the 1D heat diffusion equation including variable thermal parameters, we focus on the general solution in a combined form, given by:
+To solve the 1D heat diffusion equation including variable thermal properties, we focus on the general solution in a combined form, given by:
 
 $\begin{equation}
 \rho c_p \frac{\partial{T}}{\partial{t}} 
@@ -630,7 +626,5 @@ With the residual vector $\bm{r}$  and the coefficient matrix $\mathbf{K_1}$ one
 ### Boundary Conditions
 
 For centroids adjacent to the boundaries, ghost nodes are used to evaluate the temperature gradient consistently with the chosen thermal boundary condition (Dirichlet or Neumann). These ghost node values are computed according to equations (7)–(10). The ghost node temperatures are the substituted in the equations for the centroids adjacent to the boundaries (see previous examples). 
-
----
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).

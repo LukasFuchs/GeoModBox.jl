@@ -6,7 +6,7 @@ The sequence of exercises begins with a simple 1-D Euler advection problem and p
 
 Next, the pure 1-D advection equation is revisited and solved with different numerical schemes, followed by coupling of the advection and diffusion equations using the operator-splitting method.
 
-The exercises then move on to the 1-D Stokes equation, solved using both direct and iterative defect-correction methods, before progressing to the steady-state and time-dependent solutions of a full Stokes problem.
+The exercises then move on to the 1-D Stokes equation, solved using both direct and iterative defect correction methods, before progressing to the steady-state and time-dependent solutions of a full Stokes problem.
 
 The final section addresses the three fundamental conservation laws in geodynamics:  
 1. Conservation of energy,  
@@ -16,8 +16,6 @@ The final section addresses the three fundamental conservation laws in geodynami
 These exercises investigate 2-D thermal convection, first in dimensional form and then in a scaled (non-dimensional) version.  
 
 The series concludes with a reproduction of the **Blankenbach benchmark**.
-
----
 
 Below, the runtimes for each exercise and their individual options are listed.  
 All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Graphics*.  
@@ -162,7 +160,5 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |    |   | Ra = 1e4: 5217.55 s |
 |    |   | Ra = 1e5: 20459.1 s |
 |    |   | Ra = 1e6: 554874 s |
-
----
 
 ¹: For the thermal convection, only the runtime where compilation and allocation overhead is avoided are shown, for the sake of simplicity. The number of iterations is shown in the parentheses. For the higher $Ra$ number models only the fastest and most accurate (see [here](../man/examples/GaussianDiffusion2D.md)) combinations of solvers from the low $Ra$ case haven been run. 
