@@ -116,8 +116,6 @@ $\begin{equation}
 T_{I^C}^{n+1} = T_{X_{I^C}}^n
 \end{equation}$
 
-<!-- Stop -->
-
 ## Passive tracers
 
 Using passive tracers represents a fully Lagrangian method. Initially distributed tracers (or markers) are transported by the prescribed velocity field. Tracers can carry various attributes, and if these influence the model’s rheology or dynamics, they are considered *active tracers*, requiring velocity correction.
