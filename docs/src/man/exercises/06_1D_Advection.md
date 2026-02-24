@@ -7,8 +7,11 @@ The main objectives are:
 1. Formulate the 1D advection equation and the Courant–Friedrichs–Lewy (CFL) stability constraint.
 2. Implement and compare multiple schemes:
    - FTCS (Forward Time–Centered Space) — note: unstable for pure advection,
-   - Upwind (1st order), Downwind, Lax–Friedrichs,
-   - Leapfrog (SLF), Semi-Lagrangian, and a tracer method.
+   - Upwind (1st order) 
+   - Lax–Friedrichs,
+   - Leapfrog (SLF), 
+   - Semi-Lagrangian, and
+   - a tracer method.
 3. Apply periodic boundary conditions using ghost cells and verify mass/shape transport.
 4. Assess numerical diffusion/dispersion by contrasting results for a **Gaussian** (smooth) vs. **block** (sharp) profile.
 5. Visualize the time evolution and simple diagnostics (e.g., peak amplitude).
