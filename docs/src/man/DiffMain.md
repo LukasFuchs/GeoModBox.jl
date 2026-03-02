@@ -20,15 +20,15 @@ $H$ is the internal heat production per unit mass [W/kg]. Repeated indices imply
 The heat flux $q_i$ is described by **Fourier’s law**:
 
 $\begin{equation}
-q_i = - k \frac{\partial{T}}{\partial{x_i}},
+q_i = - k_i \frac{\partial{T}}{\partial{x_i}},
 \end{equation}$
 
-where $k$ is the thermal conductivity [W/m/K]. The flux is directed opposite to the temperature gradient and represents the amount of heat passing through a unit surface per unit time.
+where $k_i$ is the thermal conductivity [W/m/K] in the direction of $i$. The flux is directed opposite to the temperature gradient and represents the amount of heat passing through a unit surface per unit time.
 
 Substituting Fourier’s law into the energy equation yields the **temperature conservation equation** in Eulerian form:
 
 $\begin{equation}
-\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = \frac{\partial}{\partial x_i}\left(k\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
 \end{equation}$
 
 This equation captures temperature changes due to **diffusion** (right-hand side) and **advection** (left-hand side). For simplicity and assuming a spatially constant internal heat production, these processes can be split using an *operator splitting* technique, solving the advection and diffusion steps sequentially. If internal heat production varies spatially, a more advanced advection scheme is required to account for source term integration.
@@ -40,7 +40,7 @@ This equation captures temperature changes due to **diffusion** (right-hand side
 In cases where the material remains stationary (e.g., during the thermal evolution of intrusions or within a non-deforming lithosphere), it is sufficient to solve only the diffusive term of the energy equation. Neglecting the advection part of the temperature conservation equation, the heat diffusion equation is defined as: 
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
+\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
 \end{equation}$
 
 ```GeoModBox.jl``` provides several finite difference (FD) schemes to solve the heat diffusion equation of the time-dependent or steady-state temperature conservation equation, including optional radioactive heating and variable thermal parameters, in both [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl) and [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). Available methods include:

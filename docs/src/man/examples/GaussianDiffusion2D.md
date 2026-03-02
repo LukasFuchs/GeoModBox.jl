@@ -11,9 +11,9 @@ The following discretization schemes for a **linear problem** only are employed:
 
 As initial condition, a Gaussian temperature distribution with a specified width and amplitude is prescribed, centered at the midpoint of the 2D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
 
-The script uses the special case solver for a linear problem using a single left-matrix divison to solve the system of equations. The special case solvers are implemented in the build in functions `ForwardEuler2Dc!()`, `BackwardEuler2Dc!()`, `CNA2Dc!()`, and `ADI2Dc!()`. 
+The script uses the special case solution for a linear problem using a single left-matrix divison to solve the system of equations. The special case solutions are implemented in the build in functions `ForwardEuler2Dc!()`, `BackwardEuler2Dc!()`, `CNA2Dc!()`, and `ADI2Dc!()`. 
 
-An additional script on how to solve the 2D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) and for variable thermal properties [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest_variable_k.jl). The general solver solves the system of equations using the defect correction method, which is neccessary for non-linear problems. 
+An additional script on how to solve the 2D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) and for variable thermal properties [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest_variable_k.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
 
 The 2D analytical solution is computed using the Julia package `ExactFieldSolutions`. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
 
@@ -246,7 +246,7 @@ Since the resolution varies, the boundary conditions must also be redefined with
         # ------------------------------------------------------------ #
 ```
 
-Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction method). 
+Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction). 
 
 ```Julia
         if FDSchema == "implicit"

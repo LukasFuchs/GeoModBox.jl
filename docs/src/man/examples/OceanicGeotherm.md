@@ -1,6 +1,6 @@
 # [Oceanic Geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) 
 
-The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using variable thermal parameters with a conservative finite difference scheme (so far only including a radiogenic heat source). For the sake of continuity, we use the 1-D solver for variable thermal parameters, even though a constant thermal conductivity is assumed in this example.
+The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using variable thermal properties with a conservative finite difference scheme (so far only including a radiogenic heat source). For the sake of continuity, we use the 1-D solver for variable thermal properties, even though a constant thermal conductivity is assumed in this example.
 
 In a conservative finite difference scheme for 1-D conduction, temperature is defined at the *centroids*, while vertical heat flux $q_y$ and thermal conductivity $k$ are defined at the *vertices*.
 
@@ -20,7 +20,7 @@ where $\rho$, $c_{p}$, $T$, $t$, $k$, $H$, $y$, and $nv$ denote the density [kg/
 
 For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme, please see the [documentation](../DiffOneD.md).
 
-An additional script on how to solve the 1D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal parameters can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D_dc.jl).
+An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D_dc.jl).
 
 ---
 
@@ -122,7 +122,7 @@ display(q)
 
 **Figure 1. Initial temperature profile.**
 
-Since a thermal solver for variable thermal parameters is used, one needs to expand the scalar to a vector with the dimensions of the number of centroids ```nc```. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
+Since a thermal solver for variable thermal properties is used, one needs to expand the scalar to a vector with the dimensions of the number of centroids ```nc```. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
 
 ```Julia
 # Setup Fields ------------------------------------------------------ #

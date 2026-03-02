@@ -20,31 +20,31 @@ $\begin{equation}
 \rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k_x \frac{\partial T}{\partial x}\right) + \frac{\partial}{\partial y}\left(k_y \frac{\partial T}{\partial y}\right) + Q.
 \end{equation}$
 
-If thermal parameters are assumed constant, this simplifies to:
+If thermal properties are assumed constant, this simplifies to:
 
 $\begin{equation}
 \frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q}{\rho_0 c_p},
 \end{equation}$
   
 where 
-$\kappa = k / \rho_0 / c_p$ is the thermal diffusivity [m²/s] and $\rho_0$ is the reference density.
+$\kappa = k / \rho_0 / c_p$ is the thermal diffusivity [m²/s] and $\rho_0$ is the reference density [kg/m³].
 
 # Discretization and Numerical Schemes
 
-To numerically solve Equation (3), the spatial domain must be discretized and the relevant thermal parameters assigned to the appropriate computational nodes.
+To numerically solve Equation (3), the spatial domain must be discretized and the relevant thermal properties assigned to the appropriate computational nodes.
 
 ![2DDiffusionGrid](../assets/2D_Diffusion_Grid.png)
 
 **Figure 1. 2D Discretization.** *Staggered finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points between the *vertices* (black circles; horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
-To solve the equation at each centroid, one must also consider the temperature values at the adjacent points. The positions of these points in a finite difference (FD) scheme are determined by the numerical stencil. For the 2D heat diffusion equation, we employ a five-point stencil, which includes a central point (the reference centroid) and points to the North, East, South, and West. This spatial discretisation relies on central finite differences, the discretisation of the temperature gradient and the flux divergence. The five point stencil thus delivers second order accuracy in space.    
+To solve the equation at each centroid, one must also consider the temperature values at the adjacent points. The positions of these points in a finite difference (FD) scheme are determined by the numerical stencil (Figure 1). For the 2D heat diffusion equation, we employ a five-point stencil, which includes a central point (the reference centroid) and points to the North, East, South, and West. This spatial discretisation relies on central finite differences, the discretisation of the temperature gradient and the flux divergence. The five-point stencil thus delivers second order accuracy in space.    
 
 The indices of these points, which also define the positions of the coefficients in the coefficient matrix for each equation in the system of equations, can be expressed using the local indices $i$ and $j$ of the numerical grid. These local indices describe the position in the number of centroids in the horizontal and vertical directions, respectively.
 
 The equation number $I$ in the system of equations, which also represents the central reference centroid, assuming a horizontal numbering scheme of the stencil through the model domain, is defined as:
 
 $\begin{equation}
-I^\textrm{C} = \left(j-1\right)\cdot{nc_x}+i,
+I = I^\textrm{C} = \left(j-1\right)\cdot{nc_x}+i,
 \end{equation}$
 
 where $nc_x$ is the number of centroids in the horizontal direction and $C$ denotes the central position in the five-point stencil. The indices of the points in the numerical five-point stencil are then defined by:
@@ -58,14 +58,14 @@ I^\textrm{N} & = I^\textrm{C} + nc_x,
 
 where $I^\textrm{S}$, $I^\textrm{W}$, $I^\textrm{E}$, and $I^\textrm{N}$ are the points South, West, East, and North of it, respectively. These are the global indices of the five-point stencil used in the discretized FD equations below.
 
-A detailed implementation of various numerical schemes to solve a linear problem using a single left-matrix division to solve the system of equations is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
+A detailed implementation of various numerical schemes to solve a linear problem using a single left-matrix division is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md). This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
 
 - **Explicit scheme**
 - **Implicit scheme**
 - **Crank–Nicolson approach**
 - **Alternating Direction Implicit (ADI) method**
 
-The numerical results are compared with the analytical solution of a Gaussian temperature distribution to assess accuracy and performance.  Additional [scripts](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) test the general, combined solver on the Gaussian diffusion problem (for more details on the different solvers see the description below).
+The numerical results are compared with the analytical solution of a Gaussian temperature distribution to assess accuracy and performance.  Additional [scripts](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) test the general, combined solution on the Gaussian diffusion problem (for more details on the different solvers see the description below).
 
 Each numerical scheme is briefly outlined in the following sections. For further details regarding the numerical background, refer to the [1D solver documentation](DiffOneD.md).
 
@@ -73,9 +73,9 @@ Each numerical scheme is briefly outlined in the following sections. For further
 
 Within `GeoModBox.jl`, one needs to distinguish between the centroid field and the extended centroid field, which includes ghost nodes.
 
-The extended field is used in the linear solver of the **explicit** (forward Euler) scheme and in the **residual calculation** for the non-linear solvers using the defect correction. For these solvers, the ghost node temperature values are calculated internally based on the thermal boundary condition, and the extended field is used to numerically solve the PDE.
+The extended field is used in the linear solution of the **explicit** (forward Euler) scheme and in the **residual calculation** for the non-linear solution using the defect correction. For these solvers, the ghost node temperature values are calculated internally based on the thermal boundary condition, and the extended field is used to numerically solve the PDE.
 
-For the solvers that involve a **coefficient matrix** (e.g., linear implicit schemes and non-linear solvers for constant and variable parameters), only the centroid values are used. That is, the size of the coefficient matrix is determined by the total number of centroids. These solvers internally update the centroid temperatures of the extended field after solving the PDE.
+For the solvers that involve a **coefficient matrix** (e.g., linear implicit schemes and non-linear solutions for constant and variable thermal properties), only the centroid values are used. That is, the size of the coefficient matrix is determined by the total number of centroids. These solvers internally update the centroid temperatures of the extended field after solving the PDE.
 
 For more details, please see the following sections or refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
@@ -151,28 +151,26 @@ $\begin{equation}
 
 are the specified temperature gradients (or fluxes) at each boundary.
 
-> **Note:** If variable thermal parameters are assumed, the thermal conductivity $k$ should be included in the flux definition.
+> **Note:** If variable thermal properties are assumed, the thermal conductivity $k$ should be included in the flux definition.
 
 ## Explicit Scheme (Forward Time, Centered Space; FTCS)
 
-For an explicit FD discretization, the numerical stability criterion (heat diffusion condition) is given by:
+For an explicit FD discretization, the numerical stability criterion in 2D (heat diffusion condition) is given by:
 
 $\begin{equation}
 \Delta{t} < \frac{1}{2 \kappa \left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right)}
 \end{equation}$
 
 
-where $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
+where $\Delta t $ is the time step size, $\Delta x$ and $\Delta y$ denote the spatial grid spacing in the $x$ and $y$ directions, respectively. This condition must be satisfied to ensure numerical stability of the explicit scheme.
 
-In two dimensions, the partial derivatives in Equation (3) are approximated using an explicit FTCS (Forward Time, Centered Space) FD scheme:
+In two dimensions, the partial derivatives in Equation (3) are approximated using an explicit FTCS FD scheme:
 
 $\begin{equation}
 \frac{T_{I^\textrm{C}}^{n+1} - T_{I^\textrm{C}}^{n} }{\Delta t} = \kappa \left( \frac{T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}}{\Delta{x}^2} + \frac{T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}}{\Delta{z^2}} \right) + \frac{Q_{I^\textrm{C}}}{\rho_0 c_p}, 
 \end{equation}$
 
-where $n$ is the time step index, $\Delta t $ is the time step size, and $\Delta x$, $\Delta y$ are the grid spacings in the horizontal and vertical directions.
-
-Rearranging this equation to solve for the temperature at the next time step yields:
+where $n$ is the time step index. Rearranging this equation to solve for the temperature at the next time step yields:
 
 $\begin{equation}
 T_{I^\textrm{C}}^{n+1} = T_{I^\textrm{C}}^{n} + a\left(T_{I^\textrm{W}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{E}}^{n}\right) + b\left(T_{I^\textrm{S}}^{n} - 2T_{I^\textrm{C}}^{n} + T_{I^\textrm{N}}^{n}\right) + \frac{Q_{I^\textrm{C}} \Delta{t}}{\rho_0 c_p}, 
@@ -185,7 +183,7 @@ a = \frac{\kappa \Delta{t}}{\Delta{x^2}}, \quad
 b = \frac{\kappa \Delta{t}}{\Delta{y^2}}.
 \end{equation}$
 
-Equation (17) is solved for all centroids at each time step, assuming initial and boundary conditions are specified. The boundary conditions are implemented using the temperature values calculated for the ghost nodes (Equations (6)-(13)). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
+Equation (17) is solved for all centroids at each time step, assuming initial and boundary conditions are specified. The boundary conditions are implemented using the temperature values calculated at the ghost nodes (Equations (6)-(13)). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 ## Implicit Scheme (Backward Euler)
 
@@ -248,10 +246,10 @@ $\begin{equation}
 Within `GeoModBox.jl`, the residual $\bm{r}$ is calculated at the **centroids** using the extended temperature field of the current time step, which includes the ghost node temperature values, as an initial temperature guess:
 
 $\begin{equation}
-\frac{\partial{T_{\textrm{ext},I}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{y}^2} \right) - \frac{Q_{I}}{\rho_0 c_p} = \bm{r}_{I},
+\frac{\partial{T_{\textrm{ext},I}}}{\partial{t}} - \kappa \left( \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{x}^2} + \frac{\partial^2{T_{\textrm{ext},I}}}{\partial{y}^2} \right) - \frac{Q_{I}}{\rho_0 c_p} = \bm{r}_{I}.
 \end{equation}$
 
-where $I$ is the equation number. Discretizing the equation in space and time using implicit FDs yields:
+Discretizing the equation in space and time using implicit FDs yields:
 
 $\begin{equation}
 \frac{T_{\textrm{ext},I^\textrm{C}}^{n+1}-T_{\textrm{ext},I^\textrm{C}}^{n}}{\Delta{t}} - \kappa 
@@ -259,7 +257,7 @@ $\begin{equation}
 \right) - \frac{Q_{I^\textrm{C}}}{\rho_0 c_p} = \bm{r}_{I},
 \end{equation}$
 
-where $I^\textrm{C}$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids. Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
+Rewriting Equation (27) and substituting the coefficients using Equation (21) results in:
 
 $\begin{equation}
 -b T_{\textrm{ext},I^\textrm{S}}^{n+1} - a T_{\textrm{ext},I^\textrm{W}}^{n+1} + 
@@ -627,7 +625,7 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 Similar to the pure implicit scheme, there is a *special case* for solving this system of equations if the system is linear. In that case, the heat diffusion equation reduces to Equation (49) and can be solved directly via *left matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly (setting $\bm{r}=0$ and adding the known parameters to the right-hand side of the equations).
 
-Within `GeoModBox.jl`, the general solution to a non-linear system of equations using either the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal parameters and using the extended temperature field (including the ghost nodes), is implemented in a combined form as:
+Within `GeoModBox.jl`, the general solution to a non-linear system of equations using either the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal properties and using the extended temperature field (including the ghost nodes), is implemented in a combined form as:
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} 
@@ -668,11 +666,9 @@ $\begin{equation}\begin{split}
 
 Equation (62) corresponds to the matrix form of Equation (50). With the residual vector $\bm{r}$ and the coefficient matrix $\bm{K_1}$ one can calculate the correction term for the temperature via Equation (24). For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl). An example on how to use the general, combined solver is given [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl).
 
-For the sake of simplicity, and since most of the problems within `GeoModBox.jl` so far are linear, the *special case* formulation is applied to the last additional method.
-
 ## Alternating-Direction Implicit (ADI)
 
-In 2D, the heat diffusion equation (Equation (3)) is discretized using the Alternating-Direction Implicit (ADI) method by splitting the time step into two fractional steps. The resulting system for each half-step is:
+For the sake of simplicity, and since most of the problems within `GeoModBox.jl` so far are linear, the *special case* formulation is applied to the last additional method. In 2D, the heat diffusion equation (Equation (3)) is discretized using the Alternating-Direction Implicit (ADI) method by splitting the time step into two fractional steps. The resulting system for each half-step is:
 
 ### First half-step (implicit in $y$, explicit in $x$):
 
@@ -702,7 +698,7 @@ As in the previous implicit schemes for linear problems, the coefficients and ri
 
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
-# Variable Thermal Parameters
+# Variable Thermal Properties
 
 To solve the 2D heat diffusion equation including variable thermal properties, we focus on the general solution in a combined form, given by:
 
@@ -830,7 +826,7 @@ $\begin{equation}
 
 where $I^\textrm{C}$ is the global, central reference point of the five-point stencil on the extended temperature field for the centroids.
 
-Rearranging the terms yields a linear system of the form:
+Rearranging the terms yields a system of equations of the form:
 
 $\begin{equation} 
 bT_{I^\textrm{S}} + aT_{I^\textrm{W}} - 2(a+b)T_{I^\textrm{C}} + aT_{I^\textrm{E}} + bT_{I^\textrm{N}} = -\frac{Q_{I^\textrm{C}}}{k},

@@ -10,9 +10,9 @@ The following discretization schemes are applied:
 
 As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed along a 1-D profile. The transient evolution of this temperature distribution can be described analytically, allowing for the calculation of accuracy at each time step by comparing numerical and analytical results. The temperature distribution and error in percent are shown for each time step in a small animation.
 
-The script uses the special case solver for a linear problem using a single left-matrix divison to solve the system of equations. The special case solvers are implemented in the build in functions `ForwardEuler1Dc!()`, `BackwardEuler1Dc!()`, and `CNA1Dc!()`. 
+The script uses the special case solution for a linear problem using a single left-matrix divison to solve the system of equations. The special case solution are implemented in the build in functions `ForwardEuler1Dc!()`, `BackwardEuler1Dc!()`, and `CNA1Dc!()`. 
 
-An additional script on how to solve the 1D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl). The general solver solves the system of equations using the defect correction method, which is neccessary for non-linear problems. 
+An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
 
 For more details regarding the model setup and physics or details on the different numerical discretization schemes, please see the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises) or the [documentation](../DiffOneD.md).
 

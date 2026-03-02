@@ -1,6 +1,6 @@
 # [Continental Geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D.jl) 
 
-The 1-D temperature profile of a continental geotherm can be calculated by solving the conductive part of the 1-D *temperature equation* using variable thermal parameters within a conservative finite difference scheme (currently only including a radiogenic heat source). We use the 1-D solver for variable thermal parameters, since the thermal conductivity varies within each lithospheric layer. 
+The 1-D temperature profile of a continental geotherm can be calculated by solving the conductive part of the 1-D *temperature equation* using variable thermal properties within a conservative finite difference scheme (currently only including a radiogenic heat source). We use the 1-D solver for variable thermal properties, since the thermal conductivity varies within each lithospheric layer. 
 
 In a conservative 1-D finite difference scheme, temperature is defined at the *centroids*, while the vertical heat flux and thermal conductivity $k$ are defined at the *vertices*.
 
@@ -20,7 +20,7 @@ where $\rho$, $c_{p}$, $T$, $t$, $k$, $H$, $y$, and $nv$ represent the density [
 
 For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme see the [documentation](../DiffOneD.md).
 
-An additional script on how to solve the 1D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal parameters can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D_dc.jl).
+An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/ContinentalGeotherm_1D_dc.jl).
 
 ---
 
@@ -137,7 +137,7 @@ display(p)
 
 **Figure 1. Initial temperature profile.**
 
-Define the fields for the thermal parameters and assign the corresponding values of each lithospheric layer (upper and lower crust, and lithospheric mantle) to them. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
+Define the fields for the thermal properties and assign the corresponding values of each lithospheric layer (upper and lower crust, and lithospheric mantle) to them. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
 
 ```Julia
 # Setup fields ------------------------------------------------------ #
@@ -266,7 +266,7 @@ q = plot!(T.q.*1e3,yv./1e3,
         subplot=2) 
 q = plot!(Py.k,yv./1e3,label="k [W/m/K]",
         xlabel="k,ρ,cp,Q", ylabel="z [km]",
-        title="Thermal parameters",
+        title="Thermal properties",
         subplot=3)       
 q = plot!(Py.cp./1e3,yc./1e3,label="cp [kJ/kg/K]",
         subplot=3)
