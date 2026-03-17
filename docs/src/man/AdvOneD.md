@@ -1,177 +1,171 @@
 # Advection Equation (1D)
 
-In one dimension, the advection equation for the temperature conservation, for example, is given as follows
+In one spatial dimension, the advection equation for temperature (assuming incompressible flow) is given by
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} = -v_x \left(\frac{\partial{T}}{\partial{x}}\right),
 \end{equation}$
 
-where $T$ is the temperature [K], $t$ is the time [s], and $v_x$ is the velocity in the $x$-direction. 
+where $T$ denotes temperature [K], $t$ is time [s], and $v_x$ is the velocity in the $x$-direction. In the following 1D derivations, a spatially and temporally constant velocity $v_x$ is assumed unless stated otherwise.
 
 # Discretization Schemes
 
-The global indexing of the central reference point $I^C$ used in the advection equation follows the indexing as described in the [general solution section](./GESolution.md). The indices of the adjacent points are then defined by:
-
-$\begin{equation}\begin{split}
-I^\textrm{W} & = I^\textrm{C} - 1,\\\   
-I^\textrm{E} & = I^\textrm{C} + 1,
-\end{split}\end{equation}$
-
-where $I$ is the equation number, which corresponds to the local index $i$ and the central position of the three-point stencil ($C$), and $I^\textrm{W}$, and $I^\textrm{E}$, are the points West and East of it. These are the indices of the three-point stencil used in the discretized FD equations below.
-
-## Forward in Time and Centered in Space (FTCS)
-
-Let's begin with the seemingly simplest approach. Approximating the partial derivatives using a *FTCS* scheme results in
+The global indexing of the central reference point $I$ follows the convention introduced in the [general solution section](./GESolution.md). The adjacent indices are defined as
 
 $\begin{equation}
-\frac{T_{I^C}^{n+1}-T_{I^C}^{n}}{\Delta{t}} = -v_x\left(\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}\right),
+\begin{split}
+I^\textrm{W} &= I^\textrm{C} - 1, \\
+I^\textrm{C} &= I, \\
+I^\textrm{E} &= I^\textrm{C} + 1,
+\end{split}
 \end{equation}$
 
-where $\Delta{t}$ and $\Delta{x}$ are the time step and grid resolution, respectively, $I^C$ is the central reference point, and $n$ denotes the temporal index. This scheme is first-order accurate in time and second-order accurate in space. 
+where $I$ denotes the equation number corresponding to the local grid index $i$. The superscripts $C$, $W$, and $E$ indicate the central, western, and eastern grid points of the three-point stencil used below.
 
-Rearranging gives the solution for the temperature at the next time step:
+## Forward in Time, Centered in Space (FTCS)
+
+Approximating the temporal derivative with a forward difference and the spatial derivative with a centered difference yields
 
 $\begin{equation}
-T_{I^C}^{n+1} = T_{I^C}^n - v_x \Delta{t}\frac{T_{I^E}^n - T_{I^W}^n}{2\Delta{x}}.
+\frac{T_{I^\textrm{C}}^{n+1}-T_{I^\textrm{C}}^{n}}{\Delta{t}} = -v_x\left(\frac{T_{I^\textrm{E}}^{n}-T_{I^\textrm{W}}^{n}}{2\Delta{x}}\right),
 \end{equation}$
 
-The right-hand side can be simplified using the so-called *Courant number*:
+where $\Delta{t}$ and $\Delta{x}$ denote the time step and grid spacing, respectively, and $n$ is the temporal index. The scheme is first-order accurate in time and second-order accurate in space.
+
+Rearranging gives
+
+$\begin{equation}
+T_{I^\textrm{C}}^{n+1} = T_{I^\textrm{C}}^n - v_x \Delta{t}\frac{T_{I^\textrm{E}}^n - T_{I^\textrm{W}}^n}{2\Delta{x}}.
+\end{equation}$
+
+Introducing the Courant number
 
 $\begin{equation}
 \alpha = \frac{v_x\Delta{t}}{\Delta{x}},
 \end{equation}$
 
-which represents the number of grid points traversed in a single time step. 
+which represents the fraction of a grid cell traversed during one time step. For explicit finite-difference schemes, stability typically requires satisfaction of the Courant–Friedrichs–Lewy (CFL) condition $|\alpha| \le 1$, ensuring that information does not propagate more than one grid cell per time step.
 
-Unfortunately, this scheme is unconditionally unstable for the advection equation, as shown by a *Von Neumann* or *Hirt's stability analysis*. The central difference at $I^C$ causes amplification of the variable (here, temperature) at each subsequent time step. Hence, the solution continually grows and is unstable.
+Unfortunately, the FTCS scheme is unconditionally unstable for the advection equation, as shown by a von Neumann stability analysis. The centered spatial discretization at $I^\textrm{C}$ leads to amplification of perturbations, resulting in an unstable solution.
 
-## Lax-Friedrichs method
+## Lax-Friedrichs Method
 
-One way to suppress the instability of the FTCS scheme is the *Lax-Friedrichs* method. This replaces the term $T_{I^C}^{n}$ with its spatial average at the same time level, resulting in:
+The Lax–Friedrichs method stabilizes the FTCS scheme by replacing $T_{I^\textrm{C}}^{n}$ with its spatial average at the same time level:
 
 $\begin{equation}
-\frac{T_{I^C}^{n+1}-\left(T_{I^E}^{n}+T_{I^W}^{n}\right)/2}{\Delta{t}}=-v_x\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}.
+\frac{T_{I^\textrm{C}}^{n+1}-\left(T_{I^\textrm{E}}^{n}+T_{I^\textrm{W}}^{n}\right)/2}{\Delta{t}}=-v_x\frac{T_{I^\textrm{E}}^{n}-T_{I^\textrm{W}}^{n}}{2\Delta{x}}.
 \end{equation}$
 
-Rearanging gives:
+Rearranging gives
 
 $\begin{equation}
-T_{I^C}^{n+1} = \frac{1}{2}\left(T_{I^E}^{n}+T_{I^W}^{n}\right)-
-\frac{v_x \Delta{t}}{2\Delta{x}} \left(T_{I^E}^{n}-T_{I^W}^{n}\right).
+T_{I^\textrm{C}}^{n+1} = \frac{1}{2}\left(T_{I^\textrm{E}}^{n}+T_{I^\textrm{W}}^{n}\right)-
+\frac{v_x \Delta{t}}{2\Delta{x}} \left(T_{I^\textrm{E}}^{n}-T_{I^\textrm{W}}^{n}\right).
 \end{equation}$
 
-This method is stable for $\alpha < 1$ but introduces significant numerical diffusion.
+The scheme is stable for $\alpha \le 1$ but introduces significant numerical diffusion.
 
-## Upwind
+## Upwind Scheme
 
-Another approach is to consider only upstream information. The *upwind* scheme uses one-sided finite differences, always taken in the upstream direction. This results in a scheme that is first-order accurate in both space and time. The discretized advection equation becomes:
+The upwind scheme accounts for the direction of information propagation by using one-sided spatial differences. The discretized equation reads
 
 $\begin{equation}
-\frac{T_{I^C}^{n+1}-T_{I^C}^n}{\Delta{t}} = -v_{x,I^C}
+\frac{T_{I^\textrm{C}}^{n+1}-T_{I^\textrm{C}}^n}{\Delta{t}} = -v_{x}
 \begin{cases}
-\frac{T_{I^C}^{n}-T_{I^W}^{n}}{\Delta{x}} &\text{if } v_{x,I^C} \gt 0\\
-\frac{T_{I^E}^{n}-T_{I^C}^{n}}{\Delta{x}}&\text{if } v_{x,I^C} \lt 0 
+\frac{T_{I^\textrm{C}}^{n}-T_{I^\textrm{W}}^{n}}{\Delta{x}} &\text{if } v_{x} \gt 0\\
+\frac{T_{I^\textrm{E}}^{n}-T_{I^\textrm{C}}^{n}}{\Delta{x}}&\text{if } v_{x} \lt 0 
 \end{cases}.
 \end{equation}$
 
-The scheme is stable if the CFL-criterion is satisfied ($\alpha \le 1$), but numerical diffusion remains, which depends on the grid size. A Taylor series expansion shows that, in 1D with constant velocity, the scheme becomes non-diffusive if the time step exactly satisfies the CFL-criterion. The method becomes unstable if this criterion is violated.
+The scheme is first-order accurate in both time and space and is conditionally stable, requiring satisfaction of the CFL condition ($|\alpha| \le 1$). However, it introduces numerical diffusion proportional to the grid spacing. For constant velocity in 1D, the scheme becomes non-diffusive if the time step exactly satisfies the CFL condition.
+
+---
 
 ## Staggered Leapfrog
 
-All previously discussed explicit schemes are only first-order accurate in time and second-order in space (except upwind, which is first-order in both). To match the temporal and spatial accuracy without choosing a very small time step, one may use the *staggered leapfrog* scheme:
+To achieve second-order accuracy in both space and time, the staggered leapfrog scheme can be used:
 
 $\begin{equation}
-\frac{T_{I^C}^{n+1}-T_{I^C}^{n-1}}{2\Delta{t}}=-v_x\frac{T_{I^E}^{n}-T_{I^W}^{n}}{2\Delta{x}}.
+\frac{T_{I^\textrm{C}}^{n+1}-T_{I^\textrm{C}}^{n-1}}{2\Delta{t}}=-v_x\frac{T_{I^\textrm{E}}^{n}-T_{I^\textrm{W}}^{n}}{2\Delta{x}}.
 \end{equation}$
 
-This method avoids numerical diffusion, but becomes increasingly unstable when strong gradients in the advected field are present.
+This method is non-diffusive but can exhibit dispersive oscillations, particularly near sharp gradients.
 
-## Semi-Lagrangian
+## Semi-Lagrangian Method
 
-The methods discussed above each have drawbacks. The *semi-Lagrangian* method addresses several of them: it is stable, does not suffer from numerical diffusion, and is not constrained by the CFL criterion. It is related to tracer-based advection schemes and solves ODEs rather than using traditional finite differences. While not inherently conservative and subject to minor interpolation errors, it offers promising accuracy and efficiency.
+The semi-Lagrangian method combines Eulerian and Lagrangian concepts. It is unconditionally stable with respect to the CFL condition and significantly reduces numerical diffusion, though it is not strictly conservative and depends on interpolation accuracy.
 
-The central idea is to trace an advected particle backward in time to its origin and interpolate the corresponding value from the Eulerian grid.
+The central idea is to trace a particle backward in time to determine its departure point and interpolate the corresponding value from the grid.
 
-In 1D, assuming constant velocity in time and space, the procedure is:
+Assuming constant velocity in 1D:
 
 **1. Calculate the initial position** 
 
-The initial position $X_{i}$ of a particle landing on the Eulerian grid point $x_{I^C}$ at time step ${n+1}$ is:
+The initial position $X_{i}$ of a particle landing on the Eulerian grid point $x_{I^\textrm{C}}$ at time step ${n+1}$ is:
 
 $\begin{equation}
-X_{i}=x_{I^C}-\Delta{t}\cdot v_{x,I^C}^{n+1},
+X_{i}=x_{I^\textrm{C}}-\Delta{t}\cdot v_{x},
 \end{equation}$
 
-where $x_{I^C}$ is the coordinate of the Eulerian grid point $I^C$, $\Delta{t}$ is the time step, $v_x$ the velocity in $x$-direction, and $n+1$ is the time at the new time step. 
+where $x_{I^\textrm{C}}$ is the coordinate of the Eulerian grid point $I^\textrm{C}$. 
 
 **2. Interpolate the temperature**
 
-Interpolate the temperature at time step $n$ from the surrounding Eulerian grid points onto the position $X_{i}$, e.g., using `cubic_spline_interpolation()`.
+Interpolate $T^n$ from the surrounding grid nodes onto $X_i$ (e.g., using cubic spline interpolation).
 
-**3. Update the temperature field**
+**3. Update the temperature**
 
-Assuming the temperature at the grid point $I^C$ at time step $n+1$ equals the interpolated value at $X_{i}$ at time step $n$ results in:
-
-$\begin{equation}
-T_{I^C}^{n+1} = T_{X_{I^C}}^n
-\end{equation}$
-
-<!-- Stop -->
-
-## Passive tracers
-
-Using passive tracers represents a fully Lagrangian method. Initially distributed tracers (or markers) are transported by the prescribed velocity field. Tracers can carry various attributes, and if these influence the model’s rheology or dynamics, they are considered *active tracers*, requiring velocity correction.
-
-To transport a property with tracers:
-
-**1. Define tracers** $\vec{x}_p$ with initial positions $\vec{x}_p\left(t=0\right)$ and initial property values $f\left(\vec{x}_p\left(t=0\right)\right)$.
-
-**2. Compute flow paths** by solving the ODE of particle motion, for instance using Forward Euler or Runge-Kutta integration.
-
-In 1D, the path equation is:
+Assuming the temperature at the grid point $I^\textrm{C}$ at time step $n+1$ equals the interpolated value at $X_{i}$ at time step $n$ results in:
 
 $\begin{equation}
-\frac{dx_p}{dt}=v_x \left(x_p,t\right),
+T_{I^\textrm{C}}^{n+1} = T^n(X_{i})
 \end{equation}$
 
-where $x_p$ is the $x$-coordinate of the tracer. 
+## Passive Tracers
+
+Passive tracers represent a fully Lagrangian approach. Tracers with initial positions $x_p(t=0)$ and associated properties are transported by solving the particle trajectory equation
+
+$\begin{equation}
+\frac{dx_p}{dt}=v_x \left(x_p,t\right).
+\end{equation}$
 
 **Forward Euler**
 
 The flow path ODE is approximated as:
 
 $\begin{equation}
-\frac{x_p^{n+1}-x_p^n}{\Delta{t}} = v_x(x_p^n). 
+\frac{x_p^{n+1}-x_p^n}{\Delta{t}} = v_x. 
 \end{equation}$
 
- Solving for the next position:
+Solving for the next position:
 
 $\begin{equation}
-x_p^{n+1} = x_p^n + \Delta{t}\cdot v_x(x_p^n). 
+x_p^{n+1} = x_p^n + \Delta{t}\cdot v_x. 
 \end{equation}$
 
-While simple, this method suffers from inaccuracy for large $\Delta{t}$ and $v_x$.
+This method is simple but inaccurate for large time steps.
     
-**Runge-Kutta 4-th order**
+**Fourth-Order Runge-Kutta**
 
-A more accurate method is the *4th-order Runge-Kutta*. In 1D, the next position is:
+In 1D, the next position is:
 
 $\begin{equation}
 x_p^{n+1} = x_p^n + \frac{1}{6}k_1 + \frac{1}{3}k_2 + \frac{1}{3}k_3 + \frac{1}{6}k_4,
 \end{equation}$
 
-where:
+with
 
 $\begin{equation}
 \begin{split}
-k_1 & = \Delta{t} \cdot v_x(t^n,x_p^n) \\
-k_2 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n+k_1/2) \\
-k_3 & = \Delta{t} \cdot v_x(t^n+\Delta{t}/2,x_p^n + k_2/2) \\
-k_4 & = \Delta{t} \cdot v_x(t^n+\Delta{t},x_p^n+k_3) \\
+k_1 & = \Delta{t} \cdot v_x \\
+k_2 & = \Delta{t} \cdot v_x \\
+k_3 & = \Delta{t} \cdot v_x \\
+k_4 & = \Delta{t} \cdot v_x \\
 \end{split}
 \end{equation}$
 
-**3. Interpolate grid values** of $f(x,t)$ from the tracer positions $\vec{x}_p$, e.g., using bilinear interpolation.
+Tracer properties are subsequently interpolated back to the Eulerian grid as required, e.g., using linear interpolation.
 
-Despite the advantages, care is required. Interpolation between grid and tracer data can cause smoothing and numerical diffusion, particularly in regions with sharp gradients. Additionally, clustering or depletion of tracers can introduce further errors and may require adaptive insertion of new tracers in under-sampled regions.
+> Note: For constant velocity, the fourth-order Runge–Kutta scheme reduces to the Forward Euler update.
 
+While highly flexible, tracer methods require careful treatment. Interpolation between grid and tracer data may introduce smoothing, and tracer clustering or depletion can lead to reduced accuracy. Currently, adaptive tracer correction techniques are not implemented in `GeoModBox.jl`.

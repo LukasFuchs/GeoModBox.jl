@@ -4,11 +4,12 @@ This exercise investigates transient two-dimensional heat diffusion with a horiz
 
 The main objectives are:
 
-1. Formulating and discretizing the transient 2D heat diffusion equation with internal heating,  
-2. Implementing explicit (Forward Euler) and implicit (Backward Euler) time integration,  
-3. Applying Dirichlet/Neumann boundary conditions via ghost nodes,  
-4. Comparing stability constraints (explicit) versus unconditional stability and linear solves (implicit), and  
-5. Visualizing the evolving temperature field and simple diagnostics (e.g., vertical profiles, maximum temperature over time).
+1. Formulating and discretizing the transient 2D heat diffusion equation,  
+2. Implementing the build-in general, combined solution for a non-linear problem using the defect correction
+3. Implementing the build-in special case solution for a linear problem using a single left matrix divison to solve the system of equations (explicit (Forward Euler) and implicit (Backward Euler))
+4. Applying Dirichlet and Neumann boundary conditions with ghost nodes,  
+5. Exploring stability constraints of the explicit scheme versus the unconditional stability of the implicit scheme, and  
+6. Visualizing the temporal evolution of the temperature field and extracting diagnostic profiles.  
 
 The evolution of the temperature field is illustrated in Figure 1. The vertical profiles and the maximum temperature over time are illustrated in Figure 2. 
 

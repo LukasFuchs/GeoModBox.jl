@@ -19,18 +19,18 @@ makedocs(
                 "Specifications" => "man/Ini.md", # Checked!
             ],
             "Heat Diffusion Equation" => Any[
-                "General" => "man/DiffMain.md", # checked! Checked!! Checked!!!
-                "1D" => "man/DiffOneD.md", # checked! Checked!! Checked!!!
-                "2D" => "man/DiffTwoD.md", # checked! Checked!!! Checked!!!
+                "General" => "man/DiffMain.md",
+                "1D" => "man/DiffOneD.md",
+                "2D" => "man/DiffTwoD.md",
             ],
             "Advection Equation" => Any[
-                "General" => "man/AdvectMain.md", # Checked! 
-                "1D" => "man/AdvOneD.md", # Checked! 
-                "2D" => "man/AdvTwoD.md", # Checked!
+                "General" => "man/AdvectMain.md",
+                "1D" => "man/AdvOneD.md",
+                "2D" => "man/AdvTwoD.md",
             ],
             "Momentum Equation" => Any[
-                "General" => "man/MomentumMain.md", # Checked! 
-                "1D" => "man/MomentumOneD.md", # Checked! 
+                "General" => "man/MomentumMain.md",
+                "1D" => "man/MomentumOneD.md",
                 "2D" => "man/MomentumTwoD.md", # Checked!
             ],
         ],
