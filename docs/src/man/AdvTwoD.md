@@ -14,11 +14,12 @@ The following sections provide a brief overview of the available 2D discretizati
 
 # Discretization Schemes
 
-The global indexing of the central reference point $I^\textrm{C}$ used in the advection equation follows the indexing as described in the [general solution section](./GESolution.md). The indices of the adjacent points are then defined by:
+The global indexing of the central reference point $I$ used in the advection equation follows the indexing as described in the [general solution section](./GESolution.md). The indices of the adjacent points are then defined by:
 
 $\begin{equation}\begin{split}
 I^\textrm{S} & = I^\textrm{C} - nc_x,\\\
-I^\textrm{W} & = I^\textrm{C} - 1,\\\   
+I^\textrm{W} & = I^\textrm{C} - 1,\\\  
+I^\textrm{C} &= I, \\ 
 I^\textrm{E} & = I^\textrm{C} + 1,\\\
 I^\textrm{N} & = I^\textrm{C} + nc_x,
 \end{split}\end{equation}$

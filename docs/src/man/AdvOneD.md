@@ -10,11 +10,12 @@ where $T$ denotes temperature [K], $t$ is time [s], and $v_x$ is the velocity in
 
 # Discretization Schemes
 
-The global indexing of the central reference point $I^\textrm{C}$ follows the convention introduced in the [general solution section](./GESolution.md). The adjacent indices are defined as
+The global indexing of the central reference point $I$ follows the convention introduced in the [general solution section](./GESolution.md). The adjacent indices are defined as
 
 $\begin{equation}
 \begin{split}
 I^\textrm{W} &= I^\textrm{C} - 1, \\
+I^\textrm{C} &= I, \\
 I^\textrm{E} &= I^\textrm{C} + 1,
 \end{split}
 \end{equation}$

@@ -29,8 +29,8 @@ makedocs(
                 "2D" => "man/AdvTwoD.md",
             ],
             "Momentum Equation" => Any[
-                "General" => "man/MomentumMain.md", # Checked! 
-                "1D" => "man/MomentumOneD.md", # Checked! 
+                "General" => "man/MomentumMain.md",
+                "1D" => "man/MomentumOneD.md",
                 "2D" => "man/MomentumTwoD.md", # Checked!
             ],
         ],

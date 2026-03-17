@@ -32,9 +32,9 @@ To solve Equation (3) numerically, the spatial domain is discretized and physica
 
 **Figure 1. 1D Discretization.** Staggered finite difference grid for solving the 1D heat diffusion equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
-To evaluate the equation at each centroid using a finite difference (FD) discretization, temperature values at adjacent points must be included. For the 1D heat diffusion equation, a three-point stencil is used, consisting of the central point (reference centroid) and the points to the West and East.
+To evaluate the equation at each centroid using a finite difference (FD) discretization, temperature values at adjacent points must be included. For the 1D heat diffusion equation, a three-point stencil is used, consisting of the central point (reference centroid) and the points to the West and East. 
 
-The indices of these points define the coefficient locations in the coefficient matrix for each equation in the system. For a three-point stencil, the indices are:
+The indices of these points define the coefficient locations in the coefficient matrix for each equation in the system. The global indexing of the central reference point $I$ follows the convention introduced in the [general solution section](./GESolution.md). For a three-point stencil, the indices are:
 
 $\begin{equation}\begin{split}
 I^\textrm{W} & = I^\textrm{C} - 1,\\\   
