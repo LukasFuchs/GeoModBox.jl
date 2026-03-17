@@ -190,7 +190,7 @@ for n=1:nt
     # Plot solution ----------------------------------------------------- #
     if n == 1 || n % 5 == 0 || n == nt
         # Subplot 1 ---
-        p = plot(xc, expl.T, label="numerical",
+        p = plot(xc, expl.T, label="explicit",
                 xlim=(0,L),ylim=(0,1300),
                 xlabel="x [m]",ylabel="T [°C]",
                 title="Temperature after $(round(time / day, digits=1)) days

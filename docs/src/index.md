@@ -50,7 +50,7 @@ Bottom Right: Root Mean Square (RMS) total deviation over time.
 
 ![GDResTest](./assets/Gaussian_ResTest.png)
 
-**Figure 2. Resolution test.** Maximum RMS error $\varepsilon$, maximum temperature, and mean temperature for various finite difference schemes and resolutions for the diffusion example shown above.
+**Figure 2. Resolution test.** Maximum RMS error $\varepsilon$, maximum temperature, and mean temperature for various finite difference schemes and resolutions using the special case, linear solver (single left-matrix division) for the diffusion example shown above.
 
 ---
 

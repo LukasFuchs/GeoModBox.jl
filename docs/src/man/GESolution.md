@@ -111,10 +111,10 @@ For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temper
 To solve each equation at the according central reference point $(i,j)$ one needs to consider the information at their adjacent points. The index of each central reference point for each governing equation can be defined by a global index, which corresponds to the equation number in the linear system of equations. The equation number I assuming a horizontal numbering scheme is then defined as:
 
 $\begin{equation}
-I^C = \left(j-1\right) \cdot nc_x+i,
+I = \left(j-1\right) \cdot nc_x+i,
 \end{equation}$
 
-where $i$ and $j$ are the local indices in the horizonal and vertical direction, respectively, $C$ donates the central position of the stencil, and $nc_x$ is the number of the corresponding central reference point in horizontal direction (Figure 1). The index and position of adjacent points in a FD scheme is defined by a numerical stencil, which varies in required numbers of nodes depending on the governing equation to be solved (see the corresponding documentation for more details).
+where $i$ and $j$ are the local indices in the horizonal and vertical direction, respectively and $nc_x$ is the number of the corresponding central reference point in horizontal direction (Figure 1). The index and position of adjacent points in a FD scheme is defined by a numerical stencil, which varies in required numbers of nodes depending on the governing equation to be solved (see the corresponding documentation for more details).
 
 # Initial Conditions 
 

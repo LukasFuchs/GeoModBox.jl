@@ -11,6 +11,10 @@ The following discretization schemes for a **linear problem** only are employed:
 
 As initial condition, a Gaussian temperature distribution with a specified width and amplitude is prescribed, centered at the midpoint of the 2D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
 
+The script uses the special case solution for a linear problem using a single left-matrix divison to solve the system of equations. The special case solutions are implemented in the build in functions `ForwardEuler2Dc!()`, `BackwardEuler2Dc!()`, `CNA2Dc!()`, and `ADI2Dc!()`. 
+
+An additional script on how to solve the 2D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) and for variable thermal properties [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest_variable_k.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
+
 The 2D analytical solution is computed using the Julia package `ExactFieldSolutions`. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
 
 For simplicity, the 2D heat diffusion equation is solved independently for each discretization scheme over time. After each time loop, the transient solution is visualized and saved as a *gif* animation showing the temperature distribution, it's absolute deviation from the analytical solution, a vertical profile through the center of the model domain, and the RMS. 
@@ -52,7 +56,6 @@ P       = (
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
     K0      =   273.15,         #   Kelvin at 0 °C
-    Q0      =   0               #   Heat production rate
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -158,7 +161,6 @@ Next, the field arrays and initial condition are initialized.
 ```Julia
         # Initial Conditions  ---------------------------------------- #
         D       = (
-            Q           =   zeros(NC...),
             T           =   zeros(NC...),
             T0          =   zeros(NC...),
             T_ex        =   zeros(NC.x+2,NC.y+2),
@@ -169,11 +171,8 @@ Next, the field arrays and initial condition are initialized.
             Tmean       =   zeros(1,nt),
             Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
-            Tprofilea   =   zeros(NC.y,nt),
-            ρ           =   zeros(NC...),
-            cp          =   zeros(NC...)            
+            Tprofilea   =   zeros(NC.y,nt),           
         )
-        @. D.ρ  =   P.ρ
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana                   =   D.T
@@ -190,8 +189,6 @@ For visualization purposes, the temperature profile through the center of the do
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
         D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
-        # Heat production rate ---
-        @. D.Q          = P.Q0
         # Visualize initial condition ---
         # subplot 1 ---
         p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
@@ -249,7 +246,7 @@ Since the resolution varies, the boundary conditions must also be redefined with
         # ------------------------------------------------------------ #
 ```
 
-Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction method). 
+Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction). 
 
 ```Julia
         if FDSchema == "implicit"
@@ -279,19 +276,19 @@ Now, all parameters are defined to solve the 2D temperature conservation equatio
             if n>1
                 if FDSchema == "explicit"
                     @timeit to "Explicit" begin
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                     end
                 elseif FDSchema == "implicit"
                     @timeit to "Implicit" begin
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
+                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
                     end
                 elseif FDSchema == "CNA"
                     @timeit to "CNA" begin
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
+                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
                     end
                 elseif FDSchema == "ADI"
                     @timeit to "ADI" begin
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
+                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                     end
                 end
                 time[n]     =   time[n-1] + T.Δ[1]
@@ -366,6 +363,7 @@ Now, all parameters are defined to solve the 2D temperature conservation equatio
         end        
         display("Time loop finished ...")
         display("-> Use new grid size...")
+        end
 ```
 
 Now, one can save the plots in a *gif* animation and store the values for the resolution test. 
@@ -389,6 +387,8 @@ Now, one can save the plots in a *gif* animation and store the values for the re
         St.Tmean[1]     =   mean(D.Tana)
         # ------------------------------------------------------------ #
     end
+    end
+end
 end
 ```
 
@@ -402,7 +402,6 @@ Finally, the results of the resolution test are plotted.
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3))
 for m = 1:ns
-#    subplot(1,3,1)
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
                 xaxis=:log,yaxis=:log,

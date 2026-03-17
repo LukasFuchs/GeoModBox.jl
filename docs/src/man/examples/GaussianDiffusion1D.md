@@ -1,6 +1,6 @@
 # [Gaussian Diffusion (1D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_discretization.jl)
 
-This example illustrates the advantages and disadvantages of different finite difference discretization schemes for solving the 1-D temperature conservation equation. The model assumes constant thermal parameters and neglects adiabatic pressure effects, resulting in a purely diffusive problem.
+This example illustrates the advantages and disadvantages of different finite difference discretization schemes for solving the 1-D temperature conservation equation. The model assumes constant thermal properties and neglects adiabatic pressure effects, resulting in a purely diffusive problem.
 
 The following discretization schemes are applied: 
 
@@ -8,11 +8,13 @@ The following discretization schemes are applied:
 - Backward Euler
 - Crank-Nicolson
 
-As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed along a 1-D profile. The transient evolution of this temperature distribution can be described analytically, allowing for the calculation of accuracy at each time step by comparing numerical and analytical results. The temperature distribution and error in percent are shown for each time step in a small animation. 
+As initial condition, a Gaussian temperature distribution with a certain width and amplitude is assumed along a 1-D profile. The transient evolution of this temperature distribution can be described analytically, allowing for the calculation of accuracy at each time step by comparing numerical and analytical results. The temperature distribution and error in percent are shown for each time step in a small animation.
+
+The script uses the special case solution for a linear problem using a single left-matrix divison to solve the system of equations. The special case solution are implemented in the build in functions `ForwardEuler1Dc!()`, `BackwardEuler1Dc!()`, and `CNA1Dc!()`. 
+
+An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
 
 For more details regarding the model setup and physics or details on the different numerical discretization schemes, please see the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises) or the [documentation](../DiffOneD.md).
-
-An additional script on how to solve the 1D heat diffusion equation using the combined, general solver (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal parameters can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl).
 
 ---
 
@@ -21,6 +23,7 @@ First one needs to load the required packages:
 ```Julia 
 using Plots, Printf, LinearAlgebra, ExtendableSparse
 using GeoModBox.HeatEquation.OneD
+using TimerOutputs
 ```
 
 Now, one needs to define the geometrical and physical constants. 
@@ -159,6 +162,7 @@ If the temperature field is not explicitly updated in the script after calling t
 
 ```Julia
 # Time loop ------------------------------------------------------------- #
+@timeit to "TimeLoop" begin
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
@@ -209,6 +213,7 @@ for n=1:nt
             display(p)
         end
     end
+end
 end
 ```
 
