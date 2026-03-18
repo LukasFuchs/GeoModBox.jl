@@ -10,14 +10,14 @@ $\begin{equation}
 
 where the internal energy is defined as $E = c_p \rho T$. Here
 
-- $c_p$ is the specific heat capacity [J/kg/K],
-- $\rho$ is the density [kg/m³],
-- $T$ is the temperature [K],
-- $t$ is time [s],
-- $v_j$ is the velocity [m/s] in direction $j$,
-- $q_i$ is the heat flux [W/m²] in direction $i$,
-- $\partial/\partial x_i$ denotes the spatial derivative in direction $i$, and
-- $H$ is the internal heat production per unit mass [W/kg].
+* $c_p$ is the specific heat capacity [J/kg/K],
+* $\rho$ is the density [kg/m³],
+* $T$ is the temperature [K],
+* $t$ is time [s],
+* $v_j$ is the velocity [m/s] in direction $j$,
+* $q_i$ is the heat flux [W/m²] in direction $i$,
+* $\partial/\partial x_i$ denotes the spatial derivative in direction $i$, and
+* $H$ is the internal heat production per unit mass [W/kg].
 
 Indices $i$ and $j$ denote spatial directions. Repeated indices follow Einstein summation notation, implying summation over spatial dimensions.
 
