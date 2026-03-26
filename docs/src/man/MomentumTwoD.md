@@ -6,30 +6,19 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}} + \rho g_i, 
 \end{equation}$
 
-where 
-
-- $P$ is the pressure [Pa], 
-- $\rho$ is the density [kg/m³], 
-- $g_i$ is the gravitational acceleration [m/s²], 
-- $\frac{\partial}{\partial x_i}$ is the spatial derivative in the $x_i$-direction, and 
-- $\tau_{ij}$ is the deviatoric stress tensor [Pa], defined as:
+where $P$ is the pressure [Pa], $\rho$ is the density [kg/m³], $g_i$ is the gravitational acceleration [m/s²], $\frac{\partial}{\partial x_i}$ is the spatial derivative in the $x_i$-direction, and $\tau_{ij}$ is the deviatoric stress tensor [Pa], defined as:
 
 $\begin{equation}
 \tau_{ij} = 2\eta \dot{\varepsilon}_{ij}, 
 \end{equation}$
 
-where 
-
-- $\eta$ is the dynamic viscosity [Pa·s], and 
-- $\dot{\varepsilon}_{ij}$ is the strain-rate tensor [1/s], given by:
+where $\eta$ is the dynamic viscosity [Pa·s], and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor [1/s], given by:
 
 $\begin{equation}
 \dot{\varepsilon}_{ij} = \frac{1}{2} \left( \frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}} \right),
 \end{equation}$
 
-where 
-
-- $v_i$ is the velocity [m/s] in the $i$-th direction.
+where $v_i$ is the velocity [m/s] in the $i$-th direction.
 
 The Stokes equation yields two equations for the three unknowns $v_x$, $v_y$, and $P$. An additional equation is therefore required: the mass conservation equation.
 
@@ -45,36 +34,34 @@ To numerically solve Equations (1) and (4), the spatial domain must be discretiz
 
 ![MomentumGrid](../assets/MomentumGrid.png)
 
-**Figure 1. Staggered finite difference grid for the momentum equation and mass conservation equation.** The horizontal and vertical velocities require *ghost nodes* at the North, South, East, and West boundaries, respectively.
+**Figure 1. Staggered finite difference grid for the momentum and mass conservation equation.** The horizontal and vertical velocities require *ghost nodes* at the North, South, East, and West boundaries, respectively.
 
-A staggered grid enables conservation of stress between adjacent grid points and requires careful placement of the associated variables. Each equation is evaluated at the central node of its respective variable grid, requiring values from neighboring nodes defined by the numerical stencil. The locations of these points in a finite difference scheme are determined by a numerical stencil. 
+A staggered grid enables conservation of stress between adjacent grid points and requires careful placement of the associated variables. Each equation is evaluated at the central node of its respective variable grid, requiring values from neighboring nodes defined by the numerical stencil. The locations of these points in a finite difference scheme are determined by a numerical stencil. Thus, care needs to be taken generating the index for the variables. For the 2D Stokes equation in combination with the 2D mass conservation equation, different numerical stencils need to be considered, especially for cases of constant and variable viscosity. The stencils for each equation assuming constant or variable viscosity are discussed in more detail below. The spatial discretization relies on central finite differences to approximate both the velocity and pressure gradients.
 
-For the 2D Stokes equation in combination with the 2D mass conservation equation, different numerical stencils need to be considered, especially for cases of constant and variable viscosity. The stencils for each equation assuming constant or variable viscosity are discussed in more detail below. The spatial discretization relies on central finite differences to approximate both the velocity and pressure gradients.
-
-The indices of the adjacent points, which determine the positions of the coefficients in the coefficient matrix, can be expressed using the local indices $i$ and $j$ of each numerical grid. Because a staggered grid is used, each variable field ($v_x$, $v_y$, $P$, $\tau_{ij}$, $\eta$, and $\rho$) is defined on its own grid and therefore possesses its own local indices $(i,j)$ and a variable-specific global index. The local indices describe the position of the computational node of each corresponding variable grid in the horizontal and vertical directions, respectively. The global indices assume a horizontal numbering through the model domain; that is, the numbering proceeds row by row from the bottom to the top. The index for the adjacent centroid points follows the indexing convention described in the [2D heat diffusion equation](./DiffTwoD.md). 
+The indices of the adjacent points, which determine the positions of the coefficients in the coefficient matrix, can be expressed using the local indices $i$ and $j$ of each numerical grid. Because a staggered grid is used, each variable field ($v_x$, $v_y$, $P$, $\tau_{ij}$, $\eta$, and $\rho$) is defined on its own grid and therefore possesses its own local indices $(i,j)$ and a variable-specific global index. The local indices describe the position of the computational node of each corresponding variable grid in the horizontal and vertical directions, respectively. The global index assumes a horizontal numbering through the model domain; that is, the numbering proceeds row by row from the bottom to the top. The indices for the adjacent centroid points follows the indexing convention described in the [2D heat diffusion equation](./DiffTwoD.md). 
 
 For clarity, two types of global indices are used below:
 
 - variable-specific global indices, which number the nodes of a single grid (e.g. centroids or vertices), 
 - system global indices, which number the unknowns in the assembled linear system.
 
-The variable-specific global indices indicate the position relative to the central reference point (e.g., $N$, $S$).
+The variable-specific global index indicates the position relative to the central reference point (e.g., $N$, $S$). 
 
-The global index for density is defined by consecutively numbering the centroids: 
+The global index for density, for example, is defined by consecutively numbering the centroids: 
 
 $\begin{equation}
 I^\textrm{C}_c = \left(j-1\right) nc_x + i, 
 \end{equation}$
 
-where $i$ and $j$ are the local indices in the horizontal and vertical direction, respectively, and $nc_x$ is the total number of centroids in the horizontal direction. Here, it is important to distinguish between the centroid index used for density and the system index used for pressure, because pressure is part of the consecutively numbered unknowns in the assembled system of equations (see below). 
+where $nc_x$ is the total number of centroids in the horizontal direction. Here, it is important to distinguish between the centroid index used for density and the system global index used for pressure, because pressure is part of the consecutively numbered unknowns in the assembled system of equations (see below). 
 
-The global index for the shear stress is defined by consecutively numbering the vertices:
+The global index for the shear stress, for examples, is defined by consecutively numbering the vertices:
 
 $\begin{equation}
 I^\textrm{C}_v = \left(j-1\right) nv_x + i,
 \end{equation}$
 
-where $i$ and $j$ are the local indices in the horizontal and vertical direction, respectively, and  $nv_x$ is the total number of vertices in the horizontal direction. 
+where $nv_x$ is the total number of vertices in the horizontal direction. 
 
 The global indexing for the unknown variables in the system of equations proceeds by:
 
@@ -82,7 +69,7 @@ The global indexing for the unknown variables in the system of equations proceed
 
 2. Followed by the $y$-component of momentum (unknown $v_y$),
 
-3. And finally the mass conservation equations (unknown $P$).
+3. And finally the mass conservation equation (unknown $P$).
 
 The numbering $I$ for each equation is then defined as: 
 
@@ -106,7 +93,7 @@ I^\textrm{C}_{p} = \left(nv_x \cdot nc_y + nc_x \cdot nv_y + 1\right) : \left(nv
 
 This results in a consecutive global numbering of the system of equations for the $x$- and $y$-component of the momentum and the mass conservation equation. Each discretized equation corresponds to a row $I^\textrm{C}_{x,y,p}$ in the coefficient matrix. 
 
-> Note: The index $I^\textrm{C}_{x,y,p}$ for the system of equations is not the same as the consecutive numbering of the velocity and pressure nodes $I^j$, which only considers the global numbering for one single variable. 
+> Note: The index $I^\textrm{C}_{x,y,p}$ for the system of equations is not the same as the consecutive numbering of the velocity and pressure nodes $I^\textrm{C}$, which only considers the global numbering for one single variable. 
 
 The nonzero entries within a given matrix row appear at column positions corresponding to the neighboring variables involved in the stencil. These column indices are denoted by $I^k_{x,y,mc}$, where $k \in \{\textrm{S}, \textrm{SW}, \textrm{SE}, \textrm{W}, \textrm{C}, \textrm{E}, \textrm{NW}, \textrm{NE}, \textrm{N}\}$. The column index of each coefficient is computed relative to the central row index $I^\textrm{C}_{x,y,p}$. Thereby, the coefficient indices slightly vary for constant and variable viscosity cases. Note that cross terms involving $v_y$ and $v_x$ are indexed using the $y$- and $x$-component system indices, reflecting the staggered grid arrangement.
 
@@ -494,7 +481,7 @@ $\begin{equation}\begin{gather*}
 Reorganized:
 
 $\begin{equation}\begin{gather*}
-& C_PP_{I^\textrm{C}_p}+S_PP_{I^\textrm{S}_p} + \\ & S_yv_{y,I^\textrm{S}_y}+SW_yv_{x,I^\textrm{SW}_y}+SE_yv_{x,I^\textrm{SE}_y}+W_yv_{y,I^\textrm{W}_y}+ \\ & C_yv_{y,I^\textrm{C}_y} + \\ & E_yv_{y,I^\textrm{E}_y} + NW_yv_{x,I^\textrm{NW}_y} + NE_yv_{x,I^\textrm{NE}_y} + N_yv_{y,I^\textrm{N}_y} = \\ & -\frac{\rho_{I^\textrm{C}_c}+\rho_{I^\textrm{S}_c}}{2} g_y, 
+& S_PP_{I^\textrm{S}_p} +C_PP_{I^\textrm{C}_p}+ \\ & S_yv_{y,I^\textrm{S}_y}+SW_yv_{x,I^\textrm{SW}_y}+SE_yv_{x,I^\textrm{SE}_y}+W_yv_{y,I^\textrm{W}_y}+ \\ & C_yv_{y,I^\textrm{C}_y} + \\ & E_yv_{y,I^\textrm{E}_y} + NW_yv_{x,I^\textrm{NW}_y} + NE_yv_{x,I^\textrm{NE}_y} + N_yv_{y,I^\textrm{N}_y} = \\ & -\frac{\rho_{I^\textrm{C}_c}+\rho_{I^\textrm{S}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 with coefficients:
@@ -560,7 +547,7 @@ where
 - $\mathbf{x}$ is the solution vector, and 
 - $\mathbf{b}$ is the known right-hand side.
 
-The solution vector contains the horizontal and vertical velocity as well as the pressure field, whose ordering follows the global numbering of $I^\textrm{C}_x$, $I^\textrm{C}_y$, and $I^\textrm{C}_p$ as defined in Equations (7)–(9). The right-hand side contains the buoyancy term for the $y$-component of the momentum equation. Depending on the chosen solution strategy, it may also include contributions from the boundary conditions. 
+The solution vector contains the horizontal and vertical velocity as well as the pressure field, whose ordering follows the system global numbering of $I^\textrm{C}_x$, $I^\textrm{C}_y$, and $I^\textrm{C}_p$ as defined in Equations (7)-(9). The right-hand side contains the buoyancy term for the $y$-component of the momentum equation. Depending on the chosen solution strategy, it may also include contributions from the boundary conditions. 
 
 The coefficient matrix $\mathbf{K_{I^\textrm{C}_{i},I^k_{j}}}$ varies depending on the state of the viscosity. The structure of the coefficient matrix for a certain grid resolution and boundary condition is shown in Figures (5) and (6).  
 
@@ -605,7 +592,7 @@ Or in the terms of the unknown variables:
 *$x$-component*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = C_pP_{I^{\textrm{C}}_{p}} + W_pP_{I^{\textrm{W}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}}, 
+& r_{I^\textrm{C}_x} = W_pP_{I^{\textrm{W}}_{p}} + C_pP_{I^{\textrm{C}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}}, 
 \end{gather*}\end{equation}$
 
 *$y$-component*
@@ -619,13 +606,13 @@ $\begin{equation}\begin{gather*}
 *$x$-component* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = W_PP_{I^\textrm{W}_p}+C_PP_{I^\textrm{C}_p} + \\ &  S_xv_{x,I^\textrm{S}_x}+SW_xv_{y,I^\textrm{SW}_x}+SE_xv_{y,I^\textrm{SE}_x}+W_xv_{x,I^\textrm{W}_x}+ C_xv_{x,I^\textrm{C}_x} + E_xv_{x,I^\textrm{E}_x} + NW_xv_{y,I^\textrm{NW}_x} + NE_xv_{y,I^\textrm{NE}_x} + N_xv_{x,I^\textrm{N}_x}, 
+& r_{I^\textrm{C}_x} = W_PP_{I^\textrm{W}_p}+C_PP_{I^\textrm{C}_p} + \\ &  S_xv_{x,I^\textrm{S}_x}+SW_xv_{y,I^\textrm{SW}_x}+SE_xv_{y,I^\textrm{SE}_x}+W_xv_{x,I^\textrm{W}_x}+ \\ & C_xv_{x,I^\textrm{C}_x} + E_xv_{x,I^\textrm{E}_x} + NW_xv_{y,I^\textrm{NW}_x} + NE_xv_{y,I^\textrm{NE}_x} + N_xv_{x,I^\textrm{N}_x}, 
 \end{gather*}\end{equation}$
 
 *$y$-component* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = C_PP_{I^\textrm{C}_p}+S_PP_{I^\textrm{S}_p} + \\ & S_yv_{y,I^\textrm{S}_y}+SW_yv_{x,I^\textrm{SW}_y}+SE_yv_{x,I^\textrm{SE}_y}+W_yv_{y,I^\textrm{W}_y}+ C_yv_{y,I^\textrm{C}_y} + E_yv_{y,I^\textrm{E}_y} + NW_yv_{x,I^\textrm{NW}_y} + NE_yv_{x,I^\textrm{NE}_y} + N_yv_{y,I^\textrm{N}_y} + \frac{\rho_{I^\textrm{C}_c}+\rho_{I^\textrm{S}_c}}{2} g_y, 
+& r_{I^\textrm{C}_y} = S_PP_{I^\textrm{S}_p} +C_PP_{I^\textrm{C}_p}+ \\ & S_yv_{y,I^\textrm{S}_y}+SW_yv_{x,I^\textrm{SW}_y}+SE_yv_{x,I^\textrm{SE}_y}+W_yv_{y,I^\textrm{W}_y}+ \\ & C_yv_{y,I^\textrm{C}_y} + E_yv_{y,I^\textrm{E}_y} + NW_yv_{x,I^\textrm{NW}_y} + NE_yv_{x,I^\textrm{NE}_y} + N_yv_{y,I^\textrm{N}_y} + \frac{\rho_{I^\textrm{C}_c}+\rho_{I^\textrm{S}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 **Continuity Equation**
@@ -811,7 +798,7 @@ $\begin{equation}C_x = -\frac{2}{\Delta{x^2}} \left( \eta_{c,I^{\textrm{C}}_c} +
 *North*
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+\\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{W}}_x}+SE_xv_{y,I^{\textrm{C}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x},
+& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+\\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{W}}_x}+SE_xv_{y,I^{\textrm{C}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ \\ & C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x},
 \end{gather*}\end{equation}$
 
 with 
@@ -831,7 +818,7 @@ and all other coefficients are set to zero.
 *West* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p}+S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + C_yv_{y,I^{\textrm{C}}_y} + E_yv_{y,I^{\textrm{E}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
+& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p}+S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + \\ & C_yv_{y,I^{\textrm{C}}_y} + E_yv_{y,I^{\textrm{E}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 with 
@@ -841,7 +828,7 @@ $\begin{equation}C_y = -\frac{2}{\Delta{y^2}}\left(\eta_{c,I^{\textrm{C}}_c}+\et
 *East* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + W_yv_{y,I^{\textrm{W}}_y} + C_yv_{y,I^{\textrm{C}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
+& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + W_yv_{y,I^{\textrm{W}}_y} + \\ & C_yv_{y,I^{\textrm{C}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 with 
@@ -865,7 +852,7 @@ Using equations (25)-(29), the coefficients of the equations adjacent to the cor
 *South*
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+ \\ & SW_xv_{y,I^{\textrm{SW}}_x}+SE_xv_{y,I^{\textrm{SE}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x}+N_xv_{x,I^{\textrm{N}}_x} + 2\frac{\eta_{v,I^{\textrm{C}}_v}}{\Delta{y^2}}V_{BC}^S,
+& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+ \\ & SW_xv_{y,I^{\textrm{SW}}_x}+SE_xv_{y,I^{\textrm{SE}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ \\ & C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x}+N_xv_{x,I^{\textrm{N}}_x} + 2\frac{\eta_{v,I^{\textrm{C}}_v}}{\Delta{y^2}}V_{BC}^S,
 \end{gather*}\end{equation}$
 
 with 
@@ -875,7 +862,7 @@ $\begin{equation}C_x = -\frac{2}{\Delta{x^2}}\left(\eta_{c,I^{\textrm{C}}_c}+\et
 *North* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+ \\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{SW}}_x}+SE_xv_{y,I^{\textrm{SE}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x} + 2\frac{\eta_{v,I^{\textrm{N}}_v}}{\Delta{y^2}}V_{BC}^N,
+& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+ \\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{SW}}_x}+SE_xv_{y,I^{\textrm{SE}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ \\ & C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x} + 2\frac{\eta_{v,I^{\textrm{N}}_v}}{\Delta{y^2}}V_{BC}^N,
 \end{gather*}\end{equation}$
 
 with 
@@ -895,7 +882,7 @@ and all other coefficients are set to zero.
 *West* 
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + C_yv_{y,I^{\textrm{C}}_y} + E_yv_{y,I^{\textrm{E}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta_{v,I^{\textrm{C}}_v}}{\Delta{x^2}}V_{BC}^W, 
+& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + \\ & C_yv_{y,I^{\textrm{C}}_y} + E_yv_{y,I^{\textrm{E}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta_{v,I^{\textrm{C}}_v}}{\Delta{x^2}}V_{BC}^W, 
 \end{gather*}\end{equation}$
 
 with 
@@ -905,7 +892,7 @@ $\begin{equation}C_y = -\frac{2}{\Delta{y^2}}\left(\eta_{c,I^{\textrm{C}}_c}+\et
 *East*
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + W_yv_{y,I^{\textrm{W}}_y} + C_yv_{y,I^{\textrm{C}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta_{v,I^{\textrm{E}}_v}}{\Delta{x^2}}V_{BC}^E, 
+& r_{I^{\textrm{C}}_y} = C_PP_{I^{\textrm{C}}_p} + S_PP_{I^{\textrm{S}}_p} + \\ & S_yv_{y,I^{\textrm{S}}_y} + SW_yv_{x,I^{\textrm{SW}}_y} + SE_yv_{x,I^{\textrm{SE}}_y} + W_yv_{y,I^{\textrm{W}}_y} + \\ & C_yv_{y,I^{\textrm{C}}_y} + NW_yv_{x,I^{\textrm{NW}}_y} + NE_yv_{x,I^{\textrm{NE}}_y} + N_yv_{y,I^{\textrm{N}}_y} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta_{v,I^{\textrm{E}}_v}}{\Delta{x^2}}V_{BC}^E, 
 \end{gather*}\end{equation}$
 
 with 

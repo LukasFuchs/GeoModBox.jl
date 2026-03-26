@@ -6,9 +6,7 @@ $\begin{equation}
 \rho \frac{D v_i}{Dt} = \frac{\partial{\sigma_{ij}}}{\partial{x_j}} + \rho g_i,
 \end{equation}$
 
-where  
-
-$\rho$ is the density [kg/m³],  
+where  $\rho$ is the density [kg/m³],  
 $v_i$ is the velocity component [m/s] in direction $i$,  
 $\sigma_{ij}$ is the Cauchy stress tensor [Pa],  
 $g_i$ is the gravitational acceleration [m/s²] in direction $i$, and  
