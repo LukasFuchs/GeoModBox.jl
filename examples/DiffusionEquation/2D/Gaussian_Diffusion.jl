@@ -7,7 +7,7 @@ to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CN","ADI"]
 ns          =   size(Schema,1)
 nrnxny      =   6
-save_fig    =   -1
+save_fig    =   1
 # Physical Parameters ------------------------------------------------ #
 P       = ( 
     L       =   200e3,          #   Length [ m ]
@@ -220,7 +220,7 @@ for m = 1:ns
                 p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T)', 
                     color=:viridis, colorbar=true, aspect_ratio=:equal, 
                     xlabel="x [km]", ylabel="z [km]", 
-                    title="Temperature", 
+                    title="Temperature [K]", 
                     xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
                     clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
                     subplot=1)
@@ -246,7 +246,7 @@ for m = 1:ns
                     subplot=3)
                 plot!(p,D.Tprofilea[:,n],y.c./1e3,
                     linestyle=:dash,linecolor=:yellow,
-                    xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                    xlabel="T_{x=0 km} [K]",ylabel="Depth [km]",
                     label="",
                     subplot=3)
                 # subplot 4 ---
