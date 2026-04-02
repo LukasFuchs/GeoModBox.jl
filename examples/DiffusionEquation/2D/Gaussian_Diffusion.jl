@@ -4,7 +4,7 @@ using TimerOutputs
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
-Schema  =   ["explicit","implicit","CNA","ADI"]
+Schema  =   ["explicit","implicit","CN","ADI"]
 ns          =   size(Schema,1)
 nrnxny      =   6
 save_fig    =   -1
@@ -15,7 +15,7 @@ P       = (
     k       =   3,              #   Thermal Conductivity [ W/m/K ]
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
-    K0      =   273.15,         #   Kelvin at 0 °C
+    # K0      =   273.15,         #   Kelvin at 0 °C
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -110,34 +110,35 @@ for m = 1:ns
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
         # Visualize initial condition ---
         # subplot 1 ---
-        p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
-                color=:viridis, colorbar=false, aspect_ratio=:equal, 
+        p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T)', 
+                color=:viridis, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x [km]", ylabel="z [km]", 
-                title="Temperature", 
+                title="Temperature [K]", 
                 xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
+                clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
                 subplot=1)
-            contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
+            contour!(p,x.c./1e3,y.c/1e3,D.T',
                     levels=:5,linecolor=:black,subplot=1)
-            contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
+            contour!(p,x.c./1e3,y.c/1e3,D.Tana',
                     levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
         # subplot 2 ---
         heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
                 color=:viridis, colorbar=true, aspect_ratio=:equal, 
                 xlabel="x [km]", ylabel="z [km]", 
-                title="Deviation", 
+                title="Deviation [K]", 
                 xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3),  
-                clims=(-1,1),layout=(2,2),
+                # clims=(-1,1),
+                layout=(2,2),
                 subplot=2)
         # subplot 3 ---
         plot!(p,D.Tprofile[:,1],y.c./1e3,
                 linecolor=:black,
-                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                xlabel="T_{x=0 km} [K]",ylabel="Depth [km]",
                 label="",
                 subplot=3)
         plot!(p,D.Tprofilea[:,1],y.c./1e3,
                 linestyle=:dash,linecolor=:yellow,
-                xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
+                xlabel="T_{x=0 km} [K]",ylabel="Depth [km]",
                 label="",
                 subplot=3)
         # subplot 4 ---
@@ -161,7 +162,7 @@ for m = 1:ns
             K       =   ExtendableSparseMatrix(ndof,ndof)
             rhs     =   zeros(ndof)
         end
-        if FDSchema == "CNA"
+        if FDSchema == "CN"
             # Linear System of Equations ----------------------------- #
             Num     =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
             ndof    =   maximum(Num.T)
@@ -182,8 +183,8 @@ for m = 1:ns
                     @timeit to "Implicit" begin
                     BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
                     end
-                elseif FDSchema == "CNA"
-                    @timeit to "CNA" begin
+                elseif FDSchema == "CN"
+                    @timeit to "CN" begin
                     CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
                     end
                 elseif FDSchema == "ADI"
@@ -216,17 +217,17 @@ for m = 1:ns
             # Plot Solution ---
             if mod(n,2) == 0 || n == nt
                 # subplot 1 ---
-                p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
-                    color=:viridis, colorbar=false, aspect_ratio=:equal, 
+                p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T)', 
+                    color=:viridis, colorbar=true, aspect_ratio=:equal, 
                     xlabel="x [km]", ylabel="z [km]", 
                     title="Temperature", 
                     xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                    clims=(minimum(D.T.-P.K0), maximum(D.T.-P.K0)),layout=(2,2),
+                    clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
                     subplot=1)
 
-                contour!(p,x.c./1e3,y.c/1e3,D.T'.-P.K0,
+                contour!(p,x.c./1e3,y.c/1e3,D.T',
                             levels=:5,linecolor=:black,subplot=1)
-                contour!(p,x.c./1e3,y.c/1e3,D.Tana'.-P.K0,
+                contour!(p,x.c./1e3,y.c/1e3,D.Tana',
                             levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
                 # subplot 2 ---
                 heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
@@ -234,7 +235,7 @@ for m = 1:ns
                         xlabel="x [km]", ylabel="z [km]", 
                         title="Deviation", 
                         xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                        clims=(-1,1),
+                        # clims=(-1,1),
                         subplot=2)
                 # subplot 3 ---
                 plot!(p,D.Tprofile[:,n],y.c./1e3,
@@ -291,17 +292,17 @@ for m = 1:ns
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
                 xaxis=:log,yaxis=:log,
-                xlabel="1/nx/ny",ylabel="ε_{T}",layout=(1,3),
+                xlabel="1/(nx⋅ny)",ylabel="ε_{T}",layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="T_{max}",
+                xlabel="1/(nx⋅ny)",ylabel="T_{max}",
                 subplot=2)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="⟨T⟩",
+                xlabel="1/(nx⋅ny)",ylabel="⟨T⟩",
                 subplot=3)
     display(q)
 end
