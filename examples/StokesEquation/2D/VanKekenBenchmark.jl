@@ -8,35 +8,36 @@ using Base.Threads
 using Printf, LinearAlgebra
 using TimerOutputs
 
-function RTI()
+function VanKekenBenchmark()
+
     to          =   TimerOutput()
     @timeit to "Ini" begin
     save_fig    =   1
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
-    λ           =   3.0e3           #   Perturbation wavelength[ m ]
-    δA          =   1500/15         #   Amplitude [ m ]
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
-        qinc    =   4,
-        mainc   =   2,
+        qinc    =   10,
+        mainc   =   10,
         qsc     =   100*(60*60*24*365.25)*3
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
     M       =   Geometry(
-        ymin    =   -3.0e3,     # [ m ]
+        ymin    =   -4.0e3,     # [ m ]
         ymax    =   0.0,
         xmin    =   0.0,
     )
-    ar          =   Int64(2 * λ / (M.ymax-M.ymin))  #   aspect ratio
+    λ           =   2*0.9142*(M.ymax-M.ymin)        #   Perturbation wavelength[ m ]
+    δA          =   -0.02*(M.ymax-M.ymin)            #   Amplitude [ m ]
+    ar          =   (λ / (M.ymax-M.ymin))/2       #   aspect ratio
     M.xmax      =   (M.ymax-M.ymin)*ar
     # -------------------------------------------------------------------- #
     # Grid =============================================================== # 
     NC  =   (
-        x   =   50*ar,
-        y   =   50,
+        x   =   200,
+        y   =   200,
     )
     NV  =   (
         x   =   NC.x + 1,
@@ -74,13 +75,23 @@ function RTI()
     # Physics ============================================================ #
     g       =   10.0                #   Gravitational acceleration [ m/s^2 ]
     # 0 - upper layer; 1 - lower layer
-    η₀      =   1e19                #   Viscosity composition 0 [ Pa s ]
-    η₁      =   1e13                #   Viscosity composition 1 [ Pa s]
+    η₀      =   1e20                #   Viscosity composition 0 [ Pa s ]
+    η₁      =   1e20                #   Viscosity composition 1 [ Pa s]
     ηᵣ      =   log10(η₁/η₀)
     η       =   [η₀,η₁]             #   Viscosity for phases 
 
+    hc      =   0.8
+    h₀      =   hc * (M.ymax-M.ymin)        # Thickness upper layer
+    h₁      =   (1-hc) * (M.ymax-M.ymin)    # Thickness lower layer
+    yc      =   abs(M.ymin + h₁)            # Layer interface depth
+    @show h₀, h₁
+
+    κ       =   1e-6
+    Rb      =   1
+    Δρ      =   Rb * κ * η₀ / (g * (M.ymax-M.ymin)^3)
+
     ρ₀      =   3000.0              #   Density composition 0 [ kg/m^3 ]
-    ρ₁      =   2900.0              #   Density composition 1 [ kg/m^3 ]
+    ρ₁      =   ρ₀ - Δρ             #   Density composition 1 [ kg/m^3 ]
     ρ       =   [ρ₀,ρ₁]             #   Density for phases
 
     phase   =   [0,1]
@@ -88,7 +99,7 @@ function RTI()
     # Animation and Plot Settings ======================================= #
     path        =   string("./examples/StokesEquation/2D/Results/")
     anim        =   Plots.Animation(path, String[] )
-    filename    =   string(Ini.p,"_ηr_",round(ηᵣ),
+    filename    =   string("VanKeKen_Benchmark_ηr_",round(ηᵣ),
                             "_tracers_DC")
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
@@ -133,7 +144,7 @@ function RTI()
     T   =   TimeParameter(
         tmax    =   4500.0,         #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   100,             #   Maximum iterations; 50
+        itmax   =   600,            #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -159,7 +170,8 @@ function RTI()
             wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
             wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
+    Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
+                            xc=0.0,yc=yc,λ,δA)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
@@ -254,7 +266,7 @@ function RTI()
             it = T.itmax
         end
         # ---
-        if mod(it,2) == 0 || it == T.itmax || it == 1
+        if mod(it,4) == 0 || it == T.itmax || it == 1
             p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                         xlabel="x[km]",ylabel="y[km]",colorbar=true,
                         title="ρ",
@@ -306,8 +318,8 @@ function RTI()
         @timeit to "Tracer Advection" begin
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv;style=1)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
         D.ρ     .=   D.ρe[2:end-1,2:end-1]  
@@ -326,4 +338,4 @@ function RTI()
     display(to)
 end
 
-RTI()
+VanKekenBenchmark()
