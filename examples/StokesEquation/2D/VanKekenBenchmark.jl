@@ -7,6 +7,7 @@ using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
 using TimerOutputs
+using Statistics
 
 function VanKekenBenchmark()
 
@@ -19,7 +20,7 @@ function VanKekenBenchmark()
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   10,
-        mainc   =   10,
+        mainc   =   5,
         qsc     =   100*(60*60*24*365.25)*3
     )
     # ------------------------------------------------------------------- #
@@ -36,8 +37,8 @@ function VanKekenBenchmark()
     # -------------------------------------------------------------------- #
     # Grid =============================================================== # 
     NC  =   (
-        x   =   200,
-        y   =   200,
+        x   =   100,
+        y   =   100,
     )
     NV  =   (
         x   =   NC.x + 1,
@@ -142,15 +143,16 @@ function VanKekenBenchmark()
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
     T   =   TimeParameter(
-        tmax    =   4500.0,         #   [ Ma ]
+        tmax    =   5000.0,         #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   600,            #   Maximum iterations; 50
+        itmax   =   500,            #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 
     Time        =   zeros(T.itmax)
+    V_RMS       =   zeros(T.itmax)
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
     @timeit to "Tracer Ini" begin
@@ -327,6 +329,7 @@ function VanKekenBenchmark()
         D.ηc    .=   D.ηce[2:end-1,2:end-1]
         Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
         end
+        V_RMS[it]   =   mean(D.vc)
     end # End Time Loop
     end
     # Save Animation ---
@@ -334,6 +337,15 @@ function VanKekenBenchmark()
         # Write the frames to a GIF file
         Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
         foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+    end
+    # Plot time serieses ==================================================== #
+    p2  =   plot(Time./T.year./1e6,V_RMS,
+                xlabel="Time [ Myrs ]", ylabel="V_RMS [ m/s ]",label="")
+    if save_fig == 1
+        savefig(p2,string("./examples/StokesEquation/2D/Results/VanKekenBenchmark_TimeSeries_",
+                            "_",NC.x,"_",NC.y,".png"))
+    elseif save_fig == 0
+        display(p2)
     end
     display(to)
 end
