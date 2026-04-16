@@ -67,7 +67,8 @@ Example:
 
 """
 @views function IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;
-                    λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
+                    xc=(M.xmax-M.xmin),yc=(M.ymax-M.ymin)/2,λ=1.0e3,δA=5e2/15,
+                    ellA=100.0,ellB=100.0,α=0.0)
     
     nmark   =   nmx*nmy*NC.x*NC.y
 
@@ -112,8 +113,8 @@ Example:
     elseif ini==:RTI
         @threads for k=1:nmark
             # Layer interface  --- 
-            δAm     =   cos(2*π*((Ma.x[k] - 0.5*(M.xmax-M.xmin))/λ))*δA
-            if abs(Ma.y[k]) >=  (M.ymax-M.ymin)/2
+            δAm     =   cos(2*π*((Ma.x[k] - 0.5*xc)/λ))*δA
+            if abs(Ma.y[k]) >=  yc
                 Ma.phase[k]     =   phase[2]    #   Lower layer
             else
                 Ma.phase[k]     =   phase[1]    #   Upper layer

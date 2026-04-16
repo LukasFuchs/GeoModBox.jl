@@ -8,11 +8,7 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x}} + \frac{\partial{\tau_{xy}}}{\partial{y}},
 \end{equation}$
 
-where  
-
-$P$ is the pressure [Pa],  
-$\frac{\partial}{\partial x_i}$ denotes the partial derivative in the $i$-th direction, and  
-$\tau_{xy}$ is the horizontal shear stress [Pa], defined as
+where $P$ is the pressure [Pa], $\frac{\partial}{\partial x_i}$ denotes the partial derivative in the $i$-th direction, and $\tau_{xy}$ is the horizontal shear stress [Pa], defined as
 
 $\begin{equation}
 \tau_{xy} = 2 \eta \dot{\varepsilon}_{xy},
