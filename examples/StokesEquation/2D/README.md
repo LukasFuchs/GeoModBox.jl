@@ -9,3 +9,5 @@
 - [Viscous inclusion problem](./ViscousInclusion.jl), and
 
 - [Rayleigh-Taylor instability benchmark](./RTI.jl)
+
+- [Van Keken Benchmark](./VanKekenBenchmark.jl)
