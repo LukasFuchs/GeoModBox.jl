@@ -75,20 +75,24 @@ NV      =   (
 D       =   DataFields(
     Q       =   zeros(Float64,(NC...)),
     T       =   zeros(Float64,(NC...)),
+    T0      =   zeros(Float64,(NC...)),
     T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
+    T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
     ρ       =   ones(Float64,(NC...)),
-    cp      =   ones(Float64,(NC...)),
+    # cp      =   ones(Float64,(NC...)),
     vx      =   zeros(Float64,(NV.x,NV.y+1)),
     vy      =   zeros(Float64,(NV.x+1,NV.y)),    
     Pt      =   zeros(Float64,(NC...)),
     vxc     =   zeros(Float64,(NC...)),
     vyc     =   zeros(Float64,(NC...)),
+    vxco    =   zeros(Float64,(NC...)),
+    vyco    =   zeros(Float64,(NC...)),
     vc      =   zeros(Float64,(NC...)),
     ΔTtop   =   zeros(Float64,NC.x),
     ΔTbot   =   zeros(Float64,NC.x),
-    Tmax    =   0.0,
-    Tmin    =   0.0,
-    Tmean   =   0.0,
+    # Tmax    =   0.0,
+    # Tmin    =   0.0,
+    # Tmean   =   0.0,
 )
 # ------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
@@ -109,12 +113,15 @@ Fm     =    (
     y       =   zeros(Float64,NC.x, NV.y)
 )
 FPt         =   zeros(Float64,NC...)
+RT          =   zeros(NC...)
+∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
+                ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
 # ------------------------------------------------------------------- #
 # Zeitparameter ===================================================== #
 T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
-    Δfacc   =   1.0,                #   Courant time factor
-    Δfacd   =   1.0,                #   Diffusion time factor
+    Δfacc   =   0.9,                #   Courant time factor
+    Δfacd   =   0.9,                #   Diffusion time factor
     itmax   =   8000,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
@@ -211,6 +218,7 @@ Num    =    (
 )
 ndof    =   maximum(Num.T)        
 # Energieerhaltung (EEG) ------
+ϵT      =   1e-12
 K1      =   ExtendableSparseMatrix(ndof,ndof)
 K2      =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(ndof)
@@ -294,13 +302,16 @@ for it = 1:T.itmax
     meanV[it]   =   mean(D.vc)
     # --------------------------------------------------------------- #
     # Plot ========================================================== #
-    if mod(it,25) == 0 || it == T.itmax || it == 1
+    if mod(it,10) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
                 ylims=(M.ymin, M.ymax),clims=(0,1),
-                layout=(2,1),subplot=1)        
+                layout=(2,1),subplot=1)       
+        contour!(p,x.c,y.c,D.T',lw=1,
+                    color="white",cbar=true,alpha=0.5,
+                    layout=(2,1),subplot=1) 
         quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
@@ -320,15 +331,42 @@ for it = 1:T.itmax
     end
     # --------------------------------------------------------------- #
     # Advektion ===================================================== #
+    if it == 1
+        @. D.vxco   =   D.vxc
+        @. D.vyco   =   D.vyc
+    end
     @timeit to "Advection" begin
-    semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
+    semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
     end
     # --------------------------------------------------------------- #
     # Diffusion ===================================================== #
     @timeit to "Diffusion" begin
-    CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
+    # CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
+    # Alternatively - defect correction ---
+    # Update temperature field --- 
+    @. D.T0     =   D.T
+    for iter = 1:niter
+        # Evaluate residual
+        ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_exo, ∂2T, 
+                1.0, TBC, Δ, T.Δ[1]; C = 0.0 )
+        @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
+        norm(RT)/length(RT) < ϵT ? break : nothing
+        # Assemble linear system
+        K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.0)
+        # Solve for temperature correction: Cholesky factorisation
+        Kc = cholesky(K1.cscmatrix)
+        # Solve for temperature correction: Back substitutions
+        δT = -(Kc\RT[:])
+        # Update temperature
+        @. D.T += δT[Num.T]
+    end
+    # Update extended field for advection scheme --- 
+    D.T_ex[2:end-1,2:end-1]     .=  D.T
     end
     # --------------------------------------------------------------- #
+    # Update Velocity field ---
+    @. D.vxco   =   D.vxc
+    @. D.vyco   =   D.vyc
     # Check break =================================================== #
     # If the maximum time is reached or if the models reaches steady 
     # state the time loop is stoped! 
@@ -372,6 +410,9 @@ p2 = heatmap(x.c,y.c,D.T',
         aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
         ylims=(M.ymin, M.ymax),clims=(0,1),
         layout=(2,1),subplot=1)
+contour!(p2,x.c,y.c,D.T',lw=1,
+                    color="white",cbar=true,alpha=0.5,
+                    layout=(2,1),subplot=1) 
 quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
     y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
     quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,

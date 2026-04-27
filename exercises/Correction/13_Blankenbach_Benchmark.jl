@@ -16,7 +16,7 @@ Ini         =   (T=:lineara,)
 # Plot Settings ========================================================= #
 Pl  =   (
     qinc        =   5,
-    qsc         =   1.0e-3
+    qsc         =   1.0e-3 # 1.0e-3, 4.0e-4, 5.0e-5
 )
 # Animation Settings ==================================================== #
 k           =   scatter()
@@ -95,23 +95,25 @@ D       =   DataFields(
     T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
     ρ       =   ones(Float64,(NC...)),
-    cp      =   ones(Float64,(NC...)),
+    # cp      =   ones(Float64,(NC...)),
     vx      =   zeros(Float64,(NV.x,NV.y+1)),
     vy      =   zeros(Float64,(NV.x+1,NV.y)),    
     Pt      =   zeros(Float64,(NC...)),
     vxc     =   zeros(Float64,(NC...)),
     vyc     =   zeros(Float64,(NC...)),
+    vxco    =   zeros(Float64,(NC...)),
+    vyco    =   zeros(Float64,(NC...)),
     vc      =   zeros(Float64,(NC...)),
-    wt      =   zeros(Float64,(NC...)),
-    wtv     =   zeros(Float64,(NV...)),
+    # wt      =   zeros(Float64,(NC...)),
+    # wtv     =   zeros(Float64,(NV...)),
     ΔTtop   =   zeros(Float64,NC.x),
     ΔTbot   =   zeros(Float64,NC.x),
-    Tmax    =   0.0,
-    Tmin    =   0.0,
-    Tmean   =   0.0,
+    # Tmax    =   0.0,
+    # Tmin    =   0.0,
+    # Tmean   =   0.0,
 )
-# Heat Production Rate ------
-@. D.Q      =   P.Q₀
+# # Heat Production Rate ------
+# @. D.Q      =   P.Q₀
 # ----------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
 divV        =   zeros(Float64,NC...)
@@ -131,6 +133,9 @@ Fm     =    (
     y       =   zeros(Float64,NC.x, NV.y)
 )
 FPt         =   zeros(Float64,NC...)
+RT          =   zeros(NC...)
+∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
+                ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
 # ----------------------------------------------------------------------- #
 # Time parameters ======================================================= #
 T   =   TimeParameter(
@@ -198,11 +203,11 @@ VBC     =   (
 )
 # ----------------------------------------------------------------------- #
 # Rayleigh Number ======================================================= #
-if P.Ra < 0
+# if P.Ra < 0
     P.Ra     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.η₀/P.κ
-else
-    P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
-end
+# else
+#     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
+# end
 filename    =   string("13_Blankenbach_",@sprintf("%.2e",P.Ra),
                         "_",NC.x,"_",NC.y,
                         "_",Ini.T)
@@ -222,6 +227,7 @@ Num    =    (
 )
 ndof    =   maximum(Num.T)        
 # Energy Conservation Equation (ECE) ------
+ϵT      =   1e-12
 K1      =   ExtendableSparseMatrix(ndof,ndof)
 K2      =   ExtendableSparseMatrix(ndof,ndof)
 rhs     =   zeros(ndof)
@@ -303,10 +309,34 @@ for it = 1:T.itmax
     end
     # ------------------------------------------------------------------- #
     # Advection ========================================================= #
-    semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
+    if it == 1
+        @. D.vxco   =   D.vxc
+        @. D.vyco   =   D.vyc
+    end
+    semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
     # ------------------------------------------------------------------- #
     # Diffusion ========================================================= #
-    CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
+    CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
+    # # Alternatively - defect correction ---
+    # # Update temperature field --- 
+    # @. D.T0     =   D.T
+    # for iter = 1:niter
+    #     # Evaluate residual
+    #     ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_exo, ∂2T, 
+    #             1.0, TBC, Δ, T.Δ[1]; C = 0.0 )
+    #     @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
+    #     norm(RT)/length(RT) < ϵT ? break : nothing
+    #     # Assemble linear system
+    #     K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.0)
+    #     # Solve for temperature correction: Cholesky factorisation
+    #     Kc = cholesky(K1.cscmatrix)
+    #     # Solve for temperature correction: Back substitutions
+    #     δT = -(Kc\RT[:])
+    #     # Update temperature
+    #     @. D.T += δT[Num.T]
+    # end
+    # # Update extended field for advection scheme --- 
+    # D.T_ex[2:end-1,2:end-1]     .=  D.T
     # ------------------------------------------------------------------- #
     # Nusselt Number ==================================================== #
     # Grid structure at the surface ---
@@ -353,6 +383,9 @@ for it = 1:T.itmax
     meanT[it,:] =   mean(D.T_ex,dims=1)
     # Root Mean Square Velocity ---
     meanV[it]   =   mean(D.vc)
+    # Update Velocity field ---
+    @. D.vxco   =   D.vxc
+    @. D.vyco   =   D.vyc
     # ------------------------------------------------------------------- #
     # Check break ======================================================= #
     # If the maximum time is reached or if the models reaches steady 

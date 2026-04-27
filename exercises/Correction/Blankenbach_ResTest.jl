@@ -267,7 +267,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
         # --------------------------------------------------------------- #
         # Diffusion ===================================================== #
-        CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, D.ρ, 1.0, NC, TBC, rhs, K1, K2, Num)
+        CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
         # --------------------------------------------------------------- #
         # Nusselt Number ================================================ #
         # Grid structure at the surface ---
@@ -390,7 +390,7 @@ start=time()
 save_fig    =   1
 # Rayleigh Number ======================================================= #
 #   Here, only for 1e4, 1e5, 1e6
-Ra      =   1e6
+Ra      =   1e5
 # ----------------------------------------------------------------------- #
 # Benchmark Values ====================================================== # 
 # Taken from Gerya (2019), Introduction to numerical geodynamic 

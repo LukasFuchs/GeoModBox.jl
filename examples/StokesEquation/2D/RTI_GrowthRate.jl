@@ -221,7 +221,7 @@ function RTI_GrowthRate()
                 # Initialize Tracer Position ---
                 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
                 # Count tracer per cell ---
-                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
                 # Interpolate density --- 
                 if ρavg==:centroids
                     # Interpolate density from markers to cell ---
