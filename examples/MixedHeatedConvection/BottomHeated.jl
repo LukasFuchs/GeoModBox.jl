@@ -277,9 +277,9 @@ for it = 1:T.itmax
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
     # ---
-    @show(maximum(D.vc))
-    @show(minimum(D.Pt))
-    @show(maximum(D.Pt))
+    # @show(maximum(D.vc))
+    # @show(minimum(D.Pt))
+    # @show(maximum(D.Pt))
     # Berechnung der Zeitschrittlänge =============================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
