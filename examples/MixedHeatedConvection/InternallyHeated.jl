@@ -125,7 +125,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   8000,               #   Maximum iterations
+    itmax   =   50,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -280,9 +280,9 @@ for it = 1:T.itmax
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
     # ---
-    @show(maximum(D.vc))
-    @show(minimum(D.Pt))
-    @show(maximum(D.Pt))
+    # @show(maximum(D.vc))
+    # @show(minimum(D.Pt))
+    # @show(maximum(D.Pt))
     # Berechnung der Zeitschrittlänge =============================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
@@ -351,11 +351,11 @@ for it = 1:T.itmax
     for iter = 1:niter
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_exo, ∂2T, 
-                1.0, TBC, Δ, T.Δ[1]; C = 0.0 )
-        @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
+                1.0, TBC, Δ, T.Δ[1]; C = 0.5, Q = D.Q, ρ₀ = 1.0, cp = 1.0  )
+        @printf("||R_T|| = %1.4e\n", norm(RT)/length(RT))
         norm(RT)/length(RT) < ϵT ? break : nothing
         # Assemble linear system
-        K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.0)
+        K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K1.cscmatrix)
         # Solve for temperature correction: Back substitutions
@@ -446,10 +446,23 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string(".//examples/MixedHeatedConvection/Results/Internally_Heated_TimeSeries",P.Ra,
+    savefig(q2,string("./examples/MixedHeatedConvection/Results/Internally_Heated_TimeSeries",P.Ra,
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
+end
+display(to)
+# ======================================================================= #
+# Plot Mean temperature profile over time =============================== #
+q3  =   plot(mean(meanT[1:find,:],dims=1)',y.ce,
+        xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+        xlims=(0,1),ylims=(-1,0),
+        label="",aspect_ratio=1)
+if save_fig == 1
+    savefig(q3,string("./examples/MixedHeatedConvection/Results/Internally_Heated_TProfile",P.Ra,
+                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
+elseif save_fig == 0
+    display(q3)
 end
 display(to)
 # ======================================================================= #

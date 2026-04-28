@@ -348,11 +348,11 @@ for it = 1:T.itmax
     for iter = 1:niter
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_exo, ∂2T, 
-                1.0, TBC, Δ, T.Δ[1]; C = 0.0 )
+                1.0, TBC, Δ, T.Δ[1]; C = 0.5 )
         @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
         norm(RT)/length(RT) < ϵT ? break : nothing
         # Assemble linear system
-        K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.0)
+        K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
         # Solve for temperature correction: Cholesky factorisation
         Kc = cholesky(K1.cscmatrix)
         # Solve for temperature correction: Back substitutions
