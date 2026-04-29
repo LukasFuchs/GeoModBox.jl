@@ -302,7 +302,7 @@ for it = 1:T.itmax
     meanV[it]   =   mean(D.vc)
     # --------------------------------------------------------------- #
     # Plot ========================================================== #
-    if mod(it,10) == 0 || it == T.itmax || it == 1
+    if mod(it,20) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
@@ -447,6 +447,18 @@ if save_fig == 1
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
+end
+# ======================================================================= #
+# Plot Mean temperature profile over time =============================== #
+q3  =   plot(mean(meanT[1:find,:],dims=1)',y.ce,
+        xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+        xlims=(0,1),ylims=(-1,0),
+        label="",aspect_ratio=1)
+if save_fig == 1
+    savefig(q3,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_TProfile",P.Ra,
+                        "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
+elseif save_fig == 0
+    display(q3)
 end
 display(to)
 # ======================================================================= #
