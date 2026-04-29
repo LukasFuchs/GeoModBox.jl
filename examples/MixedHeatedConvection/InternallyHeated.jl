@@ -25,7 +25,7 @@ Pl  =   (
 k           =   scatter()
 path        =   string("./examples/MixedHeatedConvection/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   0
+save_fig    =   1
 # ------------------------------------------------------------------- #
 @timeit to "Ini" begin
 # Modellgeometrie Konstanten ======================================== #
@@ -125,7 +125,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   50,               #   Maximum iterations
+    itmax   =   8000,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -305,7 +305,7 @@ for it = 1:T.itmax
     meanV[it]   =   mean(D.vc)
     # --------------------------------------------------------------- #
     # Plot ========================================================== #
-    if mod(it,10) == 0 || it == T.itmax || it == 1
+    if mod(it,20) == 0 || it == T.itmax || it == 1
         p = heatmap(x.c,y.c,D.T',
                 xlabel="x",ylabel="y",colorbar=true,
                 title="Temperature",color=cgrad(:lajolla),
@@ -451,7 +451,6 @@ if save_fig == 1
 elseif save_fig == 0
     display(q2)
 end
-display(to)
 # ======================================================================= #
 # Plot Mean temperature profile over time =============================== #
 q3  =   plot(mean(meanT[1:find,:],dims=1)',y.ce,
