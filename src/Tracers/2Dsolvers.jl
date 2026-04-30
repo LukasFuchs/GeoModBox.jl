@@ -149,7 +149,7 @@ Example:
 end
 
 """
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 
 Function to count the marker per cell. 
 

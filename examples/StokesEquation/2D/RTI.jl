@@ -306,8 +306,8 @@ function RTI()
         @timeit to "Tracer Advection" begin
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
         D.ρ     .=   D.ρe[2:end-1,2:end-1]  

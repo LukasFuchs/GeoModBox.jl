@@ -16,3 +16,9 @@ All simulations use non-dimensional quantities. The governing equations are solv
 Each model runs for up to 6000 iterations or until a steady state is reached.
 
 For further details on the numerical methods used for each governing equation and for additional information on each example, please refer to the [GeoModBox.jl documentation](https://geosci-ffm.github.io/GeoModBox.jl/).
+
+---
+
+# Temperature Dependent Viscosity 
+
+- [Purely basally heated](BottomHeated_VarEta.jl)

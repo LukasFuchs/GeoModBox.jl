@@ -157,7 +157,7 @@ function VanKekenBenchmark()
     # Tracer Advection ================================================== #
     @timeit to "Tracer Ini" begin
     nmx,nmy     =   5,5
-    noise       =   0
+    noise       =   1
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :phase
     MPC         =   (

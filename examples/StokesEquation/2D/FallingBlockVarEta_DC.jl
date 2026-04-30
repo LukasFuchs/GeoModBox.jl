@@ -160,7 +160,7 @@ function FallingBlockVarEta_Dc()
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
     # Interpolate from markers to cell ---
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
     D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
@@ -302,8 +302,8 @@ function FallingBlockVarEta_Dc()
         @timeit to "Tracer Advection" begin
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         @timeit to "Tracer Interpolation" begin
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)

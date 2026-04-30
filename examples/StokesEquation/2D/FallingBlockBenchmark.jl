@@ -22,7 +22,7 @@ function FallingBlockBenchmark(td)
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
     #   Attention: Tracers are the only method that work well.
-    FD          =   (Method     = (Adv=:tracers,),)
+    FD          =   (Method     = (Adv=:upwind,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -180,7 +180,7 @@ function FallingBlockBenchmark(td)
             rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
             rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
             # Count marker per cell ---
-            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
             # Interpolate from markers to cell ---
             Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
             D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
@@ -363,8 +363,8 @@ function FallingBlockBenchmark(td)
             elseif FD.Method.Adv==:tracers
                 # Advect tracers ---
                 @printf("Running on %d thread(s)\n", nthreads())  
-                AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+                AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
                 # Interpolate phase from tracers to grid ---
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
                 D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
