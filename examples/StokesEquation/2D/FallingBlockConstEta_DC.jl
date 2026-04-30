@@ -2,12 +2,15 @@ using Plots
 using ExtendableSparse
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function FallingBlockConstEta_Dc()
+    to          =   TimerOutput()
     # =================================================================== #
     # Script to solve the instantaneous solution of the falling block     #
     # problem using the defect correction solution method.                #
     # =================================================================== #
+    @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
     # Density --- 
     #   1) block
@@ -136,25 +139,34 @@ function FallingBlockConstEta_Dc()
     F       =   zeros(maximum(Num.Pt))
     δx      =   zeros(maximum(Num.Pt))
     # ------------------------------------------------------------------- #
+    end
+    @timeit to "Solution Iteration" begin
     for iter = 1:niter
-        # Initial Residual -------------------------------------------------- #
+        # Initial Residual ---------------------------------------------- #
+        @timeit to "Residual" begin
         Residuals2Dc!(D,VBC,ε,τ,divV,Δ,η₀,g,Fm,FPt)
         F[Num.Vx]   =   Fm.x[:]
         F[Num.Vy]   =   Fm.y[:]
         F[Num.Pt]   =   FPt[:]
         @printf("||R|| = %1.4e\n", norm(F)/length(F))
         norm(F)/length(F) < ϵ ? break : nothing
-        # ------------------------------------------------------------------- #
-        # Assemble Coefficients ============================================= #
+        end 
+        # --------------------------------------------------------------- #
+        # Assemble Coefficients ========================================= #
+        @timeit to "Assembly" begin
         K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
-        # ------------------------------------------------------------------- #
-        # Solution of the linear system ===================================== #
+        end
+        # --------------------------------------------------------------- #
+        # Solution of the linear system ================================= #
+        @timeit to "Solution" begin
         δx      =   - K \ F
-        # ------------------------------------------------------------------- #
-        # Update Unknown Variables ========================================== #
+        end
+        # --------------------------------------------------------------- #
+        # Update Unknown Variables ====================================== #
         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
         D.Pt                .+=  δx[Num.Pt]
+    end
     end
     # ------------------------------------------------------------------- #
     # Get the velocity on the centroids ---
@@ -202,6 +214,7 @@ function FallingBlockConstEta_Dc()
     display(p)
 
     savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous_DC.png"))
+    display(to)
 end
 
 FallingBlockConstEta_Dc()

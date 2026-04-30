@@ -3,6 +3,41 @@ using Dierckx
 """
     RK4O1D!( x, Δt, vx, xmin, xmax )    
 
+Function to advect a tracer in 1-D for one time step using fourth order Runge-Kutta. 
+
+The final position of the tracer is defined by: 
+
+    x   .+  =   (x1 + 2.0 * (x2 + x3) + x4) / 6.0 
+
+where 
+
+    x1  =   Δt * vx 
+    x2  =   Δt * vx
+    x3  =   Δt * vx
+    x4  =   Δt * vx 
+
+Examples
+========
+```julia
+julia> xminx,xmax = 0,100
+(0, 100)
+
+julia> x = collect(xmin:0.1:xmax)
+1001-element Vector{Float64}:
+   0.0
+   0.1
+   0.2
+   0.3
+   0.4
+   ⋮
+  99.7
+  99.8
+  99.9
+ 100.0
+
+ julia> x = RK4O1D!(x,0.1,1,xmin,xmax)
+```
+
 """
 function RK4O1D!( x, Δt, vx, xmin, xmax )    
 
@@ -20,6 +55,14 @@ end
 
 """
     upwind1D!( A, vx, Δt, Δx )
+
+Function to advect a tracer using the upwind method in one dimension. 
+
+    A   : 1-D Array of the advected property
+    vx  : Horizontal velocity
+    Δt  : Time step 
+    Δx  : Grid spacing
+
 """
 function upwind1D!( A, vx, Δt, Δx )
     Aold    =   zeros(size(A))
@@ -37,6 +80,13 @@ end
 
 """
     lax1D!( A, vx, Δt, Δx )
+
+Function to advect a property using the Lax-Friedrich method in one dimension. 
+
+    A   : 1-D array of the advected property
+    vx  : Horizontal velocity
+    Δt  : Time step
+    Δx  : Grid spacing
 """
 function lax1D!( A, vx, Δt, Δx )
     Aold    =   zeros(size(A))
@@ -49,6 +99,14 @@ end
 
 """
     slf1D!( A, Aold2, vx, Δt, Δx )
+
+Function to advect a property using the staggered leaped frog method in one dimension. 
+
+    A       : 1-D array of the advected property
+    Aold2   : 1-D array of the advected property at the previous time step
+    vx      : Horizontal velocity
+    Δt      : Time step
+    Δx      : Grid spacing
 """
 function slf1D!( A, Aold2, vx, Δt, Δx )
     # Aold2 is old time step
@@ -64,6 +122,14 @@ end
 
 """
     semilag1D!( A, xc, vx, Δt, Δx )
+
+Function to advect a property using the semi-lagrangian method in one dimension. 
+
+    A   : 1-D array of the advected property
+    xc  : x-coordinates of each centroid
+    vx  : Horizontal velocity
+    Δt  : Time step
+    Δx  : Horizontal velocity
 """
 function semilag1D!( A, xc, vx, Δt, Δx )
     X       =   zeros(size(xc))

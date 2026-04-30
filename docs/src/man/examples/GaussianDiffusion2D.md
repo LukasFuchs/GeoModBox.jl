@@ -1,20 +1,23 @@
 # [Gaussian Diffusion (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 
-This example performs a resolution test for various finite difference discretization schemes applied to the 2-D temperature conservation equation, assuming constant thermal parameters and neglecting adiabatic pressure effects (i.e., a simple diffusion problem) using a Gaussian temperature anomaly.
+This example performs a resolution test for various finite difference discretization schemes applied to the 2D heat diffusion equation, assuming constant thermal parameters and neglecting adiabatic pressure effects (i.e., a simple diffusion problem) using a Gaussian temperature anomaly.
 
-The following discretization schemes are employed: 
+The following discretization schemes for a **linear problem** only are employed: 
 
 - Forward Euler
 - Backward Euler
 - Crank-Nicolson
 - Alternating-Direction Implicit
-- Defect Correction
 
-As the initial condition, a Gaussian temperature distribution with a specified width and amplitude is prescribed, centered at the midpoint of the 2-D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
+As initial condition, a Gaussian temperature distribution with a specified width and amplitude is prescribed, centered at the midpoint of the 2D model domain. The transient behavior of this temperature distribution can be described analytically. Thus, one can calculate the accuracy for each time step of each finite difference scheme using this analytical solution. 
 
-The 2-D analytical solution is computed using the Julia package `ExactFieldSolutions`. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
+The script uses the special case solution for a linear problem using a single left-matrix divison to solve the system of equations. The special case solutions are implemented in the build in functions `ForwardEuler2Dc!()`, `BackwardEuler2Dc!()`, `CNA2Dc!()`, and `ADI2Dc!()`. 
 
-For simplicity, the 2-D temperature conservation equation is solved independently for each discretization scheme over time. After each time loop, the transient solution is visualized and saved as a *gif* animation showing the temperature distribution, it's absolute deviation from the analytical solution, a vertical profile through the center of the model domain, and the RMS. 
+An additional script on how to solve the 2D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest.jl) and for variable thermal properties [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/2D/GeneralSolverTest_variable_k.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
+
+The 2D analytical solution is computed using the Julia package `ExactFieldSolutions`. Using the analytical solution, the thermal boudnary conditions are updated for each time step. 
+
+For simplicity, the 2D heat diffusion equation is solved independently for each discretization scheme over time. After each time loop, the transient solution is visualized and saved as a *gif* animation showing the temperature distribution, it's absolute deviation from the analytical solution, a vertical profile through the center of the model domain, and the RMS. 
 
 For more details on the different numerical discretization schemes, please see the [documentation](../DiffTwoD.md).
 
@@ -25,17 +28,18 @@ First one needs to load the required packages:
 ```Julia 
 using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
 using Statistics, Printf, LinearAlgebra
+using TimerOutputs
 ```
 
 Now, let's define an array which includes the names of the different numerical schemes to be used. In the following, a loop is executed in which the individual scheme is called in the very beginning (via an if statement). Also, a mulitplication factor ```nrnxny``` is defined, which controlls the maximum resolution, that is ```nrnxny*20```. 
-
+-
 Within in each loop over the different numerical scheme, the resolution is consecutively increased up to the maximum defined resolution.
 
 If ```save_fig = -1```, only the final plot for the resolution test is shown and stored. For ```save_fig = 0``` all fields are plotted, but not stored, and for ```save_fig = 1``` the transient behavior for each resolution of each numerical scheme is stored in a *gif* animation. 
 
 ```Julia
-Schema  =   ["explicit","implicit","CNA","ADI","dc"]
-# Schema      =   ["ADI"]
+to      =   TimerOutput()
+Schema  =   ["explicit","implicit","CNA","ADI"]
 ns          =   size(Schema,1)
 nrnxny      =   6
 save_fig    =   -1
@@ -52,7 +56,6 @@ P       = (
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
     K0      =   273.15,         #   Kelvin at 0 °C
-    Q0      =   0               #   Heat production rate
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -84,15 +87,18 @@ Now, one can start the loop over the different numerical discretization schemes 
 
 ```Julia
 # Loop over different discretization schemes ------------------------- #
+@timeit to "Discretization Loop" begin
 for m = 1:ns
     FDSchema = Schema[m]
     display(FDSchema)
+    @timeit to "Resolution Loop" begin
     for l = 1:nrnxny
 ```
 
 Within these loops, one needs to refine the grid parameter. 
 
 ```Julia
+        @timeit to "Ini" begin
         # Numerical Parameters --------------------------------------- #
         NC  = (
             x       =   l*20,       #   Number of Centroids in x
@@ -155,7 +161,6 @@ Next, the field arrays and initial condition are initialized.
 ```Julia
         # Initial Conditions  ---------------------------------------- #
         D       = (
-            Q           =   zeros(NC...),
             T           =   zeros(NC...),
             T0          =   zeros(NC...),
             T_ex        =   zeros(NC.x+2,NC.y+2),
@@ -166,11 +171,8 @@ Next, the field arrays and initial condition are initialized.
             Tmean       =   zeros(1,nt),
             Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
-            Tprofilea   =   zeros(NC.y,nt),
-            ρ           =   zeros(NC...),
-            cp          =   zeros(NC...)            
+            Tprofilea   =   zeros(NC.y,nt),           
         )
-        @. D.ρ  =   P.ρ
         # Initial conditions
         AnalyticalSolution2D!(D.T, x.c, y.c, time[1], (T0=P.Tamp,K=P.κ,σ=P.σ))
         @. D.Tana                   =   D.T
@@ -187,8 +189,6 @@ For visualization purposes, the temperature profile through the center of the do
                                     D.T[convert(Int,NC.x/2)+1,:]) / 2
         D.Tprofilea[:,1]    .=  (D.Tana[convert(Int,NC.x/2),:] + 
                                     D.Tana[convert(Int,NC.x/2)+1,:]) / 2
-        # Heat production rate ---
-        @. D.Q          = P.Q0
         # Visualize initial condition ---
         # subplot 1 ---
         p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T.-P.K0)', 
@@ -246,7 +246,7 @@ Since the resolution varies, the boundary conditions must also be redefined with
         # ------------------------------------------------------------ #
 ```
 
-Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction method). 
+Depending on the numerical method, one needs to define the coefficient matrix and degrees of freedom for the linear system of equations or the iterative parameters (for the defect correction). 
 
 ```Julia
         if FDSchema == "implicit"
@@ -264,53 +264,32 @@ Depending on the numerical method, one needs to define the coefficient matrix an
             K2      =   ExtendableSparseMatrix(ndof,ndof)
             rhs     =   zeros(ndof)
         end
-        if FDSchema == "dc"
-            niter       =   10
-            ϵ           =   1e-10
-            @. D.ρ      =   P.ρ
-            @. D.cp     =   P.cp
-            k           =   (x=zeros(NC.x+1,NC.x), y=zeros(NC.x,NC.x+1))
-            @. k.x      =   P.k
-            @. k.y      =   P.k
-            Num         =   (T=reshape(1:NC.x*NC.y, NC.x, NC.y),)
-            ndof        =   maximum(Num.T)
-            K           =   ExtendableSparseMatrix(ndof,ndof)
-            R           =   zeros(NC...)
-            ∂T          =   (∂x=zeros(NC.x+1, NC.x), ∂y=zeros(NC.x, NC.x+1))
-            q           =   (x=zeros(NC.x+1, NC.x), y=zeros(NC.x, NC.x+1))
         end
 ```
 
-Now, all parameters are defined to solve the 2-D temperature conservation equation in a time loop using the corresponding numerical scheme. The analytical solution is calculated seperately. 
+Now, all parameters are defined to solve the 2D temperature conservation equation in a time loop using the corresponding numerical scheme. The analytical solution is calculated seperately. 
 
 ```Julia
+        @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
         for n = 1:nt
             if n>1
                 if FDSchema == "explicit"
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
-                elseif FDSchema == "implicit"
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K, Num)
-                elseif FDSchema == "CNA"
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC, rhs, K1, K2, Num)
-                elseif FDSchema == "ADI"
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], D.ρ, P.cp, NC, BC)
-                elseif FDSchema == "dc"
-                    for iter = 1:niter
-                        # Evaluate residual
-                        ComputeResiduals2D!(R, D.T, D.T_ex, D.T0, ∂T, q, D.ρ, D.cp, k, BC, Δ, T.Δ[1])
-                        # @printf("||R|| = %1.4e\n", norm(R)/length(R))
-                        norm(R)/length(R) < ϵ ? break : nothing
-                        # Assemble linear system
-                        K  = AssembleMatrix2D(D.ρ, D.cp, k, BC, Num, NC, Δ, T.Δ[1])
-                        # Solve for temperature correction: Cholesky factorisation
-                        Kc = cholesky(K.cscmatrix)
-                        # Solve for temperature correction: Back substitutions
-                        δT = -(Kc\R[:])
-                        # Update temperature
-                        @. D.T += δT[Num.T]
+                    @timeit to "Explicit" begin
+                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                     end
-                    D.T0    .= D.T
+                elseif FDSchema == "implicit"
+                    @timeit to "Implicit" begin
+                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
+                    end
+                elseif FDSchema == "CNA"
+                    @timeit to "CNA" begin
+                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
+                    end
+                elseif FDSchema == "ADI"
+                    @timeit to "ADI" begin
+                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
+                    end
                 end
                 time[n]     =   time[n-1] + T.Δ[1]
                 if time[n] > T.tmax 
@@ -384,6 +363,7 @@ Now, all parameters are defined to solve the 2-D temperature conservation equati
         end        
         display("Time loop finished ...")
         display("-> Use new grid size...")
+        end
 ```
 
 Now, one can save the plots in a *gif* animation and store the values for the resolution test. 
@@ -407,6 +387,8 @@ Now, one can save the plots in a *gif* animation and store the values for the re
         St.Tmean[1]     =   mean(D.Tana)
         # ------------------------------------------------------------ #
     end
+    end
+end
 end
 ```
 
@@ -420,7 +402,6 @@ Finally, the results of the resolution test are plotted.
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3))
 for m = 1:ns
-#    subplot(1,3,1)
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=3,label=Schema[m],
                 xaxis=:log,yaxis=:log,
@@ -444,6 +425,7 @@ if save_fig == -1
     savefig(q,"./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png")
 end
 # --------------------------------------------------------------------- #
+display(to)
 ``` 
 
 ![GD_Rest_test](../../assets/Gaussian_ResTest.png)

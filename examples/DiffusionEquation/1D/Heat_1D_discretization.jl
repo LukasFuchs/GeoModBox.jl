@@ -5,8 +5,11 @@
 # ======================================================================= #
 using Plots, Printf, LinearAlgebra, ExtendableSparse
 using GeoModBox.HeatEquation.OneD
+using TimerOutputs
 
 function Heat_1D_discretization()
+to  =   TimerOutput()
+@timeit to "Ini" begin
 # Physical Parameters --------------------------------------------------- #
 L           =   100.0               # Length [ m ]
 Trock       =   300.0               # Background temperature [ C ]
@@ -18,9 +21,6 @@ W           =   5.0                 # Dike width [m]
 nc          =   100                 # Number of cenroids
 Δx          =   L/nc                # Grid spacing
 xc          =   Δx/2:Δx:(L-Δx/2)    # Coordinates
-# Iterations ---
-niter       =   10  
-ϵ           =   1.0e-10       
 # ----------------------------------------------------------------------- #
 # Time Parameters ------------------------------------------------------- #
 day         =   3600.0*24.0         # Seconds per day
@@ -43,19 +43,17 @@ xp          =   L/2.0
 # Setting up field memroy ---
 explicit    =   (T = zeros(nc), T_ex = zeros(nc+2), ε = zeros(nc))
 implicit    =   (T = zeros(nc), rhs = zeros(nc), ε = zeros(nc))
-dc          =   (T = zeros(nc), T0 = zeros(nc), T_ex = zeros(nc+2), 
-                    ∂T2∂x2 = zeros(nc), R = zeros(nc), ε = zeros(nc))
 cna         =   (T = zeros(nc), ε = zeros(nc))
 # Assign initial temperature ---
 explicit.T              .=  T.ini
 explicit.T_ex[2:end-1]  .=  explicit.T
 implicit.T              .=  T.ini
-dc.T0                   .=  T.ini
 cna.T                   .=  T.ini
 # Analytical solution ---
 @. T.ana    =   Trock + (Tmagma-Trock)/(sqrt(1+4*time*κ/σ^2))*
                         exp(-(xc-xp)^2/(σ^2 + 4*time*κ))
 # ----------------------------------------------------------------------- #
+end
 # Boundary conditions --------------------------------------------------- #
 BC          =   (
                     type = (W=:Dirichlet, E=:Dirichlet),
@@ -82,7 +80,6 @@ p = plot(xc, explicit.T, label="explicit",
         Δt = $(round(Δt / Δtexp, digits=2))*Δt_{crit}",
         xlim=(0,L),ylim=(0, Tmagma),layout=(1,2))
 plot!(p,xc, implicit.T,label="implicit",subplot=1)
-plot!(p,xc, dc.T0,label="def correction",subplot=1)
 plot!(p,xc, cna.T,label="cna",subplot=1)
 plot!(p,xc, T.ana, linestyle=:dash, label="analytical",subplot=1)
 plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
@@ -90,7 +87,6 @@ plot!(p,xc, explicit.ε, xlabel="x [m]", ylabel="ε",
         label="ε_exp",xlim=(0,L),ylim=(0,2.0),
         subplot=2)        
 plot!(p,xc, implicit.ε, label="ε_imp",subplot=2)      
-plot!(p,xc, dc.ε, label="ε_dc",subplot=2)  
 plot!(p,xc, cna.ε, label="ε_cna",subplot=2)  
 
 if save_fig == 1
@@ -100,31 +96,21 @@ else
 end
 # ----------------------------------------------------------------------- #
 # Time loop ------------------------------------------------------------- #
+@timeit to "TimeLoop" begin
 for n=1:nt
     println("Zeitschritt: ",n,", Time: $(round(time/day, digits=1)) [d]")
     # Explicit, Forward Euler ------------------------------------------- #
+    @timeit to "ForwardEuler" begin
     ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC )
+    end
     # Implicit, Backward Euler ------------------------------------------ #
+    @timeit to "BackwardEuler" begin
     BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC, K, implicit.rhs )
-    # Defection correction method --------------------------------------- #
-    for iter = 1:niter
-        # Residual iteration
-        ComputeResiduals1Dc!( dc, κ, Δx, Δt, BC )
-        @printf("||R|| = %1.4e\n", norm(dc.R)/length(dc.R))            
-        norm(dc.R)/length(dc.R) < ϵ ? break : nothing
-        # Assemble linear system
-        AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K )
-        # Solve for temperature correction: Cholesky factorisation
-        Kc = cholesky(K.cscmatrix)
-        # Solve for temperature correction: Back substitutions
-        δT = -(Kc\dc.R[:])          
-        # Update temperature            
-        dc.T .= dc.T .+ δT            
-    end        
+    end
     # Crank-Nicolson method --------------------------------------------- #
+    @timeit to "CNA" begin
     CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
-    # Update temperature ------------------------------------------------ #
-    dc.T0           .=  dc.T
+    end
     # Update time ------------------------------------------------------- #
     time    =   time + Δt
     # Analytical Solution ----------------------------------------------- #
@@ -133,7 +119,6 @@ for n=1:nt
     # Error ------------------------------------------------------------- #
     @. explicit.ε   =   abs((T.ana-explicit.T)/T.ana)*100
     @. implicit.ε   =   abs((T.ana-implicit.T)/T.ana)*100
-    @. dc.ε         =   abs((T.ana-dc.T0)/T.ana)*100
     @. cna.ε        =   abs((T.ana-cna.T)/T.ana)*100
     # Plot solution ----------------------------------------------------- #
     if n == 1 || n % 5 == 0 || n == nt
@@ -145,7 +130,6 @@ for n=1:nt
         Δt = $(round(Δt / Δtexp, digits=2))*Δt_{crit}",
                 layout=(1,2))
         plot!(p, xc, implicit.T,linestyle=:dash, label="implicit",subplot=1)
-        plot!(p, xc, dc.T,linestyle=:dash, label="def correction",subplot=1)
         plot!(p, xc, cna.T,linestyle=:dash, label="cna",subplot=1)
         plot!(p, xc, T.ana, linestyle=:dash, label="analytical",subplot=1)    
         # Subplot 2 ---
@@ -155,7 +139,6 @@ for n=1:nt
             title="Error",
             subplot=2)
         plot!(p, xc, implicit.ε,linestyle=:dash, label="ε_imp",subplot=2)
-        plot!(p, xc, dc.ε,linestyle=:dot, label="ε_dc",subplot=2)
         plot!(p, xc, cna.ε,linestyle=:dash, label="ε_cna",subplot=2)                
         # Display the plots ---    
         if save_fig == 1
@@ -164,6 +147,7 @@ for n=1:nt
             display(p)
         end
     end
+end
 end
 # Speicher Animation ---------------------------------------------------- #
 if save_fig == 1
@@ -174,6 +158,7 @@ else
 end
 foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 # ----------------------------------------------------------------------- #
+display(to)
 end
 # Call function --------------------------------------------------------- #
 Heat_1D_discretization()

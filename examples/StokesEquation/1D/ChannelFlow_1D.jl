@@ -1,7 +1,10 @@
 using Plots, ExtendableSparse, Printf, LinearAlgebra
 using GeoModBox.MomentumEquation.OneD
+using TimerOutputs
 
 function ChannelFlow_1D()
+to  =   TimerOutput()
+@timeit to "Ini" begin
 # Model Parameter ------------------------------------------------------- #
 M   =   (
     ymin        =   -400.0e3,           #   Depth [ m ]
@@ -37,6 +40,8 @@ y   =   (
 niter   =   10
 ϵ       =   1e-10
 # ----------------------------------------------------------------------- #
+end
+@timeit to "Allocations" begin
 # Allocations ----------------------------------------------------------- #
 D   =   (
     η       =   zeros(NC.y+1),
@@ -51,9 +56,11 @@ D   =   (
     ∂vₓ∂y   =   zeros(NV...),
 )
 # ----------------------------------------------------------------------- #
+end
 # Viscosity ------------------------------------------------------------- #
 @. D.η  =   I.η₀ * exp(-log(I.m)* y.v / (M.ymax-M.ymin))
 # ----------------------------------------------------------------------- #
+@timeit to "Solution" begin
 # Analytical Solution --------------------------------------------------- #
 if I.m  == 1.0
     @. D.vₓₐ    =   1.0/2.0/I.η₀ * I.∂P∂x * 
@@ -97,6 +104,7 @@ end
 # Deviation from the analytical solution -------------------------------- #
 @. D.Δvₓ    =   ((D.vₓₐ - D.vₓ) / D.vₓₐ) * 100.0
 # ----------------------------------------------------------------------- #
+end
 # Plotting -------------------------------------------------------------- #
 q   =   plot(D.vₓ,y.c./1e3,label="numerical",
             xlabel="vₓ", ylabel="y [km]",
@@ -116,6 +124,7 @@ plot!(q,log10.(D.η),y.v./1e3,label="",
 display(q)
 # ----------------------------------------------------------------------- #
 savefig("./examples/StokesEquation/1D/Results/ChannelFlow.png")
+display(to)
 end
 
 ChannelFlow_1D()

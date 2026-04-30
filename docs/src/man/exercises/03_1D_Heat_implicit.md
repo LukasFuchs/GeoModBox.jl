@@ -8,9 +8,9 @@ The main objectives are:
 2. Defining Dirichlet and Neumann boundary conditions,  
 3. Setting up the coefficient matrix,  
 4. Exploring different approaches to implement the numerical scheme:  
-   a) using a for-loop over the grid and solving the linear system with a direct method,  
+   a) using a for-loop over the grid and solving the linear system with a left matrix division,  
    b) employing predefined functions from `GeoModBox.jl`, and  
-   c) solving the linear system iteratively with the defect correction method,  
+   c) solving the linear system iteratively with the defect correction,  
 5. Storing the solution as a GIF animation.  
 
 The resulting transient evolution of a Gaussian temperature anomaly is shown in Figure 1.  

@@ -26,17 +26,19 @@ using GeoModBox.AdvectionEquation.TwoD, GeoModBox.Tracers.TwoD
 using GeoModBox.InitialCondition
 using Base.Threads
 using Printf
+using TimerOutputs
 
 function Advection_2D()
-
+to      =   TimerOutput()
 @printf("Running on %d thread(s)\n", nthreads())
 
 save_fig    =   1
 
+@timeit to "Ini" begin
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:tracers,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
@@ -126,7 +128,9 @@ D       =   (
     Tmean   =   [0.0],
 )
 # -------------------------------------------------------------------- #
+end
 # Initial Conditions ================================================= #
+@timeit to "IniCondition" begin
 # Temperature ---
 IniTemperature!(Ini.T,M,NC,D,x,y)
 if FD.Method.Adv==:slf
@@ -145,6 +149,7 @@ IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
     end
 end
 @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+end
 # -------------------------------------------------------------------- #
 # Time =============================================================== #
 T   =   ( 
@@ -159,6 +164,7 @@ nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
 # Tracer Advection =================================================== #
 if FD.Method.Adv==:tracers 
+    @timeit to "TracerIni" begin
     # Tracer Initialization ---
     nmx,nmy     =   3,3
     noise       =   1
@@ -186,6 +192,7 @@ if FD.Method.Adv==:tracers
     end
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+    end
 end
 # -------------------------------------------------------------------- #
 # Visualize initial condition ======================================== #
@@ -228,6 +235,7 @@ for i=2:nt
     @printf("Time step: #%04d\n ",i)
 
     # Advection ===
+    @timeit to "Advection" begin
     if FD.Method.Adv==:upwind
         upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:slf
@@ -242,6 +250,7 @@ for i=2:nt
         # Interpolate temperature from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
         D.T     .=  D.T_ex[2:end-1,2:end-1]
+    end
     end
     
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
@@ -292,6 +301,7 @@ elseif save_fig == 0
     display(plot(p))
 end
 # -------------------------------------------------------------------- #
+display(to)
 end # Function end
 
 Advection_2D()

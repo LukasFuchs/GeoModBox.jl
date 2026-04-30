@@ -552,3 +552,11 @@ else
     end
 end
 ```
+
+![FallingBlockBM_Sink_Veloc](../../assets/FallingBlock_SinkingVeloc_tracers.png)
+
+**Figure 2. Sinking Velocity.** Instantaneous, sinking velocity of the rectangular block for different viscosity ratios. 
+
+![FallingBlockBM_Final_Stage](../../assets/FallingBlock_FinalStage_tracers.png)
+
+**Figure 3. Final stage.** Final stage of the sinking block for different viscosity ratios using the tracer method. 

@@ -3,6 +3,7 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.InitialCondition, GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf
+using TimerOutputs
 
 @doc raw"""
     Advection_2D_ResTest()
@@ -11,7 +12,7 @@ using Printf
 
 """
 function Advection_2D_ResTest()
-
+to      =   TimerOutput()
 @printf("Running on %d thread(s)\n", nthreads())
 
 nrnxny      =   5
@@ -35,6 +36,7 @@ St      = (
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
 # -------------------------------------------------------------------- #
+@timeit to "AdvectionScLoop" begin
 for m = 1:ns # Loop over advection schemes
     # Define Numerical Scheme ======================================== #
     FD          =   (Method     = (Adv=Scheme[m],),)    
@@ -57,6 +59,7 @@ for m = 1:ns # Loop over advection schemes
     )
     BC  =   ()  # dummy
     # ---------------------------------------------------------------- #
+    @timeit to "ResolutionLoop" begin
     for l = 1:nrnxny # Loop over differnet resolutions
         # Numerical Constants ======================================== #
         NC  =   (
@@ -124,6 +127,7 @@ for m = 1:ns # Loop over advection schemes
             Tmean   =   [0.0],
         )
         # Initial Condition ========================================== #
+        @timeit to "IniCondition" begin
         # Temperature ---
         IniTemperature!(Ini.T,M,NC,D,x,y)
         if FD.Method.Adv == "slf"
@@ -142,6 +146,7 @@ for m = 1:ns # Loop over advection schemes
             end
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+        end
         # ------------------------------------------------------------ #
         # Time ======================================================= #
         T   =   ( 
@@ -156,6 +161,7 @@ for m = 1:ns # Loop over advection schemes
         # ------------------------------------------------------------ #
         # Tracer Advection =========================================== #
         if FD.Method.Adv == "tracers"
+            @timeit to "TracerIni" begin
             # Tracer Initialization ---
             nmx,nmy     =   3,3
             noise       =   1
@@ -184,6 +190,7 @@ for m = 1:ns # Loop over advection schemes
             end
             # Count marker per cell ---
             CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+            end
         end
         # ------------------------------------------------------------ #
         # Visualize initial condition -------------------------------- #
@@ -223,6 +230,7 @@ for m = 1:ns # Loop over advection schemes
         for i=2:nt
             #@printf("Time step: #%04d\n ",i) 
 
+            @timeit to "Advection" begin
             if FD.Method.Adv == "upwind"
                 upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "slf"
@@ -239,7 +247,7 @@ for m = 1:ns # Loop over advection schemes
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
                 D.T     .=  D.T_ex[2:end-1,2:end-1]
             end
-            
+            end
             display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
             # Plot Solution ---
@@ -295,9 +303,9 @@ for m = 1:ns # Loop over advection schemes
         # ------------------------------------------------------------ #
 
     end # End resolution loop
-
+    end
 end # End method loop
-
+end
 q   =   plot(0,0,layout=(1,3))
 for m=1:ns    
     plot!(q,St.nxny[m,:],St.Δ[m,:],
@@ -331,7 +339,7 @@ if save_fig == 1 || save_fig == -1
                         Ini.V,"_ResTest.png"))
 end
 # --------------------------------------------------------------------- #
-
+display(to)
 end # Function end
 
 Advection_2D_ResTest()

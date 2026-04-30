@@ -6,8 +6,11 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function RTI()
+    to          =   TimerOutput()
+    @timeit to "Ini" begin
     save_fig    =   1
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
@@ -139,6 +142,7 @@ function RTI()
     Time        =   zeros(T.itmax)
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
+    @timeit to "Tracer Ini" begin
     nmx,nmy     =   5,5
     noise       =   0
     nmark       =   nmx*nmy*NC.x*NC.y
@@ -160,13 +164,14 @@ function RTI()
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
     # Interpolate from markers to cell ---
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
     D.ρ     .=   D.ρe[2:end-1,2:end-1]  
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
     D.ηc    .=   D.ηce[2:end-1,2:end-1]
     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
     # Iterations
@@ -191,7 +196,9 @@ function RTI()
     )
     FPt     =   zeros(Float64,NC...)      
     # ------------------------------------------------------------------- #
+    end
     # Time Loop ========================================================= #
+    @timeit to "Time Loop" begin
     for it = 1:T.itmax
         # Update Time ---
         if it > 1
@@ -204,23 +211,31 @@ function RTI()
         D.vx    .=  0.0
         D.vy    .=  0.0
         D.Pt    .=  1.0
+        @timeit to "Solution Iteration" begin
         for iter=1:niter
+            @timeit to "Residual" begin
             Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
             F[Num.Vx]   =   Fm.x[:]
             F[Num.Vy]   =   Fm.y[:]
             F[Num.Pt]   =   FPt[:]
             @printf("||R|| = %1.4e\n", norm(F)/length(F))
             norm(F)/length(F) < ϵ ? break : nothing
+            end
             # Assemble Coefficients ========================================= #
+            @timeit to "Assembly" begin
             K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            end
             # --------------------------------------------------------------- #
             # Solution of the linear system ================================= #
+            @timeit to "Solution" begin
             δx      =   - K \ F
+            end
             # --------------------------------------------------------------- #
             # Update Unknown Variables ====================================== #
             D.vx[:,2:end-1]     .+=  δx[Num.Vx]
             D.vy[2:end-1,:]     .+=  δx[Num.Vy]
             D.Pt                .+=  δx[Num.Pt]
+        end
         end
         # --------------------------------------------------------------- #
         # Get the velocity on the centroids ---
@@ -288,23 +303,27 @@ function RTI()
             it          =   T.itmax
         end
         # Advection ===
+        @timeit to "Tracer Advection" begin
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
         D.ρ     .=   D.ρe[2:end-1,2:end-1]  
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
         D.ηc    .=   D.ηce[2:end-1,2:end-1]
         Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        end
     end # End Time Loop
+    end
     # Save Animation ---
     if save_fig == 1
         # Write the frames to a GIF file
         Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
         foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
     end
+    display(to)
 end
 
 RTI()

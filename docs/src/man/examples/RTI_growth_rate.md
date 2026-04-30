@@ -1,8 +1,22 @@
 # [RTI - Growth Rate Benchmark](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/RTI_GrowthRate.jl)
 
-This script performs a benchmark for the growth rate of a Rayleigh–Taylor instability, following Gerya (2009). The benchmark is based on the analytical solution by Ramberg (1968) and is used to assess the accuracy of the velocity field in a purely gravity-driven flow. 
+This script benchmarks the **growth rate of a Rayleigh–Taylor instability**, following *Gerya (2009)*.  
+The benchmark is based on the analytical solution by *Ramberg (1968)* and is used to evaluate the accuracy of the velocity field in a purely gravity-driven flow.  
 
-While small-amplitude perturbations can be analyzed theoretically—facilitated by the use of tracers and bilinear interpolation of density onto centroids—a relatively large perturbation amplitude is employed here to accommodate practical implementation constraints. 
+The script calculates the **diapiric growth rate** at the tip of the perturbation for different **perturbation amplitudes** ($\delta A$), **wavelengths** ($\lambda$), and **viscosity ratios** ($\eta_r$).  
+The numerical solution is plotted alongside the analytical one, which is arbitrarily scaled by certain constants for visualization purposes, following *Gerya (2009)*.  
+
+The amplitude of the cosine perturbation is defined as:
+
+$\begin{equation}
+\delta A = \cos\left( 2\pi \frac{x_m - L/2}{\lambda} \right),
+\end{equation}$
+
+where $x_m$ is the x-coordinate of the marker, and $L$ is the length of the model domain.  
+The perturbation is applied to the tracers by adding the perturbation amplitude to the y-coordinate of an initially equally distributed or randomly perturbed tracer field.  
+
+Using a **bilinear interpolation scheme** to map tracer properties onto the regular numerical grid, one can test how accurately the Stokes solver reproduces the analytical growth rate of the diapiric instability.  
+However, care must be taken when defining the initial tracer positions or when averaging tracer properties onto the grid to avoid numerical artifacts.  
 
 --- 
 
@@ -34,7 +48,7 @@ Pl  =   (
 )
 ```
 
-The parameters for an initial cosinusoidal tracer perturbation are defined for a two-layer model. For benchmarking purposes, a range of wavelengths is specified. 
+The parameters for an initial cosinusoidal tracer perturbation are defined for a two-layer model. For benchmarking purposes, a range of wavelengths is specified. One can define, if the density is interpolated from the tracers to the centroids or the vertices. 
 
 ```Julia
 # Define Initial Condition ========================================== #
@@ -480,3 +494,6 @@ end
 
 **Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2000). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - scaled by 15, red - scaled by 150, yellow - scaled by 1500). The rising velocity is numerically calculated following the approach shown in Figure 1. 
 
+![RTI_Growth_Rate_Res_test](../../assets/RTI_Growth_Rate_Res_Test_const_NM_arith.png)
+
+**Figure 3. RTI Resolution Test.** Resolution test for the RTI growth rate using a fixed layer thickness (1500 km), a fixed wavelength $\lambda = 4000 \text{ km}$ and fixed number of markers per cell (5x5) for different horizontal and vertical grid resolutions $\left(nc_x,nc_y\right)$, different perturbation amplitudes $\left(\delta{A}\right)$ (colored markers), different viscosity ratios $\eta_r$, and without (top row) and with (bottom row) additional noise ontop of the initial marker position (before assigning the layer phases). The viscosity is interpolate from the tracers to the centroids and the vertices using an arithmetic mean. 
