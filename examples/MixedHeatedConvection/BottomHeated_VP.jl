@@ -8,7 +8,37 @@ using GeoModBox.Scaling
 using Statistics, LinearAlgebra
 using Printf, TimerOutputs
 
-function InternallyHeated()
+function EffectiveViscosity!(D,R,type)
+    if type==:Arrhenius
+        # Arrhenius like Tackley (2000)
+        @. D.ηc    =    R.η₀ * exp(R.Ea/(D.T + R.TO) - R.Ea/(R.TE + R.TO))
+        # Viscosity ---
+        # --- Centroids -
+        D.η_ex[2:end-1,2:end-1]     .=  D.ηc
+        D.η_ex[1,:]     .=  D.η_ex[2,:]
+        D.η_ex[end,:]   .=  D.η_ex[end-1,:]
+        D.η_ex[:,1]     .=  D.η_ex[:,2]
+        D.η_ex[:,end]   .=  D.η_ex[:,end-1]
+          # D.η_exo         .=  D.η_ex
+        # --- Vertices -
+        @. D.ηv     =   0.25 * (D.η_ex[1:end-1,1:end-1] + 
+                                D.η_ex[2:end-0,1:end-1] + 
+                                D.η_ex[1:end-1,2:end-0] + 
+                                D.η_ex[2:end-0,2:end-0])
+    else 
+        error("Rheology not defined!")
+    end
+
+    # if plasticity==:yes
+    #     # Calculate strain rate invariant
+    #     @. ϵ.II     =   sqrt()
+    #     @. D.ηp     =   R.σyield / 2 / ϵ.II
+    # end
+
+    # return D
+end
+
+function BottomHeated_VP()
 to      =   TimerOutput()
 # Define Initial Condition ========================================== #
 # Temperature - 
@@ -43,7 +73,7 @@ P   =   Physics(
     k       =   4.125,              #   Thermische Leitfaehigkeit [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.0e-5,             #   Thermischer Expnasionskoef. [ K^-1 ]
-    Q₀      =   1.84e-08,           #   Waermeproduktionsrate pro Volumen [W/m^3]; 15 non-dim
+    Q₀      =   0.0,                #   Waermeproduktionsrate pro Volumen [W/m^3]
     η₀      =   3.947725485e23,     #   Viskositaet [ Pa*s ] [1.778087025e21]
     ΔT      =   2500.0,             #   Temperaturdifferenz
     # Falls Ra < 0 gesetzt ist, dann wird Ra aus den obigen Parametern
@@ -53,7 +83,6 @@ P   =   Physics(
     Ra      =   1.0e6,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
-Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*(M.ymax-M.ymin)^5) / (P.k*P.κ*P.η₀) 
 # ------------------------------------------------------------------- #
 # Definiere Skalierungskonstanten =================================== # 
 S   =   ScalingConstants!(M,P)
@@ -91,12 +120,10 @@ D       =   DataFields(
     vc      =   zeros(Float64,(NC...)),
     ΔTtop   =   zeros(Float64,NC.x),
     ΔTbot   =   zeros(Float64,NC.x),
-    # Tmax    =   0.0,
-    # Tmin    =   0.0,
-    # Tmean   =   0.0,
+    ηc      =   ones(Float64,(NC...)),
+    η_ex    =   ones(Float64,(NC.x+2,NC.y+2)),
+    ηv      =   ones(Float64,(NV...)),
 )
-# Wärmeproduktionsrate ------
-@. D.Q      =   P.Q₀
 # ------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
 divV        =   zeros(Float64,NC...)
@@ -172,16 +199,16 @@ y   =   merge(y,y1)
 end
 # Anfangsbedingungen ================================================ #
 @timeit to "IniCondition" begin
-IniTemperature!(Ini.T,M,NC,D,x,y;Tb=0.5,Ta=P.Ttop)
+IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
 end
 # ------------------------------------------------------------------- #
 # Randbedingungen =================================================== #
 @timeit to "BoundaryCondition" begin
 # Temperatur ------
 TBC     = (
-    type    = (W=:Neumann, E=:Neumann,N=:Dirichlet,S=:Neumann),
+    type    = (W=:Neumann, E=:Neumann,N=:Dirichlet,S=:Dirichlet),
     val     = (W=zeros(NC.y),E=zeros(NC.y),
-                    N=P.Ttop.*ones(NC.x),S=zeros(NC.x)))
+                    N=P.Ttop.*ones(NC.x),S=P.Tbot.*ones(NC.x)))
 # Geschwindigkeit ------
 VBC     =   (
     type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
@@ -199,9 +226,17 @@ else
     # die Referenzviskositaet η₀ angepasst. 
     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
 end
-filename    =   string("Internally_Heated_",P.Ra[1],
+filename    =   string("Bottom_Heated_VP_",P.Ra[1],
                         "_",NC.x,"_",NC.y,
                         "_",Ini.T)
+# =================================================================== #
+# Rheological Parameters ============================================ #
+R       =   (
+    Ea      =   log(1e5^2),
+    TO      =   1.0, 
+    TE      =   1.0, 
+    η₀      =   1.0,
+)
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
 @timeit to "EquationSetup" begin
@@ -238,6 +273,7 @@ for it = 1:T.itmax
     @printf("Time step: #%04d, Time [non-dim]: %04e\n ",it,
                     Time[it])
     # IEG ------
+    @printf("Momentum Iteration:\n")
     D.vx    .=  0.0
     D.vy    .=  0.0 
     D.Pt    .=  0.0
@@ -245,17 +281,20 @@ for it = 1:T.itmax
     @. D.ρ  =   -P.Ra*D.T
     @timeit to "Residual Iteration" begin
     for iter = 1:niter
+        # Calculate Viscosity --- 
+        EffectiveViscosity!(D,R,:Arrhenius)
+        # ---
         @timeit to "Residual" begin
-        Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
+        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,1.0,Fm,FPt)
         rhsM[Num.Vx]    =   Fm.x[:]
         rhsM[Num.Vy]    =   Fm.y[:]
         rhsM[Num.Pt]    =   FPt[:]
         @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
-                norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+        norm(rhsM)/length(rhsM) < ϵ ? break : nothing
         end
         # Update K ------
         @timeit to "Assembly" begin
-        K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
         end
         # Lösen des lineare Gleichungssystems ------
         @timeit to "Solution" begin
@@ -280,9 +319,6 @@ for it = 1:T.itmax
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
     # ---
-    # @show(maximum(D.vc))
-    # @show(minimum(D.Pt))
-    # @show(maximum(D.Pt))
     # Berechnung der Zeitschrittlänge =============================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
@@ -314,18 +350,24 @@ for it = 1:T.itmax
                 layout=(2,1),subplot=1)       
         contour!(p,x.c,y.c,D.T',lw=1,
                     color="white",cbar=true,alpha=0.5,
-                layout=(2,1),subplot=1)        
+                    layout=(2,1),subplot=1) 
+        heatmap!(p,x.c,y.c,log10.(D.ηc'),
+            xlabel="x",ylabel="y",colorbar=true,
+            title="Viscosity",color=reverse(cgrad(:roma)),
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+            ylims=(M.ymin, M.ymax),clims=(0,5),
+            layout=(2,1),subplot=2)      
         quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-            la=0.5,color="black",
-            layout=(2,1),subplot=1)
-        plot!(p,meanT[it,:],y.ce,
-            xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
-            xlims=(0,1),ylims=(-1,0),
-            label="",aspect_ratio=1,
-            layout=(2,1),subplot=2)
+            la=0.5,color="white",
+            layout=(2,1),subplot=2) 
+        # plot!(p,meanT[it,:],y.ce,
+        #     xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+        #     xlims=(0,1),ylims=(-1,0),
+        #     label="",aspect_ratio=1,
+        #     layout=(2,1),subplot=2)
         if save_fig == 1
             Plots.frame(anim)
         elseif save_fig == 0
@@ -344,14 +386,13 @@ for it = 1:T.itmax
     # --------------------------------------------------------------- #
     # Diffusion ===================================================== #
     @timeit to "Diffusion" begin
-    # CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
-    # Alternatively - defect correction ---
     # Update temperature field --- 
     @. D.T0     =   D.T
+    @printf("Diffusion Iteration:\n")
     for iter = 1:niter
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_exo, ∂2T, 
-                1.0, TBC, Δ, T.Δ[1]; C = 0.5, Q = D.Q, ρ₀ = 1.0, cp = 1.0  )
+                1.0, TBC, Δ, T.Δ[1]; C = 0.5, Q = 0.0, ρ₀ = 1.0, cp = 1.0  )
         @printf("||R_T|| = %1.4e\n", norm(RT)/length(RT))
         norm(RT)/length(RT) < ϵT ? break : nothing
         # Assemble linear system
@@ -415,23 +456,29 @@ p2 = heatmap(x.c,y.c,D.T',
         layout=(2,1),subplot=1)
 contour!(p2,x.c,y.c,D.T',lw=1,
                     color="white",cbar=true,alpha=0.5,
-        layout=(2,1),subplot=1)
+                    layout=(2,1),subplot=1) 
+heatmap!(p2,x.c,y.c,log10.(D.ηc'),
+        xlabel="x",ylabel="y",colorbar=true,
+        title="Viscosity",color=reverse(cgrad(:roma)),
+        aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+        ylims=(M.ymin, M.ymax),clims=(0,5),
+        layout=(2,1),subplot=2)       
 quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
     y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
     quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
             D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-    la=0.5,color="black",
-    layout=(2,1),subplot=1)
-plot!(p2,meanT[find,:],y.ce,
-    xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
-    xlims=(0,1),ylims=(-1,0),
-    label="",aspect_ratio=1,
+    la=0.5,color="white",
     layout=(2,1),subplot=2)
+# plot!(p2,meanT[find,:],y.ce,
+#     xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
+#     xlims=(0,1),ylims=(-1,0),
+#     label="",aspect_ratio=1,
+#     layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(k,string("./examples/MixedHeatedConvection/Results/Internally_Heated_Iterations",P.Ra,
+    savefig(k,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_VP_Iterations",P.Ra,
             "_",NC.x,"_",NC.y,
             "_",Ini.T,".png"))
-    savefig(p2,string("./examples/MixedHeatedConvection/Results/Internally_Heated_Final_Stage",P.Ra,
+    savefig(p2,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_VP_Final_Stage",P.Ra,
             "_",NC.x,"_",NC.y,"_it_",find,"_",
             Ini.T,"_",".png"))
 elseif save_fig == 0
@@ -446,11 +493,12 @@ plot!(q2,Time[1:find],meanV[1:find],
             xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
             layout=(2,1),subplot=2)
 if save_fig == 1
-    savefig(q2,string("./examples/MixedHeatedConvection/Results/Internally_Heated_TimeSeries",P.Ra,
+    savefig(q2,string("./examples/MixedHeatedConvection/Results/Bottom_Heated_VP_TimeSeries",P.Ra,
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q2)
 end
+display(to)
 # ======================================================================= #
 # Plot Mean temperature profile over time =============================== #
 q3  =   plot(mean(meanT[1:find,:],dims=1)',y.ce,
@@ -458,7 +506,7 @@ q3  =   plot(mean(meanT[1:find,:],dims=1)',y.ce,
         xlims=(0,1),ylims=(-1,0),
         label="",aspect_ratio=1)
 if save_fig == 1
-    savefig(q3,string("./examples/MixedHeatedConvection/Results/Internally_Heated_TProfile",P.Ra,
+    savefig(q3,string("./examples/MixedHeatedConvection/Results/Internally_Heated_VP_TProfile",P.Ra,
                         "_",NC.x,"_",NC.y,"_",Ini.T,"_",".png"))
 elseif save_fig == 0
     display(q3)
@@ -467,4 +515,4 @@ display(to)
 # ======================================================================= #
 end
 
-InternallyHeated()
+BottomHeated_VP()
