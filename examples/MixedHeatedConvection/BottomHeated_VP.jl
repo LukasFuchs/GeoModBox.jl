@@ -8,32 +8,43 @@ using GeoModBox.Scaling
 using Statistics, LinearAlgebra
 using Printf, TimerOutputs
 
-function EffectiveViscosity!(D,R,type)
+function EffectiveViscosity!(D,R,ε,type,plasticity)
+
     if type==:Arrhenius
         # Arrhenius like Tackley (2000)
         @. D.ηc    =    R.η₀ * exp(R.Ea/(D.T + R.TO) - R.Ea/(R.TE + R.TO))
-        # Viscosity ---
-        # --- Centroids -
-        D.η_ex[2:end-1,2:end-1]     .=  D.ηc
-        D.η_ex[1,:]     .=  D.η_ex[2,:]
-        D.η_ex[end,:]   .=  D.η_ex[end-1,:]
-        D.η_ex[:,1]     .=  D.η_ex[:,2]
-        D.η_ex[:,end]   .=  D.η_ex[:,end-1]
-          # D.η_exo         .=  D.η_ex
-        # --- Vertices -
-        @. D.ηv     =   0.25 * (D.η_ex[1:end-1,1:end-1] + 
-                                D.η_ex[2:end-0,1:end-1] + 
-                                D.η_ex[1:end-1,2:end-0] + 
-                                D.η_ex[2:end-0,2:end-0])
     else 
         error("Rheology not defined!")
     end
 
-    # if plasticity==:yes
-    #     # Calculate strain rate invariant
-    #     @. ϵ.II     =   sqrt()
-    #     @. D.ηp     =   R.σyield / 2 / ϵ.II
-    # end
+    ϵxy         =   copy(ε.xx)
+    @. ϵxy      =   0.25 * (ε.xy[1:end-1,1:end-1] + 
+                            ε.xy[2:end-0,1:end-1] + 
+                            ε.xy[1:end-1,2:end-0] + 
+                            ε.xy[2:end-0,2:end-0])
+    @. ε.II     =   sqrt(0.5*(ε.xx^2 + ε.yy^2) + ϵxy^2)
+
+    if plasticity==:yes
+        # Calculate strain rate invariant
+        @. D.ηp     =   R.σy / 2 / ε.II
+        
+        # Effective Viscosity ---
+        @. D.ηc     =   min(D.ηp,D.ηc)
+    end
+
+    # Viscosity ---
+    # --- Centroids -
+    D.η_ex[2:end-1,2:end-1]     .=  D.ηc
+    D.η_ex[1,:]     .=  D.η_ex[2,:]
+    D.η_ex[end,:]   .=  D.η_ex[end-1,:]
+    D.η_ex[:,1]     .=  D.η_ex[:,2]
+    D.η_ex[:,end]   .=  D.η_ex[:,end-1]
+        # D.η_exo         .=  D.η_ex
+    # --- Vertices -
+    @. D.ηv     =   0.25 * (D.η_ex[1:end-1,1:end-1] + 
+                            D.η_ex[2:end-0,1:end-1] + 
+                            D.η_ex[1:end-1,2:end-0] + 
+                            D.η_ex[2:end-0,2:end-0])
 
     # return D
 end
@@ -55,7 +66,7 @@ Pl  =   (
 k           =   scatter()
 path        =   string("./examples/MixedHeatedConvection/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   1
+save_fig    =   0
 # ------------------------------------------------------------------- #
 @timeit to "Ini" begin
 # Modellgeometrie Konstanten ======================================== #
@@ -103,7 +114,7 @@ NV      =   (
 # ------------------------------------------------------------------- #
 # Initialisierung der Datenfelder =================================== #
 D       =   DataFields(
-    Q       =   zeros(Float64,(NC...)),
+    # Q       =   zeros(Float64,(NC...)),
     T       =   zeros(Float64,(NC...)),
     T0      =   zeros(Float64,(NC...)),
     T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
@@ -123,18 +134,21 @@ D       =   DataFields(
     ηc      =   ones(Float64,(NC...)),
     η_ex    =   ones(Float64,(NC.x+2,NC.y+2)),
     ηv      =   ones(Float64,(NV...)),
+    ηp      =   zeros(Float64,(NC...)),
 )
 # ------------------------------------------------------------------- #
 # Needed for the defect correction solution ---
 divV        =   zeros(Float64,NC...)
 ε           =   (
     xx      =   zeros(Float64,NC...), 
-    yy      =   zeros(Float64,NC...), 
+    yy      =   zeros(Float64,NC...),
+    II      =   zeros(Float64,NC...), 
     xy      =   zeros(Float64,NV...),
 )
 τ           =   (
     xx      =   zeros(Float64,NC...), 
     yy      =   zeros(Float64,NC...), 
+    II      =   zeros(Float64,NC...),
     xy      =   zeros(Float64,NV...),
 )
 # Residuals ---
@@ -152,7 +166,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   8000,               #   Maximum iterations
+    itmax   =   1,               #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -236,6 +250,7 @@ R       =   (
     TO      =   1.0, 
     TE      =   1.0, 
     η₀      =   1.0,
+    σy      =   1e4,
 )
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
@@ -280,10 +295,12 @@ for it = 1:T.itmax
     # Anfangsresiduum ------
     @. D.ρ  =   -P.Ra*D.T
     @timeit to "Residual Iteration" begin
+    # # Calculate Viscosity --- 
+    # EffectiveViscosity!(D,R,ε,:Arrhenius,:yes)
     for iter = 1:niter
-        # Calculate Viscosity --- 
-        EffectiveViscosity!(D,R,:Arrhenius)
         # ---
+        # Calculate Viscosity --- 
+        EffectiveViscosity!(D,R,ε,:Arrhenius,:yes)
         @timeit to "Residual" begin
         Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,1.0,Fm,FPt)
         rhsM[Num.Vx]    =   Fm.x[:]
@@ -318,6 +335,8 @@ for it = 1:T.itmax
         end
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+    # Berechung stress invariant --- 
+    @. τ.II     =   2.0 * D.ηc * ε.II
     # ---
     # Berechnung der Zeitschrittlänge =============================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -368,10 +387,23 @@ for it = 1:T.itmax
         #     xlims=(0,1),ylims=(-1,0),
         #     label="",aspect_ratio=1,
         #     layout=(2,1),subplot=2)
+        pp = heatmap(x.c,y.c,log10.(ε.II'),
+            xlabel="x",ylabel="y",colorbar=true,
+            title="Strain rate",color=cgrad(:batlow),
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+            ylims=(M.ymin, M.ymax),#clims=(0,5),
+            layout=(2,1),subplot=1)      
+        heatmap!(pp,x.c,y.c,log10.(τ.II'),
+            xlabel="x",ylabel="y",colorbar=true,
+            title="Stress",color=cgrad(:devon),
+            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+            ylims=(M.ymin, M.ymax),#clims=(0,5),
+            layout=(2,1),subplot=2)      
         if save_fig == 1
             Plots.frame(anim)
         elseif save_fig == 0
             display(p)
+            display(pp)
         end
     end
     # --------------------------------------------------------------- #
@@ -469,6 +501,18 @@ quiver!(p2,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
             D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
     la=0.5,color="white",
     layout=(2,1),subplot=2)
+pp2 = heatmap(x.c,y.c,log10.(ε.II'),
+        xlabel="x",ylabel="y",colorbar=true,
+        title="Strain rate",color=cgrad(:batlow),
+        aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+        ylims=(M.ymin, M.ymax),#clims=(0,5),
+        layout=(2,1),subplot=1)      
+heatmap!(pp2,x.c,y.c,log10.(τ.II'),
+    xlabel="x",ylabel="y",colorbar=true,
+    title="Stress",color=cgrad(:devon),
+    aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+    ylims=(M.ymin, M.ymax),#clims=(0,5),
+    layout=(2,1),subplot=2)      
 # plot!(p2,meanT[find,:],y.ce,
 #     xlabel="⟨T⟩",ylabel="y",title="Mean Temperature",
 #     xlims=(0,1),ylims=(-1,0),
@@ -483,6 +527,7 @@ if save_fig == 1
             Ini.T,"_",".png"))
 elseif save_fig == 0
     display(p2)
+    display(pp2)
 end
 # ----------------------------------------------------------------------- #
 # Plot time serieses ==================================================== #
