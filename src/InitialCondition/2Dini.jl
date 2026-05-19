@@ -116,6 +116,12 @@ Example:
     end
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
+    # if isdefined(D,:T0)
+    #     @. D.T0     =   D.T
+    # end
+    # if isdefined(D,:T_exo)
+    #     @. D.T_exo  =   D.T_ex
+    # end
     return D
 end    
 
