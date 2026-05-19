@@ -6,22 +6,30 @@ function Q_H_Relation()
 k       =   4.125           # [ W/m/K ]
 ρ       =   3300            # [ kg/m^3 ]
 cp      =   1250            # [ J/kg/K ]
-ΔT      =   2500            # [ K ]
+ΔT      =   1300            # [ K ]
 
-κ       =   1e-6            # [ m^2/s ]
+κ       =   k / ρ / cp      # [ m^2/s ]
+@printf("κ = %e\n",κ)
 g       =   9.81            # [ m/s^2 ] 
-α       =   2.0e-5          # [ K^-1 ]
+α       =   1.0e-5          # [ K^-1 ]
 
 # R       =   6.371e6         # [ m ]
-D       =   2.900e6         # [ m ] 2.871e6
+# D       =   2.900e6         # [ m ] 2.871e6
+D       =   2871e3         # [ m ] 2.871e6
 ar      =   4               # Aspect ratio
 L       =   ar * D          # Length
 
 # Rcmb    =   R-D             # [ m ]
 
-η       =   3.947725485e22  # [ Pa s ]
+# η       =   3.947725485e22  # [ Pa s ]
 
-RaD     =   ρ*g*α*ΔT*D^3/(η*κ)
+# RaD     =   ρ*g*α*ΔT*D^3/(η*κ)
+
+RaD       =   1e5
+
+η       =   (ρ * g * α * ΔT * D^3)/(RaD * κ)
+
+@printf("η = %e\n",η)
 
 @printf("- Calculate Heat Production Rate -")
 @printf("\n")
@@ -52,7 +60,7 @@ RaD     =   ρ*g*α*ΔT*D^3/(η*κ)
 # Heat generation rate -------------------------------------------------- #
 @printf("\n-----------------------\n")
 @printf(" MODEL DATA \n")
-Qp      =   25; 
+Qp      =   10; 
 
 Qsc     =   (ΔT*κ*ρ*cp) / D^2
 Hsc     =   (ΔT * k)/ (D^2 * ρ)

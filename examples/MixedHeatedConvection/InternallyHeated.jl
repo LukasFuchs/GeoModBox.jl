@@ -43,7 +43,7 @@ P   =   Physics(
     k       =   4.125,              #   Thermische Leitfaehigkeit [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.0e-5,             #   Thermischer Expnasionskoef. [ K^-1 ]
-    Q₀      =   1.84e-08,           #   Waermeproduktionsrate pro Volumen [W/m^3]
+    Q₀      =   1.84e-08,           #   Waermeproduktionsrate pro Volumen [W/m^3]; 15 non-dim
     η₀      =   3.947725485e23,     #   Viskositaet [ Pa*s ] [1.778087025e21]
     ΔT      =   2500.0,             #   Temperaturdifferenz
     # Falls Ra < 0 gesetzt ist, dann wird Ra aus den obigen Parametern

@@ -541,11 +541,9 @@ $\begin{equation}
 \mathbf{K} \cdot \mathbf{x} = \mathbf{b},
 \end{equation}$ 
 
-where 
-
-- $\mathbf{K}$ is the coefficient matrix,
-- $\mathbf{x}$ is the solution vector, and 
-- $\mathbf{b}$ is the known right-hand side.
+where $\mathbf{K}$ is the coefficient matrix,
+$\mathbf{x}$ is the solution vector, and 
+$\mathbf{b}$ is the known right-hand side.
 
 The solution vector contains the horizontal and vertical velocity as well as the pressure field, whose ordering follows the system global numbering of $I^\textrm{C}_x$, $I^\textrm{C}_y$, and $I^\textrm{C}_p$ as defined in Equations (7)-(9). The right-hand side contains the buoyancy term for the $y$-component of the momentum equation. Depending on the chosen solution strategy, it may also include contributions from the boundary conditions. 
 
