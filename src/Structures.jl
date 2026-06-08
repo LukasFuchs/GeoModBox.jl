@@ -175,6 +175,8 @@ DataFields([0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;
     ηv          ::Matrix{Float64}   = zeros(1,1)
     ρ           ::Matrix{Float64}   = zeros(1,1)
     ρ_ex        ::Matrix{Float64}   = zeros(1,1)
+    p           ::Matrix{Float64}   = zeros(1,1)
+    p_ex        ::Matrix{Float64}   = zeros(1,1)
     cp          ::Matrix{Float64}   = zeros(1,1)
     vx          ::Matrix{Float64}   = zeros(1,1)
     vy          ::Matrix{Float64}   = zeros(1,1)

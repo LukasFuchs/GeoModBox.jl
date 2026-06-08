@@ -143,6 +143,20 @@ Example:
                 Ma.phase[k]     =   phase[1]    #   Matrix
             end
         end
+    elseif ini==:ShearBandSetting
+        # Bereich der Anomalie ---       
+        xc          =   (M.xmin+M.xmax)/2
+        yc          =   M.ymin
+        @threads for k = 1:nmark
+            x_ell   =  (Ma.x[k]-xc) + (Ma.y[k]-yc)
+            y_ell   =  -(Ma.x[k]-xc) + (Ma.y[k]-yc)
+            Elli    =   (x_ell/ellA)^2 + (y_ell/ellA)^2
+            if Elli < 1
+                Ma.phase[k]     =   phase[2]    #   Inclusion
+            else
+                Ma.phase[k]     =   phase[1]    #   Matrix
+            end
+        end
     end
 
     return Ma
