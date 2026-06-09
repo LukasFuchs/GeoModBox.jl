@@ -202,7 +202,7 @@ Example:
         end
         @. D.vx     =   D.vx/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
         @. D.vy     =   D.vy/(100.0*(60.0*60.0*24.0*365.25))        # [m/s]
-    elseif type==:SimpleShear || type==:PureShear
+    elseif type==:SimpleShear || type==:PureShear || type==:ShearBandPS
         if type==:SimpleShear
             # Horizontal velocity 
             @. BC.val.S     =   (y.v2d[:,1]+(M.ymax-M.ymin)/2)*ε        #   South
@@ -226,6 +226,17 @@ Example:
             @. BC.val.vyN   =   (y.vy2d[2:end-1,end]+(M.ymax-M.ymin)/2)*ε       #   North
             @. BC.val.W     =   (y.v2d[1,:]+(M.ymax-M.ymin)/2)*ε                #   West
             @. BC.val.E     =   (y.v2d[end,:]+(M.ymax-M.ymin)/2)*ε              #   East
+        elseif type==:ShearBandPS
+            # Horizontal velocity 
+            @. BC.val.S     =   -x.vx2d[:,1]*ε                                  #   South
+            @. BC.val.N     =   -x.vx2d[:,end]*ε                                #   North
+            @. BC.val.vxW   =   -x.vx2d[1,2:end-1]*ε                            #   West
+            @. BC.val.vxE   =   -x.vx2d[end,2:end-1]*ε                          #   East
+            # Vertical velocity 
+            @. BC.val.vyS   =   y.vy2d[2:end-1,1]*ε                             #   South
+            @. BC.val.vyN   =   y.vy2d[2:end-1,end]*ε                           #   North
+            @. BC.val.W     =   y.v2d[1,:]*ε                                    #   West
+            @. BC.val.E     =   y.v2d[end,:]*ε                                  #   East
         end
         D.vx[1,2:end-1]     .=   BC.val.vxW      #   West
         D.vx[end,2:end-1]   .=   BC.val.vxE      #   East

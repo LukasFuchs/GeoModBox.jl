@@ -12,14 +12,17 @@ function ShearHeatingShearBands()
     @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
     #   1) block
-    Ini         =   (p=:ShearBandSetting,) 
+    Ini         =   (p=:ShearBandSetting,
+                     V=:ShearBandPS,
+                     ε = 5e-14,
+    ) 
     radius      =   3.0e3           # [ m ]
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
-        qinc    =   4,
+        qinc    =   10,
         mainc   =   2,
-        qsc     =   100*(60*60*24*365.25)*5e1
+        qsc     =   100*(60*60*24*365.25)
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
@@ -89,12 +92,12 @@ function ShearHeatingShearBands()
     # g       =   0               #   Gravitational acceleration
 
     η₀      =   1.0e21          #   Reference Viscosity
-    η₁      =   1.0e21          #   Block Viscosity
+    η₁      =   1.0e19          #   Block Viscosity
     ηᵣ      =   log10(η₁/η₀)
     η       =   [η₀,η₁]         #   Viscosity for phases
 
-    ρ₀      =   0.0             #   Background density
-    ρ₁      =   0.0             #   Block density
+    ρ₀      =   2700.0             #   Background density
+    ρ₁      =   2700.0             #   Block density
     ρ       =   [ρ₀,ρ₁] 
 
     phase   =   [0,1]
@@ -144,22 +147,27 @@ function ShearHeatingShearBands()
         xy      =   zeros(Float64,NV...),
     )
     # ------------------------------------------------------------------- #
-    # # Boundary Conditions =============================================== #
-    # VBC     =   (
-    #     type    =   (E=:const,W=:const,S=:freeslip,N=:const),
-    #     val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
-    # )
-    # # ------------------------------------------------------------------- #
-    # # Time ============================================================== #
-    # T   =   ( 
-    #     tmax    =   [0.0],  
-    #     Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
-    #     Δ       =   [0.0],
-    #     time    =   [0.0,0.0],
-    # )
-    # T.tmax[1]   =   20.589 * 1e6 * (60*60*24*365.25)   # [ s ]
-    # nt          =   9999
-    # # ------------------------------------------------------------------- #
+    # Boundary Conditions =============================================== #
+    VBC     =   (
+        type    =   (E=:const,W=:const,S=:freeslip,N=:const),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                    vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
+    )
+    # ------------------------------------------------------------------- #
+    # Initial Condition ================================================= #
+    IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
+    # ------------------------------------------------------------------- #
+    # Time ============================================================== #
+    T   =   ( 
+        tmax    =   [0.0],  
+        Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
+        Δ       =   [0.0],
+        time    =   [0.0,0.0],
+    )
+    T.tmax[1]   =   20.589 * 1e6 * (60*60*24*365.25)   # [ s ]
+    nt          =   20
+    # ------------------------------------------------------------------- #
+    end
     # Tracer Advection ================================================== #
     @timeit to "Tracer Ini" begin
     nmx,nmy     =   3,3
@@ -186,95 +194,94 @@ function ShearHeatingShearBands()
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
     # Interpolate from markers to cell ---
-    # Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-    # D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+    D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
     D.p     .=  D.p_ex[2:end-1,2:end-1]
-    # Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-    # D.ηc    .=  D.η_ex[2:end-1,2:end-1]
-    # Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+    D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
     end
-    # # System of Equations =============================================== #
-    # # Iterations --- 
-    # niter       =   50
-    # ϵ           =   1e-8
-    # # Numbering, without ghost nodes! ---
-    # off    = [  NV.x*NC.y,                          # vx
-    #             NV.x*NC.y + NC.x*NV.y,              # vy
-    #             NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
+    # System of Equations =============================================== #
+    # Iterations --- 
+    niter       =   50
+    ϵ           =   1e-8
+    # Numbering, without ghost nodes! ---
+    off    = [  NV.x*NC.y,                          # vx
+                NV.x*NC.y + NC.x*NV.y,              # vy
+                NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
 
-    # Num    =    (
-    #     Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
-    #     Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
-    #     Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-    #             )
-    # δx      =   zeros(maximum(Num.Pt))
-    # F       =   zeros(maximum(Num.Pt))
-    # # Residuals ---
-    # Fm     =    (
-    #     x       =   zeros(Float64,NV.x, NC.y), 
-    #     y       =   zeros(Float64,NC.x, NV.y)
-    # )
-    # FPt     =   zeros(Float64,NC...)      
+    Num    =    (
+        Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
+        Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
+        Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
+                )
+    δx      =   zeros(maximum(Num.Pt))
+    F       =   zeros(maximum(Num.Pt))
+    # Residuals ---
+    Fm     =    (
+        x       =   zeros(Float64,NV.x, NC.y), 
+        y       =   zeros(Float64,NC.x, NV.y)
+    )
+    FPt     =   zeros(Float64,NC...)      
     # ------------------------------------------------------------------- #
-    end
     # Time Loop ========================================================= #
-    # @timeit to "Time Loop" begin
-    # for it = 1:nt
-    #     # Update Time ---
-    #     T.time[1]   =   T.time[2] 
-    #     @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
-    #                 T.time[1]/(60*60*24*365.25)/1.0e6)
-    #     # Momentum Equation ===
-    #     # Initial Residual ---------------------------------------------- #
-    #     D.vx    .=  0.0
-    #     D.vy    .=  0.0
-    #     D.Pt    .=  0.0
-    #     @timeit to "Solution Iteration" begin
-    #     for iter = 1:niter
-    #         @timeit to "Residual" begin
-    #         Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-    #         F[Num.Vx]   =   Fm.x[:]
-    #         F[Num.Vy]   =   Fm.y[:]
-    #         F[Num.Pt]   =   FPt[:]
-    #         @printf("||R|| = %1.4e\n", norm(F)/length(F))
-    #         norm(F)/length(F) < ϵ ? break : nothing
-    #         end
-    #         # Assemble Coefficients ===================================== #
-    #         @timeit to "Assembly" begin
-    #         K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-    #         end
-    #         # ----------------------------------------------------------- #
-    #         # Solution of the linear system ============================= #
-    #         @timeit to "Solution" begin
-    #         δx      =   - K \ F
-    #         end
-    #         # ----------------------------------------------------------- #
-    #         # Update Unknown Variables ================================== #
-    #         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-    #         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-    #         D.Pt                .+=  δx[Num.Pt]
-    #     end
-    #     end
-    #     # --------------------------------------------------------------- #
-    #     # Get the velocity on the centroids ---
-    #     for i = 1:NC.x
-    #         for j = 1:NC.y
-    #             D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
-    #             D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
-    #         end
-    #     end
-    #     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-    #     # ---
-    #     @show(minimum(D.vc))
-    #     @show(maximum(D.vc))
-    #     # ---
-    #     if T.time[2] >= T.tmax[1]
-    #         it = nt
-    #     end
-    #     # ---
-    #     if mod(it,2) == 0 || it == nt || it == 1
-            # p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
+    @timeit to "Time Loop" begin
+    for it = 1 # :nt
+        # Update Time ---
+        T.time[1]   =   T.time[2] 
+        @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
+                    T.time[1]/(60*60*24*365.25)/1.0e6)
+        # Momentum Equation ===
+        # Initial Residual ---------------------------------------------- #
+        D.vx[2:end-1,:]    .=  0.0
+        D.vy[:,1:end-1]    .=  0.0
+        D.Pt               .=  0.0
+        @timeit to "Solution Iteration" begin
+        for iter = 1:niter
+            @timeit to "Residual" begin
+            Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,P.g,Fm,FPt)
+            F[Num.Vx]   =   Fm.x[:]
+            F[Num.Vy]   =   Fm.y[:]
+            F[Num.Pt]   =   FPt[:]
+            @printf("||R|| = %1.4e\n", norm(F)/length(F))
+            norm(F)/length(F) < ϵ ? break : nothing
+            end
+            # Assemble Coefficients ===================================== #
+            @timeit to "Assembly" begin
+            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            end
+            # ----------------------------------------------------------- #
+            # Solution of the linear system ============================= #
+            @timeit to "Solution" begin
+            δx      =   - K \ F
+            end
+            # ----------------------------------------------------------- #
+            # Update Unknown Variables ================================== #
+            D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+            D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+            D.Pt                .+=  δx[Num.Pt]
+        end
+        end
+        # --------------------------------------------------------------- #
+        # Get the velocity on the centroids ---
+        for i = 1:NC.x
+            for j = 1:NC.y
+                D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
+                D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+            end
+        end
+        @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+        # ---
+        @show(minimum(D.vc))
+        @show(maximum(D.vc))
+        # ---
+        if T.time[2] >= T.tmax[1]
+            it = nt
+        end
+        # ---
+        if mod(it,2) == 0 || it == nt || it == 1
+            # r = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
             #             xlabel="x[km]",ylabel="y[km]",colorbar=false,
             #             title="ρ",
             #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             ylims=(M.ymin/1e3, M.ymax/1e3),
@@ -292,62 +299,79 @@ function ShearHeatingShearBands()
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
                         ylims=(M.ymin/1e3, M.ymax/1e3))
                         # layout=(3,1),subplot=3)
-            # heatmap!(p,x.c./1e3,y.c./1e3,D.vc',
-            #             xlabel="x[km]",ylabel="y[km]",colorbar=false,
-            #             title="V_c",color=cgrad(:batlow),
-            #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-            #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            #             layout=(2,2),subplot=4)
-            # quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            #             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            #             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-            #                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-            #             la=0.5,color="white",layout=(2,2),subplot=4)
-            # heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
-            #             xlabel="x[km]",ylabel="y[km]",title="η_c",
-            #             clims=(15,27),
-            #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-            #             ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-            #             layout=(2,2),subplot=3)
-    #         if save_fig == 1
-    #             Plots.frame(anim)
-    #         elseif save_fig == 0
+            r = heatmap(x.c./1e3,y.c./1e3,D.vc',
+                        xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                        title="V_c",color=cgrad(:batlow),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3))
+                        # layout=(1,3),subplot=3)
+            s = heatmap(x.v./1e3,y.ce./1e3,D.vx',
+                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
+                        title="V_x",color=cgrad(:batlow),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3))
+                        # layout=(1,3),subplot=1)
+            u = heatmap(x.ce./1e3,y.v./1e3,D.vy',
+                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
+                        title="V_y",color=cgrad(:batlow),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
+                        ylims=(M.ymin/1e3, M.ymax/1e3))
+                        # layout=(1,3),subplot=2)
+            quiver!(r,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                        y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+                        quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+                                D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
+                        la=0.5,color="white")
+                        # layout=(1,3),subplot=3)
+            t = heatmap(x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
+                        xlabel="x[km]",ylabel="y[km]",title="η_c",
+                        # clims=(15,27),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true)
+                        # layout=(2,2),subplot=3)
+            if save_fig == 1
+                Plots.frame(anim)
+            elseif save_fig == 0
                 display(p)
                 display(q)
-    #         end
-    #     end
-    #     if T.time[2] >= T.tmax[1]
-    #         break
-    #     end
-    #      # Calculate Time Stepping ---
-    #     T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
-    #                         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-    #     @printf("\n")
-    #     # Calculate Time ---
-    #     T.time[2]   =   T.time[1] + T.Δ[1]
-    #     if T.time[2] > T.tmax[1] 
-    #         T.Δ[1]      =   T.tmax[1] - T.time[1]
-    #         T.time[2]   =   T.time[1] + T.Δ[1]
-    #     end
-    #     # Advection ===
-    #     @timeit to "Tracer Advection" begin
-    #     # Advect tracers ---
-    #     @printf("Running on %d thread(s)\n", nthreads())  
-    #     AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
-    #     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-    #     @timeit to "Tracer Interpolation" begin
-    #     # Interpolate phase from tracers to grid ---
-    #     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-    #     D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
-    #     Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
-    #     D.p     .=  D.p_ex[2:end-1,2:end-1]
-    #     Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-    #     D.ηc    .=   D.η_ex[2:end-1,2:end-1]
-    #     Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-    #     end
-    #     end
-    # end # End Time Loop
-    # end
+                display(r)
+                display(t)
+                display(s)
+                display(u)
+            end
+        end
+        if T.time[2] >= T.tmax[1]
+            break
+        end
+        # # Calculate Time Stepping ---
+        # T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
+        #                     (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+        # @printf("\n")
+        # # Calculate Time ---
+        # T.time[2]   =   T.time[1] + T.Δ[1]
+        # if T.time[2] > T.tmax[1] 
+        #     T.Δ[1]      =   T.tmax[1] - T.time[1]
+        #     T.time[2]   =   T.time[1] + T.Δ[1]
+        # end
+        # # Advection ===
+        # @timeit to "Tracer Advection" begin
+        # # Advect tracers ---
+        # @printf("Running on %d thread(s)\n", nthreads())  
+        # AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+        # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+        # @timeit to "Tracer Interpolation" begin
+        # # Interpolate phase from tracers to grid ---
+        # Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+        # D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
+        # Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        # D.p     .=  D.p_ex[2:end-1,2:end-1]
+        # Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+        # D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+        # Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        # end
+        # end
+    end # End Time Loop
+    end
     # Save Animation ---
     if save_fig == 1
         # Write the frames to a GIF file
