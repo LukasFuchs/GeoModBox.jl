@@ -34,7 +34,10 @@ Example:
     IniTemperature!(:circle,M,NC,D,x,y;Tb=1200,Ta=0)
 """
 @views function IniTemperature!(type,M,NC,D,x,y;Tb=600.0,Ta=1200.0,σ=0.1)
-    if type==:circle 
+    if type==:const 
+        # Constant temperature ---
+        @. D.T_ex = Tb
+    elseif type==:circle 
         # Circle shaped anomaly ---
         # Bereich der Anomalie ---       
         ri          =   .2
@@ -116,12 +119,12 @@ Example:
     end
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]
-    # if isdefined(D,:T0)
-    #     @. D.T0     =   D.T
-    # end
-    # if isdefined(D,:T_exo)
-    #     @. D.T_exo  =   D.T_ex
-    # end
+    if isdefined(D,:T0)
+        @. D.T0     =   D.T
+    end
+    if isdefined(D,:T_ex0)
+        @. D.T_ex0  =   D.T_ex
+    end
     return D
 end    
 

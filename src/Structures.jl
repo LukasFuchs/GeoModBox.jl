@@ -169,7 +169,7 @@ DataFields([0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;
     T           ::Matrix{Float64}   = zeros(1,1)
     T0          ::Matrix{Float64}   = zeros(1,1)
     T_ex        ::Matrix{Float64}   = zeros(1,1)
-    T_exo       ::Matrix{Float64}   = zeros(1,1)
+    T_ex0       ::Matrix{Float64}   = zeros(1,1)
     ηc          ::Matrix{Float64}   = zeros(1,1)
     η_ex        ::Matrix{Float64}   = zeros(1,1)
     ηv          ::Matrix{Float64}   = zeros(1,1)

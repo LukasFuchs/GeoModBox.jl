@@ -4,7 +4,7 @@ using ExtendableSparse
 # Time-dependent solvers, constant thermal parameters =================== #
 # ======================================================================= #
 """
-    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC; Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using an explicit, forward Euler finite difference scheme.
@@ -29,10 +29,11 @@ Optional input values (to include a heat source):
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
+    Qₛ           : Shear heating source term [ Pa/s ]
 
 """
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
     # Function to solve 2D heat diffusion equation using the explicit finite
     # difference scheme
     # ------------------------------------------------------------------- #
@@ -62,7 +63,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC;
             D.T[i,j] = D.T_ex[i1,j1] + 
                 sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
                 sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
-                Q[i,j] * Δt / ρ₀ / cp
+                (Q[i,j] + Qₛ[i,j]) * Δt / ρ₀ / cp 
         end
     end
     # ------------------------------------------------------------------- #
@@ -72,7 +73,8 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC;
 end
 
 """
-    ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, Q, κ, BC, Δ, Δt;C=0)
+    ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
+                            C=0, Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
 
 Function to calculate the residual of the two dimensional heat diffusion equation assuming 
 constant thermal parameters and radiogenic heating only. The residual is required for 
@@ -92,7 +94,6 @@ via `AssembleMatrix2Dc()`.
     T_ex0       : 2D extended centroid temperature field of the current time step
     ∂2T         : Tuple containing the second space derivatives of the temperature
                   in the horizontal and vertical direction
-    Q           : Volumetric heat production rate [ W/m³ ]
     κ           : Diffusivity [ m²/s ]
     BC          : Tuple for the boundary condition
     Δ           : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
@@ -107,10 +108,11 @@ Optional input values:
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
+    Qₛ           : Shear heating source term [ Pa/s ]
     
 """
 function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
-                C = 0, Q = 0.0, ρ₀ = 3300.0, cp = 1200.0 )
+                C = 0, Q = 0.0, ρ₀ = 3300.0, cp = 1200.0, Qₛ = 0.0 )
     if C < 1
         # Implicit 
         @. T_ex[2:end-1,2:end-1] = T 
@@ -140,11 +142,11 @@ function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
         @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
         @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
     end
-    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ₀/cp
+    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ₀/cp - Qₛ/ρ₀/cp
 end
 
 """
-    AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt )
+    AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt; C=C )
 
 Function to build the coefficient matrix K for the unknown centroid temperature field in the 
 2D heat diffusion equation assuming constant thermal parameter and radiogenig heating only. 
@@ -158,6 +160,13 @@ a five, non-zero diagonal matrix to solve the system of equations.
     nc      : Tuple or structure containing the number of centroids in the horizontal and vertical direction 
     Δ       : Tuple or structure containint the horizontal and vertical grid resolution
     Δt      : Time step [ s ]
+
+    Optional input values: 
+    C       : Constant defining the residual for a certain finite difference discretization 
+              method, i.e.: 
+                C = 0   -> implicit, backward Euler discretization (default)
+                C = 0.5 -> Crank-Nicolson discretization
+                C = 1   -> explicit, forward Euler discretization
 """
 function AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt;C=0 )
     # Linear system of equation
@@ -210,7 +219,8 @@ function AssembleMatrix2Dc( κ, BC, Num, nc, Δ, Δt;C=0 )
 end
 
 """
-    BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K, Num)
+    BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num;
+                        Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using an implicit, backward Euler finite difference scheme for a 
@@ -238,11 +248,12 @@ Optional input values (to include a heat source):
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
+    Qₛ           : Shear heating source term [ Pa/s ]
 
 """
 function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num; 
-                        Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
-# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
+                        Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp + Qₛ[i,j]
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
 a   =   κ / Δx^2
@@ -250,7 +261,7 @@ b   =   κ / Δy^2
 c   =   1 / Δt
 
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ 
-            reshape(Q,NC.x*NC.y)./ρ₀./cp
+            reshape(Q,NC.x*NC.y)./ρ₀./cp + reshape(Qₛ,NC.x*NC.y)./ρ₀./cp
 
 # Loop over the grid points ---
 for i = 1:NC.x
@@ -336,8 +347,8 @@ Optional input values (to include a heat source):
     cp          : Specific heat capacity [ J/kg/K ]
 """
 function CNA2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
-# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+# dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp + Qₛ[i,j]/ρ/cp
 # ----------------------------------------------------------------------- #
 
 # Define coefficients ---
@@ -396,7 +407,7 @@ end
 # ------------------------------------------------------------------- #
 # Berechnung der rechten Seite -------------------------------------- #
 rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ 
-                reshape(Q,NC.x*NC.y)./ρ₀./cp
+                reshape(Q,NC.x*NC.y)./ρ₀./cp + reshape(Qₛ,NC.x*NC.y)./ρ₀./cp
 # ------------------------------------------------------------------- #        
 # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
 for i = 1:NC.x
@@ -686,9 +697,10 @@ Optional input values:
                         C = 0   -> implicit, backward Euler discretization (default)
                         C = 0.5 -> Crank-Nicolson discretization
                         C = 1   -> explicit, forward Euler discretization
+    Qₛ           : Shear heating source term [ W/m³ ] 
     
 """
-function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0)
+function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0,Qₛ=0.0)
     if C < 1
         @. T_ex[2:end-1,2:end-1] = T 
         @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
@@ -725,7 +737,7 @@ function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, �
     @. R     = ρ*Cp*(T - T0)/Δt + 
                     (1-C)*((q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y) + 
                     C*((q.x0[2:end,:] - q.x0[1:end-1,:])/Δ.x + (q.y0[:,2:end] - q.y0[:,1:end-1])/Δ.y) - 
-                    Q
+                    Q - Qₛ
 
     # @. T_ex[2:end-1,2:end-1] = T 
     # @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
