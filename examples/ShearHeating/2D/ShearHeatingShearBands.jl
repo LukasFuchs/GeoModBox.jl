@@ -1,11 +1,14 @@
-using Plots, ExtendableSparse
-using GeoModBox
+using Plots, ExtendableSparse, Base.Threads
+using GeoModBox, GeoModBox.Tracers.TwoD
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
-using GeoModBox.Tracers.TwoD
-using Base.Threads
-using Printf, LinearAlgebra
-using TimerOutputs
+using Statistics
+using Printf, LinearAlgebra, TimerOutputs, Interpolations, LsqFit
+
+# ======================================================================= #
+# ======================= HELPER FUNCTIONS ============================== #
+# ======================================================================= #
+# ----------------------------------------------------------------------- #
 function GetSecondInvariants!(ε,τ)
     # Get shear strain rate and stress on centroids ---
     @. ε.xyc    =   (ε.xy[1:end-1,1:end-1] + ε.xy[2:end-0,1:end-1] + 
@@ -16,37 +19,243 @@ function GetSecondInvariants!(ε,τ)
     @. ε.II     =   sqrt(0.5*(ε.xx^2 + ε.yy^2) + ε.xyc^2)
     @. τ.II     =   sqrt(0.5*(τ.xx^2 + τ.yy^2) + τ.xyc^2)
 end
+# ----------------------------------------------------------------------- #
+function GetTimeStep!(T,Δ,P,D)
+    T.Δc    =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
+                    (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+    T.Δd    =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
+    T.Δ     =   minimum([T.Δd,T.Δc])
+end
+# ----------------------------------------------------------------------- #
+function ComputeStrainStress2D!(D,ε,τ,divV,Δ)
+    @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
+    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
+    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
+    @. ε.xy =   0.5*( (D.vx[:,2:end] - D.vx[:,1:end-1])/Δ.y + (D.vy[2:end,:] - D.vy[1:end-1,:])/Δ.x ) 
+    @. τ.xx =   2.0 * D.ηc * ε.xx
+    @. τ.yy =   2.0 * D.ηc * ε.yy
+    @. τ.xy =   2.0 * D.ηv * ε.xy
+end
+# ----------------------------------------------------------------------- #
+function UpdateRheo!(ε,Rhe,D,P;ini=:no)
 
-function ShearHeatingShearBands()
+    # Set effective strain rate to avoid Infs and NaNs --- 
+    @. Rhe.εIIeff   =   max(ε.II, Rhe.εIImin)
+
+    # Update rheology ---
+    # Viscosity ---            
+    @. Rhe.ηmat =   (2.0^((1.0-Rhe.n[1])/Rhe.n[1]))/(3.0^((1.0+Rhe.n[1])/(2.0*Rhe.n[1]))) * 
+                     Rhe.A[1]^(-1/Rhe.n[1]) * Rhe.εIIeff^(1/Rhe.n[1]-1) * exp(Rhe.Ea[1]/(Rhe.n[1]*P.RG*(D.T+273.15)))
+    @. Rhe.ηinc =   (2.0^((1.0-Rhe.n[2])/Rhe.n[2]))/(3.0^((1.0+Rhe.n[2])/(2.0*Rhe.n[2]))) * 
+                     Rhe.A[2]^(-1/Rhe.n[2]) * Rhe.εIIeff^(1/Rhe.n[2]-1) * exp(Rhe.Ea[2]/(Rhe.n[2]*P.RG*(D.T+273.15)))
+    
+    # @. Rhe.ηnew =   Rhe.ηmat.^(1.0 .- D.p) .* Rhe.ηinc.^D.p
+    if Rhe.avg_p == :arithmetic
+        @. Rhe.ηnew = (1.0 - D.p) * Rhe.ηmat + D.p * Rhe.ηinc
+    elseif Rhe.avg_p == :harmonic
+        @. Rhe.ηnew = 1.0 / ( (1.0 - D.p) / Rhe.ηmat + D.p / Rhe.ηinc )
+    elseif Rhe.avg_p == :geometric
+        @. Rhe.ηnew = Rhe.ηmat^(1.0 - D.p) * Rhe.ηinc^D.p
+    else
+        error("Unknown viscosity averaging: $(Rhe.avg_p)")
+    end
+
+    if ini==:no
+        @. D.ηc     =   exp((1-Rhe.ω)*log(D.ηc) + Rhe.ω*log(Rhe.ηnew))
+    else
+        @. D.ηc     =   Rhe.ηnew
+    end
+    # --- Extended Centroids-
+    D.η_ex[2:end-1,2:end-1]     .=  D.ηc
+    D.η_ex[1,:]     .=  D.η_ex[2,:]
+    D.η_ex[end,:]   .=  D.η_ex[end-1,:]
+    D.η_ex[:,1]     .=  D.η_ex[:,2]
+    D.η_ex[:,end]   .=  D.η_ex[:,end-1]
+    # --- Vertices -
+    if Rhe.avg_v == :arithmetic
+        @. D.ηv =
+            0.25*(
+                D.η_ex[1:end-1,1:end-1] + 
+                D.η_ex[2:end  ,1:end-1] + 
+                D.η_ex[1:end-1,2:end  ] + 
+                D.η_ex[2:end  ,2:end  ]
+            )
+    elseif Rhe.avg_v == :harmonic
+        @. D.ηv =
+            4.0/(
+                1/D.η_ex[1:end-1,1:end-1] + 
+                1/D.η_ex[2:end  ,1:end-1] + 
+                1/D.η_ex[1:end-1,2:end  ] + 
+                1/D.η_ex[2:end  ,2:end  ]
+            )
+    elseif Rhe.avg_v == :geometric
+        @. D.ηv =
+            exp(0.25*(
+                log(D.η_ex[1:end-1,1:end-1]) + 
+                log(D.η_ex[2:end  ,1:end-1]) + 
+                log(D.η_ex[1:end-1,2:end  ]) + 
+                log(D.η_ex[2:end  ,2:end  ])
+            ))
+    else
+        error("Unknown viscosity averaging: $(Rhe.avg_v)")
+    end
+end
+# ----------------------------------------------------------------------- #
+function Diagnostics!(phbd,halfwidth,nprof,
+                        M,T,D,Ini,x,y,ε,
+                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        xp,yp,it)
+    pp  =   nothing
+    r   =   nothing
+    # Estimate shear band angle ----------------------------------------- #
+    # Matrix shear-zone candidate points
+    mask_mat    =   D.p .< phbd
+    mask_right  =   x.c2d .> 1.5e3
+    mask_top    =   y.c2d .> 1.5e3
+    mask_high   =   ε.II .>  Ini.ε
+    # Shear band mask --- Total ---
+    mask_shear_band = mask_mat .& mask_right .& mask_top .& mask_high
+    # Remove points of lower strain rate ---
+    mask_low  = ε.II .>  0.4 * maximum(ε.II[mask_shear_band])
+    # Final mask ---
+    mask_band = mask_shear_band .& mask_low
+    # Define profile through the shear band ----------------------------- #
+    if style==:moving
+        # Shear band point coordinates ---
+        xb      =   x.c2d[mask_band]
+        yb      =   y.c2d[mask_band]
+        # Fit y = a*x + b ---
+        Afit    =   hcat(xb, ones(length(xb)))
+        a, b    =   Afit \ yb
+        # Define center point for profile ------------------------------- #
+        λ           =   0.2   # 0 near inclusion, 1 near top shear band points
+        xc          =   λ * maximum(xb)
+        yc          =   a * xc + b
+        θsb[it]     =   atan(a)   # shear band angle
+    elseif style==:fixed
+        xc          =   3.8e3 * exp(-strain[it])
+        yc          =   3.8e3 * exp( strain[it])
+        θsb[it]     =   atan(yc, xc)
+    end
+    # Calculate points for profile ---
+    # Normal to the shear band ---
+    nx      =   -sin(θsb[it])
+    ny      =   cos(θsb[it])
+    # Profile length ---
+    sbl     =   range(-halfwidth, halfwidth, length=nprof)
+    # Profile coordinates ---
+    @. xp   =   xc + sbl * nx
+    @. yp   =   yc + sbl * ny
+    # --------------------------------------------------------------- #
+    # Interpolate strain rate and temperature ----------------------- #
+    itpε    =   extrapolate(interpolate((x.c, y.c), ε.II, Gridded(Linear())), NaN)
+    itpT    =   extrapolate(interpolate((x.c, y.c), D.T,  Gridded(Linear())), NaN)
+    εprof   =   [itpε(xp[k], yp[k]) for k in eachindex(xp)]
+    Tprof   =   [itpT(xp[k], yp[k]) for k in eachindex(xp)]
+    # --------------------------------------------------------------- #
+    # Fit gaussian to strain rate profile --------------------------- #
+    # Scale strain rate profile --- gives a better fit -
+    εscale      =   Ini.ε
+    εprof_s     =   εprof ./ εscale
+
+    εbg         =   quantile(εprof_s, 0.1)
+    εmax        =   maximum(εprof_s)
+    imax        =   argmax(εprof_s)
+    s0_guess    =   sbl[imax]
+    if style==:fixed
+        θsb2[it]    =   atan(yp[imax],xp[imax])
+    end
+
+    fitmask = abs.(sbl .- s0_guess) .< 3.0e3
+
+    model(s,p) = p[1] .+ p[2] .* exp.(-((s .- p[3]).^2) ./ (2*p[4]^2))
+
+    p0      =   [εbg, εmax - εbg, s0_guess, 700.0]
+    fit     =   curve_fit(model, sbl[fitmask], εprof_s[fitmask], p0)
+    pars    =   coef(fit)
+
+    σ       =   abs(pars[4])
+    Dsb[it] =   2*σ
+
+    # if style==:fixed
+    εf[it]      =   maximum(εprof_s)
+    δTemp[it]   =   maximum(Tprof) - minimum(D.T)
+    # else
+    #     εf[it]      =   maximum(ε.II[mask_band]) ./ εscale
+    #     δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
+    # end
+
+    # δTemp[it]   =   maximum(Tprof) - Ini.Tbg
+    # δTemp[it]   =   maximum(Tprof) - minimum(D.T)
+    # δTemp[it]   =   maximum(D.T) - Ini.Tbg
+    # δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
+    # ------------------------------------------------------------------- #
+    if mod(it,5) == 0 || it == 1 || it == T.itmax
+        r = heatmap(x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
+                    xlabel="x[km]",ylabel="y[km]",
+                    clims=(-13.5,-12.0),
+                    aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                    ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true)
+        scatter!(r,[xc/1e3],[yc/1e3],
+                    ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
+        if style==:moving
+            scatter!(r,[xb./1e3],[yb./1e3],
+                        ms=1,ma=0.5,mc=:yellow,markerstrokewidth=0.0,label="")
+        end
+        contour!(r,x.c./1e3,y.c./1e3,log10.(ε.II)',levels = [log10(Ini.ε)],
+                    color=:white,linewidth=1,la=0.5)
+        contour!(r,x.c./1e3,y.c./1e3,((D.p.+0.5).*log10.(Ini.ε))',
+                    levels = [log10(Ini.ε)],
+                    color=:black,linewidth=2)
+        plot!(r,xp./1e3,yp./1e3,color=:red,label="",linewidth=2)
+                    
+        pp = plot(sbl./1e3,(εprof),
+                    xlabel = "s [km]",ylabel = "ε_II",
+                    label = "ε_{II}",title="Strain Rate",
+                    xlims=(-halfwidth./1e3,halfwidth./1e3),
+                    ylims=(1e-15,1e-12),
+                    layout=(1,2),subplot=1)
+        plot!(pp,sbl./1e3,Tprof,xlabel = "s [km]",
+                    ylabel = "T",title="Temperature",
+                    xlims=(-halfwidth./1e3,halfwidth./1e3),
+                    ylims=(400.0,700.0),
+                    label = "",layout=(1,2),subplot=2)
+        plot!(pp,sbl./1e3,εscale .* model(sbl,pars),
+                lw=1,la=0.5,color=:red,
+                label="Gaussian fit",layout=(1,2),subplot=1)
+    end
+    return pp, r
+end
+# ======================================================================= #
+# ======================================================================= #
+
+# ======================================================================= #
+# ========================== MAIN FUNCTION ============================== #
+# ======================================================================= #
+function ShearHeatingShearBands(Diff,θ,Adv,style)
     to          =   TimerOutput()
     @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
-    #   1) block
-    Ini         =   (T=:const,
-                     p=:ShearBandSetting,
-                     V=:ShearBandPS,
-                     ε = 5e-14,
+    Ini         =   (T      = :const,               # Temperature
+                     Tbg    = 400.0,                # [ °C ]
+                     p      = :ShearBandSetting,    # Phasedistribution
+                     radius = 3.0e3,                # [ m ]
+                     V      = :ShearBandPS,         # Velocity
+                     ε      = 5e-14,                # Background strain rate
     ) 
-    radius      =   3.0e3           # [ m ]
-    strain      =   0
     # ------------------------------------------------------------------- #
     # Define numerical methods ========================================== #
+    # if FD.Method.Diff =: dc; θ-rule
+    #       θ = 0   -> implicit
+    #       θ = 0.5 -> CN discretization
+    #       θ = 1.0 -> explicit
     FD  =   (Method = (
-            Diff = :dc,
-            Adv  = :slf), 
+                Diff = Diff,
+                Adv  = Adv,
+                θ    = θ), 
     )
-    # if Diff =: dc; θ-rule
-    #       C = 0   -> implicit
-    #       C = 0.5 -> CN discretization
-    #       C = 1.0 -> explicit
-    C   =   0.5
-    # ------------------------------------------------------------------- #
-    # Plot Settings ===================================================== #
-    Pl  =   (
-        qinc    =   10,
-        mainc   =   2,
-        qsc     =   100*(60*60*24*365.25)
-    )
+    # Diagnostics ----
+    # style   =:fixed
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
     M       =   Geometry(
@@ -100,34 +309,58 @@ function ShearHeatingShearBands()
         ρ₀      =   2700.0,         #   Reference density [kg/m^3]
         k       =   2.5,            #   Thermal conductivity [ W/m/K ]
         cp      =   1050.0,         #   Heat capacity [ J/kg/K ]
-        η₀      =   1e21,           #   Reference viscosity [ Pa*s ]
     )
-    # P.κ         =   0.0
     # ------------------------------------------------------------------- #
-    # g       =   0               #   Gravitational acceleration
-
-    η₀      =   1.0e20          #   Reference Viscosity
-    η₁      =   1.0e19          #   Block Viscosity
-    ηᵣ      =   log10(η₁/η₀)
-    η       =   [η₀,η₁]         #   Viscosity for phases
-
-    ρ₀      =   2700.0          #   Background density
-    ρ₁      =   2700.0          #   Block density
-    ρ       =   [ρ₀,ρ₁] 
-
-    phase   =   [0,1]
     # Define rheology paramters ========================================= #
+    Rhe     =   ( 
+        #           [Matrix Inclusion]
+        A       =   [3.2e-20 3.16e-26],     #   Pre-exponential factor
+        n       =   [3.0 3.3],              #   Stress exponent
+        Ea      =   [276e3 186e3],          #   Activation energy
+        # Viscosity damping factor ---
+        ω       =   0.5,
+        # Lower cut off strain rate --- 
+        εIImin  =   1e-20,
+        # Initialize some arrays ---
+        εIIeff  =   zeros(Float64,NC...),
+        ηmat    =   zeros(Float64,NC...),
+        ηinc    =   zeros(Float64,NC...),
+        ηnew    =   zeros(Float64,NC...),
+        avg_p   =   :geometric, 
+        avg_v   =   :geometric,
+    )
     # ------------------------------------------------------------------- #
+    # Define phase ID =================================================== #
+    phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
-    path        =   string("./examples/ShearHeating/2D/Results/")
     save_fig    =   1
-    anim        =   Plots.Animation(path, String[] )
-    filename    =   string("ShearHeatingBands")
+
+    path        =   string("./examples/ShearHeating/2D/Results/",
+                            FD.Method.Diff,"_",FD.Method.θ,"_",
+                            FD.Method.Adv,"_", NC.x,"_",
+                            NC.y,"_",Rhe.avg_p,"_",Rhe.avg_v,"_",
+                            style) #
+    if save_fig == 1
+        isdir(path) || mkpath(path)
+        framepath2D   = joinpath(path, "frames_2D")
+        framepathProf = joinpath(path, "frames_profiles")
+        isdir(framepath2D)   || mkpath(framepath2D)
+        isdir(framepathProf) || mkpath(framepathProf)
+        anim2D      =   Plots.Animation(framepath2D, String[])
+        animProf    =   Plots.Animation(framepathProf, String[])
+        filename    =   string("/ShearHeatingBands")
+        dfilen      =   string("Diagnostics_",FD.Method.Diff,"_",
+                            FD.Method.θ,"_",FD.Method.Adv,"_",
+                            NC.x,"_",NC.y,"_.txt")
+        dfile       =   open("$path/$dfilen","w")
+        println(dfile,"# it strain shortening ε_f δT D θ θc")
+    end
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D   =   DataFields(
         T       =   zeros(Float64,(NC...)),
+        Hs      =   zeros(Float64,NC...),
         T0      =   zeros(Float64,(NC...)),
         T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex0   =   zeros(Float64,(NC.x+2,NC.y+2)),
@@ -173,47 +406,62 @@ function ShearHeatingShearBands()
         xyc     =   zeros(Float64,NC...),
         II      =   zeros(Float64,NC...),
     )
-    Hₛ      =   zeros(Float64,NC...)
     # ------------------------------------------------------------------- #
     # Boundary Conditions =============================================== #
     VBC     =   (
-        type    =   (E=:const,W=:const,S=:freeslip,N=:const),
+        type    =   (E=:ps,W=:ps,S=:freeslip,N=:ps),
         val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
                     vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     TBC     =   (
         type    =   (E=:Neumann,W=:Neumann,S=:Neumann,N=:Neumann),
         val     =   (E=zeros(NC.y),W=zeros(NC.y),S=zeros(NC.x),N=zeros(NC.x)),
-        # val     =   (E=400.0*ones(NC.y),W=400.0*ones(NC.y),S=400.0*ones(NC.x),N=400.0*ones(NC.x)),
     )
     # ------------------------------------------------------------------- #
     # Initial Condition ================================================= #
     # Velocity ---
     IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
     # Temperature --- 
-    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=400.0,Ta=600.0)
+    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=Ini.Tbg)
+    @. ε.II     =   Ini.ε
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
     T   =   TimeParameter( 
-        tmax    =   0.0,  
         Δfacc   =   0.9,                #   Courant time factor
         Δfacd   =   0.9,                #   Diffusion time factor
-        itmax   =   200,                #   Maximum iterations
+        itmax   =   400,                #   Maximum iterations
     )
-    T.tmax  =   20.589 * 1e6 * (60*60*24*365.25)   # [ s ]
-    T.Δc    =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
-                    (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-    T.Δd    =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
-    T.Δ     =   minimum([T.Δd,T.Δc])
     Time    =   zeros(T.itmax)
+    # Initialize Time Step ---
+    GetTimeStep!(T,Δ,P,D)
     # ------------------------------------------------------------------- #
+    # Diagnostics ======================================================= #
+    εf          =   zeros(T.itmax)
+    δTemp       =   zeros(T.itmax)
+    θsb         =   zeros(T.itmax)
+    θsb2        =   zeros(T.itmax)
+    Dsb         =   zeros(T.itmax)
+    strain      =   zeros(T.itmax)
+    shortening  =   zeros(T.itmax)
+    # Setup parameters -------------------------------------------------- #
+    phbd        =   0.01    # Phase boundary value
+    halfwidth   =   4e3     # Half of the profile length
+    nprof       =   200     # Number of points in the profile
+    # Profile coordinates ---
+    xp          =   zeros(nprof)
+    yp          =   zeros(nprof)
+    #-------------------------------------------------------------------- #
     end
-    # Tracer Advection ================================================== #
+    # Tracer Initialization ============================================= #
     @timeit to "Tracer Ini" begin
     nmx,nmy     =   3,3
     noise       =   0
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :phase
+    if Aparam==:thermal && FD.Method.Adv !=:tracers
+        @printf("ERROR! Tracer advection needed to transport temperature!")
+        return
+    end
     MPC         =   (
             c       =   zeros(Float64,(NC.x,NC.y)),
             v       =   zeros(Float64,(NV.x,NV.y)),
@@ -227,39 +475,57 @@ function ShearHeatingShearBands()
             wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
-                        ellA=radius)
+                        ellA=Ini.radius)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-    # Interpolate from markers to cell ---
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-    D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+    # Temperature --- if FD.Method.Adv==:tracers 
+    #   -> FromCtoM
+    # ------------------------------------------------------------------- #
+    # Update cell centroids and vertices (here only density and phase) -- #
+    # Update Centroids --- 
+    # Phase ---
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
     D.p     .=  D.p_ex[2:end-1,2:end-1]
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-    D.ηc    .=  D.η_ex[2:end-1,2:end-1]
-    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    # Density ---
+    @. D.ρ     =   P.ρ₀*(1.0 - D.p) + P.ρ₀*D.p
+    D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
+    D.ρ_ex[1,:]     .=  D.ρ_ex[2,:]
+    D.ρ_ex[end,:]   .=  D.ρ_ex[end-1,:]
+    D.ρ_ex[:,1]     .=  D.ρ_ex[:,2]
+    D.ρ_ex[:,end]   .=  D.ρ_ex[:,end-1]
+    # Viscosity - Centroids and vertices ---
+    UpdateRheo!(ε,Rhe,D,P;ini=:yes)
+    # ------------------------------------------------------------------- #
     end
     # System of Equations =============================================== #
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
                 NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
-
     Num    =    (
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),#
         T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
     )
-    ndof    =   maximum(Num.T)   
+    ndof    =   maximum(Num.T)  
     # Momentum conservation (MCE) ---
     # Iterations --- 
-    niterM      =   10
-    ϵM          =   1e-8
+    niterM      =   50          #   Number of iterations 
+    atolM       =   1e-8        #   Absolute tolerance
+    rtolM       =   1e-5        #   Relative tolerance; r = atolM0/atolM
+    RM          =   0.0         #   Initialize absolute residual    
+    RMrel       =   0.0         #   Initialize relative residual 
     KM          =   ExtendableSparseMatrix(ndof,ndof)
+    # Residuals ---
+    Fm     =    (
+        x       =   zeros(Float64,NV.x, NC.y), 
+        y       =   zeros(Float64,NC.x, NV.y)
+    )
+    FPt     =   zeros(Float64,NC...)
     # Energy conservation (ECE) ---
     if FD.Method.Diff==:implicit || FD.Method.Diff==:CN
         if FD.Method.Diff==:CN
@@ -277,29 +543,29 @@ function ShearHeatingShearBands()
         ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                         ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
     end
-    # Residuals ---
-    Fm     =    (
-        x       =   zeros(Float64,NV.x, NC.y), 
-        y       =   zeros(Float64,NC.x, NV.y)
-    )
-    FPt     =   zeros(Float64,NC...)      
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
     for it = 1:T.itmax
         δx      =   zeros(maximum(Num.Pt))
         F       =   zeros(maximum(Num.Pt))
+        R0      =   0.0
         # Update Time ---
         if it>1
-            Time[it]  =   Time[it-1] + T.Δ
+            Time[it]    =   Time[it-1] + T.Δ    
+            strain[it]  =   strain[it-1] + Ini.ε * T.Δ
         end
-        @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
-                    Time[it]/(60*60*24*365.25)/1.0e6)
+        shortening[it]  =   100 .* (1 .- exp.(-strain[it]))
+        # ---
+        @printf("\nTime step: #%04d, Time [Myr]: %04e, Shortening: %2.2f\n ",it,
+                    Time[it]/(60*60*24*365.25)/1.0e6,shortening[it])
         # Momentum Conservation Equation ================================ #
         # Initial Residual ---
-        D.vx[2:end-1,:]    .=  0.0
-        D.vy[:,1:end-1]    .=  0.0
-        D.Pt               .=  0.0
+        if it == 1
+            D.vx[2:end-1,:]    .=  0.0
+            D.vy[:,1:end-1]    .=  0.0
+            D.Pt               .=  0.0
+        end
         @timeit to "Solution Iteration" begin
         @printf("---Momentum Calculation ---\n")        
         for iter = 1:niterM
@@ -308,8 +574,13 @@ function ShearHeatingShearBands()
             F[Num.Vx]   =   Fm.x[:]
             F[Num.Vy]   =   Fm.y[:]
             F[Num.Pt]   =   FPt[:]
-            @printf("||R|| = %1.4e\n", norm(F)/length(F))
-            norm(F)/length(F) < ϵM ? break : nothing
+            RM          =   norm(F)/length(F)
+            if iter == 1
+                R0 = RM
+            end
+            RMrel       =   RM/R0
+            @printf("it: %i, ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+            (RM < atolM || RM/R0 < rtolM) && break
             end
             # Assemble Coefficients --
             @timeit to "Assembly" begin
@@ -325,12 +596,20 @@ function ShearHeatingShearBands()
             D.vx[:,2:end-1]     .+=  δx[Num.Vx]
             D.vy[2:end-1,:]     .+=  δx[Num.Vy]
             D.Pt                .+=  δx[Num.Pt]
+            # ---
+            # recompute ε and τ for the updated velocity field ---
+            ComputeStrainStress2D!(D,ε,τ,divV,Δ)
+            # ---
+            # Get second invariants ---
+            GetSecondInvariants!(ε,τ)
+            # ---
+            # Update Rheology ---
+            UpdateRheo!(ε,Rhe,D,P)
+            # ---
         end
         end
-        # Get second invariants ---
-        GetSecondInvariants!(ε,τ)
         # Get the velocity on the centroids --- 
-        # For visualization purposes only and Euler advection ---
+        # For visualization purposes and Euler advection methods ---
         for i = 1:NC.x
             for j = 1:NC.y
                 D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
@@ -338,47 +617,36 @@ function ShearHeatingShearBands()
             end
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-        # # ---
-        # @show(minimum(D.vc))
-        # @show(maximum(D.vc))
-        # # ---
         # --------------------------------------------------------------- #
         # Update time stepping ========================================== #
-        T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
-                (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-        T.Δd        =   T.Δfacd * (1.0 / (2.0 * P.κ *(1.0/Δ.x^2 + 1/Δ.y^2)))
-        T.Δ         =   minimum([T.Δd,T.Δc])
-        if Time[it] > T.tmax
-            T.Δ         =   T.tmax - Time[it-1]
-            Time[it]    =   Time[it-1] + T.Δ
-            it          =   T.itmax
-        end
+        GetTimeStep!(T,Δ,P,D)
+        # --------------------------------------------------------------- #
         # Energy Conservation Equation ================================== #
-        # Shear heating calculation ---
-        @. Hₛ   =   τ.xx .* ε.xx .+ τ.yy .* ε.yy .+ 2.0 .* τ.xyc .* ε.xyc
+        # Shear heating ---
+        @. D.Hs =   τ.xx .* ε.xx .+ τ.yy .* ε.yy .+ 2.0 .* τ.xyc .* ε.xyc
         # ---
         # Temperature diffusion --- 
         @printf("---Energy Calculation---\n")
         if FD.Method.Diff==:explicit
             ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC;
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = Hₛ)
+                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:implicit
             BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K, Num; 
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = Hₛ)
+                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:CN
             CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num; 
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = Hₛ)
+                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:dc
-            D.T0    .=  D.T
+            # D.T0    .=  D.T
             for iter = 1:niter
                 # Evaluate residual
                 ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
                         P.κ, TBC, Δ, T.Δ;
-                        C = C, ρ₀ = P.ρ₀, cp = P.cp, Qₛ = Hₛ)
+                        C = FD.Method.θ, ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
                 @printf("||R|| = %1.4e\n", norm(R)/length(R))
                 norm(R)/length(R) < ϵ ? break : nothing
                 # Assemble linear system
-                K  = AssembleMatrix2Dc(P.κ, TBC, Num, NC, Δ, T.Δ;C=C)
+                K  = AssembleMatrix2Dc(P.κ, TBC, Num, NC, Δ, T.Δ;C=FD.Method.θ)
                 # Solve for temperature correction: Cholesky factorisation
                 Kc = cholesky(K.cscmatrix)
                 # Solve for temperature correction: Back substitutions
@@ -386,9 +654,18 @@ function ShearHeatingShearBands()
                 # Update temperature
                 @. D.T += δT[Num.T]
             end
+            D.T_ex[2:end-1,2:end-1]     .=  D.T
         end
+        # ---
+        # Temperature advection ---
         if FD.Method.Adv==:tracers 
             # Update tracer info from grid ---
+            # - Calculate temperature difference new and old time 
+            # - Calculate subgrid diffusion on tracers
+            # - Interpolate subgrid diffuison to the grid
+            # - Calculate remaining temperature difference on the grid 
+            # - Interpolate remaining T on tracers
+            # - Calculate corrected temperature difference on tracers
         else
             # Advect temperature, Eulerian schemes ---
             # Correct velocity for eulerian advection schemes ---
@@ -403,6 +680,8 @@ function ShearHeatingShearBands()
             if FD.Method.Adv==:upwind
                 upwindc2D!(D.T,D.T_ex,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
             elseif FD.Method.Adv==:slf
+                # @. D.T0     =   D.T
+                # @. D.T_ex0  =   D.T_ex
                 slfc2D!(D.T,D.T_ex,D.T_ex0,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
             elseif FD.Method.Adv==:semilag
                 semilagc2D!(D.T,D.T_ex,vxc_res,vyc_res,vxco_res,vyco_res,x,y,T.Δ)
@@ -410,90 +689,44 @@ function ShearHeatingShearBands()
                 vyco_res    .=   vyc_res
             end
         end
+        # ---
         # Advection of tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
         # ---
+        # Diagnostics =================================================== #
+        pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
+                        M,T,D,Ini,x,y,ε,
+                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        xp,yp,it)
+        # Save diagnostics on file ---
+        if save_fig == 1
+            @printf(dfile,
+                "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n",
+                it,
+                strain[it],
+                shortening[it],
+                εf[it],
+                δTemp[it],
+                Dsb[it],
+                θsb[it]*180/π,
+                θsb2[it]*180/π)
+            flush(dfile)   # immediately write to disk
+        end
         # --------------------------------------------------------------- #
-        if mod(it,2) == 0 || it == T.itmax || it == 1
-            # # r = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
-            # #             xlabel="x[km]",ylabel="y[km]",colorbar=false,
-            # #             title="ρ",
-            # #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             ylims=(M.ymin/1e3, M.ymax/1e3),
-            # #             layout=(3,1),subplot=1)
-            # # p = scatter(Ma.x[1:Pl.mainc:end]./1e3,Ma.y[1:Pl.mainc:end]./1e3,
-            # #             ms=1,ma=0.5,mc=Ma.phase[1:Pl.mainc:end],markerstrokewidth=0.0,
-            # #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            # #             title="tracers",label="",
-            # #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-            # #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            # #             layout=(2,2),subplot=1)
-            # p = heatmap(x.c./1e3,y.c./1e3,D.p',color=:inferno,
-            #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            #             title="phase",
-            #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-            #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            #             layout=(2,2),subplot=1)
-            # heatmap!(p,x.c./1e3,y.c./1e3,(D.vc.*Pl.qsc)',
-            #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            #             title="V_c [cm/a]",color=cgrad(:tokyo),
-            #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-            #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            #             layout=(2,2),subplot=3)
-            # # heatmap!(p,x.v./1e3,y.ce./1e3,(D.vx.*Pl.qsc)',
-            # #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            # #             title="V_x [cm/a]",color=cgrad(:batlow),
-            # #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-            # #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            # #             layout=(2,2),subplot=3)
-            # # heatmap!(p,x.ce./1e3,y.v./1e3,(D.vy.*Pl.qsc)',
-            # #             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            # #             title="V_y [cm/a]",color=cgrad(:batlow),
-            # #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-            # #             ylims=(M.ymin/1e3, M.ymax/1e3),
-            # #             layout=(2,2),subplot=4)
-            r = heatmap(x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
-                        xlabel="x[km]",ylabel="y[km]",title="η_c",
-                        # clims=(15,27),
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                        layout=(2,2),subplot=1)
-            heatmap!(r,x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
-                        xlabel="x[km]",ylabel="y[km]",title="ε_II",
-                        # clims=(15,27),
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                        layout=(2,2),subplot=3)
-            # quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            #             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            #             quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-            #                     D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
-            #             la=0.5,color="white",
-            #             layout=(2,2),subplot=3)
-            heatmap!(r,x.c./1e3,y.c./1e3,Hₛ',color=:inferno,
-                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
-                        title="Hₛ",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                        ylims=(M.ymin/1e3, M.ymax/1e3),
-                        layout=(2,2),subplot=2)
-            heatmap!(r,x.c./1e3,y.c./1e3,D.T',color=:lajolla,
-                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
-                        title="T",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                        ylims=(M.ymin/1e3, M.ymax/1e3),
-                        layout=(2,2),subplot=4)
+        if mod(it,5) == 0 || it == 1 || it == T.itmax
             if save_fig == 1
-                Plots.frame(anim)
-            elseif save_fig == 0
-                # display(p)
-                # display(q)
-                display(r)
-                # display(t)
-                # display(s)
-                # display(u)
+                pp !== nothing && Plots.frame(animProf, pp)
+                r  !== nothing && Plots.frame(anim2D, r)
+            else
+                pp !== nothing && display(pp)
+                r  !== nothing && display(r)
             end
         end
+        D.T0        .=  D.T
+        D.T_ex0     .=  D.T_ex
         # Deform and remesh grid ======================================== #
+        # Effectively the new time step --- !!! ---
         # Calculate new xmin, xmax and ymax ---
         M.xmin  =   M.xmin * exp(-Ini.ε * T.Δ)
         M.xmax  =   M.xmax * exp(-Ini.ε * T.Δ)
@@ -531,40 +764,105 @@ function ShearHeatingShearBands()
         # Update boundary velocity ====================================== # 
         IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
         # --------------------------------------------------------------- #
-        # Update Rheology =============================================== #
+        # Update cell centroids and vertices information ================ #
         # if FD.Method.Adv==:tracer
             # Update everything
         # else
             # Update only phase 
         # end
+        ϵx = 1e-10 * (M.xmax - M.xmin)
+        ϵy = 1e-10 * (M.ymax - M.ymin)
+        @. Ma.x = clamp(Ma.x, M.xmin + ϵx, M.xmax - ϵx)
+        @. Ma.y = clamp(Ma.y, M.ymin + ϵy, M.ymax - ϵy)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         @timeit to "Tracer Interpolation" begin
         # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-        D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
         D.p     .=  D.p_ex[2:end-1,2:end-1]
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-        D.ηc    .=   D.η_ex[2:end-1,2:end-1]
-        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        # Density ---
+        @.  D.ρ     =   P.ρ₀*(1.0 - D.p) + P.ρ₀*D.p
+        D.ρ_ex[2:end-1,2:end-1]     .=  D.ρ
+        D.ρ_ex[1,:]     .=  D.ρ_ex[2,:]
+        D.ρ_ex[end,:]   .=  D.ρ_ex[end-1,:]
+        D.ρ_ex[:,1]     .=  D.ρ_ex[:,2]
+        D.ρ_ex[:,end]   .=  D.ρ_ex[:,end-1]
         end
-        # end
-        # Calculate overall strain of the box --- 
-        strain      +=   Ini.ε * T.Δ
-        @show strain
-        if strain >= 0.25
-            @printf("Strain %g reached maximum strain of 0.25\n",strain)
+        # --------------------------------------------------------------- #
+        if mod(it,10) == 0 || it == 1
+            @show it
+            @show Time[it]
+            @show strain[it]
+            @show εf[it]
+            @show shortening[it]
+            @show δTemp[it]
+        end
+        if shortening[it] >= 35
+        # if shortening[it] >= 20
+            T.itmax   =   it
+            @show it
+            @show Time[it]
+            @show strain[it]
+            @show εf[it]
+            @show shortening[it]
+            @show δTemp[it]
+            @printf("Bulk shortening %g reached maximum value\n",shortening[it])
             break
+        else
+            T.itmax   =   it
         end
     end # End Time Loop
+    end
+    if save_fig == 1
+        close(dfile)
     end
     # Save Animation ---
     if save_fig == 1
         # Write the frames to a GIF file
-        Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
-        foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
+        Plots.gif(anim2D, string(path, filename, "_2D.gif"), fps = 10)
+        Plots.gif(animProf, string(path, filename, "_profiles.gif"), fps = 10)
+        # foreach(rm, filter(startswith(string(path,"00")), readdir(framepath2D,join=true)))
+        # foreach(rm, filter(startswith(string(path,"00")), readdir(framepathProf,join=true)))
+    end
+    t = plot(shortening[1:T.itmax],
+                [εf[1:T.itmax]],
+                xlims=(0,shortening[T.itmax]),
+                label="",ylabel="εf",xlabel="ε [%]",)
+    u   =   plot(shortening[1:T.itmax],δTemp[1:T.itmax],
+                ylabel="´δT [°C]",xlabel="ε [%]",label="",
+                xlims=(0,shortening[T.itmax]),)
+    v   =   plot(shortening[1:T.itmax],[θsb[1:T.itmax].*180.0./π θsb2[1:T.itmax].*180.0./π],
+                ylabel="θ",xlabel="ε [%]",label="",
+                xlims=(0,shortening[T.itmax]),)
+    w   =   plot(shortening[1:T.itmax],Dsb[1:T.itmax]./1e3,
+                ylabel="D [km]",xlabel="ε [%]",label="",
+                xlims=(0,shortening[T.itmax]),)
+    if save_fig == 1
+        savefig(t,string(path,"/StrainRateMulitply_",FD.Method.Diff,"_",FD.Method.Adv,"_",
+                @sprintf("%i",NC.x),"_",@sprintf("%i",NC.y),".png"))
+        savefig(u,string(path,"/DeltaTemp_",FD.Method.Diff,"_",FD.Method.Adv,"_",
+                @sprintf("%i",NC.x),"_",@sprintf("%i",NC.y),".png"))
+        savefig(v,string(path,"/ShearZoneAngle_",FD.Method.Diff,"_",FD.Method.Adv,"_",
+                @sprintf("%i",NC.x),"_",@sprintf("%i",NC.y),".png"))
+        savefig(w,string(path,"/ShearZoneThickness_",FD.Method.Diff,"_",FD.Method.Adv,"_",
+                @sprintf("%i",NC.x),"_",@sprintf("%i",NC.y),".png"))
+    else
+        display(t)
+        display(u)
+        display(v)
+        display(w)
     end
     display(to)
 end
+# ======================================================================= #
+# =================================== END =============================== # 
+# ======================================================================= #
 
-ShearHeatingShearBands()
+# ======================================================================= #
+# Call Main Script ====================================================== #
+# ======================================================================= #
+
+ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
+# ShearHeatingShearBands()
+
+# ======================================================================= #
+# ======================================================================= # 

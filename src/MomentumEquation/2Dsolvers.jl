@@ -30,10 +30,12 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
             iPW =   Num.Pt[i-1,j]
             # ---
             inS     =   j==1    ? false  : true  
-            FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
+            # FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
+            FSS     =   (j==1    && (BC.type.S==:freeslip || BC.type.S==:ps)) ? 1. : 0.
             NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
             inN     =   j==NC.y ? false  : true   
-            FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
+            # FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
+            FSN     =   (j==NC.y && (BC.type.N==:freeslip || BC.type.N==:ps)) ? 1. : 0.
             NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.
             if inS K[ii,iS] =   η / dy^2 end
             K[ii,iW]    =   η / dx^2
@@ -65,10 +67,12 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
             iPN =   Num.Pt[i,j]
             # ---
             inW     =   i==1    ? false  : true  
-            FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
+            # FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
+            FSW     =   (i==1    && (BC.type.W==:freeslip || BC.type.W==:ps)) ? 1. : 0.
             NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             inE     =   i==NC.x ? false  : true   
-            FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
+            # FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
+            FSE     =   (i==NC.x && (BC.type.E==:freeslip || BC.type.E==:ps)) ? 1. : 0.
             NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             K[ii,iS]    =   η / dy^2
             if inW K[ii,iW] =  η / dx^2 end
@@ -155,10 +159,22 @@ end
     Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
 """
 function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
-    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
-    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
-    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
-    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    @. D.vx[:,1]        = (BC.type.S==:freeslip||BC.type.S==:ps)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
+    # @. D.vx[:,2]        = (BC.type.S==:ps)*D.vx[:,1]
+    @. D.vy[2:end-1,1]  = (BC.type.S==:const||BC.type.S==:ps)*BC.val.vyS
+
+    @. D.vx[:,end]      = (BC.type.N==:freeslip||BC.type.N==:ps)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
+    # @. D.vx[:,end-1]    = (BC.type.N==:ps)*D.vx[:,end]
+    @. D.vy[2:end-1,end]= (BC.type.N==:const||BC.type.N==:ps)*BC.val.vyN
+    
+    @. D.vy[1,:]        = (BC.type.W==:freeslip||BC.type.W==:ps)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])    
+    # @. D.vy[2,:]        = (BC.type.W==:ps)*D.vy[1,:]
+    @. D.vx[1,2:end-1]  = (BC.type.W==:const||BC.type.W==:ps)*BC.val.vxW
+
+    @. D.vy[end,:]      = (BC.type.E==:freeslip||BC.type.E==:ps)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    # @. D.vy[end-1,:]    = (BC.type.E==:ps)*D.vy[end,:]
+    @. D.vx[end,2:end-1]= (BC.type.E==:const||BC.type.E==:ps)*BC.val.vxE
+    
     # @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip)*(2*BC.val.S - D.vx[:,2])
     # @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip)*(2*BC.val.N - D.vx[:,end-1])
     # @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
@@ -212,10 +228,12 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             iPW =   Num.Pt[i-1,j]
             # ---
             inS     =   j==1    ? false  : true  
-            FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
+            # FSS     =   (j==1    && BC.type.S==:freeslip) ? 1. : 0.
+            FSS     =   (j==1    && (BC.type.S==:freeslip || BC.type.S==:ps)) ? 1. : 0.
             NSS     =   (j==1    && (BC.type.S==:noslip||BC.type.S==:const)) ? 1. : 0.
             inN     =   j==NC.y ? false  : true   
-            FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
+            # FSN     =   (j==NC.y && BC.type.N==:freeslip) ? 1. : 0.
+            FSN     =   (j==NC.y && (BC.type.N==:freeslip || BC.type.N==:ps)) ? 1. : 0.
             NSN     =   (j==NC.y && (BC.type.N==:noslip||BC.type.N==:const)) ? 1. : 0.
             if inS K[ii,iS] =   ηv[i,j] / dy^2   end
             K[ii,iSW]   =   ηv[i,j] / dx / dy 
@@ -256,10 +274,12 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
             iPC =   Num.Pt[i,j]
             # ---
             inW     =   i==1    ? false  : true  
-            FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
+            # FSW     =   (i==1    && BC.type.W==:freeslip) ? 1. : 0.
+            FSW     =   (i==1    && (BC.type.W==:freeslip || BC.type.W==:ps)) ? 1. : 0.
             NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             inE     =   i==NC.x ? false  : true   
-            FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
+            # FSE     =   (i==NC.x && BC.type.E==:freeslip) ? 1. : 0.
+            FSE     =   (i==NC.x && (BC.type.E==:freeslip || BC.type.E==:ps)) ? 1. : 0.
             NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             K[ii,iS]    =   2 * ηc[i,j-1] / dy^2
             K[ii,iSW]   =   ηv[i,j] / dx / dy
@@ -338,7 +358,7 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
             NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             # ---
-            rhs[ii] +=  g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
+            rhs[ii] +=  - g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
                         2.0 * ηv[i,j] * BC.val.W[j] / Δ.x^2 * NSW -
                         2.0 * ηv[i+1,j] * BC.val.E[j] / Δ.x^2 * NSE
         end
@@ -350,10 +370,26 @@ end
     Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
 """
 function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
-    @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
-    @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
-    @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
-    @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    # @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
+    # @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
+    # @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
+    # @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    @. D.vx[:,1]        = (BC.type.S==:freeslip||BC.type.S==:ps)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
+    # @. D.vx[:,2]        = (BC.type.S==:ps)*D.vx[:,1]
+    @. D.vy[2:end-1,1]  = (BC.type.S==:const||BC.type.S==:ps)*BC.val.vyS
+
+    @. D.vx[:,end]      = (BC.type.N==:freeslip||BC.type.N==:ps)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
+    # @. D.vx[:,end-1]    = (BC.type.N==:ps)*D.vx[:,end]
+    @. D.vy[2:end-1,end]= (BC.type.N==:const||BC.type.N==:ps)*BC.val.vyN
+    
+    @. D.vy[1,:]        = (BC.type.W==:freeslip||BC.type.W==:ps)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])    
+    # @. D.vy[2,:]        = (BC.type.W==:ps)*D.vy[1,:]
+    @. D.vx[1,2:end-1]  = (BC.type.W==:const||BC.type.W==:ps)*BC.val.vxW
+
+    @. D.vy[end,:]      = (BC.type.E==:freeslip||BC.type.E==:ps)*D.vy[end-1,:] + (BC.type.E==:noslip||BC.type.E==:const)*(2*BC.val.E - D.vy[end-1,:])
+    # @. D.vy[end-1,:]    = (BC.type.E==:ps)*D.vy[end,:]
+    @. D.vx[end,2:end-1]= (BC.type.E==:const||BC.type.E==:ps)*BC.val.vxE
+
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
     @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
     @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV

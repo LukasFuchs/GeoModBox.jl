@@ -96,6 +96,7 @@ Physics(9.81, 3300.0, 4.125, 1250.0, 2.0e-5, 0.0, 3.947725485e23, 1.0e-6, 2500.0
     Ttop        ::Float64 = 273.15              # Temperature at the top [ K ]
     Tbot        ::Float64 = Ttop + ΔT           # Temperature at the bottom [ K ] 
     Ra          ::Float64 = -9999               # Rayleigh number
+    RG          ::Float64 = 8.314               # Gas Constant [ J/mol/kg ]
 end
 
 """
@@ -166,6 +167,7 @@ DataFields([0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;
 @kwdef mutable struct DataFields
     # Data fields ---
     Q           ::Matrix{Float64}   = zeros(1,1)
+    Hs          ::Matrix{Float64}   = zeros(1,1)
     T           ::Matrix{Float64}   = zeros(1,1)
     T0          ::Matrix{Float64}   = zeros(1,1)
     T_ex        ::Matrix{Float64}   = zeros(1,1)
@@ -177,6 +179,7 @@ DataFields([0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;], [0.0;;
     ρ_ex        ::Matrix{Float64}   = zeros(1,1)
     p           ::Matrix{Float64}   = zeros(1,1)
     p_ex        ::Matrix{Float64}   = zeros(1,1)
+    pv          ::Matrix{Float64}   = zeros(1,1)
     cp          ::Matrix{Float64}   = zeros(1,1)
     vx          ::Matrix{Float64}   = zeros(1,1)
     vy          ::Matrix{Float64}   = zeros(1,1)

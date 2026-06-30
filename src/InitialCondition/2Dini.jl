@@ -241,10 +241,14 @@ Example:
             @. BC.val.W     =   y.v2d[1,:]*ε                                    #   West
             @. BC.val.E     =   y.v2d[end,:]*ε                                  #   East
         end
-        D.vx[1,2:end-1]     .=   BC.val.vxW      #   West
-        D.vx[end,2:end-1]   .=   BC.val.vxE      #   East
-        D.vy[2:end-1,1]     .=   BC.val.vyS      #   South
-        D.vy[2:end-1,end]   .=   BC.val.vyN      #   North
+        D.vx[1,2:end-1]     .=   BC.val.vxW     #   West - vx
+        D.vy[1,:]           .=   BC.val.W       #   West - vy
+        D.vx[end,2:end-1]   .=   BC.val.vxE     #   East - vx
+        D.vy[end,:]         .=   BC.val.E       #   East - vy
+        D.vy[2:end-1,1]     .=   BC.val.vyS     #   South - vy
+        D.vx[:,1]           .=   BC.val.S       #   South - vx
+        D.vy[2:end-1,end]   .=   BC.val.vyN     #   North - vy
+        D.vx[:,end]         .=   BC.val.N       #   North - vx
     end
     return D, BC
 end
