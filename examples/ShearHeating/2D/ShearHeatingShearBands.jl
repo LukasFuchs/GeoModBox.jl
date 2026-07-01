@@ -309,7 +309,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         k       =   2.5,            #   Thermal conductivity [ W/m/K ]
         cp      =   1050.0,         #   Heat capacity [ J/kg/K ]
     )
-    P.κ =  0
+    # P.κ =  0
     # ------------------------------------------------------------------- #
     # Define rheology paramters ========================================= #
     Rhe     =   ( 
@@ -334,7 +334,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
-    save_fig    =   1
+    save_fig    =   0
 
     path        =   string("./examples/ShearHeating/2D/Results/",
                             FD.Method.Diff,"_",FD.Method.θ,"_",
@@ -890,7 +890,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-# ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
+ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #
