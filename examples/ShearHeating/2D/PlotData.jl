@@ -85,12 +85,12 @@ basepath = "./examples/ShearHeating/2D/Results"
 
 Diff = :dc
 
-# θlist = [0.0, 0.5, 1.0]
-θlist = [0.5]
+θlist = [0.0, 0.5, 1.0]
+# θlist = [0.5]
 
 Advlist = [
-    # :upwind,
-    # :slf,
+    :upwind,
+    :slf,
     :semilag,
 ]
 

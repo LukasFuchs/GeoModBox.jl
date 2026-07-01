@@ -28,7 +28,7 @@ for i in eachindex(θ)
     @show θ[i] 
     for j in eachindex(Adv)
         @show Adv[j]
-        ShearHeatingShearBands(Diff[3],θ[i],Adv[j],style[2])
+        ShearHeatingShearBands(Diff[3],θ[i],Adv[j],style[1])
     end
 end
 

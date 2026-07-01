@@ -861,7 +861,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
+# ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #
