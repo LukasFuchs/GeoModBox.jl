@@ -97,12 +97,11 @@ basepath = "./examples/ShearHeating/2D/Results"
 
 Diff = :dc
 
-θlist = [0.0, 0.5, 1.0]
-# θlist = [0.5]
+# θlist = [0.0, 0.5, 1.0]
+θlist = [0.5]
 
 Advlist = [
-    :upwind,
-    :slf,
+    # :upwind,
     :semilag,
 ]
 
@@ -116,8 +115,8 @@ NCx, NCy = 200, 100
 outpath = joinpath(basepath, "DiagnosticsPlots")
 isdir(outpath) || mkpath(outpath)
 
-θfield      =   θlist[2]
-Advfield    =   Advlist[3]
+θfield      =   θlist[1]
+Advfield    =   Advlist[1]
 
 # ============================================================
 # Read Duretz et al. Figure 2 (digitized)
@@ -139,7 +138,7 @@ D_D     =   duretz[:,2]
 
 colors = Dict(
     :upwind  => :royalblue,
-    :slf     => :black,
+    # :slf     => :black,
     :semilag => :firebrick,
 )
 
@@ -228,10 +227,10 @@ plot!(p1, [NaN], [NaN],
     linewidth=linewidth,
     label="Upwind")
 
-plot!(p1, [NaN], [NaN],
-    color=colors[:slf],
-    linewidth=linewidth,
-    label="Staggered Leapfrog")
+# plot!(p1, [NaN], [NaN],
+#     color=colors[:slf],
+#     linewidth=linewidth,
+#     label="Staggered Leapfrog")
 
 plot!(p1, [NaN], [NaN],
     color=colors[:semilag],
@@ -285,11 +284,11 @@ scatter!(p1, [NaN], [NaN],
 f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 5%")
 
-f2 = field_plot("000020", basepath, Diff, θfield, Advfield,
+f2 = field_plot("000010", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 15%")
 
-f3 = field_plot("000037", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="ε = 25%")
+f3 = field_plot("000020", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="ε = 25%") # 37
 
 for θ in θlist
 

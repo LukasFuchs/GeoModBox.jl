@@ -4,6 +4,7 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
 using Statistics
 using Printf, LinearAlgebra, TimerOutputs, Interpolations, LsqFit
+using Measures
 
 # ======================================================================= #
 # ======================= HELPER FUNCTIONS ============================== #
@@ -165,7 +166,7 @@ function Diagnostics!(phbd,halfwidth,nprof,
         θsb2[it]    =   atan(yp[imax],xp[imax])
     end
 
-    fitmask = abs.(sbl .- s0_guess) .< 3.0e3
+    fitmask = abs.(sbl .- s0_guess) .< 4.0e3
 
     model(s,p) = p[1] .+ p[2] .* exp.(-((s .- p[3]).^2) ./ (2*p[4]^2))
 
@@ -191,10 +192,12 @@ function Diagnostics!(phbd,halfwidth,nprof,
                     clims=(-13.5,-12.0),
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                    size = (900,700), titlefontsize = 20,
-                    guidefontsize = 20, tickfontsize = 16,
-                    colorbar_tickfontsize = 14,
-                    colorbar_titlefontsize = 16)
+                    size = (1200,900), titlefontsize = 22,
+                    guidefontsize = 22, tickfontsize = 18,
+                    colorbar_tickfontsize = 16,
+                    colorbar_titlefontsize = 16, 
+                    right_margin = 15mm,left_margin = 5mm,
+                    top_margin = 15mm, bottom_margin = 15mm)
         scatter!(r,[xc/1e3],[yc/1e3],
                     ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
         if style==:moving
@@ -309,7 +312,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         k       =   2.5,            #   Thermal conductivity [ W/m/K ]
         cp      =   1050.0,         #   Heat capacity [ J/kg/K ]
     )
-    # P.κ =  0
     # ------------------------------------------------------------------- #
     # Define rheology paramters ========================================= #
     Rhe     =   ( 
@@ -334,7 +336,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
-    save_fig    =   0
+    save_fig    =   1
 
     path        =   string("./examples/ShearHeating/2D/Results/",
                             FD.Method.Diff,"_",FD.Method.θ,"_",
@@ -362,7 +364,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         T       =   zeros(Float64,(NC...)),
         Hs      =   zeros(Float64,NC...),
         T0      =   zeros(Float64,(NC...)),
-        T_exD0  =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex0   =   zeros(Float64,(NC.x+2,NC.y+2)),
         vx      =   zeros(Float64,NV.x,NC.y+2),
@@ -430,7 +431,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     T   =   TimeParameter( 
         Δfacc   =   0.9,                #   Courant time factor
         Δfacd   =   0.9,                #   Diffusion time factor
-        itmax   =   400,                #   Maximum iterations
+        itmax   =   20,                #   Maximum iterations
     )
     Time    =   zeros(T.itmax)
     # Initialize Time Step ---
@@ -681,39 +682,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             end
             if FD.Method.Adv==:upwind
                 upwindc2D!(D.T,D.T_ex,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
-            elseif FD.Method.Adv==:slf
-                @show minimum(D.T_exD0), maximum(D.T_exD0)
-                @show minimum(D.T_ex0), maximum(D.T_ex0)
-                @show minimum(D.T_ex), maximum(D.T_ex)
-                # @. D.TD0    =   D.T
-                # @. D.T_ex0  =   D.T_ex
-                # q = heatmap(x.c./1e3,y.c./1e3,(D.T0'),color=cgrad(:lajolla),
-                #     xlabel="x[km]",ylabel="y[km]",
-                #     # clims=(-13.5,-12.0),
-                #     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                #     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                #     size = (900,700), titlefontsize = 20,
-                #     guidefontsize = 20, tickfontsize = 16,
-                #     colorbar_tickfontsize = 14,
-                #     colorbar_titlefontsize = 16)
-                # display(q)
-                slfc2D!(D.T,D.T_ex,D.T_exD0,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
-                # @. D.T_exD0     =   D.T_ex
-                # D.T_ex[2:end-1,2:end-1]  .=   D.T
-                # Save diffused field for next SLF step
-                copyto!(D.T_exD0, D.T_ex)
-                # Replace interior by the advected solution
-                D.T_ex[2:end-1,2:end-1] .= D.T
-                # q1 = heatmap(x.c./1e3,y.c./1e3,(D.T'),color=cgrad(:lajolla),
-                #     xlabel="x[km]",ylabel="y[km]",
-                #     # clims=(-13.5,-12.0),
-                #     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                #     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                #     size = (900,700), titlefontsize = 20,
-                #     guidefontsize = 20, tickfontsize = 16,
-                #     colorbar_tickfontsize = 14,
-                #     colorbar_titlefontsize = 16)
-                # display(q1)
             elseif FD.Method.Adv==:semilag
                 semilagc2D!(D.T,D.T_ex,vxc_res,vyc_res,vxco_res,vyco_res,x,y,T.Δ)
                 vxco_res    .=   vxc_res
@@ -825,8 +793,8 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show shortening[it]
             @show δTemp[it]
         end
-        if shortening[it] >= 35
-        # if shortening[it] >= 20
+        # if shortening[it] >= 35
+        if shortening[it] >= 20
             T.itmax   =   it
             @show it
             @show Time[it]
@@ -890,7 +858,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
+ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #

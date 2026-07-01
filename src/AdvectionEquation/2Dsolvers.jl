@@ -52,9 +52,9 @@ function slfc2D!(P,P_ex,P_exo,vxc,vyc,NC,Δt,Δx,Δy)
     @. P  =   P_exo[indx,indy] - 
         vxc*Δt/Δx*(P_ex[indx+1,indy] - P_ex[indx.-1,indy]) - 
         vyc*Δt/Δy*(P_ex[indx,indy+1] - P_ex[indx,indy-1])
-    # # Update extende temperature field ------------------------------- #
-    # @. P_exo            =  P_ex
-    # P_ex[indx,indy]     .=  P
+    # Update extende temperature field ------------------------------- #
+    @. P_exo            =  P_ex
+    P_ex[indx,indy]     .=  P
     # ---------------------------------------------------------------- #
 end
 

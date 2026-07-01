@@ -15,7 +15,6 @@ Diff    =   [
 
 Adv     =   [
     :upwind,
-    :slf,
     :semilag,
 ]
 
