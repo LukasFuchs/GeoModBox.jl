@@ -44,12 +44,11 @@ function UpdateRheo!(ε,Rhe,D,P;ini=:no)
 
     # Update rheology ---
     # Viscosity ---            
-    @. Rhe.ηmat =   1e20 #(2.0^((1.0-Rhe.n[1])/Rhe.n[1]))/(3.0^((1.0+Rhe.n[1])/(2.0*Rhe.n[1]))) * 
-                    #  Rhe.A[1]^(-1/Rhe.n[1]) * Rhe.εIIeff^(1/Rhe.n[1]-1) * exp(Rhe.Ea[1]/(Rhe.n[1]*P.RG*(D.T+273.15)))
-    @. Rhe.ηinc =   1e20 # (2.0^((1.0-Rhe.n[2])/Rhe.n[2]))/(3.0^((1.0+Rhe.n[2])/(2.0*Rhe.n[2]))) * 
-                    #  Rhe.A[2]^(-1/Rhe.n[2]) * Rhe.εIIeff^(1/Rhe.n[2]-1) * exp(Rhe.Ea[2]/(Rhe.n[2]*P.RG*(D.T+273.15)))
+    @. Rhe.ηmat =   (2.0^((1.0-Rhe.n[1])/Rhe.n[1]))/(3.0^((1.0+Rhe.n[1])/(2.0*Rhe.n[1]))) * 
+                      Rhe.A[1]^(-1/Rhe.n[1]) * Rhe.εIIeff^(1/Rhe.n[1]-1) * exp(Rhe.Ea[1]/(Rhe.n[1]*P.RG*(D.T+273.15)))
+    @. Rhe.ηinc =   (2.0^((1.0-Rhe.n[2])/Rhe.n[2]))/(3.0^((1.0+Rhe.n[2])/(2.0*Rhe.n[2]))) * 
+                      Rhe.A[2]^(-1/Rhe.n[2]) * Rhe.εIIeff^(1/Rhe.n[2]-1) * exp(Rhe.Ea[2]/(Rhe.n[2]*P.RG*(D.T+273.15)))
     
-    # @. Rhe.ηnew =   Rhe.ηmat.^(1.0 .- D.p) .* Rhe.ηinc.^D.p
     if Rhe.avg_p == :arithmetic
         @. Rhe.ηnew = (1.0 - D.p) * Rhe.ηmat + D.p * Rhe.ηinc
     elseif Rhe.avg_p == :harmonic
@@ -103,7 +102,7 @@ end
 # ----------------------------------------------------------------------- #
 function Diagnostics!(phbd,halfwidth,nprof,
                         M,T,D,Ini,x,y,ε,
-                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
     pp  =   nothing
     r   =   nothing
@@ -185,24 +184,11 @@ function Diagnostics!(phbd,halfwidth,nprof,
     #     δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
     # end
 
-    # δTemp[it]   =   maximum(Tprof) - Ini.Tbg
-    # δTemp[it]   =   maximum(Tprof) - minimum(D.T)
-    # δTemp[it]   =   maximum(D.T) - Ini.Tbg
-    # δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
     # ------------------------------------------------------------------- #
     if mod(it,5) == 0 || it == 1 || it == T.itmax
-        # r = heatmap(x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
-        #             xlabel="x[km]",ylabel="y[km]",
-        #             clims=(-13.5,-12.0),
-        #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-        #             ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-        #             size = (900,700), titlefontsize = 20,
-        #             guidefontsize = 20, tickfontsize = 16,
-        #             colorbar_tickfontsize = 14,
-        #             colorbar_titlefontsize = 16)
-        r = heatmap(x.c./1e3,y.c./1e3,(D.T'),color=cgrad(:lajolla),
+        r = heatmap(x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
                     xlabel="x[km]",ylabel="y[km]",
-                    # clims=(-13.5,-12.0),
+                    clims=(-13.5,-12.0),
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
                     size = (900,700), titlefontsize = 20,
@@ -249,7 +235,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     to          =   TimerOutput()
     @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
-    Ini         =   (T      = :gaussian,               # Temperature
+    Ini         =   (T      = :const,               # Temperature
                      Tbg    = 400.0,                # [ °C ]
                      p      = :ShearBandSetting,    # Phasedistribution
                      radius = 3.0e3,                # [ m ]
@@ -332,7 +318,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         n       =   [3.0 3.3],              #   Stress exponent
         Ea      =   [276e3 186e3],          #   Activation energy
         # Viscosity damping factor ---
-        ω       =   0.0,
+        ω       =   0.5,
         # Lower cut off strain rate --- 
         εIImin  =   1e-20,
         # Initialize some arrays ---
@@ -354,7 +340,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                             FD.Method.Diff,"_",FD.Method.θ,"_",
                             FD.Method.Adv,"_", NC.x,"_",
                             NC.y,"_",Rhe.avg_p,"_",Rhe.avg_v,"_",
-                            style,"_test") #
+                            style) #
     if save_fig == 1
         isdir(path) || mkpath(path)
         framepath2D   = joinpath(path, "frames_2D")
@@ -444,7 +430,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     T   =   TimeParameter( 
         Δfacc   =   0.9,                #   Courant time factor
         Δfacd   =   0.9,                #   Diffusion time factor
-        itmax   =   200,                #   Maximum iterations
+        itmax   =   400,                #   Maximum iterations
     )
     Time    =   zeros(T.itmax)
     # Initialize Time Step ---
@@ -742,7 +728,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # Diagnostics =================================================== #
         pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
                         M,T,D,Ini,x,y,ε,
-                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
         # Save diagnostics on file ---
         if save_fig == 1
@@ -768,8 +754,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                 r  !== nothing && display(r)
             end
         end
-        # D.T0        .=  D.T
-        # D.T_ex0     .=  D.T_ex
         # Deform and remesh grid ======================================== #
         # Effectively the new time step --- !!! ---
         # Calculate new xmin, xmax and ymax ---
@@ -906,7 +890,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
+# ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #
