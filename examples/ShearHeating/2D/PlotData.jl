@@ -76,6 +76,18 @@ function diagnostics_file(basepath, Diff, θ, Adv, NCx, NCy, avg_p, avg_v, style
 
 end
 
+function add_panel!(p, label, labelsize; dx=0.16, dy=0.0)
+
+    xmin, xmax = xlims(p)
+    ymin, ymax = ylims(p)
+
+    x = xmin - dx*(xmax-xmin)
+    y = ymax - dy*(ymax-ymin)
+
+    annotate!(p, x, y,
+        text(label, labelsize, :black, :left))
+
+end
 
 # ============================================================
 # Settings
@@ -103,6 +115,9 @@ NCx, NCy = 200, 100
 
 outpath = joinpath(basepath, "DiagnosticsPlots")
 isdir(outpath) || mkpath(outpath)
+
+θfield      =   θlist[2]
+Advfield    =   Advlist[3]
 
 # ============================================================
 # Read Duretz et al. Figure 2 (digitized)
@@ -134,42 +149,68 @@ linestyles = Dict(
     1.0 => :dot,
 )
 
-linewidth = 2.5
+linewidth = 3.0
+
+# ============================================================
+# Font sizes
+# ============================================================
+
+# titlefontsize  = 18
+guidefontsize  = 20
+tickfontsize   = 16
+legendfontsize = 14
 
 # ============================================================
 # Create empty plots
 # ============================================================
 
 p1 = plot(
-    xlabel = "Bulk shortening [%]",
-    ylabel = L"\varepsilon_f",
-    title = "Strain-rate amplification",
-    legend = :bottomright,
-    framestyle = :box,
+    # xlabel          = "Bulk shortening [%]",
+    ylabel          = L"\varepsilon_f",
+    title           = "",
+    legend          = :bottomright,
+    framestyle      = :box,
+    # titlefontsize   = titlefontsize,
+    guidefontsize   = guidefontsize,
+    tickfontsize    = tickfontsize,
+    legendfontsize  = legendfontsize,
+    xlabel          = "",
+    xformatter      = _ -> ""
 )
 
 p2 = plot(
-    xlabel = "Bulk shortening [%]",
-    ylabel = L"\delta T\ [^\circ C]",
-    title = "Temperature increase",
-    legend = false,
-    framestyle = :box,
+    # xlabel          = "Bulk shortening [%]",
+    ylabel          = L"\delta T\ [^\circ C]",
+    title           = "",
+    legend          = false,
+    framestyle      = :box,
+    guidefontsize   = guidefontsize,
+    tickfontsize    = tickfontsize,
+    legendfontsize  = legendfontsize,
+    xlabel          = "",
+    xformatter      = _ -> ""
 )
 
 p3 = plot(
-    xlabel = "Bulk shortening [%]",
-    ylabel = L"\theta_{SB}\ [^\circ]",
-    title = "Shear-band angle",
-    legend = false,
-    framestyle = :box,
+    xlabel          = "Bulk shortening [%]",
+    ylabel          = L"\theta_{SB}\ [^\circ]",
+    title           = "",
+    legend          = false,
+    framestyle      = :box,
+    guidefontsize   = guidefontsize,
+    tickfontsize    = tickfontsize,
+    legendfontsize  = legendfontsize,
 )
 
 p4 = plot(
-    xlabel = "Bulk shortening [%]",
-    ylabel = L"D_{SB}\ [km]",
-    title = "Shear-band thickness",
-    legend = false,
-    framestyle = :box,
+    xlabel          = "Bulk shortening [%]",
+    ylabel          = L"D_{SB}\ [km]",
+    title           = "",
+    legend          = false,
+    framestyle      = :box,
+    guidefontsize   = guidefontsize,
+    tickfontsize    = tickfontsize,
+    legendfontsize  = legendfontsize,
 )
 
 # ============================================================
@@ -233,16 +274,13 @@ plot!(p1, [NaN], [NaN],
 scatter!(p1, [NaN], [NaN],
     color=:black,
     marker=:circle,
-    markersize=3,
+    markersize=5,
     markerstrokewidth=0,
     label="Duretz et al. (2014)")
 
 # ============================================================
 # Plot all simulations
 # ============================================================
-
-θfield = θlist[1]
-Advfield = Advlist[1]
 
 f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 5%")
@@ -329,7 +367,7 @@ for (plt,x,y) in (
     scatter!(plt, x, y,
         color=:black,
         marker=:circle,
-        markersize=4,
+        markersize=5,
         markerstrokewidth=0,
         label=false)
 end
@@ -355,26 +393,42 @@ fig = plot(
     p1,p2,
     p3,p4,
     layout=(2,2),
-    size=(1200,900)
+    # size=(1200,900)
+    size=(1600,1600)
 )
-fig2 = plot(
-    f1, p1,
-    f2, p2,
-    f3, p4,
-    layout = (3,2),
-    size = (1200,1400),
-)
+# fig2 = plot(
+#     f1, p1,
+#     f2, p2,
+#     f3, p4,
+#     layout = (3,2),
+#     # size = (1200,1400),
+#     size=(1600,1600)
+# )
 
 display(fig)
 
 # savefig(fig, joinpath(outpath,"DiagnosticsComparison.png"))
 
+# ============================================================
+# Panel labels
+# ============================================================
+
+labelsize = 18
+
+add_panel!(f1, "(a)",labelsize;dx=0.02,dy=1.0)
+add_panel!(f2, "(c)",labelsize;dx=0.02,dy=1.0)
+add_panel!(f3, "(e)",labelsize;dx=0.02,dy=1.0)
+add_panel!(p1, "(b)",labelsize)
+add_panel!(p2, "(d)",labelsize)
+add_panel!(p4, "(f)",labelsize)
+
 fig2 = plot(
     f1, p1,
     f2, p2,
     f3, p4,
     layout = (3,2),
-    size = (1200,1400),
+    # size = (1200,1400),
+    size=(1600,1600)
 )
 
 display(fig2)

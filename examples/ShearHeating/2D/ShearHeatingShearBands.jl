@@ -45,11 +45,10 @@ function UpdateRheo!(ε,Rhe,D,P;ini=:no)
     # Update rheology ---
     # Viscosity ---            
     @. Rhe.ηmat =   (2.0^((1.0-Rhe.n[1])/Rhe.n[1]))/(3.0^((1.0+Rhe.n[1])/(2.0*Rhe.n[1]))) * 
-                     Rhe.A[1]^(-1/Rhe.n[1]) * Rhe.εIIeff^(1/Rhe.n[1]-1) * exp(Rhe.Ea[1]/(Rhe.n[1]*P.RG*(D.T+273.15)))
+                      Rhe.A[1]^(-1/Rhe.n[1]) * Rhe.εIIeff^(1/Rhe.n[1]-1) * exp(Rhe.Ea[1]/(Rhe.n[1]*P.RG*(D.T+273.15)))
     @. Rhe.ηinc =   (2.0^((1.0-Rhe.n[2])/Rhe.n[2]))/(3.0^((1.0+Rhe.n[2])/(2.0*Rhe.n[2]))) * 
-                     Rhe.A[2]^(-1/Rhe.n[2]) * Rhe.εIIeff^(1/Rhe.n[2]-1) * exp(Rhe.Ea[2]/(Rhe.n[2]*P.RG*(D.T+273.15)))
+                      Rhe.A[2]^(-1/Rhe.n[2]) * Rhe.εIIeff^(1/Rhe.n[2]-1) * exp(Rhe.Ea[2]/(Rhe.n[2]*P.RG*(D.T+273.15)))
     
-    # @. Rhe.ηnew =   Rhe.ηmat.^(1.0 .- D.p) .* Rhe.ηinc.^D.p
     if Rhe.avg_p == :arithmetic
         @. Rhe.ηnew = (1.0 - D.p) * Rhe.ηmat + D.p * Rhe.ηinc
     elseif Rhe.avg_p == :harmonic
@@ -103,7 +102,7 @@ end
 # ----------------------------------------------------------------------- #
 function Diagnostics!(phbd,halfwidth,nprof,
                         M,T,D,Ini,x,y,ε,
-                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
     pp  =   nothing
     r   =   nothing
@@ -185,17 +184,17 @@ function Diagnostics!(phbd,halfwidth,nprof,
     #     δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
     # end
 
-    # δTemp[it]   =   maximum(Tprof) - Ini.Tbg
-    # δTemp[it]   =   maximum(Tprof) - minimum(D.T)
-    # δTemp[it]   =   maximum(D.T) - Ini.Tbg
-    # δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
     # ------------------------------------------------------------------- #
     if mod(it,5) == 0 || it == 1 || it == T.itmax
         r = heatmap(x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
                     xlabel="x[km]",ylabel="y[km]",
                     clims=(-13.5,-12.0),
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                    ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true)
+                    ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+                    size = (900,700), titlefontsize = 20,
+                    guidefontsize = 20, tickfontsize = 16,
+                    colorbar_tickfontsize = 14,
+                    colorbar_titlefontsize = 16)
         scatter!(r,[xc/1e3],[yc/1e3],
                     ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
         if style==:moving
@@ -310,6 +309,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         k       =   2.5,            #   Thermal conductivity [ W/m/K ]
         cp      =   1050.0,         #   Heat capacity [ J/kg/K ]
     )
+    P.κ =  0
     # ------------------------------------------------------------------- #
     # Define rheology paramters ========================================= #
     Rhe     =   ( 
@@ -362,6 +362,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         T       =   zeros(Float64,(NC...)),
         Hs      =   zeros(Float64,NC...),
         T0      =   zeros(Float64,(NC...)),
+        T_exD0  =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex0   =   zeros(Float64,(NC.x+2,NC.y+2)),
         vx      =   zeros(Float64,NV.x,NC.y+2),
@@ -422,7 +423,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     # Velocity ---
     IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
     # Temperature --- 
-    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=Ini.Tbg)
+    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=Ini.Tbg,Ta=Ini.Tbg+200)
     @. ε.II     =   Ini.ε
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
@@ -637,7 +638,8 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num; 
                         ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:dc
-            # D.T0    .=  D.T
+            D.T0        .=  D.T
+            D.T_ex0     .=  D.T_ex
             for iter = 1:niter
                 # Evaluate residual
                 ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
@@ -680,9 +682,38 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             if FD.Method.Adv==:upwind
                 upwindc2D!(D.T,D.T_ex,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
             elseif FD.Method.Adv==:slf
-                # @. D.T0     =   D.T
+                @show minimum(D.T_exD0), maximum(D.T_exD0)
+                @show minimum(D.T_ex0), maximum(D.T_ex0)
+                @show minimum(D.T_ex), maximum(D.T_ex)
+                # @. D.TD0    =   D.T
                 # @. D.T_ex0  =   D.T_ex
-                slfc2D!(D.T,D.T_ex,D.T_ex0,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
+                # q = heatmap(x.c./1e3,y.c./1e3,(D.T0'),color=cgrad(:lajolla),
+                #     xlabel="x[km]",ylabel="y[km]",
+                #     # clims=(-13.5,-12.0),
+                #     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                #     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+                #     size = (900,700), titlefontsize = 20,
+                #     guidefontsize = 20, tickfontsize = 16,
+                #     colorbar_tickfontsize = 14,
+                #     colorbar_titlefontsize = 16)
+                # display(q)
+                slfc2D!(D.T,D.T_ex,D.T_exD0,vxc_res,vyc_res,NC,T.Δ,Δ.x,Δ.y)
+                # @. D.T_exD0     =   D.T_ex
+                # D.T_ex[2:end-1,2:end-1]  .=   D.T
+                # Save diffused field for next SLF step
+                copyto!(D.T_exD0, D.T_ex)
+                # Replace interior by the advected solution
+                D.T_ex[2:end-1,2:end-1] .= D.T
+                # q1 = heatmap(x.c./1e3,y.c./1e3,(D.T'),color=cgrad(:lajolla),
+                #     xlabel="x[km]",ylabel="y[km]",
+                #     # clims=(-13.5,-12.0),
+                #     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                #     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+                #     size = (900,700), titlefontsize = 20,
+                #     guidefontsize = 20, tickfontsize = 16,
+                #     colorbar_tickfontsize = 14,
+                #     colorbar_titlefontsize = 16)
+                # display(q1)
             elseif FD.Method.Adv==:semilag
                 semilagc2D!(D.T,D.T_ex,vxc_res,vyc_res,vxco_res,vyco_res,x,y,T.Δ)
                 vxco_res    .=   vxc_res
@@ -697,7 +728,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # Diagnostics =================================================== #
         pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
                         M,T,D,Ini,x,y,ε,
-                        θsb,θsb2,Dsb,εf,δTemp,shortening,strain,style,
+                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
         # Save diagnostics on file ---
         if save_fig == 1
@@ -723,8 +754,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                 r  !== nothing && display(r)
             end
         end
-        D.T0        .=  D.T
-        D.T_ex0     .=  D.T_ex
         # Deform and remesh grid ======================================== #
         # Effectively the new time step --- !!! ---
         # Calculate new xmin, xmax and ymax ---
@@ -861,7 +890,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-# ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
+# ShearHeatingShearBands(:dc,0.5,:slf,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #
