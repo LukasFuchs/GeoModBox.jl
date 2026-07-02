@@ -110,8 +110,8 @@ function Diagnostics!(phbd,halfwidth,nprof,
     # Estimate shear band angle ----------------------------------------- #
     # Matrix shear-zone candidate points
     mask_mat    =   D.p .< phbd
-    mask_right  =   x.c2d .> 1.5e3
-    mask_top    =   y.c2d .> 1.5e3
+    mask_right  =   x.c2d .> 2.0e3
+    mask_top    =   y.c2d .> 2.0e3
     mask_high   =   ε.II .>  Ini.ε
     # Shear band mask --- Total ---
     mask_shear_band = mask_mat .& mask_right .& mask_top .& mask_high
@@ -133,8 +133,8 @@ function Diagnostics!(phbd,halfwidth,nprof,
         yc          =   a * xc + b
         θsb[it]     =   atan(a)   # shear band angle
     elseif style==:fixed
-        xc          =   3.8e3 * exp(-strain[it])
-        yc          =   3.8e3 * exp( strain[it])
+        xc          =   4.0e3 * exp(-strain[it])
+        yc          =   4.0e3 * exp( strain[it])
         θsb[it]     =   atan(yc, xc)
     end
     # Calculate points for profile ---
@@ -166,7 +166,7 @@ function Diagnostics!(phbd,halfwidth,nprof,
         θsb2[it]    =   atan(yp[imax],xp[imax])
     end
 
-    fitmask = abs.(sbl .- s0_guess) .< 4.0e3
+    fitmask = abs.(sbl .- s0_guess) .< 5.0e3
 
     model(s,p) = p[1] .+ p[2] .* exp.(-((s .- p[3]).^2) ./ (2*p[4]^2))
 
@@ -198,6 +198,14 @@ function Diagnostics!(phbd,halfwidth,nprof,
                     colorbar_titlefontsize = 16, 
                     right_margin = 15mm,left_margin = 5mm,
                     top_margin = 15mm, bottom_margin = 15mm)
+        # scatter!(r,Ma.x[1:1:end]./1e3,Ma.y[1:1:end]./1e3,
+        #                 ms=1,ma=0.5,mc=Ma.phase[1:1:end],markerstrokewidth=0.0)
+                        # xlabel="x[km]",ylabel="y[km]",colorbar=false,
+                        # title="tracers",label="",
+                        # aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+                        # ylims=(M.ymin/1e3, M.ymax/1e3),
+                        # layout=(2,2),subplot=2)
+                    # @show xc yc
         scatter!(r,[xc/1e3],[yc/1e3],
                     ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
         if style==:moving
@@ -312,6 +320,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         k       =   2.5,            #   Thermal conductivity [ W/m/K ]
         cp      =   1050.0,         #   Heat capacity [ J/kg/K ]
     )
+    # P.κ     =   0
     # ------------------------------------------------------------------- #
     # Define rheology paramters ========================================= #
     Rhe     =   ( 
@@ -336,7 +345,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
-    save_fig    =   1
+    save_fig    =   0
 
     path        =   string("./examples/ShearHeating/2D/Results/",
                             FD.Method.Diff,"_",FD.Method.θ,"_",
@@ -364,6 +373,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         T       =   zeros(Float64,(NC...)),
         Hs      =   zeros(Float64,NC...),
         T0      =   zeros(Float64,(NC...)),
+        Told_ex =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         T_ex0   =   zeros(Float64,(NC.x+2,NC.y+2)),
         vx      =   zeros(Float64,NV.x,NC.y+2),
@@ -431,7 +441,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     T   =   TimeParameter( 
         Δfacc   =   0.9,                #   Courant time factor
         Δfacd   =   0.9,                #   Diffusion time factor
-        itmax   =   20,                #   Maximum iterations
+        itmax   =   400,                #   Maximum iterations
     )
     Time    =   zeros(T.itmax)
     # Initialize Time Step ---
@@ -447,7 +457,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     shortening  =   zeros(T.itmax)
     # Setup parameters -------------------------------------------------- #
     phbd        =   0.01    # Phase boundary value
-    halfwidth   =   4e3     # Half of the profile length
+    halfwidth   =   5e3     # Half of the profile length
     nprof       =   200     # Number of points in the profile
     # Profile coordinates ---
     xp          =   zeros(nprof)
@@ -476,6 +486,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
             wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
+    # @show Ini.radius
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
                         ellA=Ini.radius)
     # RK4 weights ---
@@ -483,13 +494,32 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-    # Temperature --- if FD.Method.Adv==:tracers 
-    #   -> FromCtoM
+    # Temperature --- 
+    if FD.Method.Adv==:tracers 
+        @threads for k = 1:nmark
+            Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
+        end
+        ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
+        scatter(
+           Ma.x ./ 1e3,
+           Ma.y ./ 1e3,
+           zcolor = Ma.T,
+           ms = 2,
+           markerstrokewidth = 0,
+           aspect_ratio = :equal,
+           xlabel = "x [km]",
+           ylabel = "y [km]",
+           color = :batlow,
+           colorbar_title = "T [°C]",
+           legend = false,
+           colorbar = true,
+    )
+    end
     # ------------------------------------------------------------------- #
     # Update cell centroids and vertices (here only density and phase) -- #
     # Update Centroids --- 
     # Phase ---
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,:phase,phase)
     D.p     .=  D.p_ex[2:end-1,2:end-1]
     # Density ---
     @. D.ρ     =   P.ρ₀*(1.0 - D.p) + P.ρ₀*D.p
@@ -545,12 +575,12 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                         ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
     end
+    δx      =   zeros(Float64,maximum(Num.Pt))
+    F       =   zeros(Float64,maximum(Num.Pt))
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
     for it = 1:T.itmax
-        δx      =   zeros(maximum(Num.Pt))
-        F       =   zeros(maximum(Num.Pt))
         R0      =   0.0
         # Update Time ---
         if it>1
@@ -620,6 +650,26 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # --------------------------------------------------------------- #
+        # Diagnostics =================================================== #
+        pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
+                        M,T,D,Ini,x,y,ε,
+                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
+                        xp,yp,it)
+        # Save diagnostics on file ---
+        if save_fig == 1
+            @printf(dfile,
+                "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n",
+                it,
+                strain[it],
+                shortening[it],
+                εf[it],
+                δTemp[it],
+                Dsb[it],
+                θsb[it]*180/π,
+                θsb2[it]*180/π)
+            flush(dfile)   # immediately write to disk
+        end
+        # --------------------------------------------------------------- #
         # Update time stepping ========================================== #
         GetTimeStep!(T,Δ,P,D)
         # --------------------------------------------------------------- #
@@ -640,7 +690,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                         ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:dc
             D.T0        .=  D.T
-            D.T_ex0     .=  D.T_ex
             for iter = 1:niter
                 # Evaluate residual
                 ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
@@ -662,8 +711,14 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # ---
         # Temperature advection ---
         if FD.Method.Adv==:tracers 
+            # Calculate temperature difference ---
+            @. ΔT_grid     =   D.T_ex - D.Told_ex
+            # Update tracer temperature ---
+            @threads for k = 1:nmark
+                local ΔTm     =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+                Ma.T[k]     += ΔTm
+            end
             # Update tracer info from grid ---
-            # - Calculate temperature difference new and old time 
             # - Calculate subgrid diffusion on tracers
             # - Interpolate subgrid diffuison to the grid
             # - Calculate remaining temperature difference on the grid 
@@ -693,26 +748,26 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
         # ---
-        # Diagnostics =================================================== #
-        pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
-                        M,T,D,Ini,x,y,ε,
-                        θsb,θsb2,Dsb,εf,δTemp,strain,style,
-                        xp,yp,it)
-        # Save diagnostics on file ---
-        if save_fig == 1
-            @printf(dfile,
-                "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n",
-                it,
-                strain[it],
-                shortening[it],
-                εf[it],
-                δTemp[it],
-                Dsb[it],
-                θsb[it]*180/π,
-                θsb2[it]*180/π)
-            flush(dfile)   # immediately write to disk
-        end
-        # --------------------------------------------------------------- #
+        # # Diagnostics =================================================== #
+        # pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
+        #                 M,T,D,Ini,x,y,ε,
+        #                 θsb,θsb2,Dsb,εf,δTemp,strain,style,
+        #                 xp,yp,it)
+        # # Save diagnostics on file ---
+        # if save_fig == 1
+        #     @printf(dfile,
+        #         "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n",
+        #         it,
+        #         strain[it],
+        #         shortening[it],
+        #         εf[it],
+        #         δTemp[it],
+        #         Dsb[it],
+        #         θsb[it]*180/π,
+        #         θsb2[it]*180/π)
+        #     flush(dfile)   # immediately write to disk
+        # end
+        # # --------------------------------------------------------------- #
         if mod(it,5) == 0 || it == 1 || it == T.itmax
             if save_fig == 1
                 pp !== nothing && Plots.frame(animProf, pp)
@@ -762,19 +817,20 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
         # --------------------------------------------------------------- #
         # Update cell centroids and vertices information ================ #
-        # if FD.Method.Adv==:tracer
-            # Update everything
-        # else
-            # Update only phase 
-        # end
         ϵx = 1e-10 * (M.xmax - M.xmin)
         ϵy = 1e-10 * (M.ymax - M.ymin)
         @. Ma.x = clamp(Ma.x, M.xmin + ϵx, M.xmax - ϵx)
         @. Ma.y = clamp(Ma.y, M.ymin + ϵy, M.ymax - ϵy)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         @timeit to "Tracer Interpolation" begin
+        if FD.Method.Adv==:tracers
+            # Update temperature field ---
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,:thermal,nothing)
+            D.T     .=  D.T_ex[2:end-1,2:end-1]
+        end
+        # Update only phase 
         # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,:phase,phase)
         D.p     .=  D.p_ex[2:end-1,2:end-1]
         # Density ---
         @.  D.ρ     =   P.ρ₀*(1.0 - D.p) + P.ρ₀*D.p
@@ -783,6 +839,8 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         D.ρ_ex[end,:]   .=  D.ρ_ex[end-1,:]
         D.ρ_ex[:,1]     .=  D.ρ_ex[:,2]
         D.ρ_ex[:,end]   .=  D.ρ_ex[:,end-1]
+        # Update old temperature field ---
+        @. D.Told_ex    =   D.T_ex
         end
         # --------------------------------------------------------------- #
         if mod(it,10) == 0 || it == 1

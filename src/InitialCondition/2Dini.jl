@@ -122,6 +122,9 @@ Example:
     if isdefined(D,:T0)
         @. D.T0     =   D.T
     end
+    if isdefined(D,:Told)
+        @. D.Told   =   D.T
+    end
     if isdefined(D,:T_exD0)
         @. D.T_exD0 =   D.T_ex
     end
