@@ -105,7 +105,7 @@ Advlist = [
     :semilag,
 ]
 
-style = :fixed
+style = :moving
 
 avg_p = :geometric
 avg_v = :geometric
@@ -281,20 +281,19 @@ scatter!(p1, [NaN], [NaN],
 # Plot all simulations
 # ============================================================
 
-f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
+f1 = field_plot("000008", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 5%")
 
-f2 = field_plot("000010", basepath, Diff, θfield, Advfield,
+f2 = field_plot("000021", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 15%")
 
-f3 = field_plot("000020", basepath, Diff, θfield, Advfield,
+f3 = field_plot("000028", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε = 25%") # 37
 
 for θ in θlist
 
     for Adv in Advlist
 
-        # @show f1
         file = diagnostics_file(basepath, Diff, θ, Adv, NCx, NCy, avg_p, avg_v, style)
 
         if !isfile(file)
@@ -358,10 +357,6 @@ for (plt,x,y) in (
     (p3, short_D, θ_D),
     (p4, short_D, D_D),
 )
-    # plot!(plt, x, y,
-    #     color=:black,
-    #     linewidth=1,
-    #     label=false)
 
     scatter!(plt, x, y,
         color=:black,
@@ -395,14 +390,6 @@ fig = plot(
     # size=(1200,900)
     size=(1600,1600)
 )
-# fig2 = plot(
-#     f1, p1,
-#     f2, p2,
-#     f3, p4,
-#     layout = (3,2),
-#     # size = (1200,1400),
-#     size=(1600,1600)
-# )
 
 display(fig)
 

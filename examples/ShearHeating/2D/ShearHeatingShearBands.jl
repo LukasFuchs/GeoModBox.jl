@@ -110,28 +110,34 @@ function Diagnostics!(phbd,halfwidth,nprof,
     # Estimate shear band angle ----------------------------------------- #
     # Matrix shear-zone candidate points
     mask_mat    =   D.p .< phbd
-    mask_right  =   x.c2d .> 2.0e3
-    mask_top    =   y.c2d .> 2.0e3
+    mask_right  =   x.c2d .> 3.5e3
+    mask_top    =   y.c2d .> 3.5e3
     mask_high   =   ε.II .>  Ini.ε
     # Shear band mask --- Total ---
     mask_shear_band = mask_mat .& mask_right .& mask_top .& mask_high
     # Remove points of lower strain rate ---
-    mask_low  = ε.II .>  0.4 * maximum(ε.II[mask_shear_band])
+    mask_low  = ε.II .>  0.5 * maximum(ε.II[mask_shear_band])
     # Final mask ---
     mask_band = mask_shear_band .& mask_low
     # Define profile through the shear band ----------------------------- #
     if style==:moving
         # Shear band point coordinates ---
-        xb      =   x.c2d[mask_band]
-        yb      =   y.c2d[mask_band]
+        xb          =   x.c2d[mask_band]
+        yb          =   y.c2d[mask_band]
         # Fit y = a*x + b ---
-        Afit    =   hcat(xb, ones(length(xb)))
-        a, b    =   Afit \ yb
+        Afit        =   hcat(xb, ones(length(xb)))
+        a, b        =   Afit \ yb
         # Define center point for profile ------------------------------- #
-        λ           =   0.2   # 0 near inclusion, 1 near top shear band points
+        λ           =   0.25   # 0 near inclusion, 1 near top shear band points
         xc          =   λ * maximum(xb)
         yc          =   a * xc + b
         θsb[it]     =   atan(a)   # shear band angle
+    elseif style==:max
+        inds        =   findall(mask_band)
+        imax        =   inds[argmax(ε.II[mask_band])]
+        xc          =   x.c2d[imax]
+        yc          =   y.c2d[imax]
+        θsb[it]     =   atan(yc, xc)
     elseif style==:fixed
         xc          =   4.0e3 * exp(-strain[it])
         yc          =   4.0e3 * exp( strain[it])
@@ -162,9 +168,9 @@ function Diagnostics!(phbd,halfwidth,nprof,
     εmax        =   maximum(εprof_s)
     imax        =   argmax(εprof_s)
     s0_guess    =   sbl[imax]
-    if style==:fixed
-        θsb2[it]    =   atan(yp[imax],xp[imax])
-    end
+    # if style==:fixed
+    θsb2[it]    =   atan(yp[imax],xp[imax])
+    # end
 
     fitmask = abs.(sbl .- s0_guess) .< 5.0e3
 
@@ -177,13 +183,13 @@ function Diagnostics!(phbd,halfwidth,nprof,
     σ       =   abs(pars[4])
     Dsb[it] =   2*σ
 
-    # if style==:fixed
-    εf[it]      =   maximum(εprof_s)
-    δTemp[it]   =   maximum(Tprof) - minimum(D.T)
-    # else
-    #     εf[it]      =   maximum(ε.II[mask_band]) ./ εscale
-    #     δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
-    # end
+    if style==:fixed || style==:moving
+        εf[it]      =   maximum(εprof_s)
+        δTemp[it]   =   maximum(Tprof) - minimum(D.T)
+    elseif style==:max
+        εf[it]      =   maximum(ε.II[mask_band]) ./ εscale
+        δTemp[it]   =   maximum(D.T[mask_band]) - minimum(D.T)
+    end
 
     # ------------------------------------------------------------------- #
     if mod(it,5) == 0 || it == 1 || it == T.itmax
@@ -216,8 +222,8 @@ function Diagnostics!(phbd,halfwidth,nprof,
                     color=:white,linewidth=1,la=0.5)
         contour!(r,x.c./1e3,y.c./1e3,((D.p.+0.5).*log10.(Ini.ε))',
                     levels = [log10(Ini.ε)],
-                    color=:black,linewidth=2)
-        plot!(r,xp./1e3,yp./1e3,color=:red,label="",linewidth=2)
+                    color=:black,linewidth=2.5)
+        plot!(r,xp./1e3,yp./1e3,color=:red,label="",linewidth=2.5)
                     
         pp = plot(sbl./1e3,(εprof),
                     xlabel = "s [km]",ylabel = "ε_II",
@@ -457,7 +463,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     shortening  =   zeros(T.itmax)
     # Setup parameters -------------------------------------------------- #
     phbd        =   0.01    # Phase boundary value
-    halfwidth   =   5e3     # Half of the profile length
+    halfwidth   =   6e3     # Half of the profile length
     nprof       =   200     # Number of points in the profile
     # Profile coordinates ---
     xp          =   zeros(nprof)
@@ -852,7 +858,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show δTemp[it]
         end
         # if shortening[it] >= 35
-        if shortening[it] >= 20
+        if shortening[it] >= 15
             T.itmax   =   it
             @show it
             @show Time[it]

@@ -2,8 +2,8 @@
 include("ShearHeatingShearBands.jl")
 
 Diff    =   [
-    :explicit,
-    :implicit,
+    # :explicit,
+    # :implicit,
     :dc,
 ]
 
@@ -21,13 +21,15 @@ Adv     =   [
 style   =   [
     :moving,
     :fixed,
+    :max,
 ]
 
-for i in eachindex(θ)
-    @show θ[i] 
-    for j in eachindex(Adv)
-        @show Adv[j]
-        ShearHeatingShearBands(Diff[3],θ[i],Adv[j],style[1])
+for k in eachindex(style)
+    for i in eachindex(θ)
+        for j in eachindex(Adv)
+            @show θ[i], Adv[j], style[k]
+            ShearHeatingShearBands(Diff[1],θ[i],Adv[j],style[k])
+        end
     end
 end
 
