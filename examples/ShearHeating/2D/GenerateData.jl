@@ -16,6 +16,7 @@ Diff    =   [
 Adv     =   [
     :upwind,
     :semilag,
+    :tracers,
 ]
 
 style   =   [

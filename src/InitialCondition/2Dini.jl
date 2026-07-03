@@ -41,11 +41,11 @@ Example:
         # Circle shaped anomaly ---
         # Bereich der Anomalie ---       
         ri          =   .2
-        xc          =   (M.xmin+M.xmax)/4
-        yc          =   (M.ymin+M.ymax)/2
+        xc          =   (M.xmax-M.xmin)/4
+        yc          =   (M.ymax-M.ymin)/2
         α           =   0.0
-        a_ell       =   .2*(M.ymin+M.ymax)
-        b_ell       =   .2*(M.ymin+M.ymax)
+        a_ell       =   .2*(M.ymax-M.ymin)
+        b_ell       =   .2*(M.ymax-M.ymin)
         @threads for i = 1:NC.x+2 
             for j = 1:NC.y+2
                 x_ell   =  x.ce[i]*cosd(α) + y.ce[j]*sind(α)
@@ -122,8 +122,8 @@ Example:
     if isdefined(D,:T0)
         @. D.T0     =   D.T
     end
-    if isdefined(D,:Told)
-        @. D.Told   =   D.T
+    if isdefined(D,:Told_ex)
+        @. D.Told_ex    =   D.T_ex
     end
     if isdefined(D,:T_exD0)
         @. D.T_exD0 =   D.T_ex
