@@ -101,7 +101,7 @@ function UpdateRheo!(ε,Rhe,D,P;ini=:no)
     end
 end
 # ----------------------------------------------------------------------- #
-function Diagnostics!(phbd,halfwidth,nprof,
+function Diagnostics!(phbd,nprof,
                         M,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
@@ -131,17 +131,20 @@ function Diagnostics!(phbd,halfwidth,nprof,
         λ           =   0.25   # 0 near inclusion, 1 near top shear band points
         xc          =   λ * maximum(xb)
         yc          =   a * xc + b
-        θsb[it]     =   atan(a)   # shear band angle
+        θsb[it]     =   atan(a)   # shear band 
+        halfwidth   =   4.0e3
     elseif style==:max
         inds        =   findall(mask_band)
         imax        =   inds[argmax(ε.II[mask_band])]
         xc          =   x.c2d[imax]
         yc          =   y.c2d[imax]
         θsb[it]     =   atan(yc, xc)
+        halfwidth   =   4.0e3
     elseif style==:fixed
-        xc          =   4.0e3 * exp(-strain[it])
-        yc          =   4.0e3 * exp( strain[it])
+        xc          =   10.0e3 * exp(-strain[it])
+        yc          =   10.0e3 * exp( strain[it])
         θsb[it]     =   atan(yc, xc)
+        halfwidth   =   6.0e3
     end
     # Calculate points for profile ---
     # Normal to the shear band ---
@@ -172,7 +175,7 @@ function Diagnostics!(phbd,halfwidth,nprof,
     θsb2[it]    =   atan(yp[imax],xp[imax])
     # end
 
-    fitmask = abs.(sbl .- s0_guess) .< 5.0e3
+    fitmask = abs.(sbl .- s0_guess) .< halfwidth
 
     model(s,p) = p[1] .+ p[2] .* exp.(-((s .- p[3]).^2) ./ (2*p[4]^2))
 
@@ -351,7 +354,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     phase       =   [0,1]
     # ------------------------------------------------------------------- #
     # Animation and Plot Settings ======================================= #
-    save_fig    =   0
+    save_fig    =   1
 
     path        =   string("./examples/ShearHeating/2D/Results/",
                             FD.Method.Diff,"_",FD.Method.θ,"_",
@@ -463,7 +466,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     shortening  =   zeros(T.itmax)
     # Setup parameters -------------------------------------------------- #
     phbd        =   0.01    # Phase boundary value
-    halfwidth   =   6e3     # Half of the profile length
+    # halfwidth   =   6e3     # Half of the profile length
     nprof       =   200     # Number of points in the profile
     # Profile coordinates ---
     xp          =   zeros(nprof)
@@ -552,7 +555,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     ndof    =   maximum(Num.T)  
     # Momentum conservation (MCE) ---
     # Iterations --- 
-    niterM      =   50          #   Number of iterations 
+    niterM      =   80          #   Number of iterations 
     atolM       =   1e-8        #   Absolute tolerance
     rtolM       =   1e-5        #   Relative tolerance; r = atolM0/atolM
     RM          =   0.0         #   Initialize absolute residual    
@@ -657,7 +660,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # --------------------------------------------------------------- #
         # Diagnostics =================================================== #
-        pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
+        pp,r    =   Diagnostics!(phbd,nprof,
                         M,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
@@ -856,9 +859,25 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show εf[it]
             @show shortening[it]
             @show δTemp[it]
+            @show maximum(ε.II)
+            @show minimum(ε.II)
+            @show maximum(τ.II)
+            @show minimum(τ.II)
+            @show maximum(D.ηc)
+            @show minimum(D.ηc)
+            mask_shear = (D.p .< phbd) .&
+                        (x.c2d .> 4.0e3) .&
+                        (y.c2d .> 4.0e3) .&
+                        (ε.II .> Ini.ε)
+
+            @show maximum(ε.II[mask_shear]) / Ini.ε
+            @show maximum(D.ηc[mask_shear])
+            @show minimum(D.ηc[mask_shear])
+            @show maximum(τ.II[mask_shear])
+            @show minimum(τ.II[mask_shear])
         end
-        # if shortening[it] >= 35
-        if shortening[it] >= 15
+        if shortening[it] >= 35
+        # if shortening[it] >= 15
             T.itmax   =   it
             @show it
             @show Time[it]
@@ -866,6 +885,22 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show εf[it]
             @show shortening[it]
             @show δTemp[it]
+            @show maximum(ε.II)
+            @show minimum(ε.II)
+            @show maximum(τ.II)
+            @show minimum(τ.II)
+            @show maximum(D.ηc)
+            @show minimum(D.ηc)
+            mask_shear = (D.p .< phbd) .&
+                        (x.c2d .> 4.0e3) .&
+                        (y.c2d .> 4.0e3) .&
+                        (ε.II .> Ini.ε)
+
+            @show maximum(ε.II[mask_shear]) / Ini.ε
+            @show maximum(D.ηc[mask_shear])
+            @show minimum(D.ηc[mask_shear])
+            @show maximum(τ.II[mask_shear])
+            @show minimum(τ.II[mask_shear])
             @printf("Bulk shortening %g reached maximum value\n",shortening[it])
             break
         else
@@ -922,7 +957,7 @@ end
 # Call Main Script ====================================================== #
 # ======================================================================= #
 
-ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
+# ShearHeatingShearBands(:dc,0.5,:semilag,:fixed)
 # ShearHeatingShearBands()
 
 # ======================================================================= #

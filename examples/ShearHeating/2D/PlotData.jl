@@ -105,7 +105,7 @@ Advlist = [
     :semilag,
 ]
 
-style = :moving
+style = :fixed
 
 avg_p = :geometric
 avg_v = :geometric
@@ -282,13 +282,13 @@ scatter!(p1, [NaN], [NaN],
 # ============================================================
 
 f1 = field_plot("000008", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="ε = 5%")
+                NCx, NCy, avg_p, avg_v, style; title="")
 
-f2 = field_plot("000021", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="ε = 15%")
+f2 = field_plot("000015", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="")
 
-f3 = field_plot("000028", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="ε = 25%") # 37
+f3 = field_plot("000020", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="") # 37
 
 for θ in θlist
 
