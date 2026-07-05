@@ -102,7 +102,7 @@ function UpdateRheo!(ε,Rhe,D,P;ini=:no)
 end
 # ----------------------------------------------------------------------- #
 function Diagnostics!(phbd,nprof,
-                        M,T,D,Ini,x,y,ε,
+                        M,Ma,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
     pp  =   nothing
@@ -207,14 +207,25 @@ function Diagnostics!(phbd,nprof,
                     colorbar_titlefontsize = 16, 
                     right_margin = 15mm,left_margin = 5mm,
                     top_margin = 15mm, bottom_margin = 15mm)
+        # r = heatmap(x.c./1e3,y.c./1e3,log10.(D.ηc'),color=cgrad(:roma),
+        #             xlabel="x[km]",ylabel="y[km]",
+        #             # clims=(-13.5,-12.0),
+        #             aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+        #             ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+        #             size = (1200,900), titlefontsize = 22,
+        #             guidefontsize = 22, tickfontsize = 18,
+        #             colorbar_tickfontsize = 16,
+        #             colorbar_titlefontsize = 16, 
+        #             right_margin = 15mm,left_margin = 5mm,
+        #             top_margin = 15mm, bottom_margin = 15mm)
         # scatter!(r,Ma.x[1:1:end]./1e3,Ma.y[1:1:end]./1e3,
         #                 ms=1,ma=0.5,mc=Ma.phase[1:1:end],markerstrokewidth=0.0)
-                        # xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                        # title="tracers",label="",
-                        # aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                        # ylims=(M.ymin/1e3, M.ymax/1e3),
-                        # layout=(2,2),subplot=2)
-                    # @show xc yc
+        #                 # xlabel="x[km]",ylabel="y[km]",colorbar=false,
+        #                 # title="tracers",label="",
+        #                 # aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
+        #                 # ylims=(M.ymin/1e3, M.ymax/1e3),
+        #                 # layout=(2,2),subplot=2)
+        #             # @show xc yc
         scatter!(r,[xc/1e3],[yc/1e3],
                     ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
         if style==:moving
@@ -478,10 +489,10 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
     nmx,nmy     =   3,3
     noise       =   0
     nmark       =   nmx*nmy*NC.x*NC.y
-    Aparam      =   :phase
-    if Aparam==:thermal && FD.Method.Adv !=:tracers
-        @printf("ERROR! Tracer advection needed to transport temperature!")
-        return
+    if FD.Method.Adv ==:tracers
+        Aparam  =   :thermal
+    else
+        Aparam  =   :phase
     end
     MPC         =   (
             c       =   zeros(Float64,(NC.x,NC.y)),
@@ -509,20 +520,6 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
         end
         ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
-        scatter(
-           Ma.x ./ 1e3,
-           Ma.y ./ 1e3,
-           zcolor = Ma.T,
-           ms = 2,
-           markerstrokewidth = 0,
-           aspect_ratio = :equal,
-           xlabel = "x [km]",
-           ylabel = "y [km]",
-           color = :batlow,
-           colorbar_title = "T [°C]",
-           legend = false,
-           colorbar = true,
-    )
     end
     # ------------------------------------------------------------------- #
     # Update cell centroids and vertices (here only density and phase) -- #
@@ -661,7 +658,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # --------------------------------------------------------------- #
         # Diagnostics =================================================== #
         pp,r    =   Diagnostics!(phbd,nprof,
-                        M,T,D,Ini,x,y,ε,
+                        M,Ma,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
                         xp,yp,it)
         # Save diagnostics on file ---
@@ -720,19 +717,50 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # ---
         # Temperature advection ---
         if FD.Method.Adv==:tracers 
+            # Update tracer info from grid ---
             # Calculate temperature difference ---
             @. ΔT_grid     =   D.T_ex - D.Told_ex
+            # Δtdiff =  P.cp*P.ρ/(P.k*(2/Δ.x^2 + 2/Δ.y^2))
             # Update tracer temperature ---
             @threads for k = 1:nmark
-                local ΔTm     =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+            # for k = 1:nmark
+                local ΔTm       =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+                # Calculate subgrid diffusion on tracers ---
+                # local Tm        =   FromCtoM(D.T_Ex, k, Ma, x, y, Δ, NC)
+                # local ΔTmsg     =   (Tm - Ma.T[k])*(1-exp(-dsg*T.Δ/Δtdiff))
+                # Interpolate subgrid diffuison to the grid ---
+                # Distance to the upper right corner ---
+                # # Get the column:
+                # dstx  =   Ma.x[k] - x.ce[1]
+                # i     =   ceil(Int64, dstx / Δ.x) + 1                   
+                # # Get the line:
+                # dsty  =   Ma.y[k] - y.ce[1]
+                # j     =   ceil(Int64, dsty /  Δ.y) + 1 
+                # # Relative distances
+                # Δxm   =   abs(x.ce[i] - Ma.x[k])/Δ.x
+                # Δym   =   abs(y.ce[j] - Ma.y[k])/Δ.y
+                # # Increment cell counts
+                # ΔTsg[i-1,j-1] += ΔTmsg * Δxm * Δym
+                # ΔTsg[i  ,j-1] += ΔTmsg * (1.0 - Δxm) * Δym
+                # ΔTsg[i-1,j  ] += ΔTmsg * Δxm * (1.0 - Δym)
+                # ΔTsg[i  ,j  ] += ΔTmsg * (1.0 - Δxm) * (1.0 - Δym)
+                
+                # wTsg[i-1,j-1] += Δxm * Δym
+                # wTsg[i  ,j-1] += (1.0 - Δxm) * Δym
+                # wTsg[i-1,j  ] += Δxm * (1.0 - Δym)
+                # wTsg[i  ,j  ] += (1.0 - Δxm) * (1.0 - Δym)
                 Ma.T[k]     += ΔTm
             end
-            # Update tracer info from grid ---
-            # - Calculate subgrid diffusion on tracers
-            # - Interpolate subgrid diffuison to the grid
-            # - Calculate remaining temperature difference on the grid 
-            # - Interpolate remaining T on tracers
-            # - Calculate corrected temperature difference on tracers
+            # @. ΔTsg   /= wTsg
+            # Calculate remaining temperature difference on the grid ---
+            # @. ΔTr    =   ΔT_grid - ΔTsg
+            # Interpolate remaining T on tracers ---
+            # Calculate corrected temperature difference on tracers ---
+            # for k = 1:nmark
+            #   ΔTmsg   =   FromCtoM(ΔTsg, k, Ma, x, y, Δ, NC)
+            #   ΔTmr    =   FromCtoM(ΔTr, k, Ma, x, y, Δ, NC)
+            #   Ma.T[k] +=  ΔTmsg + ΔTmr
+            # end
         else
             # Advect temperature, Eulerian schemes ---
             # Correct velocity for eulerian advection schemes ---
@@ -756,27 +784,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         # Advection of tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
-        # ---
-        # # Diagnostics =================================================== #
-        # pp,r    =   Diagnostics!(phbd,halfwidth,nprof,
-        #                 M,T,D,Ini,x,y,ε,
-        #                 θsb,θsb2,Dsb,εf,δTemp,strain,style,
-        #                 xp,yp,it)
-        # # Save diagnostics on file ---
-        # if save_fig == 1
-        #     @printf(dfile,
-        #         "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n",
-        #         it,
-        #         strain[it],
-        #         shortening[it],
-        #         εf[it],
-        #         δTemp[it],
-        #         Dsb[it],
-        #         θsb[it]*180/π,
-        #         θsb2[it]*180/π)
-        #     flush(dfile)   # immediately write to disk
-        # end
-        # # --------------------------------------------------------------- #
+        # --------------------------------------------------------------- #
         if mod(it,5) == 0 || it == 1 || it == T.itmax
             if save_fig == 1
                 pp !== nothing && Plots.frame(animProf, pp)
@@ -859,6 +867,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show εf[it]
             @show shortening[it]
             @show δTemp[it]
+            # debug ---
             @show maximum(ε.II)
             @show minimum(ε.II)
             @show maximum(τ.II)
@@ -885,6 +894,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
             @show εf[it]
             @show shortening[it]
             @show δTemp[it]
+            # debug ---
             @show maximum(ε.II)
             @show minimum(ε.II)
             @show maximum(τ.II)
