@@ -97,15 +97,16 @@ basepath = "./examples/ShearHeating/2D/Results"
 
 Diff = :dc
 
-# θlist = [0.0, 0.5, 1.0]
-θlist = [0.5]
+θlist = [0.0, 0.5, 1.0]
+# θlist = [0.5]
 
 Advlist = [
-    # :upwind,
+    :upwind,
     :semilag,
+    :tracers,
 ]
 
-style = :fixed
+style = :max
 
 avg_p = :geometric
 avg_v = :geometric
@@ -138,8 +139,8 @@ D_D     =   duretz[:,2]
 
 colors = Dict(
     :upwind  => :royalblue,
-    # :slf     => :black,
-    :semilag => :firebrick,
+    :semilag => :black,
+    :tracers => :firebrick,
 )
 
 linestyles = Dict(
@@ -227,10 +228,10 @@ plot!(p1, [NaN], [NaN],
     linewidth=linewidth,
     label="Upwind")
 
-# plot!(p1, [NaN], [NaN],
-#     color=colors[:slf],
-#     linewidth=linewidth,
-#     label="Staggered Leapfrog")
+plot!(p1, [NaN], [NaN],
+    color=colors[:tracers],
+    linewidth=linewidth,
+    label="Tracers")
 
 plot!(p1, [NaN], [NaN],
     color=colors[:semilag],
@@ -281,14 +282,14 @@ scatter!(p1, [NaN], [NaN],
 # Plot all simulations
 # ============================================================
 
-f1 = field_plot("000008", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="")
+f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="≈ 5%")
 
-f2 = field_plot("000015", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="")
+f2 = field_plot("000020", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="≈ 15%")
 
-f3 = field_plot("000020", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="") # 37
+f3 = field_plot("000037", basepath, Diff, θfield, Advfield,
+                NCx, NCy, avg_p, avg_v, style; title="≈ 25%") # 37
 
 for θ in θlist
 
@@ -393,7 +394,7 @@ fig = plot(
 
 display(fig)
 
-# savefig(fig, joinpath(outpath,"DiagnosticsComparison.png"))
+savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",style,".png")))
 
 # ============================================================
 # Panel labels
@@ -419,4 +420,5 @@ fig2 = plot(
 
 display(fig2)
 
-# savefig(fig2, joinpath(outpath, "FinalBenchmarkFigure.png"))
+savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
+                style,".png")))

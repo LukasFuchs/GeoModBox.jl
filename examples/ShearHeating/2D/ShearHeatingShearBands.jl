@@ -262,7 +262,7 @@ end
 # ======================================================================= #
 # ========================== MAIN FUNCTION ============================== #
 # ======================================================================= #
-function ShearHeatingShearBands(Diff,θ,Adv,style)
+function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
     to          =   TimerOutput()
     @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
@@ -357,8 +357,8 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
         ηmat    =   zeros(Float64,NC...),
         ηinc    =   zeros(Float64,NC...),
         ηnew    =   zeros(Float64,NC...),
-        avg_p   =   :geometric, 
-        avg_v   =   :geometric,
+        avg_p   =   avg, 
+        avg_v   =   avg,
     )
     # ------------------------------------------------------------------- #
     # Define phase ID =================================================== #
@@ -371,7 +371,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                             FD.Method.Diff,"_",FD.Method.θ,"_",
                             FD.Method.Adv,"_", NC.x,"_",
                             NC.y,"_",Rhe.avg_p,"_",Rhe.avg_v,"_",
-                            style,"_2") #
+                            style) #
     if save_fig == 1
         isdir(path) || mkpath(path)
         framepath2D   = joinpath(path, "frames_2D")
