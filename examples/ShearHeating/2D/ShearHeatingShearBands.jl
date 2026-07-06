@@ -141,10 +141,10 @@ function Diagnostics!(phbd,nprof,
         θsb[it]     =   atan(yc, xc)
         halfwidth   =   4.0e3
     elseif style==:fixed
-        xc          =   10.0e3 * exp(-strain[it])
-        yc          =   10.0e3 * exp( strain[it])
+        xc          =   6.0e3 * exp(-strain[it])
+        yc          =   6.0e3 * exp( strain[it])
         θsb[it]     =   atan(yc, xc)
-        halfwidth   =   6.0e3
+        halfwidth   =   4.0e3
     end
     # Calculate points for profile ---
     # Normal to the shear band ---
@@ -371,7 +371,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style)
                             FD.Method.Diff,"_",FD.Method.θ,"_",
                             FD.Method.Adv,"_", NC.x,"_",
                             NC.y,"_",Rhe.avg_p,"_",Rhe.avg_v,"_",
-                            style) #
+                            style,"_2") #
     if save_fig == 1
         isdir(path) || mkpath(path)
         framepath2D   = joinpath(path, "frames_2D")

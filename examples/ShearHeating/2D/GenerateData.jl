@@ -14,15 +14,15 @@ Diff    =   [
 ]
 
 Adv     =   [
-    # :upwind,
-    # :semilag,
+    :upwind,
+    :semilag,
     :tracers,
 ]
 
 style   =   [
-    :moving,
+    # :moving,
     :fixed,
-    :max,
+    # :max,
 ]
 
 for k in eachindex(style)
