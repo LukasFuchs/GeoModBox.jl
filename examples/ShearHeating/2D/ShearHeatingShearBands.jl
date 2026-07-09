@@ -200,12 +200,12 @@ function Diagnostics!(phbd,nprof,
                     clims=(-13.5,-12.0),
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
-                    size = (1200,900), titlefontsize = 22,
-                    guidefontsize = 22, tickfontsize = 18,
-                    colorbar_tickfontsize = 16,
-                    colorbar_titlefontsize = 16, 
-                    right_margin = 15mm,left_margin = 5mm,
-                    top_margin = 15mm, bottom_margin = 15mm)
+                    size = (1200,600), titlefontsize = 22,
+                    guidefontsize = 30, tickfontsize = 25,
+                    colorbar_tickfontsize = 25,
+                    colorbar_titlefontsize = 20, 
+                    right_margin = 30mm,left_margin = 15mm,
+                    bottom_margin = 15mm, top_margin = 10mm)
         scatter!(r,[xc/1e3],[yc/1e3],
                     ms=4,ma=0.5,mc=:black,markerstrokewidth=0.0,label="")
         if style==:moving
@@ -213,11 +213,11 @@ function Diagnostics!(phbd,nprof,
                         ms=1,ma=0.5,mc=:yellow,markerstrokewidth=0.0,label="")
         end
         contour!(r,x.c./1e3,y.c./1e3,log10.(ε.II)',levels = [log10(Ini.ε)],
-                    color=:white,linewidth=1,la=0.5)
+                    color=:white,linewidth=2,la=0.5)
         contour!(r,x.c./1e3,y.c./1e3,((D.p.+0.5).*log10.(Ini.ε))',
                     levels = [log10(Ini.ε)],
                     color=:black,linewidth=2.5)
-        plot!(r,xp./1e3,yp./1e3,color=:red,label="",linewidth=2.5)
+        plot!(r,xp./1e3,yp./1e3,color=:red,label="",linewidth=3.0)
                     
         pp = plot(sbl./1e3,(εprof),
                     xlabel = "s [km]",ylabel = "ε_II",

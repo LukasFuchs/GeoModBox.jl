@@ -1,7 +1,7 @@
 using DelimitedFiles
 using Plots
 using LaTeXStrings
-using FileIO, ImageIO
+using FileIO, ImageIO, Measures
 
 # ============================================================
 # Helper function 
@@ -95,11 +95,12 @@ basepath = "./examples/ShearHeating/2D/Results"
 
 Diff = :dc
 
-θlist = [0.0, 0.5, 1.0]
+# θlist = [0.0, 0.5, 1.0]
+θlist = [0.5]
 
 Advlist = [
-    :upwind,
-    :semilag,
+    # :upwind,
+    # :semilag,
     :tracers,
 ]
 
@@ -113,8 +114,8 @@ NCx, NCy = 200, 100
 outpath = joinpath(basepath, "DiagnosticsPlots")
 isdir(outpath) || mkpath(outpath)
 
-θfield      =   θlist[2]
-Advfield    =   Advlist[3]
+θfield      =   θlist[1]
+Advfield    =   Advlist[1]
 
 # ============================================================
 # Plot styles
