@@ -147,7 +147,7 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
             NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             # ---
-            rhs[ii] +=  - g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
+            rhs[ii] +=  g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
                         2.0 * η * BC.val.W[j] / Δ.x^2 * NSW -
                         2.0 * η * BC.val.E[j] / Δ.x^2 * NSE
         end
@@ -358,7 +358,7 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
             NSW     =   (i==1    && (BC.type.W==:noslip||BC.type.W==:const)) ? 1. : 0.
             NSE     =   (i==NC.x && (BC.type.E==:noslip||BC.type.E==:const)) ? 1. : 0.            
             # ---
-            rhs[ii] +=  - g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
+            rhs[ii] +=  g * ((ρ[i,j] + ρ[i,j-1]) / 2.0) - 
                         2.0 * ηv[i,j] * BC.val.W[j] / Δ.x^2 * NSW -
                         2.0 * ηv[i+1,j] * BC.val.E[j] / Δ.x^2 * NSE
         end

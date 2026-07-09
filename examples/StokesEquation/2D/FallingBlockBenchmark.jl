@@ -4,15 +4,13 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
-using Printf
-using TimerOutputs, LaTeXStrings
+using Printf, TimerOutputs, LaTeXStrings, Measures
 
 function FallingBlockBenchmark(td)
     to      =   TimerOutput()
     @timeit to "Ini" begin
     # Benchmark parameter =============================================== #
     ηᵣ      =   LinRange(-6.0,6.0,13)       #   Viscosity ratio
-    # ηᵣ      =   6.0
     sv      =   zeros(length(ηᵣ))           #   Sinking Velocity
     tmax    =   [7.115094, 7.114844, 7.256534, 7.377311, 7.738412, 
                     7.673613, 9.886, 15.446, 19.623, 20.569, 20.569,
@@ -22,7 +20,7 @@ function FallingBlockBenchmark(td)
     # Advection ---
     #   1) upwind, 2) slf, 3) semilag, 4) tracers
     #   Attention: Tracers are the only method that work well.
-    FD          =   (Method     = (Adv=:upwind,),)
+    FD          =   (Method     = (Adv=:tracers,),)
     # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     # Density --- 
@@ -34,6 +32,7 @@ function FallingBlockBenchmark(td)
     save_fig    =   1
     p2          =   plot(0,0,layout=(2,3))
     count       =   Int64(0)
+    panel       =   ["(a)","(b)","(c)","(d)","(e)","(f)",]
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
@@ -130,6 +129,8 @@ function FallingBlockBenchmark(td)
             ρ_exo   =   zeros(Float64,NC.x+2,NC.y+2),
             vxc     =   zeros(Float64,NC...),
             vyc     =   zeros(Float64,NC...),
+            vxco    =   zeros(Float64,NC...),
+            vyco    =   zeros(Float64,NC...),
             vc      =   zeros(Float64,NC...),
             wt      =   zeros(Float64,(NC.x,NC.y)),
             wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
@@ -149,7 +150,7 @@ function FallingBlockBenchmark(td)
         )
         T.tmax[1]   =   tmax[mn] * 1e6 * (60*60*24*365.25)   # [ s ] 
         if td == 0
-            nt = 1
+            nt  =   1
         else
             nt  =   9999
         end
@@ -174,7 +175,6 @@ function FallingBlockBenchmark(td)
                     wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
             )
-            # MPC     =   merge(MPC,MPC1)
             Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
             # RK4 weights ---
             rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -266,6 +266,12 @@ function FallingBlockBenchmark(td)
                 for j = 1:NC.y
                     D.vxc[i,j]  = (D.vx[i,j+1] + D.vx[i+1,j+1])/2
                     D.vyc[i,j]  = (D.vy[i+1,j] + D.vy[i+1,j+1])/2
+                end
+            end
+            if FD.Method.Adv==:semilag
+                if it == 1
+                    @. D.vxco   =   D.vxc
+                    @. D.vyco   =   D.vyc
                 end
             end
             @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
@@ -382,19 +388,46 @@ function FallingBlockBenchmark(td)
                                         D.η_ex[2:end-0,2:end-0])
             end
             @printf("\n")
+            if FD.Method.Adv==:semilag
+                @. D.vxco   =   D.vxc
+                @. D.vyco   =   D.vyc
+            end
         end     # End Time Loop
         end
         if ηᵣ[mn] == 0.0 || ηᵣ[mn] == 1.0 || ηᵣ[mn] == 2.0 || 
                         ηᵣ[mn] == 3.0 || ηᵣ[mn] == 4.0 || ηᵣ[mn] == 6.0
             count = count + 1
             if FD.Method.Adv==:tracers
+                if ηᵣ[mn] == 3.0 || ηᵣ[mn] ==  4.0 || ηᵣ[mn] == 6.0
+                    xlab    =   L"x[km]"
+                    xf      =   :auto
+                else
+                    xlab    =   ""
+                    xf      =   _ -> ""
+                end
+                if ηᵣ[mn] == 0.0 || ηᵣ[mn] == 3.0
+                    ylab    =   L"y[km]"
+                    yf      =   :auto
+                else
+                    ylab    =   ""
+                    yf      =   _ -> ""
+                end
                 p2  =   scatter!(p2,Ma.x[1:Pl.qinc:end]./1e3,Ma.y[1:Pl.qinc:end]./1e3,
-                    ms=1,ma=0.5,mc=Ma.phase[1:Pl.qinc:end],markerstrokewidth=0.0,
-                    xlabel="x[km]",ylabel="y[km]",colorbar=false,
-                    title=string("tracers, η_r = ",ηᵣ[mn]),label="",
+                    ms=2,ma=0.5,mc=Ma.phase[1:Pl.qinc:end],markerstrokewidth=0.0,
+                    xlabel=xlab,ylabel= ylab,colorbar=false,
+                    title           = latexstring(panel[count],"\\quad\\log_{10}(\\eta_r)=",string(ηᵣ[mn])),
+                    titlefontsize   = 20,
+                    label="", xformatter = xf,yformatter = yf,
                     aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                     ylims=(M.ymin/1e3, M.ymax/1e3),
-                    layout=(2,3),subplot=count)
+                    layout=(2,3),subplot=count,
+                    framestyle      = :box,
+                    guidefontsize   = 20,
+                    tickfontsize    = 16,
+                    size            = (1200, 800),
+                    right_margin    = 8mm,
+                    left_margin     = 8mm,
+                    dpi             = 300)
             else
                 p2 = heatmap!(p2,x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                     xlabel="x[km]",ylabel="y[km]",colorbar=false,
@@ -415,7 +448,7 @@ function FallingBlockBenchmark(td)
     end # End ηᵣ Loop
     end
     if td == 0
-        q = scatter(ηᵣ,sv.*(100.0*365.25*24*60*60),marker=4,
+        q = scatter(ηᵣ,sv.*(100.0*365.25*24*60*60),
                         ylabel          = L"v_\mathrm{block} [cm/a]",
                         xlabel          = L"log_{10}\left(\eta_\mathrm{b}/\eta_\mathrm{m}\right)",
                         title           = "Sinking Velocity",
@@ -431,10 +464,23 @@ function FallingBlockBenchmark(td)
                         tickfontsize    = 16,
                         legendfontsize  = 14,
                         xlims           = (-6, 6),
-                        ylims           = (0.63, 4.73),
+                        ylims           = (1.0, 5.0),
                         xticks          = -6:2:6,
                         size            = (900, 650),
+                        left_margin     = 5mm,
+                        right_margin    = 5mm,
+                        bottom_margin   = 5mm,
+                        top_margin      = 5mm,
                         dpi             = 300,)
+        plot!(
+            q,
+            ηᵣ,
+            sv .*(100.0*365.25*24*60*60),
+            color      = :black,
+            linewidth  = 2.0,
+            linestyle  = :solid,
+            label      = false,
+        )
         if save_fig == 1
             savefig(q,string("./examples/StokesEquation/2D/Results/FallingBlock_SinkingVeloc",
                                 "_",FD.Method.Adv,".png"))
@@ -455,6 +501,6 @@ end
 # ======================================================================= #
 # Define if the problem is time-dependent (1) or if you want to have the  #
 # steady state (0) solution.                                              #
-td  =   0
+td  =   1
 # ---
 FallingBlockBenchmark(td)
