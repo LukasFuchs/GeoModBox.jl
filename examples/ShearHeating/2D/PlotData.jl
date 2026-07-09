@@ -16,14 +16,12 @@ function field_plot(fieldnr, basepath, Diff, θ, Adv, NCx, NCy, avg_p, avg_v, st
     )
 
     file = joinpath(folder, string(fieldnr, ".png"))
-    # file = string(folder,fieldnr,".png")
     if !isfile(file)
         error("Field image not found: $(file)")
     end
 
     @show file
     img = load(file)
-    # @show img
 
     return plot(
         img,
@@ -98,7 +96,6 @@ basepath = "./examples/ShearHeating/2D/Results"
 Diff = :dc
 
 θlist = [0.0, 0.5, 1.0]
-# θlist = [0.5]
 
 Advlist = [
     :upwind,
@@ -106,32 +103,18 @@ Advlist = [
     :tracers,
 ]
 
-style = :max
+style = :fixed
 
-avg_p = :geometric
-avg_v = :geometric
+avg_p = :arithmetic
+avg_v = :arithmetic
 
 NCx, NCy = 200, 100
 
 outpath = joinpath(basepath, "DiagnosticsPlots")
 isdir(outpath) || mkpath(outpath)
 
-θfield      =   θlist[1]
-Advfield    =   Advlist[1]
-
-# ============================================================
-# Read Duretz et al. Figure 2 (digitized)
-# ============================================================
-
-duretz = readdlm("./examples/ShearHeating/2D/Duretz_Figure2_digitized.txt",
-                 comments=true,
-                 comment_char='#')
-
-short_D =   duretz[:,1]
-D_D     =   duretz[:,2]
-θ_D     =   duretz[:,3]
-δT_D    =   duretz[:,4]
-εf_D    =   duretz[:,5]
+θfield      =   θlist[2]
+Advfield    =   Advlist[3]
 
 # ============================================================
 # Plot styles
@@ -155,7 +138,6 @@ linewidth = 3.0
 # Font sizes
 # ============================================================
 
-# titlefontsize  = 18
 guidefontsize  = 20
 tickfontsize   = 16
 legendfontsize = 14
@@ -165,12 +147,10 @@ legendfontsize = 14
 # ============================================================
 
 p1 = plot(
-    # xlabel          = "Bulk shortening [%]",
     ylabel          = L"\varepsilon_f",
     title           = "",
     legend          = :bottomright,
     framestyle      = :box,
-    # titlefontsize   = titlefontsize,
     guidefontsize   = guidefontsize,
     tickfontsize    = tickfontsize,
     legendfontsize  = legendfontsize,
@@ -179,7 +159,6 @@ p1 = plot(
 )
 
 p2 = plot(
-    # xlabel          = "Bulk shortening [%]",
     ylabel          = L"\delta T\ [^\circ C]",
     title           = "",
     legend          = false,
@@ -266,30 +245,18 @@ plot!(p1, [NaN], [NaN],
     linewidth=linewidth,
     label="θ = 1.0")
 
-# blank line
-plot!(p1, [NaN], [NaN],
-    linecolor=:white,
-    label="")
-
-scatter!(p1, [NaN], [NaN],
-    color=:black,
-    marker=:circle,
-    markersize=5,
-    markerstrokewidth=0,
-    label="Duretz et al. (2014)")
-
 # ============================================================
 # Plot all simulations
 # ============================================================
 
 f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="≈ 5%")
+                NCx, NCy, avg_p, avg_v, style; title="ε ≈ 5%")
 
 f2 = field_plot("000020", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="≈ 15%")
+                NCx, NCy, avg_p, avg_v, style; title="ε ≈ 15%")
 
 f3 = field_plot("000037", basepath, Diff, θfield, Advfield,
-                NCx, NCy, avg_p, avg_v, style; title="≈ 25%") # 37
+                NCx, NCy, avg_p, avg_v, style; title="ε ≈ 25%")
 
 for θ in θlist
 
@@ -349,29 +316,10 @@ for θ in θlist
 end
 
 # ============================================================
-# Duretz et al. (2016)
-# ============================================================
-
-for (plt,x,y) in (
-    (p1, short_D, εf_D),
-    (p2, short_D, δT_D),
-    (p3, short_D, θ_D),
-    (p4, short_D, D_D),
-)
-
-    scatter!(plt, x, y,
-        color=:black,
-        marker=:circle,
-        markersize=5,
-        markerstrokewidth=0,
-        label=false)
-end
-
-# ============================================================
 # Axis limits
 # ============================================================
 
-ylims!(p1,(0,15))
+ylims!(p1,(0,20))
 xlims!(p1,(0,30))
 ylims!(p2,(0,170))
 xlims!(p2,(0,30))
@@ -388,13 +336,13 @@ fig = plot(
     p1,p2,
     p3,p4,
     layout=(2,2),
-    # size=(1200,900)
     size=(1600,1600)
 )
 
 display(fig)
 
-savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",style,".png")))
+savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
+            style,"_",avg_p,"_",avg_v,".png")))
 
 # ============================================================
 # Panel labels
@@ -414,11 +362,10 @@ fig2 = plot(
     f2, p2,
     f3, p4,
     layout = (3,2),
-    # size = (1200,1400),
     size=(1600,1600)
 )
 
 display(fig2)
 
 savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
-                style,".png")))
+                style,"_",avg_p,"_",avg_v,".png")))

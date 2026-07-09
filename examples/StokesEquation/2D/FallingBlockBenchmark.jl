@@ -5,7 +5,7 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf
-using TimerOutputs
+using TimerOutputs, LaTeXStrings
 
 function FallingBlockBenchmark(td)
     to      =   TimerOutput()
@@ -415,13 +415,26 @@ function FallingBlockBenchmark(td)
     end # End ηᵣ Loop
     end
     if td == 0
-        q = scatter(ηᵣ,sv,marker=4,
-                        ylabel="block velocity [m/s]",
-                        xlabel="log_{10}(η_{block}/η_{medium})",
-                        title="Sinking Velocity",
-                        label=false,
-                        ylims=(0.2e-9,1.5e-9),
-                        xlims=(-6,6))
+        q = scatter(ηᵣ,sv.*(100.0*365.25*24*60*60),marker=4,
+                        ylabel          = L"v_\mathrm{block} [cm/a]",
+                        xlabel          = L"log_{10}\left(\eta_\mathrm{b}/\eta_\mathrm{m}\right)",
+                        title           = "Sinking Velocity",
+                        label           = false,
+                        marker          = :circle,
+                        markersize      = 7,
+                        markercolor     = :black,
+                        markerstrokecolor = :black,
+                        markerstrokewidth = 0.8,
+                        framestyle      = :box,
+                        grid            = false,
+                        guidefontsize   = 20,
+                        tickfontsize    = 16,
+                        legendfontsize  = 14,
+                        xlims           = (-6, 6),
+                        ylims           = (0.63, 4.73),
+                        xticks          = -6:2:6,
+                        size            = (900, 650),
+                        dpi             = 300,)
         if save_fig == 1
             savefig(q,string("./examples/StokesEquation/2D/Results/FallingBlock_SinkingVeloc",
                                 "_",FD.Method.Adv,".png"))
@@ -442,6 +455,6 @@ end
 # ======================================================================= #
 # Define if the problem is time-dependent (1) or if you want to have the  #
 # steady state (0) solution.                                              #
-td  =   1
+td  =   0
 # ---
 FallingBlockBenchmark(td)

@@ -2,8 +2,6 @@
 include("ShearHeatingShearBands.jl")
 
 Diff    =   [
-    # :explicit,
-    # :implicit,
     :dc,
 ]
 
@@ -20,15 +18,15 @@ Adv     =   [
 ]
 
 style   =   [
-    # :moving,
+    :moving,
     :fixed,
-    # :max,
+    :max,
 ]
 
 avg     =   [
     :arithmetic,
-    # :geometric,
-    # :harmonic,
+    :geometric,
+    :harmonic,
 ]
 
 for l in eachindex(avg)
