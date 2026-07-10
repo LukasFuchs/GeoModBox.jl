@@ -95,12 +95,12 @@ basepath = "./examples/ShearHeating/2D/Results"
 
 Diff = :dc
 
-# θlist = [0.0, 0.5, 1.0]
-θlist = [0.5]
+θlist = [0.0, 0.5, 1.0]
+# θlist = [0.5]
 
 Advlist = [
-    # :upwind,
-    # :semilag,
+    :upwind,
+    :semilag,
     :tracers,
 ]
 
@@ -342,8 +342,8 @@ fig = plot(
 
 display(fig)
 
-savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
-            style,"_",avg_p,"_",avg_v,".png")))
+# savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
+#             style,"_",avg_p,"_",avg_v,".png")))
 
 # ============================================================
 # Panel labels
@@ -351,9 +351,9 @@ savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
 
 labelsize = 18
 
-add_panel!(f1, "(a)",labelsize;dx=0.02,dy=1.0)
-add_panel!(f2, "(c)",labelsize;dx=0.02,dy=1.0)
-add_panel!(f3, "(e)",labelsize;dx=0.02,dy=1.0)
+add_panel!(f1, "(a)",labelsize;dx=-0.1,dy=1.0)
+add_panel!(f2, "(c)",labelsize;dx=-0.1,dy=1.0)
+add_panel!(f3, "(e)",labelsize;dx=-0.1,dy=1.0)
 add_panel!(p1, "(b)",labelsize)
 add_panel!(p2, "(d)",labelsize)
 add_panel!(p4, "(f)",labelsize)
@@ -368,5 +368,5 @@ fig2 = plot(
 
 display(fig2)
 
-savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
-                style,"_",avg_p,"_",avg_v,".png")))
+# savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
+#                 style,"_",avg_p,"_",avg_v,".png")))
