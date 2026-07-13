@@ -5,7 +5,6 @@ using TimerOutputs, LaTeXStrings, Measures
 function Gaussian_Diffusion()
 to      =   TimerOutput()
 Schema  =   ["explicit","implicit","CN","ADI"]
-# Schema      = ["explicit"]
 ns          =   size(Schema,1)
 nrnxny      =   6
 save_fig    =   -1
@@ -124,13 +123,7 @@ for m = 1:ns
                 levels=:5,linecolor=:black,subplot=1)
         contour!(p,x.c./1e3,y.c/1e3,D.Tana',linewidth=2.0,
                 levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
-        # annotate!(p, -5.0, 0.0, text("a)", 14, :black, :left))
-        annotate!(p,
-            -170,     # x-coordinate
-            110,      # y-coordinate
-            text("a)", 14, :black, :bold),
-            subplot = 1
-        )
+        annotate!(p,-170, 110,text("a)", 14, :black, :bold),subplot = 1)
         # subplot 2 ---
         heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
                 color=:viridis, colorbar=true, aspect_ratio=:equal, 
@@ -143,12 +136,7 @@ for m = 1:ns
                 # clims=(-1,1),
                 layout=(2,2),
                 subplot=2)
-        annotate!(p,
-            -170,     # x-coordinate
-            110,      # y-coordinate
-            text("b)", 14, :black, :bold),
-            subplot = 2
-        )
+        annotate!(p,-170,110,text("b)", 14, :black, :bold),subplot = 2)
         # subplot 3 ---
         plot!(p,D.Tprofile[:,1],y.c./1e3,
                 linecolor=:black,linewidth=2.0,
@@ -166,12 +154,7 @@ for m = 1:ns
                 # xlabel= L"T_{x=0\ km}\ [K]",ylabel="Depth [km]",
                 label="",
                 subplot=3)
-        annotate!(p,
-            -100,     # x-coordinate
-            100,      # y-coordinate
-            text("c)", 14, :black, :bold),
-            subplot = 3
-        )
+        annotate!(p,-100,100,text("c)", 14, :black, :bold),subplot = 3)
         # subplot 4 ---
         plot!(p,time[1:end]./T.year./1e6,D.RMS[1:end],
                 label="",
@@ -181,12 +164,7 @@ for m = 1:ns
                 bottom_margin = 5mm,
                 xlabel= L"t\ [Myrs]",ylabel= L"RMS",
                 subplot=4)
-        annotate!(p,
-            -1.7,     # x-coordinate
-            0.1,      # y-coordinate
-            text("d)", 14, :black, :bold),
-            subplot = 4
-        )
+        annotate!(p,-1.7,0.1,text("d)", 14, :black, :bold),subplot = 4)
         if save_fig == 0
             display(p)
         end
@@ -274,24 +252,7 @@ for m = 1:ns
                         levels=:5,linecolor=:black,subplot=1)
                 contour!(p,x.c./1e3,y.c/1e3,D.Tana',linewidth=2.0,
                         levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
-                annotate!(p,
-                    -170,     # x-coordinate
-                    110,      # y-coordinate
-                    text("a)", 14, :black, :bold),
-                    subplot = 1
-                )
-                # p = heatmap(x.c ./ 1e3, y.c ./ 1e3, (D.T)', 
-                #     color=:viridis, colorbar=true, aspect_ratio=:equal, 
-                #     xlabel="x [km]", ylabel="z [km]", 
-                #     title="Temperature [K]", 
-                #     xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                #     clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
-                #     subplot=1)
-
-                # contour!(p,x.c./1e3,y.c/1e3,D.T',
-                #             levels=:5,linecolor=:black,subplot=1)
-                # contour!(p,x.c./1e3,y.c/1e3,D.Tana',
-                #             levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
+                annotate!(p,-170,110,text("a)", 14, :black, :bold),subplot = 1)
                 # subplot 2 ---
                 heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
                     color=:viridis, colorbar=true, aspect_ratio=:equal, 
@@ -305,19 +266,7 @@ for m = 1:ns
                     # clims=(-1,1),
                     layout=(2,2),
                     subplot=2)
-                annotate!(p,
-                    -170,     # x-coordinate
-                    110,      # y-coordinate
-                    text("b)", 14, :black, :bold),
-                    subplot = 2
-                )
-                # heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
-                #         color=:viridis, colorbar=true, aspect_ratio=:equal, 
-                #         xlabel="x [km]", ylabel="z [km]", 
-                #         title="Deviation", 
-                #         xlims=(-P.L/2/1e3, P.L/2/1e3), ylims=(-P.H/2/1e3, P.H/2/1e3), 
-                #         # clims=(-1,1),
-                #         subplot=2)
+                annotate!(p,-170,110,text("b)", 14, :black, :bold),subplot = 2)
                 # subplot 3 ---
                 plot!(p,D.Tprofile[:,n],y.c./1e3,
                         linecolor=:black,linewidth=2.0,
@@ -332,26 +281,9 @@ for m = 1:ns
                         subplot=3)
                 plot!(p,D.Tprofilea[:,n],y.c./1e3,
                         linestyle=:dash,linecolor=:yellow,linewidth=2.0,
-                        # xlabel= L"T_{x=0\ km}\ [K]",ylabel="Depth [km]",
                         label="",
                         subplot=3)
-                annotate!(p,
-                    -100,     # x-coordinate
-                    100,      # y-coordinate
-                    text("c)", 14, :black, :bold),
-                    subplot = 3
-                )
-                # plot!(p,D.Tprofile[:,n],y.c./1e3,
-                #     linecolor=:black, ylim=(-P.H/2/1e3,P.H/2/1e3),
-                #     xlim=(0,P.Tamp),
-                #     xlabel="T_{x=L/2} [°C]",ylabel="Depth [km]",
-                #     label="",
-                #     subplot=3)
-                # plot!(p,D.Tprofilea[:,n],y.c./1e3,
-                #     linestyle=:dash,linecolor=:yellow,
-                #     xlabel="T_{x=0 km} [K]",ylabel="Depth [km]",
-                #     label="",
-                #     subplot=3)
+                annotate!(p,-100,100,text("c)", 14, :black, :bold),subplot = 3)
                 # subplot 4 ---
                 plot!(p,time[1:n]./T.year./1e6,D.RMS[1:n],
                     label="",linewidth=2.0,
@@ -361,16 +293,7 @@ for m = 1:ns
                     xlims = (0,10), ylims = (0,.1),
                     xlabel= L"t\ [Myrs]",ylabel= L"RMS",
                     subplot=4)
-                annotate!(p,
-                    -1.7,     # x-coordinate
-                    0.1,      # y-coordinate
-                    text("d)", 14, :black, :bold),
-                    subplot = 4
-                )
-                # plot!(p,time[1:n]./T.year./1e6,D.RMS[1:n],
-                #     label="",
-                #     xlabel="Time [ Myrs ]",ylabel="RMS",
-                #     subplot=4)
+                annotate!(p,-1.7,0.1,text("d)", 14, :black, :bold),subplot = 4)
                 if save_fig == 1
                     Plots.frame(anim)
                 elseif save_fig == 0
