@@ -44,8 +44,8 @@ Example:
         xc          =   (M.xmax-M.xmin)/4
         yc          =   (M.ymax-M.ymin)/2
         α           =   0.0
-        a_ell       =   .2*(M.ymax-M.ymin)
-        b_ell       =   .2*(M.ymax-M.ymin)
+        a_ell       =   .15*(M.ymax-M.ymin)
+        b_ell       =   .15*(M.ymax-M.ymin)
         @threads for i = 1:NC.x+2 
             for j = 1:NC.y+2
                 x_ell   =  x.ce[i]*cosd(α) + y.ce[j]*sind(α)
