@@ -431,7 +431,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
     # Velocity ---
     IniVelocity!(Ini.V,D,VBC,NV,Δ,M,x,y;Ini.ε)
     # Temperature --- 
-    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=Ini.Tbg,Ta=Ini.Tbg+200)
+    IniTemperature!(Ini.T,M,NC,D,x,y;Tb=Ini.Tbg)
     @. ε.II     =   Ini.ε
     # ------------------------------------------------------------------- #
     # Time ============================================================== #

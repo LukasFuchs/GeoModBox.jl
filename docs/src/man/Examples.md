@@ -32,6 +32,9 @@ By clicking on the title of each document page, you will be directed to the corr
 - [2D viscous inclusion problem](./examples/ViscousInclusion.md)
 - [Van Keken Benchmark](./examples/VanKekenBenchmark.md)
 
+**Thermo-Mechanical Shear Localization**
+- Viscous shear localization
+
 In the following, the runtime for each of the provided examples is listed as a reference. 
 
 | Example                           | Total Runtime                                         |

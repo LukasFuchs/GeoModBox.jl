@@ -305,6 +305,7 @@ for m = 1:ns # Loop over advection schemes
     end # End resolution loop
     end
 end # End method loop
+# add final position plot here --- for all methods
 end
 q   =   plot(0,0,layout=(1,3))
 for m=1:ns    

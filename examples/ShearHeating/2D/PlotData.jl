@@ -30,7 +30,9 @@ function field_plot(fieldnr, basepath, Diff, θ, Adv, NCx, NCy, avg_p, avg_v, st
         border = :none,
         legend = false,
         title = title,
+        titlefontsize = 22,
         aspect_ratio = :equal,
+        dpi = 300,
     )
 end
 
@@ -96,7 +98,6 @@ basepath = "./examples/ShearHeating/2D/Results"
 Diff = :dc
 
 θlist = [0.0, 0.5, 1.0]
-# θlist = [0.5]
 
 Advlist = [
     :upwind,
@@ -114,8 +115,8 @@ NCx, NCy = 200, 100
 outpath = joinpath(basepath, "DiagnosticsPlots")
 isdir(outpath) || mkpath(outpath)
 
-θfield      =   θlist[1]
-Advfield    =   Advlist[1]
+θfield      =   θlist[2]
+Advfield    =   Advlist[3]
 
 # ============================================================
 # Plot styles
@@ -280,6 +281,7 @@ for θ in θlist
             linestyle = linestyles[θ],
             linewidth = linewidth,
             label = false,
+            right_margin = 5mm,
         )
 
         plot!(
@@ -290,6 +292,7 @@ for θ in θlist
             linestyle = linestyles[θ],
             linewidth = linewidth,
             label = false,
+            right_margin = 5mm,
         )
 
         plot!(
@@ -300,6 +303,7 @@ for θ in θlist
             linestyle = linestyles[θ],
             linewidth = linewidth,
             label = false,
+            right_margin = 5mm,
         )
 
         plot!(
@@ -310,6 +314,7 @@ for θ in θlist
             linestyle = linestyles[θ],
             linewidth = linewidth,
             label = false,
+            right_margin = 5mm,
         )
 
     end
@@ -342,8 +347,8 @@ fig = plot(
 
 display(fig)
 
-# savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
-#             style,"_",avg_p,"_",avg_v,".png")))
+savefig(fig, joinpath(outpath,string("DiagnosticsComparison_",
+            style,"_",avg_p,"_",avg_v,".png")))
 
 # ============================================================
 # Panel labels
@@ -351,22 +356,23 @@ display(fig)
 
 labelsize = 18
 
-add_panel!(f1, "(a)",labelsize;dx=-0.1,dy=1.0)
-add_panel!(f2, "(c)",labelsize;dx=-0.1,dy=1.0)
-add_panel!(f3, "(e)",labelsize;dx=-0.1,dy=1.0)
-add_panel!(p1, "(b)",labelsize)
-add_panel!(p2, "(d)",labelsize)
-add_panel!(p4, "(f)",labelsize)
+add_panel!(f1, "a)",labelsize;dx=-0.1,dy=1.0)
+add_panel!(f2, "b)",labelsize;dx=-0.1,dy=1.0)
+add_panel!(f3, "c)",labelsize;dx=-0.1,dy=1.0)
+add_panel!(p1, "d)",labelsize)
+add_panel!(p2, "e)",labelsize)
+add_panel!(p4, "f)",labelsize)
 
 fig2 = plot(
     f1, p1,
     f2, p2,
     f3, p4,
     layout = (3,2),
-    size=(1600,1600)
+    size=(1600,1650),
+    dpi = 300, 
 )
 
 display(fig2)
 
-# savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
-#                 style,"_",avg_p,"_",avg_v,".png")))
+savefig(fig2, joinpath(outpath,string("FinalBenchmarkFigure_",
+                style,"_",avg_p,"_",avg_v,".png")))
