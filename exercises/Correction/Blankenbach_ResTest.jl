@@ -4,7 +4,7 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
 using GeoModBox.Scaling
 using Statistics, LinearAlgebra
-using Printf
+using Printf, LaTeXStrings, Measures
 
 function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Define Initial Condition ========================================== #
@@ -15,8 +15,8 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
-        qinc        =   5,
-        qsc         =   1.0e-4
+        qinc        =   10,
+        qsc         =   5.0e-5  # 1.0e-3, 4.0e-4, 5.0e-5
     )
     # ------------------------------------------------------------------- #
     # Benchmark values ================================================== # 
@@ -95,12 +95,16 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         T       =   zeros(Float64,(NC...)),
         T0      =   zeros(Float64,(NC...)),
         T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
+        T_ex0   =   zeros(Float64,(NC.x+2,NC.y+2)),
+        Told_ex =   zeros(Float64,(NC.x+2,NC.y+2)),
         ρ       =   ones(Float64,(NC...)),
         vx      =   zeros(Float64,(NV.x,NV.y+1)),
         vy      =   zeros(Float64,(NV.x+1,NV.y)),    
         Pt      =   zeros(Float64,(NC...)),
         vxc     =   zeros(Float64,(NC...)),
         vyc     =   zeros(Float64,(NC...)),
+        vxco    =   zeros(Float64,(NC...)),
+        vyco    =   zeros(Float64,(NC...)),
         vc      =   zeros(Float64,(NC...)),
         ΔTtop   =   zeros(Float64,NC.x),
         ΔTbot   =   zeros(Float64,NC.x),
@@ -130,7 +134,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         tmax    =   1000000.0,          #   [ Ma ]
         Δfacc   =   0.9,                #   Courant time factor
         Δfacd   =   0.9,                #   Diffusion time factor
-        itmax   =   10000,              #   Maximum iterations
+        itmax   =   30000,              #   Maximum iterations
     )
     T.tmax      =   T.tmax*1e6*T.year   #   [ s ]
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -144,6 +148,8 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     meanV       =   zeros(T.itmax)
     meanT       =   zeros(T.itmax,NC.y+2)
     find        =   0
+    count       =   0
+    epsV0       =   0
     # ------------------------------------------------------------------- #
     # Scaling laws ====================================================== #
     ScaleParameters!(S,M,Δ,T,P,D)
@@ -187,7 +193,8 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Velocity ------
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                        vyS=0.0,vyN=0.0,vxW=0.0,vxE=0.0),
     )
     # ------------------------------------------------------------------- #
     # Reference Viscosity =============================================== #
@@ -195,53 +202,63 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # ------------------------------------------------------------------- #
     # Linear System of Equations ======================================== #
     # Momentum Conservation Equation (MCE) ------
-    niter  =   50
-    ϵ      =   1e-8
-    off    = [  NV.x*NC.y,                          # vx
-                NV.x*NC.y + NC.x*NV.y,              # vy
-                NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
-    Num    =    (
+    niterM  =   50
+    ϵM      =   1e-8
+    off     =   [   NV.x*NC.y,                          # vx
+                    NV.x*NC.y + NC.x*NV.y,              # vy
+                    NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
+    Num     =    (
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
         T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
     )
-    ndof    =   maximum(Num.T)        
+    ndof    =   maximum(Num.T)  
+    KM      =   ExtendableSparseMatrix(ndof,ndof)
+    δx      =   zeros(maximum(Num.Pt))
+    F       =   zeros(maximum(Num.Pt))
     # Energy Conservation Equation (ECE) ------
     K1      =   ExtendableSparseMatrix(ndof,ndof)
-    K2      =   ExtendableSparseMatrix(ndof,ndof)
-    rhs     =   zeros(ndof)
+    # K2      =   ExtendableSparseMatrix(ndof,ndof)
+    # rhs     =   zeros(ndof)
+    # Defect correction ---
+    niterT  =   10
+    ϵT      =   1e-12
+    RT      =   zeros(Float64,NC...)
+    ∂2T     =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
+                    ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     for it = 1:T.itmax
-        χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector MCE
-        rhsM    =   zeros(maximum(Num.Pt))      #   Right Hand Side MCE
         if it>1
             Time[it]  =   Time[it-1] + T.Δ
         end
         @printf("Time step: #%04d, Time [non-dim]: %04e\n ",it,
                         Time[it])
-        # MCE ------
-        D.vx    .=  0.0
-        D.vy    .=  0.0 
-        D.Pt    .=  0.0
+        # ------ MCE ------
+        @printf("---Momentum Calculation ---\n")
+        if it == 1
+            D.vx[2:end-1,:]    .=  0.0
+            D.vy[:,1:end-1]    .=  0.0
+            D.Pt               .=  0.0
+        end
         # Residual Calculation ------
         @. D.ρ  =   -P.Ra*D.T
-        for iter = 1:niter
+        for iter = 1:niterM
             Residuals2Dc!(D,VBC,ε,τ,divV,Δ,1.0,1.0,Fm,FPt)
-            rhsM[Num.Vx]    =   Fm.x[:]
-            rhsM[Num.Vy]    =   Fm.y[:]
-            rhsM[Num.Pt]    =   FPt[:]
-            @printf("||R_M|| = %1.4e\n", norm(rhsM)/length(rhsM))
-                norm(rhsM)/length(rhsM) < ϵ ? break : nothing
+            F[Num.Vx]    =   Fm.x[:]
+            F[Num.Vy]    =   Fm.y[:]
+            F[Num.Pt]    =   FPt[:]
+            @printf("||RM|| = %1.4e\n", norm(F)/length(F))
+                norm(F)/length(F) < ϵM ? break : nothing
             # Update K ------
-            K       =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+            KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
             # Solving Linear System of Equations ------
-            χ      =   - K \ rhsM
+            δx      =   - KM \ F
             # Update unknown variables ------
-            D.vx[:,2:end-1]     .+=  χ[Num.Vx]
-            D.vy[2:end-1,:]     .+=  χ[Num.Vy]
-            D.Pt                .+=  χ[Num.Pt]
+            D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+            D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+            D.Pt                .+=  δx[Num.Pt]
         end
         D.ρ  =   ones(NC...)
         # ======
@@ -264,10 +281,36 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
             it          =   T.itmax
         end
         # Advection ===================================================== #
-        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ)
+        if it == 1
+            @. D.vxco   =   D.vxc
+            @. D.vyco   =   D.vyc
+        end
+        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
+        @. D.vxco  =   D.vxc
+        @. D.vyco  =   D.vyc
         # --------------------------------------------------------------- #
         # Diffusion ===================================================== #
-        CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
+        @printf("---Energy Calculation---\n")
+        # CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
+        # Alternatively - defect correction, more accurate! ---
+        @. D.T0     =   D.T
+        for iter = 1:niterT
+            # Evaluate residual
+            ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
+                    1.0, TBC, Δ, T.Δ[1]; C = 0.5 )
+            @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
+            norm(RT)/length(RT) < ϵT ? break : nothing
+            # Assemble linear system
+            K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
+            # Solve for temperature correction: Cholesky factorisation
+            Kc = cholesky(K1.cscmatrix)
+            # Solve for temperature correction: Back substitutions
+            δT = -(Kc\RT[:])
+            # Update temperature
+            @. D.T += δT[Num.T]
+        end
+        # Update extended field for advection scheme --- 
+        D.T_ex[2:end-1,2:end-1]     .=  D.T
         # --------------------------------------------------------------- #
         # Nusselt Number ================================================ #
         # Grid structure at the surface ---
@@ -318,12 +361,18 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         # Check break =================================================== #
         # If the maximum time is reached or if the models reaches steady 
         # state the time loop is stoped! 
-        if Time[it] > 0.0038
-            epsC    =   1e-3; 
+        if Time[it] > 0.05
+            epsC    =   0.001
             ind     =   findfirst(Time .> 
-                            (Time[it] - 0.0038))
+                            (Time[it] - 0.05))
             epsV    =   std(meanV[ind:it])
+            if count == 0
+                epsV0   =   epsV
+                count   += 1
+            end
+            epsV        /= epsV0
             find    =   it
+            @printf("ε_Vr = %g, ε_Cr = %g \n",epsV,epsC)
             if Time[it] >= T.tmax
                 @printf("Maximum time reached!\n")
                 find    =   it
@@ -339,10 +388,13 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     end
     # Save final figure ================================================= #
     p2 = heatmap(x.c,y.c,D.T',
-                xlabel="x",ylabel="y",colorbar=true,
-                title="Temperature",color=cgrad(:lajolla),
+                xlabel= L"x",ylabel= L"y",colorbar=true,
+                color=cgrad(:lajolla),
                 aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-                ylims=(M.ymin, M.ymax))
+                ylims=(M.ymin, M.ymax), 
+                size=(1100,900),dpi = 300,
+                guidefontsize = 28, tickfontsize = 18,
+                titlefontsize = 28, top_margin=5mm)
         contour!(p2,x.c,y.c,D.T',lw=1,
                         color="white",cbar=false,
                         alpha=0.5)
@@ -361,14 +413,23 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     end
     # ------------------------------------------------------------------- #
     # Plot time serieses ================================================ #
+    q2  =   plot(layout=(2,1),size=(1200,900),dpi = 300)
     q2  =   plot(Time[1:find],Nus[1:find],
-                xlabel="Time [ non-dim ]", ylabel="Nus",label="",
+                xlabel= "", ylabel= L"Nus",label="",
+                xformatter = _ -> "",
+                ylims=(0,25),xlims=(0,Time[find]),
+                guidefontsize = 24, tickfontsize = 18,
+                titlefontsize = 24,grid = false,
                 layout=(2,1),suplot=1)
     plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
                 lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
                 layout=(2,1),suplot=1)
     plot!(q2,Time[1:find],meanV[1:find],
-                xlabel="Time [ non-dim ]", ylabel="V_{RMS}",label="",
+                xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
+                xformatter =:auto,
+                guidefontsize = 24, tickfontsize = 18,
+                titlefontsize = 24,grid = false,
+                ylims=(0,8000),xlims=(0,Time[find]),
                 layout=(2,1),subplot=2)
     plot!(q2,Time[1:find],B.Vrms[B.Nr].*ones(find,1),
                 lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
@@ -379,9 +440,36 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     elseif save_fig == 0
         display(q2)
     end
+    # Vertical temperature profiles ========================================= #
+    # @show NC, M.xmax,M.xmin,Δ, NV 
+    ind1    =   Int64(floor((M.xmax-M.xmin)/2/Δ.x)+1)
+    ind2    =   Int64(floor((M.xmax-M.xmin)/2/Δ.x))
+    Tprof   =   (D.T[ind1,:]+D.T[ind2,:])/2
+    q3  =   plot(Tprof,y.c,
+            xlabel= L"T",ylabel= L"y",label=false,
+            size=(1100,900),dpi=300,grid = false,
+            ylims=(M.ymin,M.ymax),xlims=(0.0,1.0),
+            guidefontsize = 28, tickfontsize = 18,
+            titlefontsize = 28,right_margin=5mm,
+            left_margin=5mm)
+    scatter!(q3,(B.Tmin[B.Nr],-(1-B.ymin[B.Nr])),
+                markershape=:rect,markersize=6,
+                markercolor=:black,label=false)
+    scatter!(q3,(B.Tmax[B.Nr],-(1-B.ymax[B.Nr])),
+                markershape=:rect,markersize=6,
+                markercolor=:black,label=false)
+    if save_fig == 1
+        savefig(q3,string("./exercises/Correction/Results/13_BlankenbachBenchmark__RestTest_Profiles_",@sprintf("%.2e",P.Ra),
+                            "_",NC.x,"_",NC.y,"_",Ini.T,".png"))
+    elseif save_fig == 0
+        display(q3)
+    end
     # ------------------------------------------------------------------- #
-    return Nus[find], meanT[find], meanV[find]
+    return Nus[find], meanT[find], meanV[find], p2, q2, q3
 end
+# ======================================================================= #
+# ======================== END MAIN SCRIPT ============================== #
+# ======================================================================= #
 
 # ======================================================================= #
 # Run Resolution Test =================================================== #
@@ -390,7 +478,7 @@ start=time()
 save_fig    =   1
 # Rayleigh Number ======================================================= #
 #   Here, only for 1e4, 1e5, 1e6
-Ra      =   1e5
+Ra      =   1e6
 # ----------------------------------------------------------------------- #
 # Benchmark Values ====================================================== # 
 # Taken from Gerya (2019), Introduction to numerical geodynamic 
@@ -425,57 +513,95 @@ B       =   (
 # ----------------------------------------------------------------------- #
 # Number of grid points in upper thermal boundary layer ================= #
 n   =   [2,3,4,5,6]
+# n   =   [2,3]
 # ----------------------------------------------------------------------- #
 # Grid Resultion ======================================================== #
 ncy     =   zeros(Int64,length(n))
 @. ncy  =   round((n-1)*(Ra/4)^(1/3))
-# @show ncy
 # ----------------------------------------------------------------------- #
 # Statistical values ==================================================== #
 Nus     =   zeros(length(n))
 meanT   =   zeros(length(n))
 meanV   =   zeros(length(n))
+# ----------------------------------------------------------------------- #
+# Figures =============================================================== #
+p       =   Vector{Any}(undef, length(ncy))
+p1      =   Vector{Any}(undef, length(ncy))
+p2      =   Vector{Any}(undef, length(ncy))
+# ----------------------------------------------------------------------- #
 # Resolution Loop ======================================================= #
 for k in eachindex(ncy)
-    Nus[k],meanT[k],meanV[k] = BlankenbachBenchmark(ncy[k],Ra,save_fig)
+    Nus[k],meanT[k],meanV[k], p[k], p1[k], p2[k] = 
+            BlankenbachBenchmark(ncy[k],Ra,save_fig)
 end
-# @show Nus, meanT, meanV
+@show ncy, Nus, meanT, meanV
 # ----------------------------------------------------------------------- #
-xmin    =   1e-5
+# Plot Statistics ======================================================= #
+xmin    =   1e-6
 xmax    =   1e-1
-p1  =   scatter((1 ./ncy./ncy,Nus),
+p3  =   scatter((1 ./ncy./ncy,Nus),
             markershape=:circle,markersize=4,
             markercolor=:black,label="",
             xlims=[xmin,xmax],ylims=[B.Nu[nr]*0.5,B.Nu[nr]*1.3],
             xscale=:log10,yscale=:log10,
-            xlabel="1/nx/ny",ylabel="Nu",
+            xlabel= "",ylabel= L"Nu",
+            xformatter = _ -> "",
+            size=(1100,900),dpi=300,
+            guidefontsize = 24, tickfontsize = 18,
+            titlefontsize = 24,grid = false,
             layout=(3,1),subplot=1)
-plot!(p1,LinRange(xmin,1,10),B.Nu[nr].*ones(10,1),
+plot!(p3,LinRange(xmin,1,10),B.Nu[nr].*ones(10,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
             layout=(3,1),suplot=1)
-scatter!(p1,(1 ./ncy./ncy,meanV),
+scatter!(p3,(1 ./ncy./ncy,meanV),
             markershape=:circle,markersize=4,
             markercolor=:black,label="",
             xlims=[xmin,xmax],ylims=[B.Vrms[nr]*0.5,B.Vrms[nr]*2.0],
             xscale=:log10,yscale=:log10,
-            xlabel="1/nx/ny",ylabel="V_{RMS}",
+            xlabel= "",ylabel=L"V_{RMS}",
+            xformatter = _ -> "",
+            guidefontsize = 24, tickfontsize = 18,
+            titlefontsize = 24,grid = false,
             layout=(3,1),subplot=2)
-plot!(p1,LinRange(xmin,1,10),B.Vrms[nr].*ones(10,1),
+plot!(p3,LinRange(xmin,1,10),B.Vrms[nr].*ones(10,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
             layout=(3,1),subplot=2)
-scatter!(p1,(1 ./ncy./ncy,meanT),
+scatter!(p3,(1 ./ncy./ncy,meanT),
             markershape=:circle,markersize=4,
             markercolor=:black,label="",
             xlims=[xmin,xmax],ylims=[1e-1,10],
             xscale=:log10,yscale=:log10,
-            xlabel="1/nx/ny",ylabel="⟨T⟩",
+            xlabel= L"\frac{1}{nx \cdot ny}",ylabel=L"⟨\ T\ ⟩",
+            xformatter = :auto,
+            guidefontsize = 24, tickfontsize = 18,
+            titlefontsize = 24,grid = false,
             layout=(3,1),subplot=3)
-
 if save_fig == 1
-    savefig(p1,string("./exercises/Correction/Results/13_BlankenbachBenchmark_RestTest_Ra_",
+    savefig(p3,string("./exercises/Correction/Results/13_BlankenbachBenchmark_RestTest_Ra_",
                         @sprintf("%.2e",Ra),".png"))
 elseif save_fig == 0
-    display(p1)
+    display(p3)
 end
+# ----------------------------------------------------------------------- #
+# Summarizing figure ==================================================== #
+run         =   5
+annotate!(p[run],-0.22, 0,text("a)", 22, :black, :bold))
+annotate!(p2[run],-0.22, -0.01,text("b)", 22, :black, :bold))
+annotate!(p1[run],-0.008, 26.0,text("c)", 22, :black, :bold),subplot=1)
+annotate!(p3[end],5e-8,3e6,text("d)", 22, :black, :bold),subplot=1)
+p4  = plot(
+        p[run],p2[run],
+        p1[run],p3,
+        layout=(2,2),size=(1200,1200),dpi=300)
+if save_fig == 1
+    savefig(p4,string("./exercises/Correction/Results/13_BlankenbachBenchmark_Summary_Ra_",
+                        @sprintf("%.2e",Ra),".png"))
+else
+    display(p4)
+end
+# ----------------------------------------------------------------------- #
 stop=time()
 @printf("Runtime: %g s",stop-start)
+# ======================================================================= #
+# END RESOLUTION TEST RUNS  ============================================= #
+# ======================================================================= # 

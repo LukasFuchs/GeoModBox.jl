@@ -157,7 +157,7 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |    |   | Ra = 1e5: 3232.410 s (5045) |
 |    |   | Ra = 1e6: 5008.271 s (8000) |
 |    |   | **Resolution Tests:** |
-|    |   | Ra = 1e4: 5217.55 s |
+|    |   | Ra = 1e4: 777.22 s |
 |    |   | Ra = 1e5: 20459.1 s |
 |    |   | Ra = 1e6: 554874 s |
 
