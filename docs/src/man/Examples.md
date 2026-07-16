@@ -40,11 +40,11 @@ In the following, the runtime for each of the provided examples is listed as a r
 | Example                           | Total Runtime                                         |
 | :-------------------------------- | :---------------------------------------------------- |
 | **Advection ===**                                                                         |
-| 2D_Advection.jl                   | 1) Upwind: 5.88 s                                     |
-|                                   | 2) SLF: 6.11 s                                        |
-|                                   | 3) Semi-lag: 15.7 s                                   |
-|                                   | 4) Tracers: 172 s                                     |
-| 2D_Advection_ResolutionTest.jl    | 335 s                                                 |
+| 2D_Advection.jl                   | 1) Upwind: 173 s                                      |
+|    Resolution: 100x100            | 2) SLF: 173 s                                         |
+|                                   | 3) Semi-lag: 177 s                                    |
+|                                   | 4) Tracers: 459 s                                     |
+| 2D_Advection_ResolutionTest.jl    | 1129 s                                                |
 | **Heat Diffusion ===**                                                                    |
 | *1D* ---                                                                                  |
 | ContinentalGeotherm_1D.jl         | 530 ms                                                | 

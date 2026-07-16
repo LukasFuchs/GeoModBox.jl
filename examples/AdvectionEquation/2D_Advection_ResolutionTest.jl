@@ -18,7 +18,7 @@ nrnxny      =   6
 Scheme      =   ["upwind","slf","semilag","markers"]
 ns          =   size(Scheme,1)
 @show ns
-save_fig    =   1
+save_fig    =   -1
 
 # Statistical Parameter ============================================== #
 St      = (
@@ -32,34 +32,34 @@ p3 = plot(layout=(2,2),
 panel   =   ["a)","b)","c)","d)"]
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
-# Temperature - 
+# Temperature --- 
 #   1) circle, 2) gaussian, 3) block
-# Velocity - 
+# Velocity --- 
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
+# -------------------------------------------------------------------- #
+# Model Constants ==================================================== #
+M   =   (
+    xmin    =   0.0,
+    xmax    =   1.0,
+    ymin    =   0.0,
+    ymax    =   1.0,
+)
+BC  =   ()  # dummy
+# -------------------------------------------------------------------- #
+# Plot constants ===================================================== #
+Pl  =   (
+    inc         =   5,
+    sc          =   1.0e9,
+    Minc        =   1, 
+    Msz         =   0.2,
+)
 # -------------------------------------------------------------------- #
 @timeit to "AdvectionScLoop" begin
 for m = 1:ns # Loop over advection schemes
     # Define Numerical Scheme ======================================== #
     FD          =   (Method     = (Adv=Scheme[m],),)    
     @printf("Advection Scheme: %s\n ",string(FD.Method.Adv))
-    # ---------------------------------------------------------------- #
-    # Plot constants ================================================= #
-    Pl  =   (
-        inc         =   5,
-        sc          =   1.0e9,
-        Minc        =   1, 
-        Msz         =   0.2,
-    )
-    # ---------------------------------------------------------------- #
-    # Model Constants ================================================ #
-    M   =   (
-        xmin    =   0.0,
-        xmax    =   1.0,
-        ymin    =   0.0,
-        ymax    =   1.0,
-    )
-    BC  =   ()  # dummy
     # ---------------------------------------------------------------- #
     @timeit to "ResolutionLoop" begin
     for l = 1:nrnxny # Loop over differnet resolutions
@@ -104,7 +104,7 @@ for m = 1:ns # Loop over advection schemes
         )
         y   =   merge(y,y1)
         # ------------------------------------------------------------ #
-        # Animationsettings =0======================================== #
+        # Animationsettings ========================================== #
         path        =   string("./examples/AdvectionEquation/Results/")
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
@@ -243,7 +243,6 @@ for m = 1:ns # Loop over advection schemes
         # ------------------------------------------------------------ #
         # Time Loop ================================================== #
         for i = 2:nt
-            @timeit to "Advection" begin
             if FD.Method.Adv == "upwind"
                 upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "slf"
@@ -258,12 +257,10 @@ for m = 1:ns # Loop over advection schemes
                 end
                 # Advect markers ---
                 AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
-                # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
                 # Interpolate temperature from markers to grid ---
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
                 D.T     .=  D.T_ex[2:end-1,2:end-1]
-            end
             end
             display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
@@ -314,8 +311,8 @@ for m = 1:ns # Loop over advection schemes
                 end
             end
             if FD.Method.Adv == "markers"
-            # Update old temperature field ---
-            @. D.Told_ex    =   D.T_ex
+                # Update old temperature field ---
+                @. D.Told_ex    =   D.T_ex
             end
         end # End Time loop    
         # Save Animation ============================================= #

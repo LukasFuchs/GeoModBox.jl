@@ -7,7 +7,7 @@ This example evaluates the accuracy of the advection solvers implemented for two
 - semi-lagrangian 
 - tracers
 
-The first three solvers are implemented such that any property defined on the centroids (including ghost nodes) can be advected using interpolated centroid velocities from the staggered grid. Tracers are used to advect the initial temperature anomaly, but their internal properties are not updated. Instead, the temperature is interpolated onto the centroids at each time step. For more implementation details please see the [documentation](../AdvectMain.md).
+The first three solvers are implemented such that any property defined on the centroids (including ghost nodes) can be advected using interpolated centroid velocities from the staggered grid. Tracers are used to advect temperature. The temperature is advected by calculating the temperature increment between the new and the previous grid-based temperature field. The increment is then interpolated from the grid to the markers and added to the marker temperatures. The temperature at the centroids is subsequently computed using an arithmetic averaging scheme. For more implementation details please see the [documentation](../AdvectMain.md).
 
 The initial temperature condition can be defined using one of the following anomalies: 
 
@@ -15,7 +15,7 @@ The initial temperature condition can be defined using one of the following anom
 - a Gaussian temperature distribution
 - a circle
 
->**Note:** The anomaly is here defined on the temperature field. However, one could also assume a similar density anomaly. This might even be more applicable for the tracer advection test. 
+>**Note:** The anomaly is here defined as a temperature anomaly. However, one could also assume a similar density anomaly. 
 
 Two different velocity fields can be used as initial conditions: 
 
@@ -59,7 +59,7 @@ using Plots, Interpolations
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.Tracers.TwoD
 using GeoModBox.InitialCondition
 using Base.Threads
-using Printf
+using Printf, TimerOutputs, LaTeXStrings, Measures
 ```
 
 In the following one can define the advection scheme as well as the initial conditions. Additional some plot parameters are defined in the very beginning as well. 
@@ -71,8 +71,8 @@ save_fig    =   1
 
 # Define Numerical Scheme ============================================ #
 # Advection ---
-#   1) upwind, 2) slf, 3) semilag, 4) tracers
-FD          =   (Method     = (Adv=:tracers,),)
+#   1) upwind, 2) slf, 3) semilag, 4) markers
+FD          =   (Method     = (Adv=:semilag,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
@@ -107,6 +107,7 @@ M   =   (
 In the following the numerical grid and their coordinates are defined. 
 
  ```Julia
+BC  =   ()  # dummy
 # Numerical Constants ================================================ #
 NC  =   (
     x       =   100,        # Number of horizontal centroids
@@ -129,7 +130,7 @@ x   =   (
 )
 y       = (
     c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
-    ce      =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce      =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
     v       =   LinRange(M.ymin, M.ymax, NV.y),    
 )
 x1      =   ( 
@@ -163,13 +164,14 @@ D       =   (
     T       =   zeros(Float64,(NC.x,NC.y)),
     T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
+    Told_ex =   zeros(Float64,(NC.x+2,NC.y+2)),
     vx      =   zeros(Float64,(NV.x,NV.y+1)),
     vy      =   zeros(Float64,(NV.x+1,NV.y)),    
     vxc     =   zeros(Float64,(NC.x,NC.y)),
     vyc     =   zeros(Float64,(NC.x,NC.y)),
     vc      =   zeros(Float64,(NC.x,NC.y)),
-    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wt      =   zeros(Float64,(NC.x,NC.y)),
+    wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
     wtv     =   zeros(Float64,(NV...)),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
@@ -183,12 +185,15 @@ Now, one can calculate the initial conditions. Here, the build-in functions for 
 ```Julia
 # Initial Conditions ================================================= #
 # Temperature ---
-IniTemperature!(Ini.T,M,NC,Δ,D,x,y)
+IniTemperature!(Ini.T,M,NC,D,x,y)
 if FD.Method.Adv==:slf
     D.T_exo    .=  D.T_ex
 end
+D.Tmax[1]   =   maximum(D.T_ex)
+D.Tmin[1]   =   minimum(D.T_ex)
+D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 # Velocity ---
-IniVelocity!(Ini.V,D,NV,Δ,M,x,y)            # [ m/s ]
+IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
 @threads for i = 1:NC.x
     for j = 1:NC.y
@@ -209,7 +214,7 @@ T   =   (
     Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
     Δ       =   [0.0],
 )
-T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
+T.tmax[1]   =   π*((M.xmax-M.xmin)-2*Δ.x)/maximum(D.vc)   # t = U/v [ s ]
 T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
@@ -220,9 +225,9 @@ In case tracer are required one needs to initialize them in the following. For m
 
 ```Julia
 # Tracer Advection =================================================== #
-if FD.Method.Adv==:tracers 
-# Tracer Initialization ---
-    nmx,nmy     =   3,3
+if FD.Method.Adv==:markers 
+    # Tracer Initialization ---
+    nmx,nmy     =   5,5
     noise       =   1
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :thermal
@@ -246,8 +251,9 @@ if FD.Method.Adv==:tracers
     @threads for k = 1:nmark
         Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
     end
+    ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
     # Count marker per cell ---
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 end
 # -------------------------------------------------------------------- #
 ```
@@ -256,27 +262,38 @@ Let's visualize the initial condition first.
 
 ```Julia
 # Visualize initial condition ======================================== #
-if FD.Method.Adv==:tracers
+if FD.Method.Adv==:markers
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
             ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
-            colorbar=true,layout=(1,2),subplot=1)
+                    colorbar=true, size = (1200,600), dpi = 300,
+                                        title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                    layout=(1,2),subplot=1)
     quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
             y.c2d[1:Pl.inc:end,1:Pl.inc:end],
             quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                     D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-            color="white",layout=(1,2),subplot=1)
+                    color="white",
+                    layout=(1,2),subplot=1)
     heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-            colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
+                    aspect_ratio=:equal,
+                    xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax),
+                    colorbar=true,clims=(0.0, 18.0),
             layout=(1,2),subplot=2)
 else
     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
             color=:thermal, colorbar=true, aspect_ratio=:equal, 
-            xlabel="x", ylabel="z", 
-            title="Temperature", 
-            xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-            clims=(0.5, 1.0))
+                    xlabel= L"x", ylabel= L"z", 
+                    title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                    xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax), 
+                    clims=(0.5, 1.0),
+                    size = (900,900), dpi = 300,
+                    guidefontsize = 20, tickfontsize = 20,
+                    right_margin = 10mm,
+                    titlefontsize = 20,
+                    )
     quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
             quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                     D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
@@ -302,50 +319,64 @@ for i=2:nt
     @printf("Time step: #%04d\n ",i)
 
     # Advection ===
+    @timeit to "Advection" begin
     if FD.Method.Adv==:upwind
         upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:slf
         slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:semilag
         semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
-    elseif FD.Method.Adv==:tracers
-        # Advect tracers ---
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
-        
-        # Interpolate temperature from tracers to grid ---
+    elseif FD.Method.Adv==:markers
+        @. ΔT_grid     =   D.T_ex - D.Told_ex
+        @threads for k = 1:nmark
+            local ΔTm       =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+            Ma.T[k]     += ΔTm
+        end
+        # Advect markers ---
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+        # Interpolate temperature from markers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
         D.T     .=  D.T_ex[2:end-1,2:end-1]
     end
-    
+    end
     display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
 
     # Plot Solution ---
     if mod(i,10) == 0 || i == nt
-        if FD.Method.Adv==:tracers
+        if FD.Method.Adv==:markers
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                     ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
-                    colorbar=true,layout=(1,2),subplot=1)
+                            colorbar=true, size = (1200,600), dpi = 300,
+                                                title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                            layout=(1,2),subplot=1)
             quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                             D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-                    color="white",layout=(1,2),subplot=1)
+                            color="white",
+                            layout=(1,2),subplot=1)
             heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
-                    aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-                    colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
+                            aspect_ratio=:equal,
+                            xlims=(M.xmin, M.xmax), 
+                            ylims=(M.ymin, M.ymax),
+                            colorbar=true,clims=(0.0, 18.0),
                     layout=(1,2),subplot=2)
         else
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
-                    xlabel="x", ylabel="z", 
-                    title="Temperature", 
-                    xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                    clims=(0.5, 1.0))
-            quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                        y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                            xlabel= L"x", ylabel= L"z", 
+                            title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                            xlims=(M.xmin, M.xmax), 
+                            ylims=(M.ymin, M.ymax), 
+                            clims=(0.5, 1.0),
+                            size = (900,900), dpi = 300,
+                            guidefontsize = 20, tickfontsize = 20,
+                            right_margin = 10mm,
+                            titlefontsize = 20,
+                            )
+                    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                         quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                                 D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
                     color="white")
@@ -355,6 +386,10 @@ for i=2:nt
         elseif save_fig == 0
             display(p)                        
         end
+    end
+    if FD.Method.Adv == :markers
+        # Update old temperature field ---
+        @. D.Told_ex    =   D.T_ex
     end
 end # End Time Loop
 # -------------------------------------------------------------------- #
@@ -374,11 +409,11 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-![APup_ani](../../assets/2D_advection_circle_RigidBody_upwind.gif)
+![APup_ani](../../assets/2D_advection_circle_RigidBody_upwind_100_100_nth_1.gif)
 
 **Figure 3. Rigid Body Rotation using the Upwind Scheme.**
 
-![APtracer_ani](../../assets/2D_advection_circle_RigidBody_tracers.gif)
+![APtracer_ani](../../assets/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif)
 
 **Figure 4. Rigid Body Rotation using Tracers.**  
 Left: Temperature field interpolated from tracers onto the centroids.  

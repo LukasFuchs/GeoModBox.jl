@@ -20,9 +20,6 @@ The series concludes with a reproduction of the **Blankenbach benchmark**.
 Below, the runtimes for each exercise and their individual options are listed.  
 All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Graphics*.  
 
-- The **first runtime** corresponds to the initial execution, including compilation and memory allocation.  
-- The **runtime in parentheses** corresponds to a second execution, where compilation and allocation overhead are avoided.  
-
 | Exercise | Type | Total Runtime [s] |
 |:----------|:------|:----------------|
 | 1 | Euler Advection | 5.741 |
@@ -44,26 +41,21 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |   |   | 5) SLF: 11.312 (3.48) |
 |   |   | 6) Semilag: 14.318 (3.604) |
 |   |   | 7) Tracers: 15.662 (4.944) |
-| 7 | 2-D Energy Equation | 1) Upwind+explicit: 17.468 (2.979) |
-|   |   | 2) Upwind+implicit: 31.441 (10.842) |
-|   |   | 3) Upwind+CNA: 32.065 (12.222) |
-|   |   | 4) Upwind+ADI: 121.665 (99.807) |
-|   |   | 5) Upwind+dc: 30.45 (11.401) |
-|   |   | 6) SLF+explicit: 22.002 (2.872) |
-|   |   | 7) SLF+implicit: 28.751 (8.911) |
-|   |   | 8) SLF+CNA: 29.876 (9.28) |
-|   |   | 9) SLF+ADI: 120.018 (98.74) |
-|   |   | 10) SLF+dc: 28.179 (9.379) |
-|   |   | 11) SL+explicit: 22.969 (6.334) |
-|   |   | 12) SL+implicit: 30.634 (9.682) |
-|   |   | 13) SL+CNA: 32.415 (11.566) |
-|   |   | 14) SL+ADI: 133.871 (110.704) |
-|   |   | 15) SL+dc: 35.364 (12.301) |
-|   |   | 16) Tracers+explicit: 89.499 (65.913) |
-|   |   | 17) Tracers+implicit: 108.464 (84.209) |
-|   |   | 18) Tracers+CNA: 112.171 (89.219) |
-|   |   | 19) Tracers+ADI: 186.71 (161.611) |
-|   |   | 20) Tracers+dc: 115.737 (89.089) |
+| 7 | 2-D Energy Equation | 1) Upwind+explicit: 10.9 |
+|   |   | 2) Upwind+implicit: 17.2 |
+|   |   | 3) Upwind+CNA: 15.6 |
+|   |   | 4) Upwind+ADI: 144.5 |
+|   |   | 5) Upwind+dc: 19.1 |
+|   |   | 6) SL+explicit: 14.4 |
+|   |   | 7) SL+implicit: 15.4 |
+|   |   | 8) SL+CNA: 18.6 |
+|   |   | 9) SL+ADI: 146.8 |
+|   |   | 10) SL+dc: 18.9 |
+|   |   | 11) Tracers+explicit: 115.2 |
+|   |   | 12) Tracers+implicit: 148.62 |
+|   |   | 13) Tracers+CNA: 153.6 |
+|   |   | 14) Tracers+ADI: 257.9 |
+|   |   | 15) Tracers+dc: 159.4 |
 | 8 | 1-D Stokes Equation | 8.489 (0.212) |
 | 9 | 2-D Falling Block (steady state) | 20.764 (0.891) |
 | 10 | 2-D Falling Block (time-dep.) | 1) Upwind: 33.295 (3.68) |
