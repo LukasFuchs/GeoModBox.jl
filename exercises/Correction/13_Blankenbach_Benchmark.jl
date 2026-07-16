@@ -388,7 +388,7 @@ for it = 1:T.itmax
     # If the maximum time is reached or if the models reaches steady 
     # state the time loop is stoped! 
     if Time[it] > 0.05
-        epsC    =   0.001
+        epsC    =   0.002
         ind     =   findfirst(Time .> 
                         (Time[it] - 0.05))
         epsV    =   std(meanV[ind:it])
