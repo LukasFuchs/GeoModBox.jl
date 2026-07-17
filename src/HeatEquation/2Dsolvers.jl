@@ -4,7 +4,7 @@ using ExtendableSparse
 # Time-dependent solvers, constant thermal parameters =================== #
 # ======================================================================= #
 """
-    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
+    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; Q = Q, ρ = ρ, cp = cp, Qₛ = Qₛ)
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using an explicit, forward Euler finite difference scheme.
@@ -25,13 +25,13 @@ boundary conditions.
 
 Optional input values (to include a heat source): 
     Q           : Volumetric heat production rate [ W/m^3 ]
-    ρ₀          : Reference density [ kg/m^3 ]
+    ρ           : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
     Qₛ           : Shear heating source term [ W/m³ ]
 
 """
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+                Q = zeros(NC...), ρ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
     # Function to solve 2D heat diffusion equation using the explicit finite
     # difference scheme
     # ------------------------------------------------------------------- #
@@ -61,7 +61,7 @@ function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC;
             D.T[i,j] = D.T_ex[i1,j1] + 
                 sx * (D.T_ex[i1-1,j1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1+1,j1]) + 
                 sz * (D.T_ex[i1,j1-1] - 2 * D.T_ex[i1,j1] + D.T_ex[i1,j1+1]) + 
-                (Q[i,j] + Qₛ[i,j]) * Δt / ρ₀ / cp 
+                (Q[i,j] + Qₛ[i,j]) * Δt / ρ / cp 
         end
     end
     # ------------------------------------------------------------------- #
@@ -72,7 +72,7 @@ end
 
 """
     ComputeResiduals2Dc!(R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
-                            C=0, Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
+                            C=0, Q = Q, ρ = ρ, cp = cp, Qₛ = Qₛ)
 
 Function to calculate the residual of the two dimensional heat diffusion equation assuming 
 constant thermal parameters and radiogenic heating only. The residual is required for 
@@ -104,13 +104,13 @@ Optional input values:
                         C = 0.5 -> Crank-Nicolson discretization
                         C = 1   -> explicit, forward Euler discretization
     Q           : Volumetric heat production rate [ W/m^3 ]
-    ρ₀          : Reference density [ kg/m^3 ]
+    ρ          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
     Qₛ           : Shear heating source term [ W/m³ ]
     
 """
 function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
-                C = 0, Q = 0.0, ρ₀ = 3300.0, cp = 1200.0, Qₛ = 0.0 )
+                C = 0, Q = 0.0, ρ = 3300.0, cp = 1200.0, Qₛ = 0.0 )
     if C < 1
         # Implicit 
         @. T_ex[2:end-1,2:end-1] = T 
@@ -140,7 +140,7 @@ function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
         @. ∂2T.∂x20  = (T_ex0[1:end-2,2:end-1] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[3:end,2:end-1])/Δ.x/Δ.x
         @. ∂2T.∂y20  = (T_ex0[2:end-1,1:end-2] - 2.0 * T_ex0[2:end-1,2:end-1] + T_ex0[2:end-1,3:end])/Δ.y/Δ.y
     end
-    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ₀/cp - Qₛ/ρ₀/cp
+    @. R     = (T - T0)/Δt - κ*((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q/ρ/cp - Qₛ/ρ/cp
 end
 
 """
@@ -218,7 +218,7 @@ end
 
 """
     BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num;
-                        Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
+                        Q = Q, ρ = ρ, cp = cp, Qₛ = Qₛ)
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using an implicit, backward Euler finite difference scheme for a 
@@ -242,13 +242,13 @@ are directly implemented within the system of equations.
 
 Optional input values (to include a heat source): 
     Q           : Volumetric heat production rate [ W/m^3 ]
-    ρ₀          : Reference density [ kg/m^3 ]
+    ρ           : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
     Qₛ           : Shear heating source term [ W/m³ ]
 
 """
 function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num; 
-                        Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+                        Q = zeros(NC...), ρ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp + Qₛ[i,j]
 # ----------------------------------------------------------------------- #
 # Define coefficients ---
@@ -257,7 +257,7 @@ b   =   κ / Δy^2
 c   =   1 / Δt
 
 rhs  .= reshape(D.T,NC.x*NC.y).*c .+ 
-            reshape(Q,NC.x*NC.y)./ρ₀./cp + reshape(Qₛ,NC.x*NC.y)./ρ₀./cp
+            reshape(Q,NC.x*NC.y)./ρ./cp + reshape(Qₛ,NC.x*NC.y)./ρ./cp
 
 # Loop over the grid points ---
 for i = 1:NC.x
@@ -313,7 +313,7 @@ end
 
 """
     CNA2Dc!( D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+                Q = zeros(NC...), ρ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using the Crank-Nicolson finite difference scheme for a 
@@ -338,12 +338,12 @@ are directly implemented within the system of equations.
 
 Optional input values (to include a heat source): 
     Q           : Volumetric heat production rate [ W/m^3 ]
-    ρ₀          : Reference density [ kg/m^3 ]
+    ρ          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
     Qₛ           : Shear heating source term [ W/m³ ]
 """
 function CNA2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
+                Q = zeros(NC...), ρ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
 # dT/dt = kappa*d^2T_ij/dx_i^2 + Q_ij/ρ/cp + Qₛ[i,j]/ρ/cp
 # ----------------------------------------------------------------------- #
 
@@ -403,7 +403,7 @@ end
 # ------------------------------------------------------------------- #
 # Berechnung der rechten Seite -------------------------------------- #
 rhs     .=   K2 * reshape(D.T,NC.x*NC.y) .+ 
-                reshape(Q,NC.x*NC.y)./ρ₀./cp + reshape(Qₛ,NC.x*NC.y)./ρ₀./cp
+                reshape(Q,NC.x*NC.y)./ρ./cp + reshape(Qₛ,NC.x*NC.y)./ρ./cp
 # ------------------------------------------------------------------- #        
 # Aenderung der rechten Seite durch die Randbedingungen ------------- #    
 for i = 1:NC.x
@@ -440,7 +440,7 @@ end
 
 """
     ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
+                Q = zeros(NC...), ρ = 3300.0, cp = 1200.0 )
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using the alternating-direction implicit finite difference scheme for a 
@@ -462,11 +462,11 @@ are directly implemented within the system of equations.
 
 Optional input values (to include a heat source): 
     Q           : Volumetric heat production rate [ W/m^3 ]
-    ρ₀          : Reference density [ kg/m^3 ]
+    ρ           : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
 """
 function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC; 
-                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
+                Q = zeros(NC...), ρ = 3300.0, cp = 1200.0 )
     # Function to solve 2D heat diffusion equation using the alternating direct
     # implicit finite difference scheme.
     # assuming constant k, ρ, cp
@@ -535,7 +535,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
     end
     
     rhs  .=   B * reshape(T.T',(NC.y*NC.x,1)) .+ 
-                    reshape(Q',(NC.y*NC.x,1))./ρ₀./cp
+                    reshape(Q',(NC.y*NC.x,1))./ρ./cp
 
     # Update rhs from the boundary conditions ---
     for i = 1:NC.x
@@ -616,7 +616,7 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
 
     # Update rhs to T^{n+1/2} --- 
     rhs  .=   D * reshape(T.T,(NC.y*NC.x,1)) .+ 
-                    reshape(Q,(NC.y*NC.x,1))./ρ₀./cp
+                    reshape(Q,(NC.y*NC.x,1))./ρ./cp
     
     # Update rhs from the boundary conditions ---
     for j = 1:NC.y

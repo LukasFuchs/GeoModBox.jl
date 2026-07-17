@@ -1,6 +1,6 @@
 # [03 - 1D Heat Diffusion (implicit)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit_en.ipynb)
 
-This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation using the implicit (backward Euler) scheme. The implicit approach is unconditionally stable and thus avoids the restrictive time-step limitation of explicit methods. However, stability does not imply higher accuracy, and the scheme requires solving a linear system at each time step.  
+This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation and viscous dissipation using the implicit (backward Euler) scheme. The implicit approach is unconditionally stable and thus avoids the restrictive time-step limitation of explicit methods. However, stability does not imply higher accuracy, and the scheme requires solving a linear system at each time step.  
 
 The main objectives are:  
 

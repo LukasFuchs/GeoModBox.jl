@@ -23,15 +23,15 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 | Exercise | Type | Total Runtime [s] |
 |:----------|:------|:----------------|
 | 1 | Euler Advection | 5.741 |
-| 2 | 1-D Heat Diffusion (explicit) | 1) 9.342 (1.14) |
-|   |   | 2) 9.975 (1.087) |
-|   |   | 3) 9.616 (1.017) |
-| 3 | 1-D Heat Diffusion (implicit) | 1) 12.641 (1.749) |
-|   |   | 2) 13.537 (1.720) |
-|   |   | 3) 12.157 (1.731) |
-| 4 | 2-D Steady State Heat Equation | 13.471 (2.069) |
-| 5a | 2-D Time-dep. Heat Equation (Plume) | 1) Explicit: 18.632 (4.799) |
-|    |   | 2) Implicit: 78.201 (60.828) |
+| 2 | 1-D Heat Diffusion (explicit) | 1) 9.342 |
+|   |   | 2) 9.975 |
+|   |   | 3) 9.616 |
+| 3 | 1-D Heat Diffusion (implicit) | 1) 12.641 |
+|   |   | 2) 13.537 |
+|   |   | 3) 12.157 |
+| 4 | 2-D Steady State Heat Equation | 13.471 |
+| 5a | 2-D Time-dep. Heat Equation (Plume) | 1) Explicit: 18.632 |
+|    |   | 2) Implicit: 78.201 |
 | 5b | 2-D Time-dep. Heat Equation (Sill) | 1) Explicit: 17.856 (4.566) |
 |    |   | 2) Implicit: 39.626 (22.679) |
 | 6 | 1-D Advection Scheme | 1) FTCS: 11.644 (4.019) |

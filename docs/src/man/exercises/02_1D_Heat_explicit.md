@@ -1,6 +1,6 @@
 # [02 - 1D Heat Diffusion (explicit)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/02_1D_Heat_explicit_en.ipynb)
 
-This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation using the explicit (FTCS) scheme. The explicit formulation is particularly useful for illustrating stability constraints that do not arise in implicit methods.  
+This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation and viscous dissipation using the explicit (FTCS) scheme. The explicit formulation is particularly useful for illustrating stability constraints that do not arise in implicit methods.  
 
 The main objectives are:  
 
