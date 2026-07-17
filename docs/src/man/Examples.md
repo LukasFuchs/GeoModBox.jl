@@ -5,18 +5,18 @@ The `GeoModBox.jl` provides various one- and two-dimensional examples and benchm
 By clicking on the title of each document page, you will be directed to the corresponding Julia script in the [examples directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples).
 
 **Advection** 
-- [2-D advection with constant velocity field](./examples/Advection2D.md)
-- [Resolution test of 2-D advection](./examples/AdvectionRestest2D.md)
+- [2-D advection with constant velocity field](./examples/Advection/Advection2D.md)
+- [Resolution test of 2-D advection](./examples/Advection/AdvectionRestest2D.md)
 
 **Heat Diffusion** 
-- [1-D continental geotherm](./examples/ContinentalGeotherm.md)
-- [Comparison of FD schemes on a Gaussian anomaly](./examples/GaussianDiffusion1D.md)
-- [1-D oceanic geotherm](./examples/OceanicGeotherm.md)
-- [2-D Gaussian anomaly using iterative backward Euler solver](./examples/BackwardEuler_DC.md)
-- [2-D Gaussian anomaly using iterative forward Euler solver](./examples/ForwardEuler_DC.md)
-- [2-D resolution test with Gaussian anomaly](./examples/GaussianDiffusion2D.md)
-- [2-D Poisson equation resolution test](./examples/PoissonRestest.md)
-- [](./examples/PoissonVariablek.md)
+- [1-D continental geotherm](./examples/Diffusion/ContinentalGeotherm.md)
+- [Comparison of FD schemes on a Gaussian anomaly](./examples/Diffusion/GaussianDiffusion1D.md)
+- [1-D oceanic geotherm](./examples/Diffusion/OceanicGeotherm.md)
+- [2-D Gaussian anomaly using iterative backward Euler solver](./examples/Diffusion/BackwardEuler_DC.md)
+- [2-D Gaussian anomaly using iterative forward Euler solver](./examples/Diffusion/ForwardEuler_DC.md)
+- [2-D resolution test with Gaussian anomaly](./examples/Diffusion/GaussianDiffusion2D.md)
+- [2-D Poisson equation resolution test](./examples/Diffusion/PoissonRestest.md)
+- [2-D Poisson equation with variable thermal properties](./examples/Diffusion/PoissonVariablek.md)
 
 **Thermal Convection Models** 
 - [Bottom heated, isoviscous thermal convection](./examples/BottomHeatedConvection.md)

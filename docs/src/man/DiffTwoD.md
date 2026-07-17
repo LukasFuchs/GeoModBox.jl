@@ -66,7 +66,7 @@ where $I^\textrm{S}$, $I^\textrm{W}$, $I^\textrm{E}$, and $I^\textrm{N}$ denote 
 
 When discretizing flux divergences, the indices $I^\textrm{C}$ and $I^\textrm{E}$ refer to the two adjacent flux degrees of freedom on the corresponding flux grid (the west and east faces of the control volume surrounding $T_{I^\textrm{C}}$), consistent with the staggered layout shown in Figure 1.
 
-A detailed implementation of several numerical schemes for solving a linear problem using a single left-matrix division is provided in the example script [Gaussian_Diffusion.jl](./examples/GaussianDiffusion2D.md).
+A detailed implementation of several numerical schemes for solving a linear problem using a single left-matrix division is provided in the example script [Gaussian_Diffusion.jl](./examples/Diffusion/GaussianDiffusion2D.md).
 
 This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
 

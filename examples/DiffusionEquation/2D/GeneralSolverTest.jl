@@ -1,6 +1,6 @@
 using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
 using Statistics, Printf, LinearAlgebra
-using TimerOutputs
+using TimerOutputs, LaTeXStrings, Measures
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
@@ -15,7 +15,7 @@ P       = (
     k       =   3,              #   Thermal Conductivity [ W/m/K ]
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
-    K0      =   273.15,         #   Kelvin at 0 °C
+    # K0      =   273.15,         #   Kelvin at 0 °C
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
@@ -187,25 +187,52 @@ for m = 1:ns
 end
 end
 # Visualize Statistical Values --------------------------------------- #
-q   =   plot(0,0,layout=(1,3))
+q   =   plot(0,0,layout=(1,3),
+            size(1200,900),dpi=300)
 for m = 1:ns
     plot!(q,St.nxny[m,:],St.ε[m,:],
-                marker=:circle,markersize=3,label=Schema[m],
+                marker=:circle,markersize=4,
+                legend = :topleft,
+                label=Schema[m],
                 xaxis=:log,yaxis=:log,
-                xlabel="1/nx/ny",ylabel="ε_{T}",layout=(1,3),
+                markerstrokewidth=0.0,
+                xlims=(3e-5,5e-3),
+                ylims=(1e-2,1e1),
+                xlabel= L"\frac{1}{nx \cdot ny}",ylabel= L"ε_{T}",
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
-                marker=:circle,markersize=3,label="",
+                marker=:circle,markersize=4,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="T_{max}",
+                xlims=(3e-5,5e-3),
+                ylims=(86,100),
+                markerstrokewidth=0.0,
+                xlabel=L"\frac{1}{nx \cdot ny}",ylabel= L"T_{max}",
                 subplot=2)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
-                marker=:circle,markersize=3,label="",
+                marker=:circle,markersize=4,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="⟨T⟩",
+                xlims=(3e-5,5e-3),
+                ylims=(9.97,10.01),
+                markerstrokewidth=0.0,
+                xlabel=L"\frac{1}{nx \cdot ny}",ylabel= L"⟨\ T\ ⟩",
                 subplot=3)
-    display(q)
 end
+annotate!(
+    q, 3.5e-6, 10.0,
+    text("a)", 10, :black, :bold, :left),
+    subplot = 1,
+)
+annotate!(
+    q, 3.5e-6, 100.0,
+    text("b)", 10, :black, :bold, :left),
+    subplot = 2,
+)
+annotate!(
+    q, 3.5e-6, 10.01,
+    text("c)", 10, :black, :bold, :left),
+    subplot = 3,
+)
+display(q)
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
 if save_fig == 1

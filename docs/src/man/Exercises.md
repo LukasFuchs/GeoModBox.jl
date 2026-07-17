@@ -153,4 +153,4 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |    |   | Ra = 1e5: 789.415 s |
 |    |   | Ra = 1e6: 36026.9 s |
 
-¹: For the thermal convection, only the runtime where compilation and allocation overhead is avoided are shown, for the sake of simplicity. The number of iterations is shown in the parentheses. For the higher $Ra$ number models only the fastest and most accurate (see [here](../man/examples/GaussianDiffusion2D.md)) combinations of solvers from the low $Ra$ case haven been run. 
+¹: For the thermal convection, only the runtime where compilation and allocation overhead is avoided are shown, for the sake of simplicity. The number of iterations is shown in the parentheses. For the higher $Ra$ number models only the fastest and most accurate (see [here](../man/examples/Diffusion/GaussianDiffusion2D.md)) combinations of solvers from the low $Ra$ case haven been run. 

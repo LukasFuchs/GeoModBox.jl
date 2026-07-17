@@ -16,10 +16,15 @@ boundary conditions.
     explicit    : Tuple, containing the regular temperature array T and 
                   array containing the ghost nodes T_ex
     κ           : Diffusivity [ m²/s ]
+    Δx          : Grid spacing [ m ]
     Δt          : Time step [ s ]
     nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
     BC          : Tuple for the boundary condition
+
+Optional input: 
+    Q           : Radiogenic heat production rate [W/m³]
+    ρ           : Density [kg/m³]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
 function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC; 
                                 Q = zeros(nc), ρ=3200.0, cp=1200.0 )
@@ -43,7 +48,8 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC;
 end
 
 """
-    ComputeResiduals1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+    ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt; 
+                            C = 0, Q = 0.0, ρ = 3200.0, cp = 1200.0 )
 
 Computes the residual of the onedimensional heat diffusion equation assuming 
 no internal heating and constant thermal parameters.
@@ -53,14 +59,25 @@ Boundary conditions are currently limited to Dirichlet and Neumann. Using centra
 temperature nodes requires external ghost nodes, which are used to define the 
 boundary conditions. 
 
-    dc          : Tuple, containing the current temperature array T, 
-                  the temperature array with ghost nodes T_ex,
-                  the partial derivatives ∂2T∂x2, and the
-                  residual R
+    R           : Residual 
+    T           : Current temperature array T [K]
+    T_ex        : Current temperature array with ghost nodes [K]
+    T0          : Initial guess for the iteration
+    T_ex0       : Initial guess for the iteration with ghost nodes
+    ∂2T∂x2      : Partial temperature derivatives 
     κ           : Diffusivity [ m²/s ]
+    BC          : Tuple for the boundary condition
     Δx          : Grid spacing [ m ]
     Δt          : Time step [ s ]       
-    BC          : Tuple for the boundary condition
+
+Optional input: 
+    C           : Constant defining FD discretization
+        -> 0.0 - Implicit
+        -> 0.5 - Crank-Nicholson
+        -> 1.0 - Explicit
+    Q           : Radiogenic heat production rate [W/m³]
+    ρ           : Density [kg/m³]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
 function ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt;
                 C=0,Q=0.0,ρ=3200.0,cp=1200.0)
@@ -94,7 +111,20 @@ end
 """
     AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K; C )
 
-Setup the coefficient matrix for the linear system of equations. 
+Setup the coefficient matrix for the linear system of equations.
+
+    κ           : Diffusivity [ m²/s ]
+    Δx          : Grid spacing [ m ]
+    Δt          : Time step [ s ]     
+    nc          : Number of cell centroids
+    BC          : Tuple for the boundary condition
+    K           : Coefficient matrix
+
+Optional input: 
+    C           : Constant defining FD discretization
+        -> 0.0 - Implicit
+        -> 0.5 - Crank-Nicholson
+        -> 1.0 - Explicit
     
 """
 function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K;C=0 )
@@ -132,7 +162,8 @@ end
 
 
 """
-    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
+    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K,  rhs; 
+                            Q = 0.0, ρ = 3200.0, cp = 1200.0 )
 
 Solves the onedimensional heat diffusion equation assuming no internal heating and
 constant thermal parameters using an implicit, backward euler finite difference scheme.
@@ -150,9 +181,15 @@ boundary conditions.
     Δx          : Grid spacing [ m ]
     BC          : Tuple for the boundary condition
     K           : Coefficient matrix for linear system of equations
+    rhs         : Right hand side vector
+
+Optional input: 
+    Q           : Radiogenic heat production rate [W/m³]
+    ρ           : Density [kg/m³]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
 function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs; 
-                                Q=0.0,ρ=3200.0,cp=1200.0)
+                                Q = 0.0, ρ = 3200.0, cp = 1200.0 )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -195,7 +232,8 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs;
 end
 
 """
-    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2; 
+                Q = 0.0, ρ = 3200.0, cp = 1200.0 )
 
 Solves the onedimensional heat diffusion equation assuming no internal heating and
 constant thermal parameters using Crank-Nicolson finite difference scheme.
@@ -214,6 +252,11 @@ boundary conditions.
     BC          : Tuple for the boundary condition
     K1          : Coefficient matrix for the unknow variables 
     K2          : Coefficient matrix for the know variables
+
+Optional input: 
+    Q           : Radiogenic heat production rate [W/m³]
+    ρ           : Density [kg/m³]
+    cp          : Specific heat capacity [ J/kg/K ]
 """
 function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2; 
                         Q=0.0,ρ=3200.0,cp=1200.0 )

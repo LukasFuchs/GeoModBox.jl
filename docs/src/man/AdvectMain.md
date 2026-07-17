@@ -81,8 +81,8 @@ An important consideration in advection problems is the preservation of amplitud
 
 ## Examples
 
-- [2-D advection with constant velocity field](./examples/Advection2D.md)  
-- [Resolution test of 2-D advection](./examples/AdvectionRestest2D.md)
+- [2-D advection with constant velocity field](./examples/Advection/Advection2D.md)  
+- [Resolution test of 2-D advection](./examples/Advection/AdvectionRestest2D.md)
 
 See the [examples documentation](./Examples.md) for additional details.
 

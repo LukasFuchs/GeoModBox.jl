@@ -120,9 +120,9 @@ for m = 1:ns
                 clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
                 subplot=1)
         contour!(p,x.c./1e3,y.c/1e3,D.T',linewidth=2.0,
-                levels=:5,linecolor=:black,subplot=1)
+                levels=5,linecolor=:black,subplot=1)
         contour!(p,x.c./1e3,y.c/1e3,D.Tana',linewidth=2.0,
-                levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
+                levels=5,linestyle=:dash,linecolor=:yellow,subplot=1)
         annotate!(p,-170, 110,text("a)", 14, :black, :bold),subplot = 1)
         # subplot 2 ---
         heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
@@ -249,9 +249,9 @@ for m = 1:ns
                     clims=(minimum(D.T), maximum(D.T)),layout=(2,2),
                     subplot=1)
                 contour!(p,x.c./1e3,y.c/1e3,D.T',linewidth=2.0,
-                        levels=:5,linecolor=:black,subplot=1)
+                        levels=5,linecolor=:black,subplot=1)
                 contour!(p,x.c./1e3,y.c/1e3,D.Tana',linewidth=2.0,
-                        levels=:5,linestyle=:dash,linecolor=:yellow,subplot=1)
+                        levels=5,linestyle=:dash,linecolor=:yellow,subplot=1)
                 annotate!(p,-170,110,text("a)", 14, :black, :bold),subplot = 1)
                 # subplot 2 ---
                 heatmap!(p,x.c ./ 1e3, y.c ./ 1e3, D.εT', 
@@ -339,7 +339,6 @@ for m = 1:ns
                 xlims=(3e-5,5e-3),
                 ylims=(1e-2,1e1),
                 xlabel= L"\frac{1}{nx \cdot ny}",ylabel= L"ε_{T}",
-                # layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=4,label="",

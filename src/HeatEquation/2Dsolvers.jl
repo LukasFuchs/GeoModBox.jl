@@ -4,7 +4,7 @@ using ExtendableSparse
 # Time-dependent solvers, constant thermal parameters =================== #
 # ======================================================================= #
 """
-    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC; Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
+    ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; Q = Q, ρ₀ = ρ, cp = cp, Qₛ = Qₛ)
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using an explicit, forward Euler finite difference scheme.
@@ -20,8 +20,6 @@ boundary conditions.
     Δx          : Horizontal grid spacing [ m ]
     Δy          : Vertical grid spacing [ m ]
     Δt          : Time step [ s ]
-    ρ           : Density [ kg/m³ ]
-    cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
 
@@ -29,7 +27,7 @@ Optional input values (to include a heat source):
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
-    Qₛ           : Shear heating source term [ Pa/s ]
+    Qₛ           : Shear heating source term [ W/m³ ]
 
 """
 function ForwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC; 
@@ -108,7 +106,7 @@ Optional input values:
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
-    Qₛ           : Shear heating source term [ Pa/s ]
+    Qₛ           : Shear heating source term [ W/m³ ]
     
 """
 function ComputeResiduals2Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δ, Δt;
@@ -236,8 +234,6 @@ are directly implemented within the system of equations.
     Δx          : Horizontal grid spacing [ m ]
     Δy          : Vertical grid spacing [ m ]
     Δt          : Time step [ s ]
-    ρ           : Density [ kg/m³ ]
-    cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
     rhs         : Known right-hand side vector
@@ -248,7 +244,7 @@ Optional input values (to include a heat source):
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
-    Qₛ           : Shear heating source term [ Pa/s ]
+    Qₛ           : Shear heating source term [ W/m³ ]
 
 """
 function BackwardEuler2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K, Num; 
@@ -316,7 +312,8 @@ D.T_ex[2:end-1,2:end-1]     .=    D.T
 end
 
 """
-    CNA2Dc!(D, κ, Δx, Δy, Δt, ρ, cp, NC, BC, rhs, K1, K2, Num)
+    CNA2Dc!( D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using the Crank-Nicolson finite difference scheme for a 
@@ -332,19 +329,18 @@ are directly implemented within the system of equations.
     Δx          : Horizontal grid spacing [ m ]
     Δy          : Vertical grid spacing [ m ]
     Δt          : Time step [ s ]
-    ρ           : Density [ kg/m³ ]
-    cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
     rhs         : Known right-hand side vector
     K1          : Coefficient matrix in sparse format for the unknown temperature
-    K1          : Coefficient matrix in sparse format for the known temperature
+    K2          : Coefficient matrix in sparse format for the known temperature
     Num         : Tuple or structure containing the global centroid numbering
 
 Optional input values (to include a heat source): 
     Q           : Volumetric heat production rate [ W/m^3 ]
     ρ₀          : Reference density [ kg/m^3 ]
     cp          : Specific heat capacity [ J/kg/K ]
+    Qₛ           : Shear heating source term [ W/m³ ]
 """
 function CNA2Dc!(D, κ, Δx, Δy, Δt, NC, BC, rhs, K1, K2, Num; 
                 Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0, Qₛ = zeros(NC...) )
@@ -443,7 +439,8 @@ D.T_ex[2:end-1,2:end-1]     .=    D.T
 end
 
 """
-    ADI2Dc!(T, κ, Δx, Δy, Δt, ρ, cp, NC, BC)
+    ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
+                Q = zeros(NC...), ρ₀ = 3300.0, cp = 1200.0 )
 
 Solves the two dimensional heat diffusion equation assuming constant thermal 
 parameters using the alternating-direction implicit finite difference scheme for a 
@@ -460,8 +457,6 @@ are directly implemented within the system of equations.
     Δx          : Horizontal grid spacing [ m ]
     Δy          : Vertical grid spacing [ m ]
     Δt          : Time step [ s ]
-    ρ           : Density [ kg/m³ ]
-    cp          : Specific heat capacity [ J/kg/K ]
     NC          : Tuple containing the numer of centroids in x- and y-direction
     BC          : Tuple for the boundary condition
 
@@ -662,7 +657,8 @@ end
 # Time-dependent solvers, variable thermal parameters =================== #
 # ======================================================================= #
 """
-    ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0)
+    ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;
+                C = 0, Qₛ = 0.0)
 
 Function to calculate the residual of the two dimensional heat diffusion equation assuming 
 variable thermal parameters and radiogenic heating only. The residual is required for 

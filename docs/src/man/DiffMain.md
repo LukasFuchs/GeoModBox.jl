@@ -76,11 +76,11 @@ Currently, Dirichlet and Neumann boundary conditions are supported. Implementati
 
 The following example scripts demonstrate the application of the diffusion solvers:
 
-- [1-D oceanic geotherm](./examples/OceanicGeotherm.md)
-- [1-D continental geotherm](./examples/ContinentalGeotherm.md)
-- [Comparison of FD schemes on a Gaussian anomaly](./examples/GaussianDiffusion1D.md)
-- [2-D resolution test with Gaussian anomaly](./examples/GaussianDiffusion2D.md)
-- [2-D Poisson equation resolution test](./examples/PoissonRestest.md)
+- [1-D oceanic geotherm](./examples/Diffusion/OceanicGeotherm.md)
+- [1-D continental geotherm](./examples/Diffusion/ContinentalGeotherm.md)
+- [Comparison of FD schemes on a Gaussian anomaly](./examples/Diffusion/GaussianDiffusion1D.md)
+- [2-D resolution test with Gaussian anomaly](./examples/Diffusion/GaussianDiffusion2D.md)
+- [2-D Poisson equation resolution test](./examples/Diffusion/PoissonRestest.md)
 
 Additional examples can be found in the full  
 [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
@@ -118,8 +118,8 @@ Other advection schemes are implemented in
 
 ## Examples
 
-- [2-D advection with constant velocity field](./examples/Advection2D.md)
-- [Resolution test of 2-D advection](./examples/AdvectionRestest2D.md)
+- [2-D advection with constant velocity field](./examples/Advection/.md)
+- [Resolution test of 2-D advection](./examples/Advection/AdvectionRestest2D.md)
 
 
 ## Exercises
