@@ -7,7 +7,7 @@ This example evaluates the accuracy of the advection solvers implemented for two
 - semi-lagrangian 
 - tracers
 
-The first three solvers are implemented such that any property defined on the centroids (including ghost nodes) can be advected using interpolated centroid velocities from the staggered grid. Tracers are used to advect temperature. The temperature is advected by calculating the temperature increment between the new and the previous grid-based temperature field. The increment is then interpolated from the grid to the markers and added to the marker temperatures. The temperature at the centroids is subsequently computed using an arithmetic averaging scheme. For more implementation details please see the [documentation](../AdvectMain.md).
+The first three solvers can advect any property defined at the cell centroids, including the corresponding extended field containing ghost nodes. For this purpose, the staggered velocity components are interpolated to the cell centroids. Tracers are used to advect temperature. Changes in the grid-based temperature field are transferred to the tracers by calculating the temperature increment between the current and previous grid fields. This increment is interpolated to the tracers and added to their temperatures. The increment is then interpolated from the grid to the markers and added to the marker temperatures. The temperature at the centroids is subsequently computed using an arithmetic averaging scheme. For more implementation details please see the [documentation](../AdvectMain.md).
 
 The initial temperature condition can be defined using one of the following anomalies: 
 
@@ -22,23 +22,23 @@ Two different velocity fields can be used as initial conditions:
 - a rigid body rotation 
 - an analytical shear cell velocity
 
-The second velocity field is primarily intended for testing but may also serve as an initial condition in thermal convection problems. 
+The shear-cell velocity field is primarily intended for testing advection schemes, but it may also be used as an analytical initial condition for thermal-convection problems.
 
-In this example, rigid body rotation is the preferred initial velocity condition. Rigid body rotation provides a useful benchmark for testing advection scheme accuracy, as it applies pure rotation, displacing the anomaly without deformation. Thus, the shape and intensity of the anomaly should be the same as in the initial condition. Any deviation from the initial condition indicates either numerical diffusion (as in the upwind method) or interpolation error, particularly for sharp gradients. 
+In this example, rigid body rotation is the preferred initial velocity condition. Rigid body rotation provides a useful benchmark for testing advection scheme accuracy, as it applies pure rotation, displacing the anomaly without deformation. After one complete revolution, the shape and amplitude of the anomaly should ideally match the initial condition. Any deviation from the initial condition indicates either numerical diffusion (as in the upwind method) or interpolation error, particularly for sharp gradients. 
 
-![APIni](../../../assets/Advection_SetUp.png)
+![APIni](../../../assets/examples/Advection/Advection_SetUp.png)
 
-**Figure 1. Rigid Body Rotation.** Initial setup for a rigid body rotation with a circular (dashed line) or rectangular (solid line) anomaly. The velocity (gray arrows) within the square model domain is set to zero outside the inner circle area (gray shaped) to avoid boundary effects. 
+**Figure 1. Rigid Body Rotation.** Initial configuration for rigid-body rotation with either a circular anomaly (dashed outline) or a rectangular anomaly (solid outline). The velocity field, indicated by the gray arrows, is set to zero outside the inner circular region shown in gray to minimize boundary effects.
 
-**Initial Velocity Condtion**
+**Initial Velocity Condition**
 
-The velocity is assumed to be constant and calculated on the staggered grid. For advection, the velocity on the cenroids is used, except for the tracers. The analytical velocity for the here given velocity fields is given as
+The velocity is assumed to be constant and calculated on the staggered grid. For advection, the velocity on the cendroids is used, except for the tracers. The analytical velocity for the here given velocity fields is given as
 
 **Rigid Body Rotation**
 
 $\begin{equation}\begin{split}
 v_x & = \frac{y_c-\frac{H}{2}}{H}, \\
-v_y & = -\frac{x_c-\frac{L}{2}}{L},
+v_y & = -\frac{x_c-\frac{L}{2}}{H},
 \end{split}\end{equation}$
 
 and
@@ -62,7 +62,7 @@ using Base.Threads
 using Printf, TimerOutputs, LaTeXStrings, Measures
 ```
 
-In the following one can define the advection scheme as well as the initial conditions. Additional some plot parameters are defined in the very beginning as well. 
+In the following one can define the advection scheme as well as the initial conditions. Additionally, several plotting parameters are defined in the very beginning as well. 
 
 ```Julia
 @printf("Running on %d thread(s)\n", nthreads())
@@ -72,11 +72,11 @@ save_fig    =   1
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) markers
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
-#   1) circle, 2) gaussian, 3) block
+#   1) circle, 2) gaussian, 3) block, 4) linear
 # Velocity ---
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
@@ -91,7 +91,7 @@ Pl  =   (
 # -------------------------------------------------------------------- #
 ```
 
-Now, one can define the geometry of the squared model domain. 
+Now, one can define the geometry of the square model domain. 
 
 ```Julia
 # Model Constants ==================================================== #
@@ -104,7 +104,7 @@ M   =   (
 # -------------------------------------------------------------------- #
  ``` 
 
-In the following the numerical grid and their coordinates are defined. 
+In the following the numerical grid and its coordinates are defined. 
 
  ```Julia
 BC  =   ()  # dummy
@@ -150,7 +150,7 @@ y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
 ```
 
-To visualize the result, the path and name for the gif animation is set. Additional, the memory for the required data fields is initialized. 
+To visualize the result, the path and filename for the GIF animation are defined. Additional, the memory for the required data fields is initialized. 
 
 ```Julia
 # Animationsettings ================================================== #
@@ -180,7 +180,7 @@ D       =   (
 # -------------------------------------------------------------------- #
 ```
 
-Now, one can calculate the initial conditions. Here, the build-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentaion](../Ini.md). Following the velocity initialization, one can caluclate the velocity on the centroids. 
+Now, one can calculate the initial conditions. Here, the built-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentation](../Ini.md). Following the velocity initialization, one can calculate the velocity on the centroids. 
 
 ```Julia
 # Initial Conditions ================================================= #
@@ -205,7 +205,7 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-Now, one needs to define the time parameter. Here, the maximum time is set such that the one full rotation of the anomaly is achieved. 
+Now, one needs to define the time parameter. Here, the maximum simulation time is chosen such that the anomaly completes one full rotation. 
 
 ```Julia
 # Time =============================================================== #
@@ -221,7 +221,7 @@ nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
 ```
 
-In case tracer are required one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
+If tracer are used one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
 
 ```Julia
 # Tracer Advection =================================================== #
@@ -307,9 +307,9 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-![APIniPlot](../../../assets/AdvIniSetup.svg)
+![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg)
 
-**Figure 2. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature field is normalized by its maximum value so that the anomaly intensity equals one. 
+**Figure 2. Initial condition.** Initial rigid-body rotation setup with a circular temperature anomaly. The temperature is normalized by its initial maximum value, such that the maximum anomaly temperature equals one. 
 
 Now, one can start the time loop and the advection. 
 
@@ -325,7 +325,7 @@ for i=2:nt
     elseif FD.Method.Adv==:slf
         slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:semilag
-        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
+        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxc,D.vyc,x,y,T.Δ[1])
     elseif FD.Method.Adv==:markers
         @. ΔT_grid     =   D.T_ex - D.Told_ex
         @threads for k = 1:nmark
@@ -395,7 +395,7 @@ end # End Time Loop
 # -------------------------------------------------------------------- #
 ```
 
-In the end, the gif animation is generated. 
+In the end, the GIF animation is generated. 
 
 ```Julia
 # Save Animation ===================================================== #
@@ -409,13 +409,10 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-![APup_ani](../../../assets/2D_advection_circle_RigidBody_upwind_100_100_nth_1.gif)
+![APup_ani](../../../assets/examples/Advection/2D_advection_circle_RigidBody_upwind_100_100_nth_1.gif)
 
 **Figure 3. Rigid Body Rotation using the Upwind Scheme.**
 
-![APtracer_ani](../../../assets/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif)
+![APtracer_ani](../../../assets/examples/Advection/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif)
 
-**Figure 4. Rigid Body Rotation using Tracers.**  
-Left: Temperature field interpolated from tracers onto the centroids.  
-Right: Tracer density per cell.  
-The simulation was performed on a single CPU. 
+**Figure 4. Rigid Body Rotation using Tracers.** Left: Temperature field interpolated from tracers onto the centroids. Right: Tracer density per cell. The simulation was performed using a single CPU thread. 

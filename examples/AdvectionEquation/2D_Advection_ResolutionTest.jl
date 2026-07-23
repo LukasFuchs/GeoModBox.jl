@@ -4,12 +4,6 @@ using GeoModBox.InitialCondition, GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, TimerOutputs, LaTeXStrings, Measures
 
-@doc raw"""
-    Advection_2D_ResTest()
-
-...
-
-"""
 function Advection_2D_ResTest()
 to      =   TimerOutput()
 @printf("Running on %d thread(s)\n", nthreads())
@@ -127,7 +121,6 @@ for m = 1:ns # Loop over advection schemes
             wtv     =   zeros(Float64,(NV...)),
             Tmax    =   [0.0],
             Tmin    =   [0.0],
-            Tmean   =   [0.0],
         )
         # Initial Condition ========================================== #
         @timeit to "IniCondition" begin
@@ -138,7 +131,7 @@ for m = 1:ns # Loop over advection schemes
         end
         D.Tmax[1]   =   maximum(D.T_ex)
         D.Tmin[1]   =   minimum(D.T_ex)
-        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+        # D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
         # Velocity ---
         IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
         # Get the velocity on the centroids ---
@@ -217,7 +210,6 @@ for m = 1:ns # Loop over advection schemes
                     colorbar=true,clims=(0.0, 18.0),
                     layout=(1,2),subplot=2)
         else
-        # end
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
                     xlabel= L"x", ylabel= L"z", 
@@ -248,7 +240,7 @@ for m = 1:ns # Loop over advection schemes
             elseif FD.Method.Adv == "slf"
                 slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "semilag"
-                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
+                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxc,D.vyc,x,y,T.Δ[1])
             elseif FD.Method.Adv == "markers"
                 @. ΔT_grid     =   D.T_ex - D.Told_ex
                 @threads for k = 1:nmark
@@ -262,8 +254,6 @@ for m = 1:ns # Loop over advection schemes
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
                 D.T     .=  D.T_ex[2:end-1,2:end-1]
             end
-            display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
-
             # Plot Solution ---
             if mod(i,10) == 0 || i == nt
                 if FD.Method.Adv == "markers"
@@ -286,7 +276,6 @@ for m = 1:ns # Loop over advection schemes
                             colorbar=true,clims=(0.0, 18.0),
                             layout=(1,2),subplot=2)
                 else
-                # end
                     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                             color=:thermal, colorbar=true, aspect_ratio=:equal, 
                             xlabel= L"x", ylabel= L"z", 
@@ -351,7 +340,6 @@ for m = 1:ns # Loop over advection schemes
                 xf      = :auto
                 ylab    = ""
                 yf      =  _ -> ""
-                xlab = L"x"
             end
             heatmap!(p3,x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
@@ -376,13 +364,13 @@ for m = 1:ns # Loop over advection schemes
 
     end
 end # End method loop
-# add final position plot here --- for all methods
+
 end
 if save_fig == 1 || save_fig == -1
     savefig(p3,string("./examples/AdvectionEquation/",
                         "Results/2D_advection_",Ini.T,"_",
                         Ini.V,"_SummaryFigure.png"))
-else
+elseif save_fig == 0
     display(p3)
 end
 q   =   plot(0,0,layout=(1,3))
@@ -393,7 +381,8 @@ for m=1:ns
                 xlims=(minimum(St.nxny), maximum(St.nxny)), 
                 ylims=(1e-15, 1e4), 
                 xlabel= L"\frac{1}{nx \cdot ny}",
-                ylabel= L"ΔT[%]",layout=(1,3),
+                ylabel = L"\varepsilon_{T_{\max}}\ [\%]",
+                layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
@@ -411,7 +400,6 @@ for m=1:ns
                 xlabel= L"\frac{1}{nx \cdot ny}",
                 ylabel= L"⟨\ T\ ⟩",
                 subplot=3)
-    display(q)
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure =================================================== #
@@ -419,6 +407,8 @@ if save_fig == 1 || save_fig == -1
     savefig(q,string("./examples/AdvectionEquation/",
                         "Results/2D_advection_",Ini.T,"_",
                         Ini.V,"_ResTest.png"))
+elseif save_fig == 0
+    display(q)
 end
 # --------------------------------------------------------------------- #
 display(to)

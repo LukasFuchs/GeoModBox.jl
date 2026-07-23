@@ -116,6 +116,26 @@ Example:
                 end
             end
         end
+    elseif type == :blankenbach
+        Ttop = Ta
+        Tbot = Tb
+        H    = M.ymax - M.ymin
+        L    = M.xmax - M.xmin
+        A    = 0.01
+
+        @threads for i = 1:NC.x+2
+            for j = 1:NC.y+2
+                xn = (x.ce[i] - M.xmin) / L
+                zn = (y.ce[j] - M.ymin) / H
+
+                Tlinear = Tbot + (Ttop - Tbot) * zn
+
+                D.T_ex[i,j] =
+                    Tlinear +
+                    A * (Tbot - Ttop) *
+                    cos(π*xn) * sin(π*zn)
+            end
+        end
     end
     # Assign temperature to regular field ---
     D.T         .=  D.T_ex[2:end-1,2:end-1]

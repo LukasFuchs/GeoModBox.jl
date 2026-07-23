@@ -179,10 +179,10 @@ Function to count the marker per cell.
 
 Example: 
 
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV;verbose = false)
 
 """
-@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+@views function CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV;verbose=false)
      # Disable markers outside of the domain
      @threads for k=1:nmark
         if (Ma.x[k]<M.xmin || Ma.x[k]>M.xmax || Ma.y[k]<M.ymin || Ma.y[k]>M.ymax) 
@@ -200,7 +200,7 @@ Example:
     for ith=1:nthreads()
         nmark_out += nmark_out_th[ith]
     end
-    @printf("%d markers out\n", nmark_out[1])
+    verbose && @printf("%d markers out\n", nmark_out[1])
 
     # Initialize marker per cell per thread array ---
     @threads for j = 1:NC.y

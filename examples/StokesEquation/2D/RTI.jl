@@ -8,10 +8,74 @@ using Base.Threads
 using Printf, LinearAlgebra
 using TimerOutputs
 
+function UpdateRheo(D,ρ,η,avg_p,avg_v)
+
+    # Density ---
+    @. D.ρ     =   ρ[1]*(1.0 - D.p) + ρ[2]*D.p
+    D.ρe[2:end-1,2:end-1]     .=  D.ρ
+    D.ρe[1,:]     .=  D.ρe[2,:]
+    D.ρe[end,:]   .=  D.ρe[end-1,:]
+    D.ρe[:,1]     .=  D.ρe[:,2]
+    D.ρe[:,end]   .=  D.ρe[:,end-1]
+    # Viscosity - Centroids and vertices ---
+    if avg_p ==     :arithmetic
+        @. D.ηc =   (1.0 - D.p) * η[1] + D.p * η[2]
+    elseif avg_p == :harmonic
+        @. D.ηc =   1.0 / ( (1.0 - D.p) / η[1] + D.p / η[2] )
+    elseif avg_p == :geometric
+        @. D.ηc =   η[1]^(1.0 - D.p) * η[2]^D.p
+    else
+        error("Unknown viscosity averaging: $(avg_p)")
+    end
+    # --- Extended Centroids-
+    D.ηce[2:end-1,2:end-1]     .=  D.ηc
+    D.ηce[1,:]     .=  D.ηce[2,:]
+    D.ηce[end,:]   .=  D.ηce[end-1,:]
+    D.ηce[:,1]     .=  D.ηce[:,2]
+    D.ηce[:,end]   .=  D.ηce[:,end-1]
+    # --- Vertices -
+    if avg_v == :arithmetic
+        @. D.ηv =
+            0.25*(
+                D.ηce[1:end-1,1:end-1] + 
+                D.ηce[2:end  ,1:end-1] + 
+                D.ηce[1:end-1,2:end  ] + 
+                D.ηce[2:end  ,2:end  ]
+            )
+    elseif avg_v == :harmonic
+        @. D.ηv =
+            4.0/(
+                1/D.ηce[1:end-1,1:end-1] + 
+                1/D.ηce[2:end  ,1:end-1] + 
+                1/D.ηce[1:end-1,2:end  ] + 
+                1/D.ηce[2:end  ,2:end  ]
+            )
+    elseif avg_v == :geometric
+        @. D.ηv =
+            exp(0.25*(
+                log(D.ηce[1:end-1,1:end-1]) + 
+                log(D.ηce[2:end  ,1:end-1]) + 
+                log(D.ηce[1:end-1,2:end  ]) + 
+                log(D.ηce[2:end  ,2:end  ])
+            ))
+    else
+        error("Unknown viscosity averaging: $(avg_v)")
+    end
+
+    return D
+end
+
 function RTI()
     to          =   TimerOutput()
     @timeit to "Ini" begin
-    save_fig    =   1
+    save_fig    =   0
+    # How to update the numerical nodes from the marker ---
+    # Phase ratio method --- 
+    phaseratio  =   :no
+    avg_p       =   :arithmetic
+    avg_v       =   :arithmetic
+    # Bilinear marker interpolation ---
+    avgm        =   :arith
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
     λ           =   3.0e3           #   Perturbation wavelength[ m ]
@@ -108,6 +172,8 @@ function RTI()
         ηc      =   zeros(Float64,NC...),
         ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
         ηv      =   zeros(Float64,NV...),
+        p       =   zeros(Float64,NC...),
+        p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
     )
     # ------------------------------------------------------------------- #
     # Needed for the defect correction solution ---
@@ -126,14 +192,15 @@ function RTI()
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:noslip,N=:noslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                        vyS=0.0,vyN=0.0,vxW=0.0,vxE=0.0),
     )
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
     T   =   TimeParameter(
         tmax    =   4500.0,         #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   100,             #   Maximum iterations; 50
+        itmax   =   1,             #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -165,12 +232,58 @@ function RTI()
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+    # if phaseratio == :yes
+        # Phase ---
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        D.p     .=  D.p_ex[2:end-1,2:end-1]
+        # D = UpdateRheo(D,ρ,η,avg_p,avg_v)
+        UpdateRheo(D,ρ,η,avg_p,avg_v)
+        # Store independent copies
+        ηc_phase = copy(D.ηc)
+        ηv_phase = copy(D.ηv)
+    # else
     # Interpolate from markers to cell ---
     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
     D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avgm)
     D.ηc    .=   D.ηce[2:end-1,2:end-1]
-    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avgm)
+    # end
+    
+    # Compare the two approaches
+    dp = plot(
+        layout=(2, 1),
+        size=(900, 700)
+    )
+
+    heatmap!(
+        dp,
+        x.v ./ 1e3,
+        y.v ./ 1e3,
+        log10.(ηv_phase ./ D.ηv)',
+        subplot=1,
+        xlabel="",
+        ylabel="y [km]",
+        title="",
+        xformatter=_ -> "",
+        aspect_ratio=:equal,
+        colorbar=true
+    )
+
+    heatmap!(
+        dp,
+        x.c ./ 1e3,
+        y.c ./ 1e3,
+        log10.(ηc_phase ./ D.ηc)',
+        subplot=2,
+        xlabel="x [km]",
+        ylabel="y [km]",
+        title="",
+        aspect_ratio=:equal,
+        colorbar=true
+    )
+    display(dp)
+
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
@@ -206,29 +319,36 @@ function RTI()
         end
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
                     Time[it]/(60*60*24*365.25)/1.0e6)
+        @printf("---Momentum Calculation ---\n")
         # Momentum Equation ===
         # Initial Residual ---------------------------------------------- #
         D.vx    .=  0.0
         D.vy    .=  0.0
         D.Pt    .=  1.0
         @timeit to "Solution Iteration" begin
+        # Assemble Coefficients ========================================= #
+        @timeit to "Assembly" begin
+        # K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+        Kfac    =   lu(K.cscmatrix)
+        end
         for iter=1:niter
             @timeit to "Residual" begin
             Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-            F[Num.Vx]   =   Fm.x[:]
-            F[Num.Vy]   =   Fm.y[:]
-            F[Num.Pt]   =   FPt[:]
+            F[Num.Vx]   .=   Fm.x
+            F[Num.Vy]   .=   Fm.y
+            F[Num.Pt]   .=   FPt
             @printf("||R|| = %1.4e\n", norm(F)/length(F))
             norm(F)/length(F) < ϵ ? break : nothing
             end
-            # Assemble Coefficients ========================================= #
-            @timeit to "Assembly" begin
-            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-            end
+            # # Assemble Coefficients ========================================= #
+            # @timeit to "Assembly" begin
+            # K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            # end
             # --------------------------------------------------------------- #
             # Solution of the linear system ================================= #
             @timeit to "Solution" begin
-            δx      =   - K \ F
+            δx      =   - (Kfac \ F)
             end
             # --------------------------------------------------------------- #
             # Update Unknown Variables ====================================== #
@@ -247,8 +367,8 @@ function RTI()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ---
-        @show(minimum(D.vc))
-        @show(maximum(D.vc))
+        # @show(minimum(D.vc))
+        # @show(maximum(D.vc))
         # ---
         if Time[it] >= T.tmax
             it = T.itmax
@@ -308,13 +428,20 @@ function RTI()
         @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+        if phaseratio == :yes
+            # Phase ---
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+            D = UpdateRheo(D,ρ,η,avg_p,avg_v)
+        else
         # Interpolate phase from tracers to grid ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
         D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avgm)
         D.ηc    .=   D.ηce[2:end-1,2:end-1]
-        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+            Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avgm)
         end
+        end
+        @printf("\n")
     end # End Time Loop
     end
     # Save Animation ---

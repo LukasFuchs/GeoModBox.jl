@@ -1,22 +1,19 @@
 # -------------------------------------------------------------------- #
-# Funktion zur Loesung des zweidimensionalen Advektionsproblem mit 
-# Hilfe von unterschiedlichen Methoden. Zu waehlen sind:
-#   'upwind'    - Upwind Schema
-#   'slf'       - Staggered Leaped Frog Schema
-#   'semi-lag'  - Semi-Lagrangian Schema
-#   'markers'   - Tracer Methode (vollkommen Lagrangian)
+# Two-dimensional advection solver using different numerical methods.
+# The following advection schemes are available:
+#   'upwind'    - Upwind scheme
+#   'slf'       - Staggered Leapfrog scheme
+#   'semi-lag'  - Semi-Lagrangian scheme
+#   'markers'   - Tracer method (fully Lagrangian)
 #
-# Für die Temperaturanomalie kann entweder ein rechteckiger Block 
-# gewählt werden oder eine Gausssche Temperaturverteilung:
-#   'block'     - Rechteckiger Block
-#   'gaussian'  - Gaussche Temperaturverteilung
-#   'circle'    - Kreisförmige Anomalie
+# The initial temperature anomaly can be chosen as one of the following:
+#   'block'     - Rectangular block
+#   'gaussian'  - Gaussian temperature distribution
+#   'circle'    - Circular anomaly
 #
-# Für das konstante Geschwindigkeitsfeld könne  n zwei Varianten 
-# gewählt werden:
-#   'RigidBody' - Ein Rotationsfeld mit konstanter Rotation
-#   'ShearCell' - Eine konstantes Konvektionsfeld mit Sheardeformation
-#
+# Two different constant velocity fields are available:
+#   'RigidBody' - Rigid-body rotation
+#   'ShearCell' - Analytical shear-cell velocity field
 # -------------------------------------------------------------------- #
 # Vers. 1.0 - 26.11.2024 - Julia
 # ==================================================================== #
@@ -37,11 +34,11 @@ save_fig    =   1
 # Define Numerical Scheme ============================================ #
 # Advection ---
 #   1) upwind, 2) slf, 3) semilag, 4) markers
-FD          =   (Method     = (Adv=:semilag,),)
+FD          =   (Method     = (Adv=:upwind,),)
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
 # Temperature --- 
-#   1) circle, 2) gaussian, 3) block
+#   1) circle, 2) gaussian, 3) block, 4) linear
 # Velocity ---
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
@@ -125,7 +122,7 @@ D       =   (
     wtv     =   zeros(Float64,(NV...)),
     Tmax    =   [0.0],
     Tmin    =   [0.0],
-    Tmean   =   [0.0],
+    # Tmean   =   [0.0],
 )
 # -------------------------------------------------------------------- #
 end
@@ -138,7 +135,7 @@ if FD.Method.Adv==:slf
 end
 D.Tmax[1]   =   maximum(D.T_ex)
 D.Tmin[1]   =   minimum(D.T_ex)
-D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+# D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
 # Velocity ---
 IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
 # Get the velocity on the centroids ---
@@ -200,7 +197,7 @@ end
 if FD.Method.Adv==:markers
     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
-            ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
+            ylims=(M.ymin, M.ymax),clims=clims=(D.Tmin[1] / D.Tmax[1], 1.0),
                     colorbar=true, size = (1200,600), dpi = 300,
                                         title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
                     layout=(1,2),subplot=1)
@@ -251,7 +248,7 @@ for i=2:nt
     elseif FD.Method.Adv==:slf
         slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
     elseif FD.Method.Adv==:semilag
-        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
+        semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxc,D.vyc,x,y,T.Δ[1])
     elseif FD.Method.Adv==:markers
         @. ΔT_grid     =   D.T_ex - D.Told_ex
         @threads for k = 1:nmark
@@ -273,7 +270,7 @@ for i=2:nt
         if FD.Method.Adv==:markers
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
-                    ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
+                    ylims=(M.ymin, M.ymax),clims=(D.Tmin[1] / D.Tmax[1], 1.0),
                             colorbar=true, size = (1200,600), dpi = 300,
                                                 title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
                             layout=(1,2),subplot=1)
@@ -296,7 +293,7 @@ for i=2:nt
                             title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
                             xlims=(M.xmin, M.xmax), 
                             ylims=(M.ymin, M.ymax), 
-                            clims=(0.5, 1.0),
+                            clims=clims=(D.Tmin[1] / D.Tmax[1], 1.0),
                             size = (900,900), dpi = 300,
                             guidefontsize = 20, tickfontsize = 20,
                             right_margin = 10mm,

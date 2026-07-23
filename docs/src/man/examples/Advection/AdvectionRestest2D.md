@@ -1,14 +1,22 @@
 # [Advection; Resolution Test (2D)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection_ResolutionTest.jl)
 
-This example presents a resolution test for the 2D advection schemes. The setup is the same as in the [2D advection example](Advection2D.md).
+This example presents a grid-resolution test for the two-dimensional
+advection schemes. The numerical setup is identical to that used in the
+[2D advection example](Advection2D.md).
 
-To evaluate the efficiency of each advection scheme as resolution increases, the script computes the following metrics: 
+To evaluate the accuracy and resolution dependence of each advection
+scheme, the script calculates the following diagnostic quantities:
 
-- the maximum deviation of advected temperature from the maximum initial temperature, 
-- the maximum temperature, and 
-- the mean temperature. 
+- the relative deviation of the final maximum temperature from its
+  initial value,
+- the final maximum temperature, and
+- the final spatial mean temperature.
 
-The first quantity reflects the maximum information loss due to numerical diffusion during the advection process. As the resolution increases, all metrics are expected to converge toward their respective initial values. 
+The first diagnostic measures the magnitude of the change in the maximum
+temperature during advection. A decrease generally reflects numerical
+diffusion, whereas an increase may indicate numerical overshooting or
+interpolation errors. With increasing grid resolution, the diagnostic
+quantities should approach their corresponding reference values.
 
 --- 
 
@@ -25,10 +33,12 @@ using Printf, TimerOutputs, LaTeXStrings, Measures
 The following section defines the maximum resolution and the advection schemes to be tested. The maximum resolution is given by: 
 
 $\begin{equation}
-nx_{max} = nrnxny*nx_{ini}, 
+n_{x,\max} = n_{\mathrm{res}}\,n_{x,0},
 \end{equation}$
 
-where $nrnxny$ is a simple multiplication factor and $nx_{ini} = 20$ the initial resolution. The resolution in the vertical direction is set equal to that in the horizontal direction. 
+where $n_{\mathrm{res}}$ is the number of tested resolution levels and
+$n_{x,0}=20$ is the resolution increment. The vertical resolution is set
+equal to the horizontal resolution, $n_y=n_x$. 
 
 ```Julia
 @printf("Running on %d thread(s)\n", nthreads())
@@ -40,13 +50,15 @@ ns          =   size(Scheme,1)
 save_fig    =   -1
 ```
 
-The variable `save_fig` controls the plotting output of the script: 
+The variable `save_fig` controls the plotting and file output:
 
-- `save_fig = -1` -> only plot the final result
-- `save_fig = 0` -> plot every figure (Not recommended for large resolutions!)
-- `save_fig = 1` -> save the gif animation for each model
+- `save_fig = -1`: save only the final summary figures;
+- `save_fig = 0`: display the generated figures without saving animations;
+- `save_fig = 1`: save the GIF animation for every scheme and resolution,
+  as well as the final summary figures.
 
-For every other value, no plot is shown. 
+Generating all animations is computationally expensive and is therefore
+not recommended for large resolution tests.
 
 Next, initialize the statistical parameters used for the resolution analysis. 
 
@@ -176,14 +188,14 @@ To enable visualization, the output path and filename for the animation are defi
             wtv     =   zeros(Float64,(NV...)),
             Tmax    =   [0.0],
             Tmin    =   [0.0],
-            Tmean   =   [0.0],
         )
 ```
 
-Now, one can calculate the initial conditions. Here, the build-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentaion](../Ini.md). Following the velocity initialization, one can caluclate the velocity on the centroids. 
+Now, one can calculate the initial conditions. Here, the built-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more information please refer to the [documentation](../../Ini.md). Following the velocity initialization, one can calculate the velocity on the centroids. 
 
 ```Julia
         # Initial Condition ========================================== #
+        @timeit to "IniCondition" begin
         # Temperature ---
         IniTemperature!(Ini.T,M,NC,D,x,y)
         if FD.Method.Adv == "slf"
@@ -191,7 +203,7 @@ Now, one can calculate the initial conditions. Here, the build-in functions for 
         end
         D.Tmax[1]   =   maximum(D.T_ex)
         D.Tmin[1]   =   minimum(D.T_ex)
-        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+        # D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
         # Velocity ---
         IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
         # Get the velocity on the centroids ---
@@ -202,10 +214,11 @@ Now, one can calculate the initial conditions. Here, the build-in functions for 
             end
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+        end
         # ------------------------------------------------------------ #
 ```
 
-Now, one needs to define the time parameter. Here, the maximum time is set such that the one full rotation of the anomaly is achieved. 
+Now, one needs to define the time parameter. Here, the maximum time is set ssuch that the anomaly completes one full rotation. 
 
 ```Julia
         # Time ======================================================= #
@@ -221,7 +234,7 @@ Now, one needs to define the time parameter. Here, the maximum time is set such 
         # ------------------------------------------------------------ #
 ```
 
-In case tracer are required one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
+If tracer are used one needs to initialize them in the following. For more information please refer to the [documentation](../../Ini.md).
 
 ```Julia
         # Tracer Advection =========================================== #
@@ -285,7 +298,6 @@ Let's visualize the initial condition first.
                     colorbar=true,clims=(0.0, 18.0),
                     layout=(1,2),subplot=2)
         else
-        # end
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
                     xlabel= L"x", ylabel= L"z", 
@@ -311,9 +323,9 @@ Let's visualize the initial condition first.
         # ------------------------------------------------------------ #
 ```
 
-![APIniPlot](../../../assets/AdvIniSetup.svg)
+![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg)
 
-**Figure 1. Initial condition.** Initial rigid body rotation setup including a circular shaped temperature anomaly. The temperature field is normalized by its maximum value so that the anomaly intensity equals one. 
+**Figure 1. Initial condition.** Initial rigid-body rotation setup with a circular temperature anomaly. The temperature is normalized by its initial maximum value, such that the maximum temperature equals one. 
 
 Now, one can start the time loop and the advection. 
 
@@ -325,7 +337,7 @@ Now, one can start the time loop and the advection.
             elseif FD.Method.Adv == "slf"
                 slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "semilag"
-                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
+                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxc,D.vyc,x,y,T.Δ[1])
             elseif FD.Method.Adv == "markers"
                 @. ΔT_grid     =   D.T_ex - D.Told_ex
                 @threads for k = 1:nmark
@@ -339,8 +351,6 @@ Now, one can start the time loop and the advection.
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
                 D.T     .=  D.T_ex[2:end-1,2:end-1]
             end
-            display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
-
             # Plot Solution ---
             if mod(i,10) == 0 || i == nt
                 if FD.Method.Adv == "markers"
@@ -363,7 +373,6 @@ Now, one can start the time loop and the advection.
                             colorbar=true,clims=(0.0, 18.0),
                             layout=(1,2),subplot=2)
                 else
-                # end
                     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                             color=:thermal, colorbar=true, aspect_ratio=:equal, 
                             xlabel= L"x", ylabel= L"z", 
@@ -391,10 +400,10 @@ Now, one can start the time loop and the advection.
                 # Update old temperature field ---
                 @. D.Told_ex    =   D.T_ex
             end
-        end # End Time loop    
+        end # End Time loop   
 ```
 
-If wanted, a gif animation is generated in the following. 
+If requested, a GIF animation is generated in the following. 
 
 ```Julia
         # Save Animation ============================================= #
@@ -433,7 +442,6 @@ If wanted, a gif animation is generated in the following.
                 xf      = :auto
                 ylab    = ""
                 yf      =  _ -> ""
-                xlab = L"x"
             end
             heatmap!(p3,x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
@@ -460,14 +468,14 @@ If wanted, a gif animation is generated in the following.
 end # End method loop
 ```
 
-Let's visualize and store the statistical parameters. 
+Finally, the diagnostic quantities are visualized and stored . 
 
 ```Julia
 if save_fig == 1 || save_fig == -1
     savefig(p3,string("./examples/AdvectionEquation/",
                         "Results/2D_advection_",Ini.T,"_",
                         Ini.V,"_SummaryFigure.png"))
-else
+elseif save_fig == 0
     display(p3)
 end
 q   =   plot(0,0,layout=(1,3))
@@ -478,7 +486,8 @@ for m=1:ns
                 xlims=(minimum(St.nxny), maximum(St.nxny)), 
                 ylims=(1e-15, 1e4), 
                 xlabel= L"\frac{1}{nx \cdot ny}",
-                ylabel= L"ΔT[%]",layout=(1,3),
+                ylabel = L"\varepsilon_{T_{\max}}\ [\%]",
+                layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
@@ -496,7 +505,6 @@ for m=1:ns
                 xlabel= L"\frac{1}{nx \cdot ny}",
                 ylabel= L"⟨\ T\ ⟩",
                 subplot=3)
-    display(q)
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure =================================================== #
@@ -504,15 +512,15 @@ if save_fig == 1 || save_fig == -1
     savefig(q,string("./examples/AdvectionEquation/",
                         "Results/2D_advection_",Ini.T,"_",
                         Ini.V,"_ResTest.png"))
+elseif save_fig == 0
+    display(q)
 end
-# --------------------------------------------------------------------- #
 ```
 
-![Summary](../../../assets/2D_advection_circle_RigidBody_SummaryFigure.png)
+![Summary](../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png)
 
-**Figure 2. Summary.** Final position of each advection scheme for a resolution of 100x100 cells.  
+**Figure 2. Summary.** Final temperature distribution after one complete revolution for each advection scheme at a resolution of 100 × 100 cells.
 
-![AdvResFinal](../../../assets/2D_advection_circle_RigidBody_ResTest.png)
+![AdvResFinal](../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png)
 
-**Figure 3. Advection Resolution Test.**  
-Deviation, maximum, and mean temperature for each advection scheme across increasing grid resolutions. 
+**Figure 3. Advection Resolution Test.** Relative deviation of the maximum temperature, final maximum temperature, and spatial mean temperature for the four advection schemes as functions of grid resolution.

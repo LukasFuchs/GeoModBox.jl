@@ -1,3 +1,0 @@
-# [Mixed Heated Convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/MixedHeated.jl) 
-
-... *tba* ...
