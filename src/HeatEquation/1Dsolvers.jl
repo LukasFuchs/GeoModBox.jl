@@ -42,8 +42,8 @@ first-order accurate in time. The timestep must therefore satisfy the
 diffusive stability condition.
 
 After each timestep, the updated centroid temperatures are copied back to
-the interior of `explicit.T_ex`. The ghost-node values must be updated again
-before the next timestep.
+the interior of `explicit.T_ex`. The ghost-node values are updated again 
+when the routine is called for the next timestep.
 """
 function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC; 
                                 Q = zeros(nc), ρ=3200.0, cp=1200.0 )

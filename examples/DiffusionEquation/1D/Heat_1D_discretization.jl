@@ -14,7 +14,6 @@ to  =   TimerOutput()
 L           =   100.0               # Length [ m ]
 Trock       =   300.0               # Background temperature [ C ]
 Tmagma      =   1200.0              # Dike temperature [ C ]
-W           =   5.0                 # Dike width [m]
 κ           =   1.0e-6              # Diffusivity [ m²/s ]
 # ----------------------------------------------------------------------- #
 # Numerical Parameters -------------------------------------------------- #

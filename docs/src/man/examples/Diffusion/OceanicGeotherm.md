@@ -1,8 +1,8 @@
 # [Oceanic Geotherm](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D.jl) 
 
-The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using variable thermal properties with a conservative finite difference scheme (so far only including a radiogenic heat source). For the sake of continuity, we use the 1-D solver for variable thermal properties, even though a constant thermal conductivity is assumed in this example.
+The 1-D temperature profile of an oceanic geotherm can be calculated by solving the conductive part of the 1-D *temperature conservation equation* using the conservative finite-difference solver for spatially variable thermal properties. Although constant thermal properties are assumed in this example, the variable-property solver is used to illustrate the more general formulation. For the sake of continuity, we use the 1-D solver for variable thermal properties, even though a constant thermal conductivity is assumed in this example.
 
-In a conservative finite difference scheme for 1-D conduction, temperature is defined at the *centroids*, while vertical heat flux $q_y$ and thermal conductivity $k$ are defined at the *vertices*.
+In a conservative finite difference scheme for 1-D conduction, temperature is defined at the *centroids*, while vertical heat flux $q_y$ and thermal conductivity $k$ are defined at the *vertices*. This staggered arrangement ensures local conservation of heat by evaluating the divergence of the heat flux across the boundaries of each control volume.
 
 The 1-D temperature equation is given by: 
 
@@ -18,7 +18,7 @@ $\begin{equation}
 
 where $\rho$, $c_{p}$, $T$, $t$, $k$, $H$, $y$, and $nv$ denote the density [kg/m³], the specific heat capacity [J/kg/K], the temperature [K], the time [s], the thermal conductivity [W/m/K], the heat generation rate per mass [W/kg], the depth [m], and the number of vertices, respectively. 
 
-For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme, please see the [documentation](../DiffOneD.md).
+For more details on how to discretize the equation using an explicit, forward Euler finite difference scheme, please see the [documentation](../../theory/DiffOneD.md).
 
 An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for variable thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/OceanicGeotherm_1D_dc.jl).
 
@@ -35,7 +35,7 @@ Let's start with the definition of the geometrical, numerical, and physical cons
 
 ```Julia 
 # Constants --------------------------------------------------------- #
-H           =   200e3               #   Hight of the model [ m ]
+H           =   200e3               #   Height of the model [ m ]
 nc          =   200                 #   Number of central grid points    
 Δy          =   H/nc                #   Grid resolution
 
@@ -55,13 +55,13 @@ Py  =   (
 In the following, one needs to define the initial and boundary condition: 
 
 1. Temperature at the surface and bottom.
-2. Linear increasing temperature profile assuming a certain adiabatic gradient and potential mantle temperature.
+2. Linearly increasing temperature profile assuming a certain adiabatic gradient and potential mantle temperature.
 
 
 ```Julia
 # Initial Condition ------------------------------------------------- #
 T   =   (
-    Tpot    =   1315 + 273.15,      #   Potential temperautre [ K ]
+    Tpot    =   1315 + 273.15,      #   Potential temperature [ K ]
     ΔTadi   =   0.5,                #   Adiabatic temperature gradient [ K/km ]
     Ttop    =   273.15,             #   Surface temperature [ K ]
     T_ex    =   zeros(nc+2,1),    
@@ -78,7 +78,7 @@ T.T_ex[2:end-1]     .=   T.T
 # ------------------------------------------------------------------- #
 ```
 
-Either *Dirichlet* or *Neumann* thermal boundary conditions can be applied at the surface and bottom. 
+Either *Dirichlet* or *Neumann* thermal boundary conditions can be applied at the surface and bottom. Dirichlet boundary conditions are used throughout this example.
 
 ```Julia 
 # Boundary conditions ----------------------------------------------- #
@@ -86,7 +86,7 @@ BC      =   (
     type    = (N=:Dirichlet, S=:Dirichlet),
     val     = (N=T.Ttop[1],S=T.Tbot[1])
 )
-# If Neumann boundary conditions are choosen, the following values result in the given heatflux for the given thermal conductivity k. 
+# If Neumann boundary conditions are chosen, the following values result in the given heatflux for the given thermal conductivity k. 
 # S      =   -0.03;          # c     =   -k/q -> 90 mW/m^2
 # N      =   -0.0033;        # c     =   -k/q -> 10 mW/m^2
 # ------------------------------------------------------------------- #
@@ -96,7 +96,7 @@ Next, define the multiplicative factor `fac` for the *diffusion stability criter
 
 ```Julia
 # Time stability criterion ------------------------------------------ #
-fac     =   0.8                 #   Courant criterion
+fac     =   0.8                 
 tmax    =   60                  #   Lithosphere age [ Ma ]
 tsca    =   60*60*24*365.25     #   Seconds per year
 
@@ -104,7 +104,7 @@ age     =   tmax*1e6*tsca        #   Age in seconds
 # ------------------------------------------------------------------- #
 ```
 
-To verify the initial and boundary conditions by plotting the temperature profile. 
+The initial temperature profile is plotted to verify that the initial and boundary conditions have been specified correctly.
 
 ```Julia
 # Plot Initial condition -------------------------------------------- #
@@ -118,11 +118,11 @@ display(q)
 # ------------------------------------------------------------------- #
 ```
 
-![OG1D_ini](../../../assets/OG1D_iniT.svg)
+![OG1D_ini](../../../assets/examples/Diffusion/OG1D_iniT.svg)
 
 **Figure 1. Initial temperature profile.**
 
-Since a thermal solver for variable thermal properties is used, one needs to expand the scalar to a vector with the dimensions of the number of centroids ```nc```. Additionally, the thermal diffusivity $\kappa$ and initialize the vertical heat flux ```q``` need to be defined. 
+Although this example assumes constant material properties, the variable-property solver expects density, heat capacity, thermal conductivity, and radiogenic heat production to be defined as spatial fields. Therefore, the scalar material properties are expanded to vectors with the appropriate dimensions. The maximum thermal diffusivity is computed conservatively from the largest thermal conductivity and the smallest density and heat capacity. This value is used only for determining a stable explicit time step.
 
 ```Julia
 # Setup Fields ------------------------------------------------------ #
@@ -161,7 +161,7 @@ time    =   zeros(1,nit)            #   Time array
 
 With all parameters and constants defined, the equation can now be solved the 1-D temperature equation for each time step in a ```for``` loop. 
 
-The temperature conservation equation is solved via the function ```ForwardEuler1D!()```, which updates the temperature profile `T.T` for each time step using the extended temperature field ```T.T_ex```, which include the ghost nodes. The temperature profile is plotted for a certain time.  
+The temperature conservation equation is solved via the function ```ForwardEuler1D!()```, which updates the temperature profile `T.T` for each time step using the extended temperature field ```T.T_ex```, which include the ghost nodes. The temperature profile is plotted every 5 Myr to illustrate the thermal evolution of the oceanic lithosphere.  
 
 ```Julia
 # Calculate 1-D temperature profile --------------------------------- #
@@ -188,14 +188,14 @@ end
 # ------------------------------------------------------------------- #
 ```
 
-![OG1D_evolve](../../../assets/OG1D_evolve.svg)
+![OG1D_evolve](../../../assets/examples/Diffusion/OG1D_evolve.svg)
 
 **Figure 2. Evolution of the temperature profile with depth in 5 Ma steps.**
 
-For the final time step, a depth profile for the vertical heat flux is calculated. Therefore, one needs to update the temperature at the ghost nodes to calculate the heat flux at the boundary. 
+Since the heat flux is defined at the grid vertices, the ghost-node temperatures are first updated according to the prescribed boundary conditions before Fourier's law is evaluated. 
 
 ```Julia
-# Calculate heaf flow ----------------------------------------------- #
+# Calculate heat flow ----------------------------------------------- #
 # South ---
 T.T_ex[1]   =   (BC.type.S==:Dirichlet) * (2 * BC.val.S - T.T_ex[2]) + 
                 (BC.type.S==:Neumann) * (T.T_ex[2] - BC.val.S*Δy)
@@ -209,7 +209,7 @@ end
 # ------------------------------------------------------------------- #
 ```
 
-Finally, compute the temperature profile for an oceanic geotherm using the analytical expression of an infinite half-space cooling model for a certain age. The analytical solution is shown in the final figure, alongside the final numerical temperature profile and the heat flux profile. 
+Finally, compute the temperature profile for an oceanic geotherm using the analytical solution of the infinite half-space cooling model (HSCM) for a certain age. The numerical solution is compared with the analytical HSCM solution, providing a useful verification of the numerical implementation. The initial condition is a linear adiabatic profile and the HSCM solution is superimposed onto this reference profile.
 
 ```Julia
 # Plot -------------------------------------------------------------- #
@@ -240,6 +240,6 @@ savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
 savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
 ```
-![OG1D_final](../../../assets/OG1D_final.svg)
+![OG1D_final](../../../assets/examples/Diffusion/OG1D_final.svg)
 
-**Figure 3. Final temperature and heat flux profiles.**
+**Figure 3.** Comparison between the numerical and analytical half-space cooling solutions together with the corresponding vertical heat-flux profile.

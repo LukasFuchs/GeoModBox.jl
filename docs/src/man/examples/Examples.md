@@ -48,14 +48,14 @@ In the following, the runtime for each of the provided examples is listed as a r
 |                                   | 2) save_fig = -1: 1109 s                              |
 | **Heat Diffusion ===**                                                                    |
 | *1D* ---                                                                                  |
-| ContinentalGeotherm_1D.jl         |                                                 | 
-| Heat_1D_discretization.jl         |                                                 |
-| OceanicGeotherm_1D.jl             |                                                 |
+| ContinentalGeotherm_1D.jl         | 7.22 s                                                | 
+| Heat_1D_discretization.jl         | 3.66 s                                                |
+| OceanicGeotherm_1D.jl             | 691 ms                                                |
 | *2D* ---                                                                                  |
-| BackwardEuler.jl                  |                                                 | 
-| ForwardEuler.jl                   |                                                 |
-| Gaussian_Diffusion.jl             |                                                  | 
-| Poisson_RestTest.jl               |                                                |
+| BackwardEuler.jl                  | 14.4 s                                                | 
+| ForwardEuler.jl                   | 5.08 s                                                |
+| Gaussian_Diffusion.jl             | 422 s                                                 | 
+| Poisson_RestTest.jl               | 23.5 s                                                |
 | Poisson_variable_k.jl             |                                                 |
 | **Thermal Convection Models ===**                                                         |
 | BottomHeated.jl                   |                                                 |

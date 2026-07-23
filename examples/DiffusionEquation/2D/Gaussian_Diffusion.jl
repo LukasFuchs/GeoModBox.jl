@@ -1,6 +1,7 @@
 using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
-using Statistics, Printf, LinearAlgebra
+using Statistics
 using TimerOutputs, LaTeXStrings, Measures
+using ExactFieldSolutions
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
@@ -20,8 +21,6 @@ P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
     Tamp    =   500,            #   Temperaturamplitude [K]
     σ       =   20e3,           #   
-    Xc      =   0.0,            #   x-Coordinate of the Anomalycenter
-    Zc      =   0.0             #   y-Coordinate of the Anomalycenter
 )
 P       =   merge(P,P1)
 # -------------------------------------------------------------------- #
@@ -31,8 +30,6 @@ St      = (
     nxny        =   zeros(size(Schema,1),nrnxny),
     Tmax        =   zeros(size(Schema,1),nrnxny),
     Tmean       =   zeros(size(Schema,1),nrnxny),
-    Tanamax     =   [0.0],
-    Tanamean    =   [0.0]
 )
 # -------------------------------------------------------------------- #
 # Loop over different discretization schemes ------------------------- #
@@ -80,8 +77,8 @@ for m = 1:ns
         T       =   merge(T,T1)
         T.Δ[1]  =   T.Δfac * (1.0 / ( 2.0 * P.κ * ( 1 /Δ.x^2 + 1 / Δ.y^2 )))
         
-        nt      =   ceil(Int,T.tmax/T.Δ[1])     #   Number of Time Steps
-        time    =   zeros(1,nt)
+        nt      =   ceil(Int,T.tmax/T.Δ[1]) + 1     #   Number of Time Steps
+        time    =   zeros(nt)
         # ------------------------------------------------------------ #
         # Initial Conditions  ---------------------------------------- #
         D       = (
@@ -93,7 +90,6 @@ for m = 1:ns
             εT          =   zeros(NC...),
             Tmax        =   zeros(1,nt),
             Tmean       =   zeros(1,nt),
-            Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
             Tprofilea   =   zeros(NC.y,nt),           
         )
@@ -151,7 +147,6 @@ for m = 1:ns
                 subplot=3)
         plot!(p,D.Tprofilea[:,1],y.c./1e3,
                 linestyle=:dash,linecolor=:yellow,linewidth=2.0,
-                # xlabel= L"T_{x=0\ km}\ [K]",ylabel="Depth [km]",
                 label="",
                 subplot=3)
         annotate!(p,-100,100,text("c)", 14, :black, :bold),subplot = 3)
@@ -192,34 +187,32 @@ for m = 1:ns
         end
         @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
-        for n = 1:nt
-            if n>1
-                if FDSchema == "explicit"
-                    @timeit to "Explicit" begin
-                    ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
-                    end
-                elseif FDSchema == "implicit"
-                    @timeit to "Implicit" begin
-                    BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
-                    end
-                elseif FDSchema == "CN"
-                    @timeit to "CN" begin
-                    CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
-                    end
-                elseif FDSchema == "ADI"
-                    @timeit to "ADI" begin
-                    ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
-                    end
+        for n = 2:nt
+            time[n]     =   time[n-1] + T.Δ[1]
+            if time[n] > T.tmax 
+                T.Δ[1]  =   T.tmax - time[n-1]
+                time[n] =   time[n-1] + T.Δ[1]
+            end               
+            # Exact solution on cell centroids
+            AnalyticalSolution2D!(D.Tana, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ))
+            # Exact solution on cell boundaries
+            BoundaryConditions2D!(BC, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ)) 
+            if FDSchema == "explicit"
+                @timeit to "Explicit" begin
+                ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
                 end
-                time[n]     =   time[n-1] + T.Δ[1]
-                if time[n] > T.tmax 
-                    T.Δ[1]  =   T.tmax - time[n-1]
-                    time[n] =   time[n-1] + T.Δ[1]
-                end                
-                # Exact solution on cell centroids
-                AnalyticalSolution2D!(D.Tana, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ))
-                # Exact solution on cell boundaries
-                BoundaryConditions2D!(BC, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ)) 
+            elseif FDSchema == "implicit"
+                @timeit to "Implicit" begin
+                BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K, Num)
+                end
+            elseif FDSchema == "CN"
+                @timeit to "CN" begin
+                CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC, rhs, K1, K2, Num)
+                end
+            elseif FDSchema == "ADI"
+                @timeit to "ADI" begin
+                ADI2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ[1], NC, BC)
+                end
             end
             # Maximum and Mean Temperature with time ---
             D.Tmax[n]   =   maximum(D.T)
@@ -319,8 +312,6 @@ for m = 1:ns
         St.nxny[m,l]    =   1/NC.x/NC.y
         St.Tmax[m,l]    =   D.Tmax[nt]
         St.Tmean[m,l]   =   D.Tmean[nt]
-        St.Tanamax[1]   =   maximum(D.Tana)
-        St.Tmean[1]     =   mean(D.Tana)
         # ------------------------------------------------------------ #
     end
     end
@@ -328,7 +319,7 @@ end
 end
 # Visualize Statistical Values --------------------------------------- #
 q   =   plot(0,0,layout=(1,3),
-            size(1200,900),dpi=300)
+            dpi=300) 
 for m = 1:ns
     plot!(q,St.nxny[m,:],St.ε[m,:],
                 marker=:circle,markersize=4,

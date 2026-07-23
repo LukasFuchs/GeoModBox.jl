@@ -2,11 +2,11 @@
 
 This example performs a resolution test for the steady-state 2-D temperature conservation equation, i.e., the Poisson equation, assuming constant thermal conductivity $k$. 
 
-The maximum resolution is define by ```n*ncx x n*ncy```, where ```n``` needs to be defined in the very beginning. 
+The maximum resolution is define by `n*ncx x n*ncy`, where `n` needs to be defined in the very beginning. 
 
 The temperature equation is solved for each resolution in a loop and the maximum and mean temperature is stored. In theory, increasing the resolution should asymptotically approach the exact solution of the problem. 
 
-For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../DiffTwoD.md)
+For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../../theory/DiffTwoD.md)
 
 ---
 
@@ -109,7 +109,7 @@ The required fields are then initialized, and initial conditions are applied. Fo
 ```Julia
     # Initialcondition -------------------------------------------------- #
     D       = ( 
-        Q       =   zeros(NC...),
+        Q       =   zeros(NC...),           # (row,col) 
         T       =   zeros(NC...),
     )
     # Heat production rate in the anomaly ---
@@ -133,7 +133,7 @@ To solve the Poisson equation, one needs to define the coefficient matrix, the d
     # ------------------------------------------------------------------- #
 ```
 
-The linear system of equation is solve via the function ```Poisson2Dc!()``` for a constant thermal conductivity. The function updates the temperature field ```D.T``` with the solution. After solving the equation for each resolution, the corresponding test metrics are computed. 
+The linear system of equation is solve via the function `Poisson2Dc!()` for a constant thermal conductivity. The function updates the temperature field `D.T` with the solution. After solving the equation for each resolution, the corresponding test metrics are computed. 
 
 ```Julia
     # Solve equation ---------------------------------------------------- #
@@ -189,4 +189,4 @@ savefig("./examples/DiffusionEquation/2D/Results/Poisson_ResTest.png")
 # ----------------------------------------------------------------------- #
 ```
 
-![PP_rest_test](../../../assets/Poisson_ResTest.png)
+![PP_rest_test](../../../assets/examples/Diffusion/Poisson_ResTest.png)

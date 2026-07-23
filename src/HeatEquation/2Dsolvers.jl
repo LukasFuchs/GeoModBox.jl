@@ -118,7 +118,7 @@ eastern, southern, and northern boundaries.
 The temporal discretization is controlled by `C` and can represent Backward
 Euler, Crank–Nicolson, or Forward Euler time integration. The residual is
 intended for defect-correction iterations and is used together with the
-coefficient matrix assembled by `AssembleMatrix2Dc!`.
+coefficient matrix assembled by `AssembleMatrix2Dc`.
 
 # Arguments
 
@@ -579,8 +579,8 @@ for i = 1:NC.x
                         4*b*BC.val.N[i] * DirN - 
                         2*a*BC.val.W[j]*Δx * NeuW +
                         2*a*BC.val.E[j]*Δx * NeuE -
-                        2*b*BC.val.S[j]*Δy * NeuS + 
-                        2*b*BC.val.N[j]*Δy * NeuN
+                        2*b*BC.val.S[i]*Δy * NeuS + 
+                        2*b*BC.val.N[i]*Δy * NeuN
     end
 end
 # ------------------------------------------------------------------- #    
@@ -744,10 +744,10 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
                             2*b*BC.val.N[i] * DirN -
-                            a*BC.val.W[j] * NeuW + 
-                            a*BC.val.E[j] * NeuE - 
-                            b*BC.val.S[i] * NeuS + 
-                            b*BC.val.N[i] * NeuN    
+                            a*BC.val.W[j] * Δx * NeuW + 
+                            a*BC.val.E[j] * Δx * NeuE - 
+                            b*BC.val.S[i] * Δy * NeuS + 
+                            b*BC.val.N[i] * Δy * NeuN    
         end
     end
     # Temperature at Δt/2 ---
@@ -825,10 +825,10 @@ function ADI2Dc!(T, κ, Δx, Δy, Δt, NC, BC;
                             2*a*BC.val.E[j] * DirE + 
                             2*b*BC.val.S[i] * DirS + 
                             2*b*BC.val.N[i] * DirN -
-                            a*BC.val.W[j] * NeuW + 
-                            a*BC.val.E[j] * NeuE - 
-                            b*BC.val.S[i] * NeuS + 
-                            b*BC.val.N[i] * NeuN    
+                            a*BC.val.W[j] * Δx * NeuW + 
+                            a*BC.val.E[j] * Δx * NeuE - 
+                            b*BC.val.S[i] * Δy * NeuS + 
+                            b*BC.val.N[i] * Δy * NeuN    
         end
     end
 
@@ -864,7 +864,7 @@ the western, eastern, southern, and northern boundaries.
 The temporal discretization is controlled by `C` and can represent Backward
 Euler, Crank–Nicolson, or Forward Euler time integration. The residual is
 intended for defect-correction iterations and is used together with the
-coefficient matrix assembled by `AssembleMatrix2D!`.
+coefficient matrix assembled by `AssembleMatrix2D`.
 
 # Arguments
 
@@ -919,7 +919,7 @@ Crank–Nicolson averages the previous and current time levels, and Forward
 Euler evaluates the conductive fluxes at the previous time level.
     
 """
-function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δ, Δt;C=0,Qₛ=0.0)
+function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, cp, k, BC, Δ, Δt;C=0,Qₛ=0.0)
     if C < 1
         @. T_ex[2:end-1,2:end-1] = T 
         @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
@@ -936,10 +936,10 @@ function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, �
             @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
             @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
             @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
-            @. ∂T.∂x = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
-            @. ∂T.∂y = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
-            @. q.x0  = -k.x * ∂T.∂x
-            @. q.y0  = -k.y * ∂T.∂y
+            @. ∂T.∂x0 = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
+            @. ∂T.∂y0 = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
+            @. q.x0  = -k.x * ∂T.∂x0
+            @. q.y0  = -k.y * ∂T.∂y0
         end
     else
         @. T_ex0[2:end-1,2:end-1] = T0 
@@ -947,27 +947,18 @@ function ComputeResiduals2D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, �
         @. T_ex0[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex0[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex0[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
         @. T_ex0[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex0[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex0[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
         @. T_ex0[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex0[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex0[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
-        @. ∂T.∂x = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
-        @. ∂T.∂y = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
-        @. q.x0  = -k.x * ∂T.∂x
-        @. q.y0  = -k.y * ∂T.∂y
+        @. ∂T.∂x0 = (T_ex0[2:end,2:end-1] - T_ex0[1:end-1,2:end-1])/Δ.x
+        @. ∂T.∂y0 = (T_ex0[2:end-1,2:end] - T_ex0[2:end-1,1:end-1])/Δ.y
+        @. q.x0  = -k.x * ∂T.∂x0
+        @. q.y0  = -k.y * ∂T.∂y0
+        @. q.x   = q.x0
+        @. q.y   = q.y0
     end
     # @. R     = (T - T0)/Δt - ((1-C)*(∂2T.∂x2 + ∂2T.∂y2) + C*(∂2T.∂x20 + ∂2T.∂y20)) - Q
-    @. R     = ρ*Cp*(T - T0)/Δt + 
+    @. R     = ρ*cp*(T - T0)/Δt + 
                     (1-C)*((q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y) + 
                     C*((q.x0[2:end,:] - q.x0[1:end-1,:])/Δ.x + (q.y0[:,2:end] - q.y0[:,1:end-1])/Δ.y) - 
                     Q - Qₛ
-
-    # @. T_ex[2:end-1,2:end-1] = T 
-    # @. T_ex[  1,2:end-1] = (BC.type.W==:Dirichlet) * (2*BC.val.W - T_ex[    2,2:end-1]) + (BC.type.W==:Neumann) * (T_ex[    2,2:end-1] - Δ.x/k.x[  1,:]*BC.val.W)
-    # @. T_ex[end,2:end-1] = (BC.type.E==:Dirichlet) * (2*BC.val.E - T_ex[end-1,2:end-1]) + (BC.type.E==:Neumann) * (T_ex[end-1,2:end-1] + Δ.x/k.x[end,:]*BC.val.E)
-    # @. T_ex[2:end-1,  1] = (BC.type.S==:Dirichlet) * (2*BC.val.S - T_ex[2:end-1,    2]) + (BC.type.S==:Neumann) * (T_ex[2:end-1,    2] - Δ.y/k.y[:,  1]*BC.val.S)
-    # @. T_ex[2:end-1,end] = (BC.type.N==:Dirichlet) * (2*BC.val.N - T_ex[2:end-1,end-1]) + (BC.type.N==:Neumann) * (T_ex[2:end-1,end-1] + Δ.y/k.y[:,end]*BC.val.N)
-    # @. ∂T.∂x = (T_ex[2:end,2:end-1] - T_ex[1:end-1,2:end-1])/Δ.x
-    # @. ∂T.∂y = (T_ex[2:end-1,2:end] - T_ex[2:end-1,1:end-1])/Δ.y
-    # @. q.x   = -k.x * ∂T.∂x
-    # @. q.y   = -k.y * ∂T.∂y
-    # @. R     = ρ*Cp*(T - T0)/Δt + (q.x[2:end,:] - q.x[1:end-1,:])/Δ.x + (q.y[:,2:end] - q.y[:,1:end-1])/Δ.y - Q
 end
 
 """
@@ -1194,6 +1185,8 @@ function Poisson2Dc!(D,NC,P,BC,Δ,K,rhs,Num)
     end
 
     D.T[:]  .=   K \ rhs[:]
+
+    # D.T_ex[2:end-1,2:end-1]     .=    D.T
     
 end
 

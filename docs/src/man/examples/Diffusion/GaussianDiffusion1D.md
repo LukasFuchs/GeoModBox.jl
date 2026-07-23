@@ -14,7 +14,7 @@ The script uses the special case solution for a linear problem using a single le
 
 An additional script on how to solve the 1D heat diffusion equation using the combined, general solution (choosable discretization between *explicit*, *implicit*, and *cna*) for constant thermal properties can be found [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/1D/Heat_1D_dc.jl). The general solution solves the system of equations using the defect correction, which is neccessary for non-linear problems. 
 
-For more details regarding the model setup and physics or details on the different numerical discretization schemes, please see the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises) or the [documentation](../DiffOneD.md).
+For more details regarding the model setup and physics or details on the different numerical discretization schemes, please see the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises) or the [documentation](../../theory/DiffOneD.md).
 
 ---
 
@@ -101,7 +101,7 @@ BC          =   (
 # ----------------------------------------------------------------------- #
 ```
 
-For the implicit numerical scheme, one also needs to define the coefficient matrices and the degrees of freedom ```ndof``` of the linear system of equations. 
+The implicit Backward Euler and Crank–Nicolson schemes require the assembly of sparse coefficient matrices.
 
 ```Julia
 # Assemble Coefficient Matrix ------------------------------------------- #
@@ -152,7 +152,7 @@ end
 # ----------------------------------------------------------------------- #
 ```
 
-![Diff1Dini](../../../assets/Diff_1D_iniT.svg)
+![Diff1Dini](../../../assets/examples/Diffusion/Diff_1D_iniT.svg)
 
 **Figure 1. Initial temperature distribution.**
 
@@ -217,9 +217,9 @@ end
 end
 ```
 
-![Diff_1D_evolve](../../../assets/Diff_1D_comparison.gif)
+![Diff_1D_evolve](../../../assets/examples/Diffusion/Diff_1D_comparison.gif)
 
-**Figure 2. Temperature evolution and corresponding error for each numerical scheme.** exp - Forward Euler, imp - Backward Euler, dc - Defect correction, cna - Crank-Nicolson. 
+**Figure 2. Temperature evolution and corresponding error for each numerical scheme.** exp - Forward Euler, imp - Backward Euler, cna - Crank-Nicolson. 
 
 Finally, the plots are compiled into an animation, and individual PNG files corresponding to specific time steps are deleted. 
 
