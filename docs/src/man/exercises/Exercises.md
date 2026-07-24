@@ -23,17 +23,23 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 | Exercise | Type | Total Runtime [s] |
 |:----------|:------|:----------------|
 | 1 | Euler Advection | 5.741 |
-| 2 | 1-D Heat Diffusion (explicit) | 1)  |
-|   |   | 2)  |
-|   |   | 3)  |
-| 3 | 1-D Heat Diffusion (implicit) | 1)  |
-|   |   | 2)  |
-|   |   | 3)  |
-| 4 | 2-D Steady State Heat Equation |  |
-| 5a | 2-D Time-dep. Heat Equation (Plume) | 1) Explicit:  |
-|    |   | 2) Implicit:  |
-| 5b | 2-D Time-dep. Heat Equation (Sill) | 1) Explicit:  |
-|    |   | 2) Implicit:  |
+| 2 | 1-D Heat Diffusion (explicit) | 1) 1.82 s |
+|   |   | 2) 1.75 s  |
+|   |   | 3) 1.86 s |
+| 3 | 1-D Heat Diffusion (implicit) | 1) 1.48 s  |
+|   |   | 2) 1.57 s  |
+|   |   | 3) 2.55 s |
+| 4 | 2-D Steady State Heat Equation | 3.69 s |
+| 5a | 2-D Time-dep. Heat Equation (Plume) | 1) Special Solver (Explicit): 19.74 s |
+|    |   | 2) Special Solver (Implicit): 55.29 s |
+|    |   | 3) General Solver (Explicit): 24.75 s |
+|    |   | 4) General Solver (Implicit): 58.44 s |
+|    |   | 5) General Solver (CNA): 59.35 s |
+| 5b | 2-D Time-dep. Heat Equation (Sill) | 1) Special Solver (Explicit): 17.08 s |
+|    |   | 2) Special Solver (Implicit): 56.61 s |
+|    |   | 3) General Solver (Explicit): 31.24 |
+|    |   | 4) General Solver (Implicit): 60.42 s |
+|    |   | 5) General Solver (CNA): 58.9 s |
 | 6 | 1-D Advection Scheme | 1) FTCS: 4.866 |
 |   |   | 2) Upwind: 5.047 |
 |   |   | 3) Downwind: 4.68 |

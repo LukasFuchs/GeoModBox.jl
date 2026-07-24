@@ -15,6 +15,6 @@ The main objectives are:
 
 The resulting transient evolution of a Gaussian temperature anomaly is shown in Figure 1.  
 
-![FinalPlot_3](../../assets/03_1D_implicit_3.gif)  
+![FinalPlot_3](../../assets/exercises/03.gif)  
 
 **Figure 1. Transient behavior of a one-dimensional Gaussian temperature anomaly.**
