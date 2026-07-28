@@ -47,7 +47,7 @@ H ( m^{\frac{y}{H}}-1 )
 \frac{v_{x,0}}{m-1}\left(m^{\frac{y+H}{H}} - 1\right) \quad \text{if } m \neq 1.
 \end{equation}$ 
 
-For more details on how the equations are solved using the defect correction method, please refer to the [documentation](../MomentumOneD.md)
+For more details on how the equations are solved using the defect correction method, please refer to the [documentation](../../theory/MomentumOneD.md)
 
 ---
 
@@ -207,6 +207,6 @@ display(q)
 savefig("./examples/StokesEquation/1D/Results/ChannelFlow.png")
 ```
 
-![Stokes1D_profiles](../../assets/Stokes1D.svg)
+![Stokes1D_profiles](../../../assets/examples/Stokes/Stokes1D.svg)
 
 **Figure 1. 1D Poiseuille–Couette Flow.** Velocity profiles (left), relative deviation between analytical and numerical solutions (center), and depth-dependent viscosity (right) for a 1D channel flow simulation. 

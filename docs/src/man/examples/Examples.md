@@ -25,7 +25,7 @@ By clicking on the title of each document page, you will be directed to the corr
 
 **Stokes Equation**
 - [1D channel flow with constant and depth-dependent viscosity](./Stokes//ChannelFlow1D.md)
-- [2D falling block benchmark](./Stokes/FallingBlockBenchmark.md)
+- [2D falling block benchmark (direct or defect correction)](./Stokes/FallingBlockBenchmark.md)
 - [2D falling block with constant or variable viscosity (defect correction)](./Stokes/FallingBlockDC.md)
 - [2D Rayleigh–Taylor instability](./Stokes//RTI.md)
 - [2D Rayleigh–Taylor instability benchmark](./Stokes//RTI_growth_rate.md)
@@ -39,14 +39,14 @@ In the following, the runtime for each of the provided examples is listed as a r
 
 | Example                           | Total Runtime                                         |
 | :-------------------------------- | :---------------------------------------------------- |
-| **Advection ===**                                                                         |
+| **=== Advection ===**                                                                     |
 | 2D_Advection.jl                   | 1) Upwind: 173 s                                      |
 |    Resolution: 100x100            | 2) SLF: 173 s                                         |
 |                                   | 3) Semi-lag: 177 s                                    |
 |                                   | 4) Tracers: 459 s                                     |
 | 2D_Advection_ResolutionTest.jl    | 1) save_fig = 1: 1.04 h                               |
 |                                   | 2) save_fig = -1: 1109 s                              |
-| **Heat Diffusion ===**                                                                    |
+| **=== Heat Diffusion ===**                                                                |
 | *1D* ---                                                                                  |
 | ContinentalGeotherm_1D.jl         | 7.22 s                                                | 
 | Heat_1D_discretization.jl         | 3.66 s                                                |
@@ -56,23 +56,23 @@ In the following, the runtime for each of the provided examples is listed as a r
 | ForwardEuler.jl                   | 5.08 s                                                |
 | Gaussian_Diffusion.jl             | 422 s                                                 | 
 | Poisson_RestTest.jl               | 23.5 s                                                |
-| Poisson_variable_k.jl             |                                                 |
-| **Thermal Convection Models ===**                                                         |
+| Poisson_variable_k.jl             | 7.69 s                                                |
+| **=== Thermal Convection Models ===**                                                     |
 | BottomHeated.jl                   |                                                 |
 | InternallyHeated.jl               |                                                 |
 | MixedHeated.jl                    |                                                       |
-| **Stokes Equation ===**                                                                   |
+| **=== Stokes Equation ===**                                                               |
 | *1D* ---                                                                                  |
-| ChannelFlow_1D.jl                 |                                                 |
+| ChannelFlow_1D.jl                 | 1.53 s                                                |
 | *2D* ---                                                                                  |
-| FallingBlockBenchmark.jl          | 1) Steady State:                                   |
+| FallingBlockBenchmark_*.jl        | 1) Steady State: 6.33 s (dc: 5.98 s)                  |
 |                                   | 2) Time-Dependent                                     |
-|                                   |     a) Upwind:                                  |
-|                                   |     b) SLF:                                      |
-|                                   |     c) Semi-lag:                                 |
-|                                   |     d) Tracers:                                  |
-| FallingBlockConstEta_DC.jl        |                                                 | 
-| FallingBlockVarEta_DC.jl          |                                                 |
+|                                   |     a) Upwind: 114 s (dc: 114 s)                      |
+|                                   |     b) SLF: 68.3 s (dc: 68.8 s)                       |
+|                                   |     c) Semi-lag: 319 s (dc: 325 s)                    |
+|                                   |     d) Tracers: 326 s (dc: 328 s)                     |
+| FallingBlockConstEta_DC.jl        | 379 ms                                                | 
+| FallingBlockVarEta_DC.jl          | 40.3 s                                                |
 | RTI.jl                            |                                                  |
 | RTI_GrowthRate.jl                 |                                                 |
 | RTI_Growth_Rate_Res_Test.jl       |                                                  |

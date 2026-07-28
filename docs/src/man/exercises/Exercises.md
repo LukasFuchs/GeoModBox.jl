@@ -47,27 +47,27 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |   |   | 5) SLF: 5.241 |
 |   |   | 6) Semilag: 9.886 |
 |   |   | 7) Tracers: 9.566 |
-| 7 | 2-D Energy Equation | 1) Upwind+explicit:  |
-|   |   | 2) Upwind+implicit: |
-|   |   | 3) Upwind+CNA:  |
-|   |   | 4) Upwind+ADI:  |
-|   |   | 5) Upwind+dc:  |
-|   |   | 6) SL+explicit:  |
-|   |   | 7) SL+implicit:  |
-|   |   | 8) SL+CNA:  |
-|   |   | 9) SL+ADI:  |
-|   |   | 10) SL+dc:  |
-|   |   | 11) Tracers+explicit:  |
-|   |   | 12) Tracers+implicit:  |
-|   |   | 13) Tracers+CNA:  |
-|   |   | 14) Tracers+ADI:  |
-|   |   | 15) Tracers+dc:  |
-| 8 | 1-D Stokes Equation |  |
-| 9 | 2-D Falling Block (steady state) |  |
-| 10 | 2-D Falling Block (time-dep.) | 1) Upwind:  |
-|    |   | 2) SLF:   |
-|    |   | 3) SL:   |
-|    |   | 4) Tracers:  |
+| 7 | 2-D Energy Equation | 1) Upwind+explicit: 9.11 s |
+|   |   | 2) Upwind+implicit: 19.04 s |
+|   |   | 3) Upwind+CNA: 16.35 s |
+|   |   | 4) Upwind+ADI: 144.68 s |
+|   |   | 5) Upwind+dc: 23.23 s |
+|   |   | 6) SL+explicit: 19.1 s |
+|   |   | 7) SL+implicit: 17.11 s |
+|   |   | 8) SL+CNA: 16.55 s |
+|   |   | 9) SL+ADI: 148.18 s |
+|   |   | 10) SL+dc: 18.61 s |
+|   |   | 11) Tracers+explicit: 120.41 s |
+|   |   | 12) Tracers+implicit: 143.14 s |
+|   |   | 13) Tracers+CNA: 143.1 s |
+|   |   | 14) Tracers+ADI: 246.73 s |
+|   |   | 15) Tracers+dc: 150.38 s |
+| 8 | 1-D Stokes Equation | 671 ms |
+| 9 | 2-D Falling Block (steady state) | 1.22 s |
+| 10 | 2-D Falling Block (time-dep.) | 1) Upwind: 4.89 s |
+|    |   | 2) SLF: 5.31 s |
+|    |   | 3) SL: 4.94 s |
+|    |   | 4) Tracers: 7.96 s |
 | 11¹ | Thermal Convection (dim), **Resolution: 150×50** | **Ra = 1e4** (Diff+Adv+Momentum) |
 |     |   | 1) Explicit+upwind+direct:  |
 |     |   | 2) Implicit+upwind+direct:  |

@@ -10,7 +10,7 @@ using TimerOutputs
 
 function UpdateRheo(D,ρ,η,avg_p,avg_v)
 
-    # Density ---
+    # Density --- artihmetic averaging ---
     @. D.ρ     =   ρ[1]*(1.0 - D.p) + ρ[2]*D.p
     D.ρe[2:end-1,2:end-1]     .=  D.ρ
     D.ρe[1,:]     .=  D.ρe[2,:]
