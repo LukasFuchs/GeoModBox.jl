@@ -180,6 +180,7 @@ The following velocity configurations are currently supported:
     2) A shear cell (ShearCell)
     3) Simple Shear (SimpleShear)
     4) Pure Shear (PureShear)
+    5) Pure Shear for the shear band experiment (ShearBandPS)
 
 For Pure Shear and Simple Shear the boundary velocity values are
 updated accordingly. 

@@ -13,7 +13,7 @@ The main objectives are:
 
 The resulting velocity distributions illustrate the difference between Couette and Couette–Poiseuille flow, and highlight the influence of variable viscosity on the channel flow solution.  
 
-![Exercise08](../../assets/08_1D_Stokes.png)
+![Exercise08](../../assets/exercises/08.png)
 
 **Figure 1.** Solution of the 1-D Stokes problem. 
 

@@ -8,7 +8,7 @@ using Base.Threads
 using Printf, LinearAlgebra
 using TimerOutputs
 
-function UpdateRheo(D,ρ,η,avg_p,avg_v)
+function UpdateRheo(D,ρ,η,avg)
 
     # Density --- artihmetic averaging ---
     @. D.ρ     =   ρ[1]*(1.0 - D.p) + ρ[2]*D.p
@@ -17,15 +17,16 @@ function UpdateRheo(D,ρ,η,avg_p,avg_v)
     D.ρe[end,:]   .=  D.ρe[end-1,:]
     D.ρe[:,1]     .=  D.ρe[:,2]
     D.ρe[:,end]   .=  D.ρe[:,end-1]
+
     # Viscosity - Centroids and vertices ---
-    if avg_p ==     :arithmetic
+    if avg ==     :arith
         @. D.ηc =   (1.0 - D.p) * η[1] + D.p * η[2]
-    elseif avg_p == :harmonic
+    elseif avg == :harm
         @. D.ηc =   1.0 / ( (1.0 - D.p) / η[1] + D.p / η[2] )
-    elseif avg_p == :geometric
+    elseif avg == :geom
         @. D.ηc =   η[1]^(1.0 - D.p) * η[2]^D.p
     else
-        error("Unknown viscosity averaging: $(avg_p)")
+        error("Unknown viscosity averaging: $(avg)")
     end
     # --- Extended Centroids-
     D.ηce[2:end-1,2:end-1]     .=  D.ηc
@@ -34,7 +35,7 @@ function UpdateRheo(D,ρ,η,avg_p,avg_v)
     D.ηce[:,1]     .=  D.ηce[:,2]
     D.ηce[:,end]   .=  D.ηce[:,end-1]
     # --- Vertices -
-    if avg_v == :arithmetic
+    if avg == :arith
         @. D.ηv =
             0.25*(
                 D.ηce[1:end-1,1:end-1] + 
@@ -42,7 +43,7 @@ function UpdateRheo(D,ρ,η,avg_p,avg_v)
                 D.ηce[1:end-1,2:end  ] + 
                 D.ηce[2:end  ,2:end  ]
             )
-    elseif avg_v == :harmonic
+    elseif avg == :harm
         @. D.ηv =
             4.0/(
                 1/D.ηce[1:end-1,1:end-1] + 
@@ -50,7 +51,7 @@ function UpdateRheo(D,ρ,η,avg_p,avg_v)
                 1/D.ηce[1:end-1,2:end  ] + 
                 1/D.ηce[2:end  ,2:end  ]
             )
-    elseif avg_v == :geometric
+    elseif avg == :geom
         @. D.ηv =
             exp(0.25*(
                 log(D.ηce[1:end-1,1:end-1]) + 
@@ -59,7 +60,7 @@ function UpdateRheo(D,ρ,η,avg_p,avg_v)
                 log(D.ηce[2:end  ,2:end  ])
             ))
     else
-        error("Unknown viscosity averaging: $(avg_v)")
+        error("Unknown viscosity averaging: $(avg)")
     end
 
     return D
@@ -68,14 +69,31 @@ end
 function RTI()
     to          =   TimerOutput()
     @timeit to "Ini" begin
-    save_fig    =   0
+    save_fig    =   1
     # How to update the numerical nodes from the marker ---
-    # Phase ratio method --- 
-    phaseratio  =   :no
-    avg_p       =   :arithmetic
-    avg_v       =   :arithmetic
-    # Bilinear marker interpolation ---
-    avgm        =   :arith
+    #   1) Phase ratio (:PhaseRatio), or
+    #   2) Direct bilinear interpolation of marker properties to the grid
+    #      (:MarkerInterpolation)
+    MaterialInterpolation   =   :MarkerInterpolation
+    # Define the averaging scheme used for both material-transfer methods:
+    #   1) Arithmetic   (:arith)
+    #   2) Geometric    (:geom)
+    #   3) Harmonic     (:harm)
+    avg                     =   :arith
+    
+    MaterialInterpolation ∈ (:PhaseRatio, :MarkerInterpolation) ||
+        error("Unknown material interpolation method: $MaterialInterpolation")
+    avg ∈ (:arith, :geom, :harm) ||
+        error("Unknown averaging scheme: $avg")
+    # Although both strategies employ bilinear interpolation from the 
+    # markers to the numerical grid, they differ in the quantity that is 
+    # interpolated. The phase-ratio approach first interpolates the 
+    # material phase and subsequently reconstructs the material 
+    # properties using a mixing law, whereas the direct interpolation 
+    # approach transfers the material properties themselves. Since 
+    # viscosity is a nonlinear material property, the two approaches 
+    # generally produce different numerical solutions.
+    # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
     λ           =   3.0e3           #   Perturbation wavelength[ m ]
@@ -117,7 +135,7 @@ function RTI()
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -153,7 +171,8 @@ function RTI()
     path        =   string("./examples/StokesEquation/2D/Results/")
     anim        =   Plots.Animation(path, String[] )
     filename    =   string(Ini.p,"_ηr_",round(ηᵣ),
-                            "_tracers_DC")
+                            "_tracers_DC_",MaterialInterpolation,"_",
+                            avg)
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
     D       =   (
@@ -198,15 +217,16 @@ function RTI()
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
     T   =   TimeParameter(
-        tmax    =   4500.0,         #   [ Ma ]
+        tmax    =   10.0,           #   [ Ma ]
         Δfacc   =   1.0,            #   Courant time factor
-        itmax   =   1,             #   Maximum iterations; 50
+        itmax   =   200,            #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
     T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                         (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
 
     Time        =   zeros(T.itmax)
+    final_step  =   0
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
     @timeit to "Tracer Ini" begin
@@ -222,7 +242,7 @@ function RTI()
     )
     MAVG        = (
             PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
-            PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+            PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
             wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
             wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
@@ -232,58 +252,23 @@ function RTI()
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-    # if phaseratio == :yes
+    if MaterialInterpolation == :PhaseRatio
         # Phase ---
         Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
         D.p     .=  D.p_ex[2:end-1,2:end-1]
-        # D = UpdateRheo(D,ρ,η,avg_p,avg_v)
-        UpdateRheo(D,ρ,η,avg_p,avg_v)
-        # Store independent copies
-        ηc_phase = copy(D.ηc)
-        ηv_phase = copy(D.ηv)
-    # else
-    # Interpolate from markers to cell ---
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-    D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avgm)
-    D.ηc    .=   D.ηce[2:end-1,2:end-1]
-    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avgm)
-    # end
-    
-    # Compare the two approaches
-    dp = plot(
-        layout=(2, 1),
-        size=(900, 700)
-    )
-
-    heatmap!(
-        dp,
-        x.v ./ 1e3,
-        y.v ./ 1e3,
-        log10.(ηv_phase ./ D.ηv)',
-        subplot=1,
-        xlabel="",
-        ylabel="y [km]",
-        title="",
-        xformatter=_ -> "",
-        aspect_ratio=:equal,
-        colorbar=true
-    )
-
-    heatmap!(
-        dp,
-        x.c ./ 1e3,
-        y.c ./ 1e3,
-        log10.(ηc_phase ./ D.ηc)',
-        subplot=2,
-        xlabel="x [km]",
-        ylabel="y [km]",
-        title="",
-        aspect_ratio=:equal,
-        colorbar=true
-    )
-    display(dp)
-
+        UpdateRheo(D,ρ,η,avg)
+    elseif MaterialInterpolation == :MarkerInterpolation
+        # Interpolate from markers to cell ---
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        D.p     .=  D.p_ex[2:end-1,2:end-1]
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+        D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avg)
+        D.ηc    .=   D.ηce[2:end-1,2:end-1]
+        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avg)
+    else
+        error("Unknown material interpolation method: $MaterialInterpolation")
+    end
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
@@ -328,7 +313,6 @@ function RTI()
         @timeit to "Solution Iteration" begin
         # Assemble Coefficients ========================================= #
         @timeit to "Assembly" begin
-        # K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
         K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
         Kfac    =   lu(K.cscmatrix)
         end
@@ -341,10 +325,6 @@ function RTI()
             @printf("||R|| = %1.4e\n", norm(F)/length(F))
             norm(F)/length(F) < ϵ ? break : nothing
             end
-            # # Assemble Coefficients ========================================= #
-            # @timeit to "Assembly" begin
-            # K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-            # end
             # --------------------------------------------------------------- #
             # Solution of the linear system ================================= #
             @timeit to "Solution" begin
@@ -367,14 +347,7 @@ function RTI()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ---
-        # @show(minimum(D.vc))
-        # @show(maximum(D.vc))
-        # ---
-        if Time[it] >= T.tmax
-            it = T.itmax
-        end
-        # ---
-        if mod(it,2) == 0 || it == T.itmax || it == 1
+        if mod(it,5) == 0 || final_step == 1 || it == 1
             p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                         xlabel="x[km]",ylabel="y[km]",colorbar=true,
                         title="ρ",
@@ -401,7 +374,7 @@ function RTI()
                         la=0.5,color="white",layout=(2,2),subplot=4)
             heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
                         xlabel="x[km]",ylabel="y[km]",title="η_c",
-                        clims=(15,27),
+                        clims=extrema(log10.(η)),
                         aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
                         ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
                         layout=(2,2),subplot=3)
@@ -411,16 +384,17 @@ function RTI()
                 display(p)
             end
         end
-        if Time[it] >= T.tmax
+        if final_step == 1
+            @printf(" Maximum Time reached!\n")
             break
         end
         # Calculate Time Stepping ---
         T.Δ        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                 (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-        if Time[it] > T.tmax
+        if Time[it] >= T.tmax
             T.Δ         =   T.tmax - Time[it-1]
             Time[it]    =   Time[it-1] + T.Δ
-            it          =   T.itmax
+            final_step  =   1
         end
         # Advection ===
         @timeit to "Tracer Advection" begin
@@ -428,17 +402,22 @@ function RTI()
         @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-        if phaseratio == :yes
+        if MaterialInterpolation == :PhaseRatio
             # Phase ---
             Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
-            D = UpdateRheo(D,ρ,η,avg_p,avg_v)
+            D.p     .=  D.p_ex[2:end-1,2:end-1]
+            UpdateRheo(D,ρ,η,avg)
+        elseif MaterialInterpolation == :MarkerInterpolation
+            # Interpolate phase from tracers to grid ---
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+            D.p     .=  D.p_ex[2:end-1,2:end-1]
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+            D.ρ     .=   D.ρe[2:end-1,2:end-1]  
+            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avg)
+            D.ηc    .=   D.ηce[2:end-1,2:end-1]
+            Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avg)
         else
-        # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-        D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-            Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avgm)
-        D.ηc    .=   D.ηce[2:end-1,2:end-1]
-            Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avgm)
+            error("Unknown material interpolation method: $MaterialInterpolation")
         end
         end
         @printf("\n")

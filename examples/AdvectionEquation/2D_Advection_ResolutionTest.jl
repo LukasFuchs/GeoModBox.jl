@@ -12,7 +12,7 @@ nrnxny      =   6
 Scheme      =   ["upwind","slf","semilag","markers"]
 ns          =   size(Scheme,1)
 @show ns
-save_fig    =   -1
+save_fig    =   1
 
 # Statistical Parameter ============================================== #
 St      = (

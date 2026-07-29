@@ -24,11 +24,11 @@ By clicking on the title of each document page, you will be directed to the corr
 - [Mixed heated, isoviscous thermal convection](./Convection/MixedHeatedConvection.md)
 
 **Stokes Equation**
-- [1D channel flow with constant and depth-dependent viscosity](./Stokes//ChannelFlow1D.md)
+- [1D channel flow with constant and depth-dependent viscosity](./Stokes/ChannelFlow1D.md)
 - [2D falling block benchmark (direct or defect correction)](./Stokes/FallingBlockBenchmark.md)
 - [2D falling block with constant or variable viscosity (defect correction)](./Stokes/FallingBlockDC.md)
-- [2D Rayleigh–Taylor instability](./Stokes//RTI.md)
-- [2D Rayleigh–Taylor instability benchmark](./Stokes//RTI_growth_rate.md)
+- [2D Rayleigh–Taylor instability](./Stokes/RTI.md)
+- [2D Rayleigh–Taylor instability benchmark and resolution test](./Stokes/RTI_growth_rate.md)
 - [2D viscous inclusion problem](./Stokes/ViscousInclusion.md)
 - [Van Keken Benchmark](./Stokes/VanKekenBenchmark.md)
 
@@ -57,10 +57,6 @@ In the following, the runtime for each of the provided examples is listed as a r
 | Gaussian_Diffusion.jl             | 422 s                                                 | 
 | Poisson_RestTest.jl               | 23.5 s                                                |
 | Poisson_variable_k.jl             | 7.69 s                                                |
-| **=== Thermal Convection Models ===**                                                     |
-| BottomHeated.jl                   |                                                 |
-| InternallyHeated.jl               |                                                 |
-| MixedHeated.jl                    |                                                       |
 | **=== Stokes Equation ===**                                                               |
 | *1D* ---                                                                                  |
 | ChannelFlow_1D.jl                 | 1.53 s                                                |
@@ -73,11 +69,14 @@ In the following, the runtime for each of the provided examples is listed as a r
 |                                   |     d) Tracers: 326 s (dc: 328 s)                     |
 | FallingBlockConstEta_DC.jl        | 379 ms                                                | 
 | FallingBlockVarEta_DC.jl          | 40.3 s                                                |
-| RTI.jl                            |                                                  |
-| RTI_GrowthRate.jl                 |                                                 |
-| RTI_Growth_Rate_Res_Test.jl       |                                                  |
-| RTI_Growth_Rate_Res_Test_2.jl     |                                                  |
-| RTI_Growth_Rate_Res_Test_3.jl     |                                                  |
+| RTI.jl                            | 117 s                                                 |
+| RTI_GrowthRate.jl                 | 46.6 s                                                |
+| RTI_Growth_Rate_Res_Test_CNC.jl   | 414 s                                                 |
+| RTI_Growth_Rate_Res_Test_CNM.jl   | 1573 s                                                |
+| **=== Thermal Convection Models ===**                                                     |
+| BottomHeated.jl                   |                                                 |
+| InternallyHeated.jl               |                                                 |
+| MixedHeated.jl                    |                                                       |
 
 > **Note:** In `GeoModBox.jl`, thermal and kinematic boundary conditions are explicitly implemented within the solvers. The absolute values at *ghost nodes* are computed based on the values provided in the boundary condition tuple `BC`. Each tuple specifies the `type` (either Dirichlet or Neumann) and the corresponding `val`ue at each boundary.  
 > For constant velocity boundary conditions, additional values must be defined in `val` for the boundary nodes (e.g., `BC.val.vxW`, `BC.val.vxE`). These additional values are required to **directly** solve the momentum equation using a the backslash operator and to update the right-hand side of the linear system. Furthermore, if non-zero, these values must be assigned to the initial boundary nodes of the respective velocity fields.  

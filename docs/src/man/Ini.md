@@ -33,7 +33,7 @@ Certain default values can be modified as well:
 
 The temperature is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
-The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/BottomHeated.jl): 
+The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/ThermalConvection/BottomHeated.jl): 
 
 ```Julia 
 IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
@@ -51,6 +51,7 @@ The following velocity configurations are currently supported:
 2. A shear cell (`ShearCell`)
 3. Simple Shear (`SimpleShear`) 
 4. Pure Shear (`PureShear`)
+5. Pure Shear for the shear band experiment (`ShearBandPS`)
 
 The input parameters are: 
 
@@ -98,7 +99,7 @@ Certain default values can be modified as well:
 
 The phase is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
-The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl): 
+The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark_DC.jl): 
 
 ```Julia
 IniPhase!(Ini.p,D,M,x,y,NC;phase)

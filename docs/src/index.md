@@ -56,7 +56,7 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ![RigidBodyII](./assets/examples/Advection/2D_advection_circle_RigidBody_semilag_100_100_nth_1.gif)
 
-![RigidBodyIII](./assets/examples/Advection/2D_advection_circle_RigidBody_tracers_100_100_nth_1.gif)
+![RigidBodyIII](./assets/examples/Advection/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif)
 
 **Figure 3. Rigid-Body-Rotation.** Time-dependent advection of a rotating circular temperature anomaly using the **upwind (top)**, **semi-Lagrangian (middle)**, and **tracer (bottom)** methods on a 100 × 100 grid. Within a circular region, the velocity field follows rigid rotation; outside, it is zero. Temperature for tracers is interpolated to the grid for visualization but not updated on the tracers.
 
@@ -64,15 +64,15 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Falling Block](./man/examples/Stokes/FallingBlockBenchmark.md)
 
-![FallingBlockTD](./assets/examples/Stokes/Falling_block_ηr_0.0_tracers.gif)
+![FallingBlockTD](./assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif)
 
 **Figure 4. Isoviscous Falling Block.** Time-dependent simulation of an isoviscous falling block at 50 × 50 resolution with 9 tracers per cell. The solver handles variable viscosities. Tracers advect the phase ID, which is used to interpolate density and viscosity on centroids and vertices, respectively.
 
-![FBSinkinVeloc](./assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers.png)
+![FBSinkinVeloc](./assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png)
 
 **Figure 5. Falling Block Sinking Velocity.** Block sinking velocity vs. initial viscosity ratio $\eta_r$, using the same setup as above. 
 
-![FBFinalStage](./assets/examples/Stokes/FallingBlock_FinalStage_tracers.png)
+![FBFinalStage](./assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png)
 
 **Figure 6. Falling Block Benchmark.** Tracer distribution at the final stage for selected viscosity ratios $\eta_r \ge 0$.
 
