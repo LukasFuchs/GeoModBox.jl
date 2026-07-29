@@ -73,6 +73,7 @@ In the following, the runtime for each of the provided examples is listed as a r
 | RTI_GrowthRate.jl                 | 46.6 s                                                |
 | RTI_Growth_Rate_Res_Test_CNC.jl   | 414 s                                                 |
 | RTI_Growth_Rate_Res_Test_CNM.jl   | 1573 s                                                |
+| ViscousInclusion.jl               | 810 ms                                                |
 | **=== Thermal Convection Models ===**                                                     |
 | BottomHeated.jl                   |                                                 |
 | InternallyHeated.jl               |                                                 |

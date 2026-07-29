@@ -225,8 +225,8 @@ function FallingBlockVarEta_Dc()
                     F[Num.Pt]   .=   FPt
                     RM          =   norm(F)/length(F)
                     if iter == 1
-                    R0 = max(RM, eps())
-                end
+                        R0 = max(RM, eps())
+                    end
                     RMrel       =   RM/R0
                     # if verbose_step
                     @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
