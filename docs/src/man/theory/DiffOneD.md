@@ -28,7 +28,9 @@ To solve Equation (3) numerically, the spatial domain is discretized and physica
 
 > **Note:** Although thermal conductivity is currently assumed to be constant, a *conservative, staggered-grid* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at cell centers (centroids), while the heat flux $q$ is defined at cell interfaces (vertices).
 
-![1DDiscretization](../assets/Diff_1D_Discretization.png)
+<!-- ![1DDiscretization](../assets/Diff_1D_Discretization.png) -->
+
+<img src="../../assets/theory/Diff_1D_Discretization.png" width="700">
 
 **Figure 1. 1D Discretization.** Staggered finite difference grid for solving the 1D heat diffusion equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 

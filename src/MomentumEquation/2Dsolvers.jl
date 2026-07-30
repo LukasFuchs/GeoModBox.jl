@@ -1,12 +1,86 @@
 using ExtendableSparse
 
+# ======================================================================= #
+# Helper functions ====================================================== #
+# ======================================================================= #
+"""
+    CheckStokesBoundaryTypes(BC)
+
+Validate the boundary condition types used by the two-dimensional
+Stokes solver.
+
+The function verifies that the boundary conditions prescribed on the
+western, eastern, southern, and northern boundaries are among the
+supported types. An `ArgumentError` is thrown if an unsupported
+boundary condition is encountered.
+
+Supported boundary condition types are:
+    - `:freeslip`
+    - `:noslip`
+    - `:const`
+    - `:ps`
+
+# Arguments
+    - `BC`: Boundary condition structure containing the boundary types.
+
+# Returns
+Nothing. Throws an `ArgumentError` if an invalid boundary condition
+type is detected.
+"""
+function CheckStokesBoundaryTypes(BC)
+    valid = (:freeslip, :noslip, :const, :ps)
+
+    for side in (:W, :E, :S, :N)
+        type = getproperty(BC.type, side)
+
+        type in valid ||
+            throw(ArgumentError(
+                "Unsupported boundary type `$type` at boundary `$side`."
+            ))
+    end
+
+    return nothing
+end
+
+# ======================================================================= #
+# Constant viscosity solver ============================================= #
+# ======================================================================= #
 """
     Assemblyc(NC, NV, Δ, η, BC, Num)
+
+Assemble the sparse coefficient matrix for the two-dimensional
+incompressible Stokes equations with constant viscosity.
+
+The function constructs the finite-difference stencils for the
+horizontal and vertical momentum equations and for the continuity
+equation on a staggered grid. The prescribed boundary conditions are
+incorporated into the matrix coefficients, and one pressure degree of
+freedom is fixed to remove the pressure nullspace.
+
+# Arguments
+    - `NC`  : Number of computational cells in the x- and y-directions.
+    - `NV`  : Number of velocity nodes in the x- and y-directions.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `η`   : Constant dynamic viscosity.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `Num` : Structure containing the global equation numbers for `vₓ`,
+                `vᵧ`, and pressure.
+
+# Returns
+The finalized sparse coefficient matrix.
 """
 function Assemblyc(NC, NV, Δ, η, BC, Num)
 
+    CheckStokesBoundaryTypes(BC)
+
     # Linear system of equation ---
-    ndof    =   maximum(Num.Pt)
+    # ndof    =   maximum(Num.Pt)
+    ndof = maximum((
+        maximum(Num.Vx),
+        maximum(Num.Vy),
+        maximum(Num.Pt),
+    ))
     K       =   ExtendableSparseMatrix(ndof,ndof)
     dx,dy   =   Δ.x, Δ.y
 
@@ -89,25 +163,70 @@ function Assemblyc(NC, NV, Δ, η, BC, Num)
         # Equation number ---
         ii  =   Num.Pt[i,j]
         # Stencil ---
-        iW  =   Num.Vx[i,j]
-        iE  =   Num.Vx[i+1,j]
-        iS  =   Num.Vy[i,j]
-        iN  =   Num.Vy[i,j+1]
-        # Linear system coefficients
-        K[ii,iW]    =   -1 / dx
-        K[ii,iE]    =   1 / dx
-        K[ii,iS]    =   -1 / dy 
-        K[ii,iN]    =   1 / dy
+        # iW  =   Num.Vx[i,j]
+        # iE  =   Num.Vx[i+1,j]
+        # iS  =   Num.Vy[i,j]
+        # iN  =   Num.Vy[i,j+1]
+        # # Linear system coefficients
+        # K[ii,iW]    =   -1 / dx
+        # K[ii,iE]    =   1 / dx
+        # K[ii,iS]    =   -1 / dy 
+        # K[ii,iN]    =   1 / dy
+        if i == 1 && j == 1
+            K[ii,ii] = 1.0
+        else
+            iW = Num.Vx[i,j]
+            iE = Num.Vx[i+1,j]
+            iS = Num.Vy[i,j]
+            iN = Num.Vy[i,j+1]
+
+            K[ii,iW] = -1 / dx
+            K[ii,iE] =  1 / dx
+            K[ii,iS] = -1 / dy
+            K[ii,iN] =  1 / dy
+        end
     end
     return flush!(K)
 end
 
 """
     updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
+
+Assemble the right-hand-side vector for the two-dimensional
+incompressible Stokes equations with constant viscosity.
+
+The function incorporates the contributions from prescribed velocity
+boundary conditions and the gravitational body force into the linear
+system. The returned right-hand-side vector is compatible with the
+coefficient matrix assembled by `Assemblyc`.
+
+# Arguments
+    - `NC`  : Number of computational cells in the x- and y-directions.
+    - `NV`  : Number of velocity nodes in the x- and y-directions.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `η`   : Constant dynamic viscosity.
+    - `ρ`   : Cell-centered density field.
+    - `g`   : Gravitational acceleration.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `Num` : Structure containing the global equation numbers for `vₓ`,
+                `vᵧ`, and pressure.
+
+# Returns
+The right-hand-side vector of the linear Stokes system.
 """
 function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
 
-    rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
+    CheckStokesBoundaryTypes(BC)
+
+    ndof = maximum((
+        maximum(Num.Vx),
+        maximum(Num.Vy),
+        maximum(Num.Pt),
+    ))
+
+    rhs     =   zeros(ndof)  #   Right-hand Side
+    # rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
 
     # x momentum equation ----------------------------------------------- #
     for i = 1:NV.x, j = 1:NC.y
@@ -118,8 +237,10 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
             # East and West boundary ---
             # Free Slip && No Slip: vₓ = 0 
             # rhs[ii]     =   0.0
-            CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
-            CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            # CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
+            # CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            CW = (i == 1    && (BC.type.W == :const || BC.type.W == :ps)) ? 1. : 0.
+            CE = (i == NV.x && (BC.type.E == :const || BC.type.E == :ps)) ? 1. : 0.
             rhs[ii]  += CW * BC.val.vxW[j] + CE * BC.val.vxE[j]
         else            
             # ---
@@ -139,8 +260,10 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
             # North and South boundary ---
             # Free Slip && No Slip: vy = 0 
             # rhs[ii]     =   0.0
-            CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
-            CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            # CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
+            # CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            CS = (j == 1    && (BC.type.S == :const || BC.type.S == :ps)) ? 1. : 0.
+            CN = (j == NV.y && (BC.type.N == :const || BC.type.N == :ps)) ? 1. : 0.
             rhs[ii]     += CN * BC.val.vyN[i] + CS * BC.val.vyS[i]
         else            
             # ---
@@ -156,9 +279,41 @@ function updaterhsc(NC, NV, Δ, η, ρ, g, BC, Num)
 end
 
 """
-    Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
+    Residuals2Dc!(D, BC, ε, τ, divV, Δ, η, g, Fm, FPt)
+
+Compute the momentum and continuity residuals for the two-dimensional
+incompressible Stokes equations with constant viscosity.
+
+The function first applies the prescribed velocity boundary conditions.
+It then evaluates the velocity divergence, strain-rate components,
+viscous stresses, momentum residuals, and continuity residual on the
+staggered grid. The residuals are computed consistently with the
+constant-viscosity operator assembled by [`Assemblyc`](@ref) and are
+intended for use in the defect-correction solver.
+
+All output fields are updated in place.
+
+# Arguments
+    - `D`   : Structure containing the velocity, pressure, and density fields.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `ε`   : Structure storing the strain-rate components.
+    - `τ`   : Structure storing the viscous stress components.
+    - `divV`: Cell-centered velocity-divergence field.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `η`   : Constant dynamic viscosity.
+    - `g`   : Gravitational acceleration.
+    - `Fm`  : Structure storing the horizontal and vertical momentum residuals.
+    - `FPt` : Array storing the continuity residual.
+
+# Returns
+Nothing. The strain-rate, stress, divergence, and residual fields are
+updated in place.
 """
 function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
+
+    CheckStokesBoundaryTypes(BC)
+
     @. D.vx[:,1]        = (BC.type.S==:freeslip||BC.type.S==:ps)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
     # @. D.vx[:,2]        = (BC.type.S==:ps)*D.vx[:,1]
     @. D.vy[2:end-1,1]  = (BC.type.S==:const||BC.type.S==:ps)*BC.val.vyS
@@ -180,8 +335,8 @@ function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     # @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip)*(2*BC.val.W - D.vy[2,:])
     # @. D.vy[end,:]  = (BC.type.E==:freeslip)*D.vy[end-1,:] + (BC.type.E==:noslip)*(2*BC.val.E - D.vy[end-1,:])
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
-    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
-    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
+    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x # - 1.0/3.0*divV
+    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y # - 1.0/3.0*divV
     @. ε.xy =   0.5*( (D.vx[:,2:end] - D.vx[:,1:end-1])/Δ.y + (D.vy[2:end,:] - D.vy[1:end-1,:])/Δ.x ) 
     @. τ.xx =   2.0 * η * ε.xx
     @. τ.yy =   2.0 * η * ε.yy
@@ -191,13 +346,48 @@ function Residuals2Dc!(D,BC,ε,τ,divV,Δ,η,g,Fm,FPt)
     @. FPt             = divV
 end
 
+# ======================================================================= #
+# Variable viscosity solver ============================================= #
+# ======================================================================= #
 """
     Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
+
+Assemble the sparse coefficient matrix for the two-dimensional
+incompressible Stokes equations with spatially variable viscosity.
+
+The function constructs the finite-difference stencils for the
+horizontal and vertical momentum equations and for the continuity
+equation on a staggered grid. Cell-centered viscosities are used for
+the normal stress components, whereas vertex-centered viscosities are
+used for the shear stress components. The prescribed boundary
+conditions are incorporated into the matrix coefficients, and one
+pressure degree of freedom is fixed to remove the pressure nullspace.
+
+# Arguments
+    - `NC`  : Number of computational cells in the x- and y-directions.
+    - `NV`  : Number of velocity nodes in the x- and y-directions.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `ηc`  : Cell-centered dynamic viscosity field.
+    - `ηv`  : Vertex-centered dynamic viscosity field.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `Num` : Structure containing the global equation numbers for `vₓ`,
+                `vᵧ`, and pressure.
+
+# Returns
+The finalized sparse coefficient matrix.
 """
 function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
 
+    CheckStokesBoundaryTypes(BC)
+
     # Linear system of equation ---
-    ndof    =   maximum(Num.Pt)
+    # ndof    =   maximum(Num.Pt)
+    ndof = maximum((
+        maximum(Num.Vx),
+        maximum(Num.Vy),
+        maximum(Num.Pt),
+    ))
     K       =   ExtendableSparseMatrix(ndof,ndof)
     dx,dy   =   Δ.x, Δ.y
 
@@ -300,25 +490,73 @@ function Assembly(NC, NV, Δ, ηc, ηv, BC, Num)
         # Equation number ---
         ii  =   Num.Pt[i,j]
         # Stencil ---
-        iW  =   Num.Vx[i,j]
-        iE  =   Num.Vx[i+1,j]
-        iS  =   Num.Vy[i,j]
-        iN  =   Num.Vy[i,j+1]
+        # iW  =   Num.Vx[i,j]
+        # iE  =   Num.Vx[i+1,j]
+        # iS  =   Num.Vy[i,j]
+        # iN  =   Num.Vy[i,j+1]
         # Linear system coefficients
-        K[ii,iW]    =   -1 / dx
-        K[ii,iE]    =   1 / dx
-        K[ii,iS]    =   -1 / dy 
-        K[ii,iN]    =   1 / dy
+        # K[ii,iW]    =   -1 / dx
+        # K[ii,iE]    =   1 / dx
+        # K[ii,iS]    =   -1 / dy 
+        # K[ii,iN]    =   1 / dy
+        if i == 1 && j == 1
+            K[ii,ii] = 1.0
+        else
+            iW = Num.Vx[i,j]
+            iE = Num.Vx[i+1,j]
+            iS = Num.Vy[i,j]
+            iN = Num.Vy[i,j+1]
+
+            K[ii,iW] = -1 / dx
+            K[ii,iE] =  1 / dx
+            K[ii,iS] = -1 / dy
+            K[ii,iN] =  1 / dy
+        end
     end
     return flush!(K)
 end
 
 """
     updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
+
+Assemble the right-hand-side vector for the two-dimensional
+incompressible Stokes equations with spatially variable viscosity.
+
+The function incorporates the contributions from prescribed velocity
+boundary conditions and the gravitational body force into the linear
+system. Vertex-centered viscosities are used for the boundary terms
+associated with the shear stress components. The returned
+right-hand-side vector is compatible with the coefficient matrix
+assembled by [`Assembly`](@ref).
+
+# Arguments
+    - `NC`  : Number of computational cells in the x- and y-directions.
+    - `NV`  : Number of velocity nodes in the x- and y-directions.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `ηc`  : Cell-centered dynamic viscosity field.
+    - `ηv`  : Vertex-centered dynamic viscosity field.
+    - `ρ`   : Cell-centered density field.
+    - `g`   : Gravitational acceleration.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `Num` : Structure containing the global equation numbers for `vₓ`,
+                `vᵧ`, and pressure.
+
+# Returns
+The right-hand-side vector of the linear Stokes system.
 """
 function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
 
-    rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
+    CheckStokesBoundaryTypes(BC)
+
+    ndof = maximum((
+        maximum(Num.Vx),
+        maximum(Num.Vy),
+        maximum(Num.Pt),
+    ))
+
+    rhs     =   zeros(ndof)  #   Right-hand Side
+    # rhs     =   zeros(maximum(Num.Pt))  #   Right-hand Side
 
     # x momentum equation ----------------------------------------------- #
     for i = 1:NV.x, j = 1:NC.y
@@ -329,8 +567,10 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
             # East and West boundary ---
             # Free Slip && No Slip: vₓ = 0 
             # rhs[ii]     =   0.0
-            CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
-            CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            # CW  =   (i==1 && BC.type.W==:const) ? 1. : 0.
+            # CE  =   (i==NV.x && BC.type.E==:const) ? 1. : 0. 
+            CW = (i == 1    && (BC.type.W == :const || BC.type.W == :ps)) ? 1. : 0.
+            CE = (i == NV.x && (BC.type.E == :const || BC.type.E == :ps)) ? 1. : 0.
             rhs[ii]  += CW * BC.val.vxW[j] + CE * BC.val.vxE[j]
         else            
             # ---
@@ -350,8 +590,10 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
             # North and South boundary ---
             # Free Slip && No Slip: vy = 0 
             # rhs[ii]     =   0.0
-            CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
-            CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            # CS  =   (j==1 && BC.type.S==:const) ? 1. : 0.
+            # CN  =   (j==NV.y && BC.type.N==:const) ? 1. : 0.
+            CS = (j == 1    && (BC.type.S == :const || BC.type.S == :ps)) ? 1. : 0.
+            CN = (j == NV.y && (BC.type.N == :const || BC.type.N == :ps)) ? 1. : 0.
             rhs[ii]     += CN * BC.val.vyN[i] + CS * BC.val.vyS[i]
         else            
             # ---
@@ -367,9 +609,44 @@ function updaterhs(NC, NV, Δ, ηc, ηv, ρ, g, BC, Num)
 end
 
 """
-    Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
+    Residuals2D!(D, BC, ε, τ, divV, Δ, ηc, ηv, g, Fm, FPt)
+
+Compute the momentum and continuity residuals for the two-dimensional
+incompressible Stokes equations with spatially variable viscosity.
+
+The function first applies the prescribed velocity boundary conditions.
+It then evaluates the velocity divergence, strain-rate components,
+viscous stresses, momentum residuals, and continuity residual on the
+staggered grid. Cell-centered viscosities are used for the normal
+stress components, whereas vertex-centered viscosities are used for
+the shear stress component.
+
+The residuals are computed consistently with the variable-viscosity
+operator assembled by [`Assembly`](@ref) and are intended for use in
+the defect-correction solver. All output fields are updated in place.
+
+# Arguments
+    - `D`   : Structure containing the velocity, pressure, and density fields.
+    - `BC`  : Boundary condition structure specifying the boundary types and
+                values.
+    - `ε`   : Structure storing the strain-rate components.
+    - `τ`   : Structure storing the viscous stress components.
+    - `divV`: Cell-centered velocity-divergence field.
+    - `Δ`   : Grid spacing in the x- and y-directions.
+    - `ηc`  : Cell-centered dynamic viscosity field.
+    - `ηv`  : Vertex-centered dynamic viscosity field.
+    - `g`   : Gravitational acceleration.
+    - `Fm`  : Structure storing the horizontal and vertical momentum residuals.
+    - `FPt` : Array storing the continuity residual.
+
+# Returns
+Nothing. The strain-rate, stress, divergence, and residual fields are
+updated in place.
 """
 function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
+
+    CheckStokesBoundaryTypes(BC)
+
     # @. D.vx[:,1]    = (BC.type.S==:freeslip)*D.vx[:,2]     + (BC.type.S==:noslip||BC.type.S==:const)*(2*BC.val.S - D.vx[:,2])
     # @. D.vx[:,end]  = (BC.type.N==:freeslip)*D.vx[:,end-1] + (BC.type.N==:noslip||BC.type.N==:const)*(2*BC.val.N - D.vx[:,end-1])
     # @. D.vy[1,:]    = (BC.type.W==:freeslip)*D.vy[2,:]     + (BC.type.W==:noslip||BC.type.W==:const)*(2*BC.val.W - D.vy[2,:])
@@ -391,8 +668,8 @@ function Residuals2D!(D,BC,ε,τ,divV,Δ,ηc,ηv,g,Fm,FPt)
     @. D.vx[end,2:end-1]= (BC.type.E==:const||BC.type.E==:ps)*BC.val.vxE
 
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
-    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
-    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
+    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x # - 1.0/3.0*divV
+    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y # - 1.0/3.0*divV
     @. ε.xy =   0.5*( (D.vx[:,2:end] - D.vx[:,1:end-1])/Δ.y + (D.vy[2:end,:] - D.vy[1:end-1,:])/Δ.x ) 
     @. τ.xx =   2.0 * ηc * ε.xx
     @. τ.yy =   2.0 * ηc * ε.yy

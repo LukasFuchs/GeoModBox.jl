@@ -60,7 +60,7 @@ P   =   Physics(
     k       =   5.0,                #   Thermal Conductivity [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.5e-5,             #   THermal Expansion [ K^-1 ]
-    Q₀      =   0.0,                #   Volumetric Heat Production rate [W/m^3]
+    # Q₀      =   0.0,                #   Volumetric Heat Production rate [W/m^3]
     η₀      =   1e21,               #   Reference Viscosity [ Pa*s ]
     ΔT      =   1000.0,             #   Temperature Difference
     # If Ra < 0, Ra will be calculated from the reference parameters.
@@ -160,7 +160,7 @@ x       =   (
 )
 y       =   (
     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
     v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
 x1      =   (

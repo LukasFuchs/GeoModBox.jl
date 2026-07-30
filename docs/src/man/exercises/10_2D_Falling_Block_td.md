@@ -17,6 +17,8 @@ The main objectives are:
 
 This problem demonstrates how to couple **Stokes flow** with **advection of material properties**, and how the choice of advection scheme affects the evolution of the solution.  
 
-![Exercise10](../../assets/exercises/10.gif)
+<!-- ![Exercise10](../../assets/exercises/10.gif) -->
+
+<img src="../../assets/exercises/10.gif" width="700">
 
 **Figure 1.** Time evolution of the sinking block in a viscous medium using the tracer advection method.  

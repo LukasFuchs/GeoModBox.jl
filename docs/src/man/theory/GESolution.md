@@ -104,7 +104,9 @@ Staggered grids also offer advantages in implementing boundary conditions. For e
 
 For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temperature equation. The complete grid structure used for the governing equations in `GeoModBox.jl` is illustrated below:
 
-![2DGrid_total](../assets/Grid_total.png)
+<!-- ![2DGrid_total](../assets/Grid_total.png) -->
+
+<img src="../../assets/theory/Grid_total.png" width="700">
 
 **Figure 1. Staggered Finite Difference Grid used in ´GeoModBox.jl`.**
 

@@ -1,6 +1,6 @@
 # Stokes Equation (2D)
 
-The Stokes equation in two dimensions is defined as:
+For creeping flows, the conservation of momentum reduces to the Stokes equations, 
 
 $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + \frac{\partial{\tau_{ij}}}{\partial{x_j}} + \rho g_i, 
@@ -12,7 +12,7 @@ $\begin{equation}
 \tau_{ij} = 2\eta \dot{\varepsilon}_{ij}, 
 \end{equation}$
 
-where $\eta$ is the dynamic viscosity [Pa·s], and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor [1/s], given by:
+where $\eta$ is the viscosity [Pa·s], and $\dot{\varepsilon}_{ij}$ is the strain-rate tensor [1/s], given by:
 
 $\begin{equation}
 \dot{\varepsilon}_{ij} = \frac{1}{2} \left( \frac{\partial{v_i}}{\partial{x_j}} + \frac{\partial{v_j}}{\partial{x_i}} \right),
@@ -22,23 +22,39 @@ where $v_i$ is the velocity [m/s] in the $i$-th direction.
 
 The Stokes equation yields two equations for the three unknowns $v_x$, $v_y$, and $P$. An additional equation is therefore required: the mass conservation equation.
 
-The conservation of mass (assuming an incompressible medium) is defined as:
+The conservation of mass is described in the Eulerian reference frame by
+
+$\begin{equation}
+\frac{\partial{\rho}}{\partial{t}} + \frac{\partial}{\partial{x_i}}\left(\rho v_i\right)=0,
+\end{equation}$
+
+which describes the conservation of mass within an infinitesimal control volume. The first term represents the temporal change in mass within the control volume, whereas the second term represents the net mass flux across its boundaries. Applying the product rule to the second term of Equation (4), together with the definition of the material derivative, yields the Lagrangian form of the mass conservation equation
+
+$\begin{equation}
+\frac{1}{\rho}\frac{D \rho}{D t}+\frac{\partial{v_i}}{\partial{x_i}}=0
+\end{equation}$
+
+Assuming an incompressible fluid $\left(\frac{D \rho}{D t} \equiv 0  \right)$, Equation (5) simplifies to the continuity equation 
 
 $\begin{equation}
 \frac{\partial{v_i}}{\partial{x_i}} = 0.
 \end{equation}$ 
 
+Together, the Stokes and continuity equations form a closed system for the unknown velocity and pressure variables. 
+
 # Discretization 
 
-To numerically solve Equations (1) and (4), the spatial domain must be discretized and the relevant properties assigned to the appropriate computational nodes. Thus, the equations are discretized on a staggered finite difference grid, where the horizontal (cyan dashes) and vertical (orange dashes) velocities are defined between the regular grid points (vertices), and the pressure (red circles) within finite difference cells (centroids), as shown in Figure 1.
+To numerically solve Equations (1) and (6), the spatial domain must be discretized and the relevant properties assigned to the appropriate computational nodes. Thus, the equations are discretized on a staggered finite difference grid, where the horizontal (cyan dashes) and vertical (orange dashes) velocities are defined between the regular grid points (vertices), and the pressure (red circles) within finite difference cells (centroids), as shown in Figure 1.
 
-![MomentumGrid](../assets/MomentumGrid.png)
+<!-- ![MomentumGrid](../assets/MomentumGrid.png) -->
+
+<img src="../../assets/theory/MomentumGrid.jpg" width="700">
 
 **Figure 1. Staggered finite difference grid for the momentum and mass conservation equation.** The horizontal and vertical velocities require *ghost nodes* at the North, South, East, and West boundaries, respectively.
 
 A staggered grid enables conservation of stress between adjacent grid points and requires careful placement of the associated variables. Each equation is evaluated at the central node of its respective variable grid, requiring values from neighboring nodes defined by the numerical stencil. The locations of these points in a finite difference scheme are determined by a numerical stencil. Thus, care needs to be taken generating the index for the variables. For the 2D Stokes equation in combination with the 2D mass conservation equation, different numerical stencils need to be considered, especially for cases of constant and variable viscosity. The stencils for each equation assuming constant or variable viscosity are discussed in more detail below. The spatial discretization relies on central finite differences to approximate both the velocity and pressure gradients.
 
-The indices of the adjacent points, which determine the positions of the coefficients in the coefficient matrix, can be expressed using the local indices $i$ and $j$ of each numerical grid. Because a staggered grid is used, each variable field ($v_x$, $v_y$, $P$, $\tau_{ij}$, $\eta$, and $\rho$) is defined on its own grid and therefore possesses its own local indices $(i,j)$ and a variable-specific global index. The local indices describe the position of the computational node of each corresponding variable grid in the horizontal and vertical directions, respectively. The global index assumes a horizontal numbering through the model domain; that is, the numbering proceeds row by row from the bottom to the top. The indices for the adjacent centroid points follows the indexing convention described in the [2D heat diffusion equation](./DiffTwoD.md). 
+The indices of the adjacent points, which determine the positions of the coefficients in the coefficient matrix, can be expressed using the local indices $i$ and $j$ of each numerical grid. Because a staggered grid is used, each variable field ($v_x$, $v_y$, $P$, $\tau_{ij}$, $\eta$, and $\rho$) is defined on its own grid and therefore possesses its own local indices $(i,j)$ and a variable-specific global index. The local indices describe the position of the computational node of each corresponding variable grid in the horizontal and vertical directions, respectively. The global index assumes a horizontal numbering through the model domain; that is, the numbering proceeds row by row from the bottom to the top. The indices for the adjacent centroid points follows the indexing convention described in the [general solution section](./GESolution.md). 
 
 For clarity, two types of global indices are used below:
 
@@ -55,7 +71,7 @@ I^\textrm{C}_c = \left(j-1\right) nc_x + i,
 
 where $nc_x$ is the total number of centroids in the horizontal direction. Here, it is important to distinguish between the centroid index used for density and the system global index used for pressure, because pressure is part of the consecutively numbered unknowns in the assembled system of equations (see below). 
 
-The global index for the shear stress, for examples, is defined by consecutively numbering the vertices:
+The global index for the shear stress, for example, is defined by consecutively numbering the vertices:
 
 $\begin{equation}
 I^\textrm{C}_v = \left(j-1\right) nv_x + i,
@@ -185,19 +201,25 @@ I^\textrm{N}_{mc} & = I^\textrm{N}_{y}.
 
 ## Field Management
 
-For evaluating the Stokes equation in `GeoModBox.jl`, a staggered velocity grid is used. Velocity ghost nodes are introduced for the horizontal velocity component at the North and South boundaries and for the vertical velocity component at the East and West boundaries of the model domain. Consequently, each velocity field is extended in the direction for which no velocity node lies directly on the boundary.
+For solving the incompressible Stokes equations in `GeoModBox.jl`, a staggered grid is employed. Velocity ghost nodes are introduced for the horizontal velocity component at the North and South boundaries and for the vertical velocity component at the East and West boundaries of the model domain. Consequently, each velocity field is extended in the direction normal to the boundary on which no velocity nodes are located.
 
-The residual used in the defect correction method is evaluated at the velocity and pressure nodes using the corresponding stress, pressure, and density gradients. The residual is not evaluated for velocity nodes located directly on the domain boundaries because these nodes are prescribed by the boundary conditions (e.g. no-slip or free-slip). For these nodes, the residual is set to zero. For nodes adjacent to the boundary, ghost-node velocity values are required to evaluate the stress divergence and to compute the residual.
+The momentum residual is evaluated only at interior velocity nodes, whereas the continuity residual is evaluated at cell centers. Velocity values located on the domain boundaries are prescribed by the selected boundary conditions (e.g., no-slip, free-slip, constant velocity, or pure shear) and therefore do not constitute unknowns of the momentum equations. Instead, the corresponding rows of the linear system enforce the prescribed boundary values directly. For velocity nodes adjacent to the boundaries, ghost-node values are constructed from the boundary conditions and are used to evaluate the stress divergence appearing in the momentum residual.
 
-Within `GeoModBox.jl`, the residual is calculated separately for each 2D variable field using the corresponding local indices. The residuals of the individual fields are then assembled into a single 1D residual vector following the global indexing defined in Equations (7)–(9). The dimension of the system of equations, and therefore the size of the coefficient matrix, is determined by the total number of equations. The coefficients of the matrix are modified directly according to the prescribed boundary conditions. The correction terms are then added to the initial guess, where the unknowns $v_x$, $v_y$, and $P$ are likewise stored in a single 1D solution vector. In the following, the global index always refers to this total 1D vector.
+Within `GeoModBox.jl`, the residual is calculated separately for each 2D variable field using the corresponding local indices. The momentum and continuity residuals are first evaluated on their native staggered grids and are subsequently assembled into a single one-dimensional residual vector using the global indexing defined in Equations (9)–(11). The size of the linear system is determined by the total number of degrees of freedom. The coefficients of the matrix are modified directly according to the prescribed boundary conditions. During the defect-correction iteration, the computed correction vector is added to the current solution estimate. Both the correction vector and the solution vector store the unknowns $v_x$, $v_y$, and $P$ in the one-dimensional ordering introduced above. In the following, the global index always refers to this total 1D vector.
 
-For the special-case solution using a single left-matrix division, the dimension of the coefficient matrix remains unchanged. In this case, the solver modifies only the right-hand side of the system according to the boundary conditions.
+For the direct solution strategy based on a single left-matrix division, the same coefficient matrix is assembled. Instead of evaluating a residual, the boundary-condition contributions are incorporated into the right-hand side of the linear system, which is then solved directly.
 
 ## Boundary Conditions
 
-To correctly impose boundary conditions at all boundaries, ghost nodes located at $\frac{\Delta{x}}{2}$ and $\frac{\Delta{y}}{2}$ outside the domain are used. However, ghost nodes for the velocities are only required in the direction where the corresponding velocity component is located at a cell face rather than directly on the boundary (see Figure 1). The velocity values at these ghost nodes are directly included in the discretized FD formulations for the nodes adjacent to the boundaries.
+To impose boundary conditions on the staggered velocity grid, ghost nodes located a distance $\frac{\Delta x}{2}$ and $\frac{\Delta y}{2}$ outside the computational domain are introduced. However, ghost nodes for the velocities are only required in the direction where the corresponding velocity component is located at a cell face rather than directly on the boundary (see Figure 1). The velocity values at these ghost nodes are directly included in the discretized FD formulations for the nodes adjacent to the boundaries.
 
-Within `GeoModBox.jl`, the most commonly applied boundary conditions for the momentum equation are combinations of *Dirichlet* and *Neumann* velocity boundary conditions. These are typically referred to as *free-slip* and *no-slip* boundary conditions.
+`GeoModBox.jl` supports four boundary-condition types for the momentum equations: free-slip, no-slip, constant velocity, and pure shear. These correspond to different combinations of Dirichlet and Neumann conditions imposed on the normal and tangential velocity components. 
+
+Constant-velocity boundary conditions are implemented analogously to the no-slip condition, except that the prescribed boundary velocity may take an arbitrary constant value. For pure-shear boundary conditions, the normal velocity component is prescribed at the corresponding boundary, while the tangential velocity satisfies a zero normal derivative, analogous to the free-slip condition. 
+
+For boundaries requiring ghost nodes, the ghost-node values are chosen such that linear interpolation between the ghost node and the adjacent interior node recovers the prescribed boundary velocity (e.g., $v_{x,S}$, $v_{x,N}$, $v_{y,E}$, and $v_{y,W}$). Consequently, all velocity components must be specified when prescribing a deformation field such as pure shear. 
+
+In the following, the ghost-node values are obtained by enforcing either a zero normal derivative (free-slip) or a prescribed boundary velocity (no-slip or constant velocity) using linear interpolation between the ghost node and the adjacent interior node.
 
 ### Free-slip 
 
@@ -235,7 +257,11 @@ $\begin{equation}
 v_{x,G^N} = v_{x,(:,nc_y)}.
 \end{equation}$
 
-At the lateral boundaries (East, West), the horizontal velocity nodes fall directly on the boundary and thus $v_x$ is set to zero.
+Since the horizontal velocity nodes lie directly on the East and West boundaries, the normal velocity is prescribed directly as 
+
+$$
+v_x = 0.
+$$
 
 **$y$-component**
 
@@ -253,11 +279,16 @@ $\begin{equation}
 v_{y,G^E} = v_{y,(nc_x,:)}.
 \end{equation}$
 
-Along the North and South boundaries, the vertical velocity nodes fall directly on the boundary and thus $v_y$ is set to zero.
+Since the vertical velocity nodes lie directly on the North and South boundaries, the normal velocity is prescribed directly as 
+
+$$
+v_y = 0.
+$$
+
 
 ### No-slip
 
-No-slip boundary conditions enforce zero velocity along the boundary, effectively "fixing" the fluid to the boundary. That is, for all boundaries (East, West, South, North), the velocity components satisfy:
+No-slip boundary conditions enforce zero velocity relative to the boundary. Thus, for all boundaries (East, West, South, and North), the velocity components satisfy:
 
 $\begin{equation}
 \begin{split}
@@ -306,6 +337,48 @@ where $V_{BC}^W$ and $V_{BC}^E$ are the prescribed boundary velocities (again ty
 
 Along the North and South boundaries, the velocity nodes fall directly on the boundary and thus, $v_y$ is set to zero, consistent with the free-slip implementation.
 
+### Constant velocity
+
+Constant-velocity boundary conditions prescribe the velocity component located directly on the boundary while enforcing a zero normal gradient for the complementary velocity component through the ghost-node formulation. The implementation is identical to the no-slip condition, except that the prescribed boundary velocity may take any constant value.
+
+For example, on the West boundary the horizontal velocity is prescribed directly at the boundary node,
+
+$\begin{equation}
+v_{x,(1,:)} = V_{BC}^W,
+\end{equation}$
+
+$\begin{equation}
+v_{y,G^W} = 2V_{BC}^W - v_{y,(1,:)},
+\end{equation}$
+
+and on the South boundary the vertical velocity
+
+$\begin{equation}
+v_{x,G^S} = 2V_{BC}^S - v_{x,(:,1)},
+\end{equation}$
+
+$\begin{equation}
+v_{y,(1,:)} = V_{BC}^S.
+\end{equation}$
+
+The same formulation applies to the East and North boundaries.
+
+### Pure shear
+
+Pure-shear boundary conditions prescribe the normal velocity component while enforcing a zero normal gradient of the tangential velocity. Consequently, the tangential ghost-node values are identical to those used for the free-slip condition. For example, for the southern boundary:
+
+$\begin{equation}
+v_{x,G^S} = v_{x,(:,1)},
+\end{equation}$
+
+whereas the normal velocity is prescribed directly at the boundary,
+
+$\begin{equation}
+v_{y,(:,1)} = V_{BC}^S.
+\end{equation}$
+
+This boundary condition is particularly useful for extension and shortening experiments in deformable domains.
+
 ## Constant Viscosity
 
 Let us first consider the special case of constant viscosity, for which Equation (1) simplifies to:
@@ -314,7 +387,7 @@ $\begin{equation}
 0 = -\frac{\partial{P}}{\partial{x_i}} + 2\eta\frac{\partial^2{v_i}}{\partial{x_i^2}} + \eta\left(\frac{\partial^2{v_i}}{\partial{x_j^2}}+\frac{\partial^2{v_j}}{\partial{x_i^2}}\right) + \rho g_i. 
 \end{equation}$
 
-By applying equation (4) and neglecting horizontal gravitational acceleration, equation (30) simplifies to the component-wise forms:
+By applying equation (6) and neglecting horizontal gravitational acceleration, equation (38) simplifies to the component-wise forms:
 
 **$x$-component** 
 
@@ -334,11 +407,13 @@ To discretize these equations, we define a numerical stencil indicating the grid
 
 The numerical stencils for the constant-viscosity momentum equations are shown in Figure 2. These stencils illustrate the neighboring grid points required to evaluate each component using a finite difference scheme.
 
-![StencilConstEta](../assets/Stencil_const_eta.png)
+<!-- ![StencilConstEta](../../assets/theory/Stencil_const_eta.png) -->
+
+<img src="../../assets/theory/Stencil_const_eta.png" width="700">
 
 **Figure 2. Numerical stencils for constant viscosity.** a) *$x$-component*; b) *$y$-component*.
 
-By applying finite difference approximations to the partial derivatives, equations (31) and (32) become:
+By applying finite difference approximations to the partial derivatives, Equations (39) and (40) become:
 
 **$x$-component**
 
@@ -349,15 +424,15 @@ $\begin{equation}\begin{gather*}
 Rearranging and grouping terms, we obtain:
 
 $\begin{equation}\begin{gather*}
-& W_pP_{I^{\textrm{W}}_{p}} + C_pP_{I^{\textrm{C}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + \\ & C_xv_{x,I^{\textrm{C}}_{x}} + \\ & E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}} = 0, 
+& W_PP_{I^{\textrm{W}}_{p}} + C_PP_{I^{\textrm{C}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + \\ & C_xv_{x,I^{\textrm{C}}_{x}} + \\ & E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}} = 0, 
 \end{gather*}\end{equation}$
 
 where the coefficients are defined as:
 
 $\begin{equation}
 \begin{split}
-W_p & = \frac{1}{\Delta{x}}, \\
-C_p & = -\frac{1}{\Delta{x}},  \\
+W_P & = \frac{1}{\Delta{x}}, \\
+C_P & = -\frac{1}{\Delta{x}},  \\
 S_x & = \frac{\eta}{\Delta{y^2}}, \\
 W_x & = \frac{\eta}{\Delta{x^2}}, \\
 C_x & = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
@@ -375,15 +450,15 @@ $\begin{equation}\begin{gather*}
 Rearranging and grouping terms, we obtain:
 
 $\begin{equation}\begin{gather*}
-& S_pP_{I^{\textrm{S}}_{p}} + C_pP_{I^{\textrm{C}}_{p}} + \\ & S_yv_{y,I^{\textrm{S}}_{y}} + W_yv_{y,I^{\textrm{W}}_{y}} + \\ & C_yv_{y,I^{\textrm{C}}_{y}} + \\ & E_yv_{y,I^{\textrm{E}}_{y}} + N_y v_{y,I^{\textrm{N}}_{y}} = \\ & -\frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
+& S_PP_{I^{\textrm{S}}_{p}} + C_PP_{I^{\textrm{C}}_{p}} + \\ & S_yv_{y,I^{\textrm{S}}_{y}} + W_yv_{y,I^{\textrm{W}}_{y}} + \\ & C_yv_{y,I^{\textrm{C}}_{y}} + \\ & E_yv_{y,I^{\textrm{E}}_{y}} + N_y v_{y,I^{\textrm{N}}_{y}} = \\ & -\frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 with coefficients defined as:
 
 $\begin{equation}
 \begin{split}
-S_p & = \frac{1}{\Delta{y}},  \\
-C_p & = -\frac{1}{\Delta{y}}, \\
+S_P & = \frac{1}{\Delta{y}},  \\
+C_P & = -\frac{1}{\Delta{y}}, \\
 S_y & = \frac{\eta}{\Delta{y^2}}, \\
 W_y & = \frac{\eta}{\Delta{x^2}}, \\
 C_y & = -2\eta\left(\frac{1}{\Delta{x^2}}+\frac{1}{\Delta{y^2}}\right), \\
@@ -414,7 +489,9 @@ where $\eta_c$ denotes the viscosity defined at the *centroids*, and $\eta_v$ de
 
 The stencils for the variable-viscosity momentum equations illustrate the grid points required to discretize each velocity component using finite differences (Figure 3).
 
-![Stencil_vary_eta](../assets/Stencil_vary_eta.png)
+<!-- ![Stencil_vary_eta](../../assets/theory/Stencil_vary_eta.png) -->
+
+<img src="../../assets/theory/Stencil_vary_eta.png" width="700">
 
 **Figure 3.** **Numerical stencils for variable viscosity.** a) *$x$-component*; b) *$y$-component*.  
 
@@ -510,11 +587,13 @@ The mass conservation equation provides the additional constraint required to so
 
 The corresponding numerical stencil involves only the horizontal and vertical velocity components (Figure 4).
 
-![StencilContinuum](../assets/Stencil_continuum.png)
+<!-- ![StencilContinuum](../../assets/theory/Stencil_continuum.png) -->
+
+<img src="../../assets/theory/Stencil_continuum.png" width="400">
 
 **Figure 4. Numerical stencil for the continuity equation.** 
 
-Using the finite difference operators, equation (4) is defined as:
+Using the finite difference operators, equation (6) is defined as:
 
 $\begin{equation}
 \frac{v_{x,I^\textrm{E}_{mc}}-v_{x,I^\textrm{W}_{mc}}}{\Delta{x}} + \frac{v_{y,I^\textrm{N}_{mc}}-v_{y,I^\textrm{S}_{mc}}}{\Delta{y}} = 0,
@@ -547,15 +626,19 @@ where
 - $\mathbf{x}$ is the solution vector, and 
 - $\mathbf{b}$ is the known right-hand side.
 
-The solution vector contains the horizontal and vertical velocity as well as the pressure field, whose ordering follows the system global numbering of $I^\textrm{C}_x$, $I^\textrm{C}_y$, and $I^\textrm{C}_p$ as defined in Equations (7)-(9). The right-hand side contains the buoyancy term for the $y$-component of the momentum equation. Depending on the chosen solution strategy, it may also include contributions from the boundary conditions. 
+The solution vector contains the horizontal and vertical velocity as well as the pressure field, whose ordering follows the system global numbering of $I^\textrm{C}_x$, $I^\textrm{C}_y$, and $I^\textrm{C}_p$ as defined in Equations (9)-(11). The right-hand side contains the buoyancy term for the $y$-component of the momentum equation. Depending on the chosen solution strategy, it may also include contributions from the boundary conditions. 
 
 The coefficient matrix $\mathbf{K_{I^\textrm{C}_{i},I^k_{j}}}$ varies depending on the state of the viscosity. The structure of the coefficient matrix for a certain grid resolution and boundary condition is shown in Figures (5) and (6).  
 
-![CoefficientMatrix](../assets/CoefficientMatrix.png)
+<!-- ![CoefficientMatrix](../../assets/theory/CoefficientMatrix.png) -->
+
+<img src="../../assets/theory/CoefficientMatrix.png" width="400">
 
 **Figure 5. Coefficient matrix, constant viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$, a constant viscosity, and free-slip boundaries. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuity equation. 
 
-![CoefficientMatrix_vary](../assets/CoefficientMatrixEtaVary.png)
+<!-- ![CoefficientMatrix_vary](../../assets/theory/CoefficientMatrixEtaVary.png) -->
+
+<img src="../../assets/theory/CoefficientMatrixEtaVary.png" width="400">
 
 **Figure 6. Coefficient matrix, variable viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$, a variable viscosity, and free-slip boundaries. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuity equation. 
 
@@ -563,9 +646,9 @@ The coefficient matrix $\mathbf{K_{I^\textrm{C}_{i},I^k_{j}}}$ varies depending 
 
 The system of equations can be solved in a general way using the defect correction. The equations are reformulated by introducing a residual term $\mathbf{r}$, which quantifies the deviation from the true solution and can be reduced iteratively to improve accuracy through successive correction steps. The defect correction method is particularly effective when solving non-linear systems. 
 
-First, the residual is calculated for each equation. If the velocity nodes required to calculate the residual are not located directly on the boundary, the corresponding ghost-node velocity values defined in Equations (19)–(24) for free-slip and Equations (25)–(29) for no-slip conditions are used. The stresses are either calculated via the shear (vertices) or the normal viscosity (centroids). 
+First, the residual is calculated for each equation. If the velocity nodes required to calculate the residual are not located directly on the boundary, the corresponding ghost-node velocity values defined in Equations (21)-(37) are used. The stresses are either calculated via the shear (vertices) or the normal viscosity (centroids). 
 
-The residuals $r_x$, $r_y$, and $r_p$ denote the local residuals at the corresponding central reference nodes of each variable grid. To solve the system of equations, the residuals are stored in a vector $\mathbf{r}$ with the global indexing as shown in equations (7)-(9). 
+The residuals $r_x$, $r_y$, and $r_p$ denote the local residuals at the corresponding central reference nodes of each variable grid. To solve the system of equations, the residuals are stored in a vector $\mathbf{r}$ with the global indexing as shown in Equations (9)-(11). 
 
 The local residual at the central reference node is defined as:  
 
@@ -592,13 +675,13 @@ Or in the terms of the unknown variables:
 *$x$-component*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = W_pP_{I^{\textrm{W}}_{p}} + C_pP_{I^{\textrm{C}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}}, 
+& r_{I^\textrm{C}_x} = W_PP_{I^{\textrm{W}}_{p}} + C_PP_{I^{\textrm{C}}_{p}} + \\ & S_xv_{x,I^{\textrm{S}}_{x}} +  W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + N_xv_{x,I^{\textrm{N}}_{x}}, 
 \end{gather*}\end{equation}$
 
 *$y$-component*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = S_pP_{I^{\textrm{S}}_{p}} + C_pP_{I^{\textrm{C}}_{p}} + \\ &  S_yv_{y,I^{\textrm{S}}_{y}} + W_yv_{y,I^{\textrm{W}}_{y}} + C_yv_{y,I^{\textrm{C}}_{y}} + E_yv_{y,I^{\textrm{E}}_{y}} + N_y v_{y,I^{\textrm{N}}_{y}} +\frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
+& r_{I^\textrm{C}_y} = S_PP_{I^{\textrm{S}}_{p}} + C_PP_{I^{\textrm{C}}_{p}} + \\ &  S_yv_{y,I^{\textrm{S}}_{y}} + W_yv_{y,I^{\textrm{W}}_{y}} + C_yv_{y,I^{\textrm{C}}_{y}} + E_yv_{y,I^{\textrm{E}}_{y}} + N_y v_{y,I^{\textrm{N}}_{y}} +\frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y, 
 \end{gather*}\end{equation}$
 
 **Variable Viscosity**
@@ -639,24 +722,24 @@ v_{y,I^\textrm{C}_y}^{k+1} & = v_{y,I^\textrm{C}_y}^k + \delta_{I^\textrm{C}_y},
 P_{I^\textrm{C}_p}^{k+1} & = P_{I^\textrm{C}_p}^k + \delta_{I^\textrm{C}_p},
 \end{split}\end{equation}$
 
-where the index of the vector $\delta$ corresponds to the global index for the variables as shown in equations (7)-(9).
+where the index of the vector $\delta$ corresponds to the global index for the variables as shown in Equations (9)-(11).
 
 ### Boundary Conditions
 
-The boundary conditions are implemented using the velocity values at the ghost nodes (see Equations (19)-(29)). To maintain symmetry in the coefficient matrix, the coefficients must be modified for nodes adjacent to the boundaries. The equations for the centroids adjacent to the boundary are then given by:
+The boundary conditions are implemented using the velocity values at the ghost nodes (see Equations (21)-(31)). To maintain symmetry in the coefficient matrix, the coefficients must be modified for nodes adjacent to the boundaries. For the sake of simplicity, we focus in the following on the most common boundary conditions, *no-slip* and *free-slip*. The constant-velocity and pure-shear boundary conditions are implemented using the same ghost-node substitutions as the no-slip and free-slip conditions, respectively, and therefore lead to analogous modifications of the discretized equations. The equations for the centroids adjacent to the boundary are then given by:
 
 #### Constant Viscosity 
 
 **Free-slip**
 
-Using equations (19)-(24), the discretized system of equations is updated accordingly. For free-slip boundaries, the right-hand side remains unchanged, but the coefficients are modified.
+Using Equations (21)-(26), the discretized system of equations is updated accordingly. For free-slip boundaries, the right-hand side remains unchanged, but the coefficients are modified.
 
 **$x$-component**
 
 *South*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} =  W_pP_{I^{\textrm{W}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}}+ E_xv_{x,I^{\textrm{E}}_{x}}+N_xv_{x,I^{\textrm{N}}_{x}},
+& r_{I^\textrm{C}_x} =  W_PP_{I^{\textrm{W}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}}+ E_xv_{x,I^{\textrm{E}}_{x}}+N_xv_{x,I^{\textrm{N}}_{x}},
 \end{gather*}\end{equation}$
 
 with 
@@ -666,7 +749,7 @@ $\begin{equation}C_x = -\frac{2\eta}{\Delta{x^2}}-\frac{\eta}{\Delta{y^2}}.\end{
 *North*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = W_pP_{I^{\textrm{W}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_xv_{x,I^{\textrm{S}}_{x}}+ W_xv_{x,I^{\textrm{W}}_{x}}+ C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} ,
+& r_{I^\textrm{C}_x} = W_PP_{I^{\textrm{W}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_xv_{x,I^{\textrm{S}}_{x}}+ W_xv_{x,I^{\textrm{W}}_{x}}+ C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} ,
 \end{gather*}\end{equation}$
 
 with 
@@ -686,7 +769,7 @@ and all other coefficients are set to zero.
 *West*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = S_pP_{I^{\textrm{S}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}} + C_yv_{y,I^{\textrm{C}}_{y}}+ E_yv_{y,I^{\textrm{E}}_{y}}+ N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y,
+& r_{I^\textrm{C}_y} = S_PP_{I^{\textrm{S}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}} + C_yv_{y,I^{\textrm{C}}_{y}}+ E_yv_{y,I^{\textrm{E}}_{y}}+ N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y,
 \end{gather*}\end{equation}$
 
 with 
@@ -696,7 +779,7 @@ $\begin{equation}C_y = -\frac{\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end{
 *East*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = S_pP_{I^{\textrm{S}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+ W_yv_{y,I^{\textrm{W}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}} + N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y,
+& r_{I^\textrm{C}_y} = S_PP_{I^{\textrm{S}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+ W_yv_{y,I^{\textrm{W}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}} + N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c}+\rho_{I^{\textrm{S}}_c}}{2} g_y,
 \end{gather*}\end{equation}$
 
 with 
@@ -713,14 +796,14 @@ and all other coefficients are zero.
 
 **No-slip**
 
-Using equations (25)-(29), the system coefficients and the right-hand side of the discretized equations are modified accordingly.
+Using Equations (27)-(31), the system coefficients and the right-hand side of the discretized equations are modified accordingly.
 
 **$x$-component**
 
 *South*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = W_pP_{I^{\textrm{W}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}}+ E_xv_{x,I^{\textrm{E}}_{x}}+N_xv_{x,I^{\textrm{N}}_{x}} + 2\frac{\eta}{\Delta{y^2}}V_{BC}^S,
+& r_{I^\textrm{C}_x} = W_PP_{I^{\textrm{W}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & W_xv_{x,I^{\textrm{W}}_{x}} + C_xv_{x,I^{\textrm{C}}_{x}}+ E_xv_{x,I^{\textrm{E}}_{x}}+N_xv_{x,I^{\textrm{N}}_{x}} + 2\frac{\eta}{\Delta{y^2}}V_{BC}^S,
 \end{gather*}\end{equation}$
 
 with 
@@ -730,7 +813,7 @@ $\begin{equation}C_x = -\frac{2\eta}{\Delta{x^2}}-\frac{3\eta}{\Delta{y^2}}.\end
 *North*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_x} = W_pP_{I^{\textrm{W}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_xv_{x,I^{\textrm{S}}_{x}}+W_xv_{x,I^{\textrm{W}}_{x}}+ C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + 2\frac{\eta}{\Delta{y^2}}V_{BC}^N,
+& r_{I^\textrm{C}_x} = W_PP_{I^{\textrm{W}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_xv_{x,I^{\textrm{S}}_{x}}+W_xv_{x,I^{\textrm{W}}_{x}}+ C_xv_{x,I^{\textrm{C}}_{x}} + E_xv_{x,I^{\textrm{E}}_{x}} + 2\frac{\eta}{\Delta{y^2}}V_{BC}^N,
 \end{gather*}\end{equation}$
 
 with 
@@ -750,7 +833,7 @@ with all other coefficients and the right-hand side equal to zero.
 *West*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = S_pP_{I^{\textrm{S}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}}+ E_yv_{y,I^{\textrm{E}}_{y}}+N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c} + \rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta}{\Delta{x^2}}V_{BC}^W,
+& r_{I^\textrm{C}_y} = S_PP_{I^{\textrm{S}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}}+ E_yv_{y,I^{\textrm{E}}_{y}}+N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c} + \rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta}{\Delta{x^2}}V_{BC}^W,
 \end{gather*}\end{equation}$
 
 with 
@@ -760,7 +843,7 @@ $\begin{equation}C_y = -\frac{3\eta}{\Delta{x^2}}-\frac{2\eta}{\Delta{y^2}}.\end
 *East*
 
 $\begin{equation}\begin{gather*}
-& r_{I^\textrm{C}_y} = S_pP_{I^{\textrm{S}}_{p}}+C_pP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+W_yv_{y,I^{\textrm{W}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}} + N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c} + \rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta}{\Delta{x^2}}V_{BC}^E,
+& r_{I^\textrm{C}_y} = S_PP_{I^{\textrm{S}}_{p}}+C_PP_{I^{\textrm{C}}_{p}}+ \\ & S_yv_{y,I^{\textrm{S}}_{y}}+W_yv_{y,I^{\textrm{W}}_{y}}+ C_yv_{y,I^{\textrm{C}}_{y}} + N_yv_{y,I^{\textrm{N}}_{y}} + \frac{\rho_{I^{\textrm{C}}_c} + \rho_{I^{\textrm{S}}_c}}{2} g_y + 2\frac{\eta}{\Delta{x^2}}V_{BC}^E,
 \end{gather*}\end{equation}$
 
 with 
@@ -781,7 +864,7 @@ For implementation details, please refer to the [source code](https://github.com
 
 **Free-slip**
 
-Using equations (19)-(24), the coefficients of the equations adjacent to the corresponding boundaries are modified accordingly. Note that the right-hand side does not change for free-slip boundary conditions.
+Using Equations (21)-(26), the coefficients of the equations adjacent to the corresponding boundaries are modified accordingly. Note that the right-hand side does not change for free-slip boundary conditions.
 
 **$x$-component**
 
@@ -798,7 +881,7 @@ $\begin{equation}C_x = -\frac{2}{\Delta{x^2}} \left( \eta_{c,I^{\textrm{C}}_c} +
 *North*
 
 $\begin{equation}\begin{gather*}
-& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+\\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{W}}_x}+SE_xv_{y,I^{\textrm{C}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ \\ & C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x},
+& r_{I^{\textrm{C}}_x} = W_PP_{I^{\textrm{W}}_p}+C_PP_{I^{\textrm{C}}_p}+\\ & S_xv_{x,I^{\textrm{S}}_x}+SW_xv_{y,I^{\textrm{SW}}_x}+SE_xv_{y,I^{\textrm{SE}}_x}+W_xv_{x,I^{\textrm{W}}_x}+ \\ & C_xv_{x,I^{\textrm{C}}_x}+ E_xv_{x,I^{\textrm{E}}_x}+NW_xv_{y,I^{\textrm{NW}}_x}+NE_xv_{y,I^{\textrm{NE}}_x},
 \end{gather*}\end{equation}$
 
 with 
@@ -845,7 +928,7 @@ and all other coefficients are set to zero.
 
 **No-slip**
 
-Using equations (25)-(29), the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side change as
+Using Equations (27)-(31), the coefficients of the equations adjacent to the corresponding boundaries and the right-hand side change as
 
 **$x$-component**
 
@@ -907,10 +990,10 @@ C_y = 1,
 
 and all other coefficients are set to zero.
 
-While rewriting the entire equations is mathematically correct, the boundary conditions are implemented within `GeoModBox.jl` by directly using the ghost-node velocity values to calculate the residual for the nodes adjacent to the boundaries. Equations (64)-(103) are shown here to highlight the modified coefficients of the matrix. These adjustments ensure that the boundary conditions are enforced consistently while preserving the symmetry of the linear system.
+Although explicitly rewriting the complete equations is mathematically valid, `GeoModBox.jl` applies the boundary conditions by constructing the appropriate ghost-node velocity values during the residual calculation and by modifying the corresponding coefficients of the assembled matrix. Equations (72)–(111) are provided to illustrate the resulting changes to the matrix coefficients and boundary contributions. These adjustments ensure that the boundary conditions are enforced consistently in both the residual calculation and the assembled linear system.
 
 ## Special-case Solution 
 
-There is also a *special case* for solving this system of equations when the system is linear. In that case, the system of equations reduces to Equation (54) and can be solved directly via *left-matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly by setting $\mathbf{r}=0$ and adding the known terms to the right-hand side of the equations.
+There is also a *special case* for solving this system of equations when the system is linear. In that case, the system of equations reduces to Equation (62) and can be solved directly via *left-matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly by setting $\mathbf{r}=0$ and adding the known terms to the right-hand side of the equations.
 
 For more information on how both methods are implemented see the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/).

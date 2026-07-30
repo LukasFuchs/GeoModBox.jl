@@ -40,11 +40,11 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Gaussian Temperature Diffusion](./man/examples/Diffusion/GaussianDiffusion2D.md)
 
-![GaussianDiffusion](./assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif)
+<img src="./assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" width="700">
 
 **Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 120 × 120, using the special solver with the [Crank-Nicholson discretization](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), compared to the analytical solution. a) 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow). b) Total deviation from the analytical solution. c) 1-D y-profile along $x = 0$. d) Root Mean Square (RMS) total deviation over time.
 
-![GDResTest](./assets/examples/Diffusion/Gaussian_ResTest.png)
+<img src="./assets/examples/Diffusion/Gaussian_ResTest.png" width="700">
 
 **Figure 2. Resolution test.** a) Maximum RMS error $\varepsilon$, b) maximum temperature, and c) mean temperature for various finite difference schemes and resolutions using the special case, linear solver (single left-matrix division) for the diffusion example shown above.
 
@@ -52,11 +52,11 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Rigid-Body-Rotation](./man/examples/Advection/Advection2D.md)
 
-![RigidBodyI](./assets/examples/Advection/2D_advection_circle_RigidBody_upwind_100_100_nth_1.gif)
+<img src="./assets/examples/Advection/2D_advection_circle_RigidBody_upwind_100_100_nth_1.gif" width="700">
 
-![RigidBodyII](./assets/examples/Advection/2D_advection_circle_RigidBody_semilag_100_100_nth_1.gif)
+<img src="./assets/examples/Advection/2D_advection_circle_RigidBody_semilag_100_100_nth_1.gif" width="700">
 
-![RigidBodyIII](./assets/examples/Advection/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif)
+<img src="./assets/examples/Advection/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif" width="700">
 
 **Figure 3. Rigid-Body-Rotation.** Time-dependent advection of a rotating circular temperature anomaly using the **upwind (top)**, **semi-Lagrangian (middle)**, and **tracer (bottom)** methods on a 100 × 100 grid. Within a circular region, the velocity field follows rigid rotation; outside, it is zero. Temperature for tracers is interpolated to the grid for visualization but not updated on the tracers.
 
@@ -64,15 +64,15 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Falling Block](./man/examples/Stokes/FallingBlockBenchmark.md)
 
-![FallingBlockTD](./assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif)
+<img src="./assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif" width="700">
 
 **Figure 4. Isoviscous Falling Block.** Time-dependent simulation of an isoviscous falling block at 50 × 50 resolution with 9 tracers per cell. The solver handles variable viscosities. Tracers advect the phase ID, which is used to interpolate density and viscosity on centroids and vertices, respectively.
 
-![FBSinkinVeloc](./assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png)
+<img src="./assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png" width="700">
 
 **Figure 5. Falling Block Sinking Velocity.** Block sinking velocity vs. initial viscosity ratio $\eta_r$, using the same setup as above. 
 
-![FBFinalStage](./assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png)
+<img src="./assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png" width="700">
 
 **Figure 6. Falling Block Benchmark.** Tracer distribution at the final stage for selected viscosity ratios $\eta_r \ge 0$.
 
@@ -80,30 +80,42 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Rayleigh-Taylor Instability](./man/examples/Stokes/RTI.md)
 
-![RTIani](./assets/examples/Stokes/RTI_ηr_-6.0_tracers_DC.gif)
+<img src="./assets/examples/Stokes/RTI_ηr_-6.0_tracers_DC.gif" width="700">
 
 **Figure 7. Rayleigh-Taylor Instability.** Evolution of two-layered Rayleigh-Taylor instability. 
 
+<img src="./assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png" width="700">
+
+**Figure 8.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2019). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - 100 m, red - 10 m, yellow - 1 m).
+
+<img src="./assets/examples/Stokes/VanKeKen_Benchmark_ηr_0.0_tracers_DC_arith.gif" width="700">
+
+**Figure 9.** Evolution of the dimensional Van Keken benchmark. The panels show the density field, tracer distribution, viscosity, and velocity magnitude together with the velocity vectors. The initially perturbed interface evolves into the characteristic Rayleigh-Taylor instability as the denser lower material sinks beneath the lighter upper layer.
+
 ---
+
+### [Blankenbach Benchmark]()
+
+
 
 ### [Thermal Convection](./man/examples/Convection/MixedHeatedConvection.md)
 
-![BHTC](./assets/examples/Convection/Bottom_Heated_1.0e6_400_100_lineara.gif)
+<img src="./assets/examples/Convection/Bottom_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 8. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
+**Figure 10. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
 TOP: Transient temperature field with velocity vectors.  
 BOTTOM: Horizontally averaged temperature–depth profiles at each time step.  
 Solvers: defect correction (momentum), semi-Lagrangian (advection), Crank-Nicolson (heat diffusion).  
 Boundary conditions: Dirichlet (top/bottom), Neumann (sides), free-slip (velocity, all sides).
 
-![IHTC](./assets/examples/Convection/Internally_Heated_1.0e6_400_100_lineara.gif)
+<img src="./assets/examples/Convection/Internally_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 9. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
+**Figure 11. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
 Same setup as above, but with Neumann boundary at the bottom (zero heat flux) and constant internal volumetric heat production $Q \approx 15$.
 
-![MHTC](./assets/examples/Convection/Mixed_Heated_1.0e6_400_100_lineara.gif)
+<img src="./assets/examples/Convection/Mixed_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 10. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
+**Figure 12. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
 Combination of the above two setups (bottom heating + internal heating).
 
 ------------------

@@ -133,7 +133,9 @@ display(p)
 # ------------------------------------------------------------------- #
 ```
 
-![CG1D_ini](../../../assets/examples/Diffusion/CG1D_iniT.svg)
+<!-- ![CG1D_ini](../../../assets/examples/Diffusion/CG1D_iniT.svg) -->
+
+<img src="" width="700">
 
 **Figure 1. Initial temperature profile.**
 
@@ -220,7 +222,9 @@ end
 # ------------------------------------------------------------------- #
 ```
 
-![CG1D_evolve](../../../assets/examples/Diffusion/CG1D_evolve.svg)
+<!-- ![CG1D_evolve](../../../assets/examples/Diffusion/CG1D_evolve.svg) -->
+
+<img src="" width="700">
 
 **Figure 2. Evolution of the temperature profile with depth in 100 Ma steps.**
 
@@ -280,6 +284,8 @@ savefig(q,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D.png")
 savefig(p,"./examples/DiffusionEquation/1D/Results/ContinentalGeotherm_1D_evolve.png")
 # ======================================================================= #
 ```
-![CG1D_final](../../../assets/examples/Diffusion/CG1D_final.svg)
+<!-- ![CG1D_final](../../../assets/examples/Diffusion/CG1D_final.svg) -->
+
+<img src="../../../assets/examples/Diffusion/CG1D_final.svg" width="700">
 
 **Figure 3. Final temperature, heat flux, and thermal parameter depth profiles.**

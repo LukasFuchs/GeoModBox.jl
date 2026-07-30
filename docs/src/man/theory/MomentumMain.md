@@ -86,16 +86,18 @@ Together, the momentum and continuity equations form the Stokes system, which al
 
 The following examples demonstrate applications of the Stokes equations implemented in `GeoModBox.jl`:
 
-- [1D channel flow with constant and depth-dependent viscosity](./examples/ChannelFlow1D.md)  
-- [2D falling block benchmark](./examples/FallingBlockBenchmark.md)  
-- [2D falling block with constant viscosity (defect correction)](./examples/FallingBlockDC.md)  
-- [2D falling block with variable viscosity (defect correction)](./examples/FallingBlockDC.md)  
-- [2D viscous inclusion problem](./examples/ViscousInclusion.md)  
-- [2D Rayleigh–Taylor instability benchmark](./examples/RTI_growth_rate.md)
+- [1D channel flow with constant and depth-dependent viscosity](../examples/Stokes/ChannelFlow1D.md)  
+- [2D falling block benchmark](../examples/Stokes/FallingBlockBenchmark.md)  
+- [2D falling block with constant viscosity (defect correction)](../examples/Stokes/FallingBlockDC.md)  
+- [2D falling block with variable viscosity (defect correction)](../examples/Stokes/FallingBlockDC.md)  
+- [2D Rayleigh–Taylor instability benchmark (Ramberg (1968))](../examples/Stokes/RTI_growth_rate.md)
+- [2D Rayleigh-Taylor instability](../examples/Stokes/RTI.md)
+- [2D Van Keken et al. (1997) benchmark](../examples/Stokes/VanKekenBenchmark.md)
+- [2D viscous inclusion problem](../examples/Stokes/ViscousInclusion.md)  
 
 Examples of coupled temperature–momentum systems (i.e., thermal convection models) using operator splitting include:
 
-- [Mixed heated convection models](./examples/MixedHeatedConvection.md)
+- [Mixed heated convection models](../examples/Convection/MixedHeatedConvection.md)
 
 ## Exercises
 

@@ -152,7 +152,9 @@ end
 # ----------------------------------------------------------------------- #
 ```
 
-![Diff1Dini](../../../assets/examples/Diffusion/Diff_1D_iniT.svg)
+<!-- ![Diff1Dini](../../../assets/examples/Diffusion/Diff_1D_iniT.svg) -->
+
+<img src="../../../assets/examples/Diffusion/Diff_1D_iniT.svg" width="700">
 
 **Figure 1. Initial temperature distribution.**
 
@@ -217,7 +219,9 @@ end
 end
 ```
 
-![Diff_1D_evolve](../../../assets/examples/Diffusion/Diff_1D_comparison.gif)
+<!-- ![Diff_1D_evolve](../../../assets/examples/Diffusion/Diff_1D_comparison.gif) -->
+
+<img src="../../../assets/examples/Diffusion/Diff_1D_comparison.gif" width="700">
 
 **Figure 2. Temperature evolution and corresponding error for each numerical scheme.** exp - Forward Euler, imp - Backward Euler, cna - Crank-Nicolson. 
 

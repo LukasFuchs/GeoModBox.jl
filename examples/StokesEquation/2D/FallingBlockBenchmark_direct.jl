@@ -99,7 +99,7 @@ function FallingBlockBenchmark(td)
     #     Not recommended for discontinuous phase fields because dispersive
     #     oscillations and the leapfrog computational mode destabilize the
     #     interface.
-    FD          =   (Method     = (Adv=:upwind,),)
+    FD          =   (Method     = (Adv=:tracers,),)
     # Arithmetic averaging is used for this benchmark because harmonic and
     # geometric mixing produce strongly reduced mixed-cell viscosities for
     # weak inclusions. In combination with semi-Lagrangian phase transport,

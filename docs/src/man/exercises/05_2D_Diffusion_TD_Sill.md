@@ -13,10 +13,14 @@ The main objectives are:
 
 The evolution of the temperature field is illustrated in Figure 1. The vertical profiles and the maximum temperature over time are illustrated in Figure 2. 
 
-![Exercise05_1](../../assets/exercises/05_2a.gif)  
+<!-- ![Exercise05_1](../../assets/exercises/05_2a.gif)   -->
+
+<img src="../../assets/exercises/05_2a.gif" width="700">
 
 **Figure 1.** Time-dependent evolution of the two-dimensional temperature field with basal plume heating using the explicit scheme. 
 
-![Exercise_05_2](../../assets/exercises/05_2b.png)
+<!-- ![Exercise_05_2](../../assets/exercises/05_2b.png) -->
+
+<img src="../../assets/exercises/05_2b.png" width="700">
 
 **Figure 2.** Temperature-Depth profiles over time and the evolution of the maximum temperature with time. 

@@ -246,7 +246,9 @@ For visualization purposes, the temperature profile through the center of the do
         end
 ```
 
-![GD2Dini](../../../assets/examples/Diffusion/Gaussian_Diffusion_Ini.png)
+<!-- ![GD2Dini](../../../assets/examples/Diffusion/Gaussian_Diffusion_Ini.png) -->
+
+<img src="../../../assets/examples/Diffusion/Gaussian_Diffusion_Ini.png" width="700">
 
 **Figure 1. Initial condition.** a) Numerical temperature distribution (background colored field and black contour lines) overlain by the analytical solution (yellow dashed contours). b) Absolute deviation of the numerical from the analytical solution. c) Vertical temperature profile along the middle of the domain; black solid - numerical, yellow dashed - analytical. d) RMS over time. 
 
@@ -424,7 +426,9 @@ end
 end
 ```
 
-![GD2D_Evolve_example](../../../assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif)
+<!-- ![GD2D_Evolve_example](../../../assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif) -->
+
+<img src="../../../assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" width="700">
 
 **Figure 2. Final animation using the Crank-Nicolson approach for a resolution of 120 x 120.** Top left: Numerical solution of the transient temperature field (background colored field and black contours); yellow dashed contours - analytical solution. Top right: Absolute deviation of the numerical from the analytical solution. Bottom left: Vertical temperature profile along the middle of the domain. Bottom right: RMS over time. 
 
@@ -487,4 +491,6 @@ end
 display(to)
 ``` 
 
-![GD_Rest_test](../../../assets/examples/Diffusion/Gaussian_ResTest.png)
+<!-- ![GD_Rest_test](../../../assets/examples/Diffusion/Gaussian_ResTest.png) -->
+
+<img src="../../../assets/examples/Diffusion/Gaussian_ResTest.png" width="700">

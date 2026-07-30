@@ -323,7 +323,9 @@ Let's visualize the initial condition first.
         # ------------------------------------------------------------ #
 ```
 
-![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg)
+<!-- ![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg) -->
+
+<img src="../../../assets/examples/Advection/AdvIniSetup.svg" width="700">
 
 **Figure 1. Initial condition.** Initial rigid-body rotation setup with a circular temperature anomaly. The temperature is normalized by its initial maximum value, such that the maximum temperature equals one. 
 
@@ -517,10 +519,14 @@ elseif save_fig == 0
 end
 ```
 
-![Summary](../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png)
+<!-- ![Summary](../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png) -->
+
+<img src="../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png" width="700">
 
 **Figure 2. Summary.** Final temperature distribution after one complete revolution for each advection scheme at a resolution of 100 × 100 cells.
 
-![AdvResFinal](../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png)
+<!-- ![AdvResFinal](../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png) -->
+
+<img src="../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png" width="700">
 
 **Figure 3. Advection Resolution Test.** Relative deviation of the maximum temperature, final maximum temperature, and spatial mean temperature for the four advection schemes as functions of grid resolution.

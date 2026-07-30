@@ -582,6 +582,8 @@ display(to)
 
 The resulting comparison demonstrates that the finite-difference discretization accurately reproduces the analytical solution. The largest errors are confined to the viscosity interface, where the material properties are discontinuous and the analytical solution exhibits discontinuities in the stress field. Away from the inclusion boundary, both the velocity and pressure fields agree closely with the analytical solution, confirming the accuracy of the staggered-grid implementation.
 
-![alt text](../../../assets/examples/Stokes/ViscousInclusion_Summary.png)
+<!-- ![alt text](../../../assets/examples/Stokes/ViscousInclusion_Summary.png) -->
+
+<img src="../../../assets/examples/Stokes/ViscousInclusion_Summary.png" width="700">
 
 **Figure 1.** Comparison between the numerical and analytical solutions for the horizontal velocity, vertical velocity, and pressure fields. The third column shows the corresponding relative error distributions. The largest errors are localized at the viscosity interface, where the material properties are discontinuous, while excellent agreement is obtained throughout the remainder of the domain.

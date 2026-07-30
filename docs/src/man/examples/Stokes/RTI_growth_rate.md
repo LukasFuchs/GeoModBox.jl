@@ -570,7 +570,9 @@ If wanted, the density, tracer, and viscosity fields are plotted. To verify the 
         end
 ```
 
-![Growth_Rate_Example](../../../assets/examples/Stokes/RTI_GR_example.svg)
+<!-- ![Growth_Rate_Example](../../../assets/examples/Stokes/RTI_GR_example.svg) -->
+
+<img src="../../../assets/examples/Stokes/RTI_GR_example.svg" width="700">
 
 **Figure 1. Example of a RTI model.** Top: Centroid velocity arrows on top of the density field. Middle: Centroid viscosity. Bottom: Zoom of the tracer field on the tip of the perturbation at the center of the model domain. The black tracer marks the tip, and the red tracer mark the vertical velocity nodes from which the vertical velocity is interpolated onto the tip. This example uses a perturbation of $A = h_{1}/15$ and a wavelength of 12 km. The model includes 50 centroids in the vertical direction. The number of horizontal centroids is chosen such that the resolution remains consistent in both the horizontal and vertical directions for all benchmark models. 
 
@@ -603,7 +605,9 @@ end
 display(to)
 ```
 
-![RTI_GrowthRate](../../../assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png)
+<!-- ![RTI_GrowthRate](../../../assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png) -->
+
+<img src="../../../assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png" width="700">
 
 **Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2019). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - 100 m, red - 10 m, yellow - 1 m). The rising velocity is numerically calculated following the approach shown in Figure 1. 
 
@@ -611,7 +615,9 @@ display(to)
 
 ## Resolution Test
 
-![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NC_MarkerInterpolation.png)
+<!-- ![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NC_MarkerInterpolation.png) -->
+
+<img src="../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NC_MarkerInterpolation.png" width="700">
 
 **Figure 3. RTI Resolution Test.** Relative error ε in [%] for the RTI growth rate using a fixed layer thickness (1500 km), a fixed wavelength $\lambda = 4000 \text{ km}$, a fixed perturbation amplitudes $\left(\delta{A} = 1 \textrm{m} \right)$, and a fixed horizontal and vertical grid resolutions $\left(nc_x,nc_y\right)$ for an increasing number of markers per cell and different viscosity ratios $\eta_r$ including regular distributed (top row) or randomly distributed (bottom row) initial marker positions (before assigning the layer phases). The viscosity is interpolate from the tracers to the centroids and the vertices using an either arithmetic (circle), geometric (diamond), or harmonic (triangle) mean. 
 
@@ -621,7 +627,9 @@ For moderate viscosity contrasts ($\eta_r = 1$ and $\eta_r = 500$), all three av
 
 The comparison demonstrates that, for marker-in-cell simulations with strong viscosity contrasts, the choice of viscosity averaging scheme has a significantly greater influence on the numerical accuracy than the marker density itself. Increasing the number of markers cannot compensate for an unsuitable averaging scheme, while arithmetic averaging provides the most robust and accurate results for the Rayleigh-Taylor instability benchmark.
 
-![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NM_MarkerInterpolation.png)
+<!-- ![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NM_MarkerInterpolation.png) -->
+
+<img src="../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NM_MarkerInterpolation.png" width="700">
 
 **Figure 4. RTI Resolution Test.** Relative error ε in [%] for the RTI growth rate using a fixed layer thickness (1500 km), a fixed wavelength $\lambda = 4000 \text{ km}$, a fixed perturbation amplitudes $\left(\delta{A} = 1 \textrm{m} \right)$, and a fixed number of markers per cell (5x5) for an increasing horizontal and vertical grid resolutions $\left(nc_x,nc_y\right)$ and different viscosity ratios $\eta_r$ including regular distributed (top row) or randomly distributed (bottom row) initial marker positions (before assigning the layer phases). The viscosity is interpolate from the tracers to the centroids and the vertices using an either arithmetic (circle), geometric (diamond), or harmonic (triangle) mean. 
 

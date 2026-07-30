@@ -26,11 +26,13 @@ In this 1D formulation, the horizontal pressure gradient is prescribed and acts 
 
 # Discretization
 
-![Stokes1D_Grid](../assets/Stokes_1D_Grid.png)
+<!-- ![Stokes1D_Grid](../assets/Stokes_1D_Grid.png) -->
+
+<img src="../../assets/theory/Stokes_1D_Grid.png" width="700">
 
 **Figure 1. Channel flow setup and finite difference grid.**  
-*Left:* Sketch of uniaxial channel flow driven by either a constant velocity at the top ($v_x$) and/or a horizontal pressure gradient $\left(\frac{\Delta P}{\Delta x} = P_1 - P_0\right)$, representing Couette, Poiseuille, or Couette–Poiseuille flow.  
-*Right:* Finite difference grid with conservative gridding—viscosity is defined at *vertices*, while horizontal velocity is defined between them. The open circles at the top represent *ghost nodes* for horizontal velocity.
+*Left:* Sketch of uniaxial channel flow driven by either a constant velocity at the top ($v_x$) and/or a horizontal pressure gradient $\left(\frac{\Delta P}{\Delta x} = P_1 - P_0\right)$, representing Couette, Poiseuille, or Couette-Poiseuille flow.  
+*Right:* Finite difference grid with conservative gridding; viscosity is defined at *vertices*, while horizontal velocity is defined between them. The open circles at the top represent *ghost nodes* for horizontal velocity.
 
 To evaluate the equation at a horizontal velocity point using a finite difference (FD) discretization, velocity values at adjacent points must be included. For the 1D Stokes equation, a three-point stencil is used, consisting of the central point (reference point) and the points to the South and North.
 
@@ -110,7 +112,7 @@ $\begin{equation}
 \frac{\partial{P}}{\partial{x}}=\frac{\eta_{I^{\textrm{N}}}\frac{v_{x,I^{\textrm{N}}}-v_{x,I^{\textrm{C}}}}{\Delta{y}}-\eta_{I^{\textrm{C}}}\frac{v_{x,I^{\textrm{C}}}-v_{x,I^{\textrm{S}}}}{\Delta{y}}}{\Delta{y}}.
 \end{equation}$
 
-> **Note:** The indices $I^\textrm{S}$, $I^\textrm{C}$, and $I^\textrm{N}$ refer to the South, Central, and North nodes of the corresponding variable grid, which is different for the viscosity and the velocity.
+> **Note:** The indices $I^\textrm{S}$, $I^\textrm{C}$, and $I^\textrm{N}$ refer to the South, Central, and North nodes of the corresponding variable grid, which are different for the viscosity and the velocity.
 
 Rewriting the equation in terms of the unknown velocities gives
 

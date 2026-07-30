@@ -284,7 +284,9 @@ savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_inst
 display(to)
 ```
 
-![FBIsoInst](../../../assets/examples/Stokes/FallingBlockConstEta_instantaneous_DC.png)
+<!-- ![FBIsoInst](../../../assets/examples/Stokes/FallingBlockConstEta_instantaneous_DC.png) -->
+
+<img src="../../../assets/examples/Stokes/FallingBlockConstEta_instantaneous_DC.png" width="700">
 
 **Figure 1. Instantaneous solution of an isoviscous falling block problem.** 
 
@@ -703,7 +705,9 @@ end
 display(to)
 ```
 
-![FBvarytd](../../../assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif)
+<!-- ![FBvarytd](../../../assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif) -->
+
+<img src="../../../assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif" width="700">
 
 **Figure 2. Time-dependent evolution of the falling block with a viscosity contrast of six orders of magnitude.**
 

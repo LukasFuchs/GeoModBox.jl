@@ -207,6 +207,8 @@ display(q)
 savefig("./examples/StokesEquation/1D/Results/ChannelFlow.png")
 ```
 
-![Stokes1D_profiles](../../../assets/examples/Stokes/Stokes1D.svg)
+<!-- ![Stokes1D_profiles](../../../assets/examples/Stokes/Stokes1D.svg) -->
+
+<img src="../../../assets/examples/Stokes/Stokes1D.svg" width="700">
 
 **Figure 1. 1D Poiseuille–Couette Flow.** Velocity profiles (left), relative deviation between analytical and numerical solutions (center), and depth-dependent viscosity (right) for a 1D channel flow simulation. 
