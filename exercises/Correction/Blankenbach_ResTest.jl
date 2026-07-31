@@ -11,23 +11,20 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Temperature - 
     #   1) circle, 2) gaussian, 3) block, 4) linear, 5) lineara
     # !!! Gaussian is not working!!! 
-    Ini         =   (T=:lineara,)
+    Ini         =   (T=:blankenbach,)
     # ------------------------------------------------------------------- #
-    # Plot Settings ===================================================== #
-    Pl  =   (
-        qinc        =   10,
-        qsc         =   5.0e-5  # 1.0e-3, 4.0e-4, 5.0e-5
-    )
-    # k               =   scatter()
     # ------------------------------------------------------------------- #
     # Benchmark values ================================================== # 
     # Taken from Gerya (2019), Introduction to numerical geodynamic 
     if Ra == 1e4
         nr  =   1
+        qsc =   1.0e-3
     elseif Ra == 1e5
-        nr = 2
+        nr  =   2
+        qsc =   4.0e-4
     elseif Ra == 1e6
-        nr = 3
+        nr  =   3
+        qsc =   5.0e-5
     else 
         @printf("Error! Ra not defined for Benchmark")
         return
@@ -51,6 +48,11 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         ymax    =   [0.7751,0.8882,0.9423,0.8243,0.7837],
     )
     # ------------------------------------------------------------------- #
+    # Plot Settings ===================================================== #
+    Pl  =   (
+        qinc        =   10,
+        qsc         =   qsc
+    )
     # Geometry ========================================================== #
     M   =   Geometry(
         xmin    =   0.0,                #   [ m ] 
@@ -156,6 +158,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     find            =   0
     count           =   0
     epsV0           =   0
+    final_step      =   0 
     # ------------------------------------------------------------------- #
     # Scaling laws ====================================================== #
     ScaleParameters!(S,M,Δ,T,P,D)
@@ -168,7 +171,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -210,6 +213,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Momentum Conservation Equation (MCE) ------------------------------ #
     niterM  =   50
     ϵM      =   1e-8
+    RM      =   0
     off     =   [   NV.x*NC.y,                          # vx
                     NV.x*NC.y + NC.x*NV.y,              # vy
                     NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
@@ -219,11 +223,11 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
         T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
     )
+    @show maximum(Num.T), maximum(Num.Pt)
     ndof    =   maximum(Num.T)  
     KM      =   ExtendableSparseMatrix(ndof,ndof)
     δx      =   zeros(maximum(Num.Pt))
     F       =   zeros(maximum(Num.Pt))
-    RM      =   0
     # Assemble Matrix for momentum equation ---
     # Optimization outside time loop since viscosity is constant ---
     KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
@@ -243,7 +247,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Time Loop ========================================================= #
     for it = 1:T.itmax
         # Reduce screen output ---
-        verbose_step    =   mod(it, 100) == 0 || it == 1
+        verbose_step    =   mod(it, 100) == 0 || it == 1 || final_step == 1
         if it>1
             Time[it]  =   Time[it-1] + T.Δ
         end
@@ -290,6 +294,50 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
             end
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+        # Nusselt Number ================================================ #
+        # Grid structure at the surface ---
+        #   o - Centroids
+        #   x - Vertices 
+        #   □ - Ghost Nodes
+        #
+        #   □          □           □            □
+        #   
+        #        x --------- x --------- x
+        #        |           |           |
+        #   □    |     o     |     o     |      □ 
+        #        |           |           |
+        #        x --------- x --------- x      
+        #        |           |           |
+        #   □    |     o     |     o     |      □
+        # --- 
+        # Get temperature at the vertices         
+        @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
+                        D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
+        @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
+                        D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
+        # Calculate temperature gradient --- 
+        @. dTdy =   -(Tv1 - Tv2)/Δ.y
+        # Calculate Nusselt number ---
+        # Trapezoidal integration -
+        for i = 1:NV.x
+            if i == 1 || i == NV.x
+                afac = 1
+            else
+                afac = 2
+            end
+            Nus[it]     += afac * dTdy[i]
+        end
+        Nus[it]     *=   Δ.x/2
+        # Mean Temperature ---
+        meanT[it]   =   mean(D.T)
+        # Root Mean Square Velocity ---
+        # meanV[it]   =   mean(D.vc)
+        meanV[it] = sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
+        if final_step == 1
+            @printf(" Maximum Time reached!\n")
+            break
+        end
+        # --------------------------------------------------------------- #
         # Calculate time stepping ======================================= #
         T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                 (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
@@ -298,7 +346,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         if Time[it] > T.tmax
             T.Δ         =   T.tmax - Time[it-1]
             Time[it]    =   Time[it-1] + T.Δ
-            it          =   T.itmax
+            final_step  =   1
         end
         # Advection ===================================================== #
         if it == 1
@@ -339,46 +387,6 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         # Update extended field for advection scheme --- 
         D.T_ex[2:end-1,2:end-1]     .=  D.T
         # --------------------------------------------------------------- #
-        # Nusselt Number ================================================ #
-        # Grid structure at the surface ---
-        #   o - Centroids
-        #   x - Vertices 
-        #   □ - Ghost Nodes
-        #
-        #   □          □           □            □
-        #   
-        #        x --------- x --------- x
-        #        |           |           |
-        #   □    |     o     |     o     |      □ 
-        #        |           |           |
-        #        x --------- x --------- x      
-        #        |           |           |
-        #   □    |     o     |     o     |      □
-        # --- 
-        # Get temperature at the vertices         
-        @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
-                        D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
-        @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
-                        D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
-        # Calculate temperature gradient --- 
-        @. dTdy =   -(Tv1 - Tv2)/Δ.y
-        # Calculate Nusselt number ---
-        # Trapezoidal integration -
-        for i = 1:NV.x
-            if i == 1 || i == NV.x
-                afac = 1
-            else
-                afac = 2
-            end
-            Nus[it]     += afac * dTdy[i]
-        end
-        Nus[it]     *=   Δ.x/2
-        # Mean Temperature ---
-        meanT[it]   =   mean(D.T)
-        # Root Mean Square Velocity ---
-        # meanV[it]   =   mean(D.vc)
-        meanV[it] = sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
-        # --------------------------------------------------------------- #
         # Check break =================================================== #
         # If the maximum time is reached or if the models reaches steady 
         # state the time loop is stoped! 
@@ -388,13 +396,14 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
             # epsV    =   std(meanV[ind:it])
             epsV    =   std(@view meanV[ind:it])
             if count == 0
-                epsV0   =   epsV
+                # epsV0   =   epsV
+                epsV0 = max(epsV, eps(Float64))
                 count   += 1
             end
             epsV        /= epsV0
-            if save_fig == 1
+            # if save_fig == 1
                 epsV_history[it] = epsV
-            end
+            # end
             find    =   it
             verbose_step && @printf("ε_Vr = %g, ε_Cr = %g \n",epsV,epsC)
             if Time[it] >= T.tmax
@@ -458,10 +467,10 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
                 ylims=(0,25),xlims=(0,Time[find]),
                 guidefontsize = 24, tickfontsize = 18,
                 titlefontsize = 24,grid = false,
-                layout=(2,1),suplot=1)
+                layout=(2,1),subplot=1)
     plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
                 lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
-                layout=(2,1),suplot=1)
+                layout=(2,1),subplot=1)
     plot!(q2,Time[1:find],meanV[1:find],
                 xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
                 xformatter =:auto,
@@ -496,7 +505,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
                 markershape=:rect,markersize=6,
                 markercolor=:black,label=false)
     if save_fig == 1
-        savefig(q3,string("./exercises/Correction/Results/13_BlankenbachBenchmark__RestTest_Profiles_",@sprintf("%.2e",P.Ra),
+        savefig(q3,string("./exercises/Correction/Results/13_BlankenbachBenchmark_RestTest_Profiles_",@sprintf("%.2e",P.Ra),
                             "_",NC.x,"_",NC.y,"_",Ini.T,".png"))
     elseif save_fig == 0
         display(q3)
@@ -515,7 +524,7 @@ start=time()
 save_fig    =   1
 # Rayleigh Number ======================================================= #
 #   Here, only for 1e4, 1e5, 1e6
-Ra      =   1e6
+Ra      =   1e4
 # ----------------------------------------------------------------------- #
 # Benchmark Values ====================================================== # 
 # Taken from Gerya (2019), Introduction to numerical geodynamic 
@@ -589,7 +598,7 @@ p3  =   scatter((1 ./ncy./ncy,Nus),
             layout=(3,1),subplot=1)
 plot!(p3,LinRange(xmin,1,10),B.Nu[nr].*ones(10,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
-            layout=(3,1),suplot=1)
+            layout=(3,1),subplot=1)
 scatter!(p3,(1 ./ncy./ncy,meanV),
             markershape=:circle,markersize=4,
             markercolor=:black,label="",

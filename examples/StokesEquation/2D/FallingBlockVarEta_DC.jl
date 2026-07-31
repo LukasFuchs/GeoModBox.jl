@@ -186,7 +186,7 @@ function FallingBlockVarEta_Dc()
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-                )
+    )
     ndof    =   maximum(Num.Pt)        
     K       =   ExtendableSparseMatrix(ndof,ndof)      
     δx      =   zeros(maximum(Num.Pt))
@@ -202,7 +202,7 @@ function FallingBlockVarEta_Dc()
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
     for it = 1:nt
-            R0      =   0.0
+        R0      =   0.0
         # Update Time ---
         T.time[1]   =   T.time[2] 
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,

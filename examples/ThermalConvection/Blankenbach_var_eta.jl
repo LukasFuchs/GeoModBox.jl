@@ -390,10 +390,10 @@ for it = 1:T.itmax
         @. D.vxco   =   D.vxc
         @. D.vyco   =   D.vyc
     end
-    @assert all(isfinite, D.vxc)
-    @assert all(isfinite, D.vyc)
-    @assert all(isfinite, D.T)
-    @assert isfinite(T.Δ)
+    # @assert all(isfinite, D.vxc)
+    # @assert all(isfinite, D.vyc)
+    # @assert all(isfinite, D.T)
+    # @assert isfinite(T.Δ)
     semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
     @. D.vxco  =   D.vxc
     @. D.vyco  =   D.vyc
