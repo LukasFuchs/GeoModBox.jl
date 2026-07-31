@@ -4,17 +4,17 @@
 
 The **Geod**ynamic **Mod**elling Tool**Box** is a Julia package primarily intended for teaching purposes. It provides various finite difference, staggered discretization schemes to numerically solve the governing equations of two-dimensional geodynamic problems. These include the conservation equations of:
 
-1) [**Energy**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/DiffMain/), 
-2) [**Momentum**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/MomentumMain/), 
-3) [**Mass** and **Compositon**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/AdvectMain/). 
+1) [**Energy**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/DiffMain/), 
+2) [**Momentum**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/MomentumMain/), 
+3) [**Mass** and **Compositon**](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/AdvectMain/). 
 
 `GeoModBox.jl` includes a series of [exercises](./exercises/) and [examples](./examples/) of geodynamically well-defined problems. The exercises are provided as Jupyter notebooks for students to complete. The theoretical background is documented here.
 
-The solvers for each governing equation can be used separately or in combination for dimensional or non-dimensional problems, with only minimal modifications when calling the functions. For more informations on how to use the individual functions please see the [list of functions](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/listoffunctions/) or individual [exmples](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/Examples/). Some typical initial conditions, such as a linearly increasing temperature, are predefined and can be called using [specific functions](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/Ini/). In the following a brief explenation is given regarding the governing equations and the numerical method to solve them within the `GeoModBox.jl`. For more detailed information see the individual documentations. 
+The solvers for each governing equation can be used separately or in combination for dimensional or non-dimensional problems, with only minimal modifications when calling the functions. For more informations on how to use the individual functions please see the [list of functions](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/listoffunctions/) or individual [exmples](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/examples/Examples/). Some typical initial conditions, such as a linearly increasing temperature, are predefined and can be called using [specific functions](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/Ini/). In the following a brief explenation is given regarding the governing equations and the numerical method to solve them within the `GeoModBox.jl`. For more detailed information see the individual documentations. 
 
 ## Staggered Finite Difference
 
-To properly solve the governing equations, a staggered finite difference scheme is chosen for the *energy* and *momentum* equations. A staggered grid enables a correct and straightforward implementation of boundary conditions and ensures conservation of stress between nodes in cases of variable viscosity. This requires certain parameters to be defined on different grids. For more information regarding the physical and numerical background, please refer to [this](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/GESolution/).
+To properly solve the governing equations, a staggered finite difference scheme is chosen for the *energy* and *momentum* equations. A staggered grid enables a correct and straightforward implementation of boundary conditions and ensures conservation of stress between nodes in cases of variable viscosity. This requires certain parameters to be defined on different grids. For more information regarding the physical and numerical background, please refer to [this](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/GESolution/).
 
 Within the `GeoModBox.jl`, temperature, density, pressure, normal deviatoric stresses, and heat production rate are defined on the *centroids*. The deviatoric shear stresses are defined on the *vertices*, and velocities are defined between the *vertices*. Viscosity is required on both.
 
@@ -24,17 +24,17 @@ For further details on the implementation in `GeoModBox.jl`, see the individual 
 
 In geodynamics, the energy is described by the temperature and needs to be conserved within a closed system. Within the `GeoModBox.jl`, the *temperature conservation equation*, or *temperature equation*, is solved using an *operator splitting* method, that is, first the *advective* part of the temperature equation is solved, followed by the *diffusive* part. 
 
-### [Heat Diffusion Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/DiffMain/)
+### [Heat Diffusion Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/DiffMain/)
 
-`GeoModBox.jl` provides several finite difference schemes for solving the *diffusive part* of the time-dependent or steady-state temperature equation, including radioactive heating, in both [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/DiffOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/DiffTwoD/). The solvers are located in [src/HeatEquation](./src/HeatEquation/). Currently, only *Dirichlet* and *Neumann* thermal boundary conditions are supported. Most functions assume constant thermal parameters (with the exception of the 1-D solvers and the 2-D, iterative implicit solver, called **iterative defection correction method**).
+`GeoModBox.jl` provides several finite difference schemes for solving the *diffusive part* of the time-dependent or steady-state temperature equation, including radioactive heating, in both [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/DiffOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/DiffTwoD/). The solvers are located in [src/HeatEquation](./src/HeatEquation/). Currently, only *Dirichlet* and *Neumann* thermal boundary conditions are supported. Most functions assume constant thermal parameters (with the exception of the 1-D solvers and the 2-D, iterative implicit solver, called **iterative defection correction method**).
 
-### [Heat Advection Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/AdvectMain/)
+### [Heat Advection Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/AdvectMain/)
 
 `GeoModBox.jl` provides various methods to advect properties within the model domain. The routines are structured so that any property defined on *centroids* (including *ghost nodes* at all boundaries) can be advected using the described solvers. Using passive tracers, one may choose to advect either the absolute temperature or the phase ID.
 
-## [Momentum Conservation Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/MomentumMain/)
+## [Momentum Conservation Equation](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/MomentumMain/)
 
-On geological timescales, Earth's mantle and lithosphere deform slowly due to their high viscosity, allowing us to neglect inertial forces. This simplifies the Navier-Stokes equation into the **Stokes equation**. `GeoModBox.jl` provides two main methods to solve the Stokes equation in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/MomentumOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/MomentumTwoD/): the direct method and the defection correction method, applicable for both constant and variable viscosity fields. Velocity and pressure are defined on a staggered grid, and ghost nodes are included to ensure proper implementation of free-slip and no-slip boundary conditions.
+On geological timescales, Earth's mantle and lithosphere deform slowly due to their high viscosity, allowing us to neglect inertial forces. This simplifies the Navier-Stokes equation into the **Stokes equation**. `GeoModBox.jl` provides two main methods to solve the Stokes equation in [1-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/MomentumOneD/) and [2-D](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/theory/MomentumTwoD/): the direct method and the defection correction method, applicable for both constant and variable viscosity fields. Velocity and pressure are defined on a staggered grid, and ghost nodes are included to ensure proper implementation of free-slip and no-slip boundary conditions.
 
 ## [Benchmarks and Examples](./examples/)
 
@@ -42,13 +42,9 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Gaussian Temperature Diffusion](./examples/DiffusionEquation/2D/Gaussian_Diffusion.jl)
 
-<img src="./examples/DiffusionEquation/2D/Results/Gaussian_Diffusion_CNA_nx_100_ny_100.gif" alt="drawing" width="600"/>
+<img src="./docs/src/assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" alt="drawing" width="600"/>
 
-**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 100 × 100, using the [Crank-Nicholson approach](./src/HeatEquation/2Dsolvers.jl),  compared to the analytical solution.  
-Top Left: 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow).  
-Top Right: Total deviation from the analytical solution.  
-Bottom Left: 1-D y-profile along $x = 0$.  
-Bottom Right: Root Mean Square (RMS) total deviation over time.
+**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 120 × 120, using the special solver with the [Crank-Nicholson discretization](./src/HeatEquation/2Dsolvers.jl), compared to the analytical solution. a) 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow). b) Total deviation from the analytical solution. c) 1-D y-profile along $x = 0$. d) Root Mean Square (RMS) total deviation over time.
 
 <img src="./examples/DiffusionEquation/2D/Results/Gaussian_ResTest.png" alt="drawing" width="600"/>
 
@@ -89,13 +85,25 @@ Bottom Right: Root Mean Square (RMS) total deviation over time.
 
 **Figure 7. Rayleigh-Taylor Instability.** Evolution of two-layered Rayleigh-Taylor instability. 
 
+<img src="./assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png" width="700">
+
+**Figure 8.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2019). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - 100 m, red - 10 m, yellow - 1 m).
+
+<img src="./assets/examples/Stokes/VanKeKen_Benchmark_ηr_0.0_tracers_DC_arith.gif" width="700">
+
+**Figure 9.** Evolution of the dimensional Van Keken benchmark. The panels show the density field, tracer distribution, viscosity, and velocity magnitude together with the velocity vectors. The initially perturbed interface evolves into the characteristic Rayleigh-Taylor instability as the denser lower material sinks beneath the lighter upper layer.
+
 ---
 
-### [Thermal Convection](./examples/MixedHeatedConvection)
+### [Blankenbach Benchmark]()
+
+
+
+### [Thermal Convection](./examples/Convection)
 
 ![BHTC](./examples/MixedHeatedConvection/Results/Bottom_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 8. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
+**Figure 10. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
 TOP: Transient temperature field with velocity vectors.  
 BOTTOM: Horizontally averaged temperature–depth profiles at each time step.  
 Solvers: defect correction (momentum), semi-Lagrangian (advection), Crank-Nicolson (heat diffusion).  
@@ -103,12 +111,12 @@ Boundary conditions: Dirichlet (top/bottom), Neumann (sides), free-slip (velocit
 
 ![IHTC](.//examples/MixedHeatedConvection/Results/Internally_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 9. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
+**Figure 11. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
 Same setup as above, but with Neumann boundary at the bottom (zero heat flux) and constant internal volumetric heat production $Q \approx 15$.
 
 ![MHTC](.//examples/MixedHeatedConvection/Results/Mixed_Heated_1.0e6_400_100_lineara.gif)
 
-**Figure 10. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
+**Figure 12. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
 Combination of the above two setups (bottom heating + internal heating).
 
 ------------------
