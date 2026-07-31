@@ -4,7 +4,7 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
 using GeoModBox.Scaling
 using Statistics, LinearAlgebra
-using Printf, TimerOutputs, LaTeXStrings
+using Printf, TimerOutputs, LaTeXStrings, Measures
 
 # ======================================================================= #
 # Main Function ========================================================= #
@@ -50,7 +50,7 @@ P   =   Physics(
     # berechnet. Falls Ra gegeben ist, dann wird die Referenzviskositaet so
     # angepasst, dass die Skalierungsparameter die gegebene Rayleigh-Zahl
     # ergeben.
-    Ra      =   1.0e4,              #   Rayleigh number
+    Ra      =   1.0e6,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
 # ------------------------------------------------------------------- #
@@ -120,7 +120,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   20000,               #   Maximum iterations
+    itmax   =   10000,              #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
