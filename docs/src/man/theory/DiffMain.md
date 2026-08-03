@@ -76,11 +76,11 @@ Currently, Dirichlet and Neumann boundary conditions are supported. Implementati
 
 The following example scripts demonstrate the application of the diffusion solvers:
 
-- [1-D oceanic geotherm](./examples/Diffusion/OceanicGeotherm.md)
-- [1-D continental geotherm](./examples/Diffusion/ContinentalGeotherm.md)
-- [Comparison of FD schemes on a Gaussian anomaly](./examples/Diffusion/GaussianDiffusion1D.md)
-- [2-D resolution test with Gaussian anomaly](./examples/Diffusion/GaussianDiffusion2D.md)
-- [2-D Poisson equation resolution test](./examples/Diffusion/PoissonRestest.md)
+- [1-D oceanic geotherm](../examples/Diffusion/OceanicGeotherm.md)
+- [1-D continental geotherm](../examples/Diffusion/ContinentalGeotherm.md)
+- [Comparison of FD schemes on a Gaussian anomaly](../examples/Diffusion/GaussianDiffusion1D.md)
+- [2-D resolution test with Gaussian anomaly](../examples/Diffusion/GaussianDiffusion2D.md)
+- [2-D Poisson equation resolution test](../examples/Diffusion/PoissonRestest.md)
 
 Additional examples can be found in the full  
 [example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
@@ -89,11 +89,11 @@ Additional examples can be found in the full
 
 The following exercises provide hands-on practice with the implemented solvers:
 
-- [1-D forward Euler](./exercises/02_1D_Heat_explicit.md)
-- [1-D backward Euler](./exercises/03_1D_Heat_implicit.md)
-- [2-D Poisson equation](./exercises/04_2D_Diffusion_Stationary.md)
-- [2-D transient plume heating](./exercises/05_2D_Diffusion_TD_Plume.md)
-- [2-D transient sill heating](./exercises/05_2D_Diffusion_TD_Sill.md)
+- [1-D forward Euler](../exercises/02_1D_Heat_explicit.md)
+- [1-D backward Euler](../exercises/03_1D_Heat_implicit.md)
+- [2-D Poisson equation](../exercises/04_2D_Diffusion_Stationary.md)
+- [2-D transient plume heating](../exercises/05_2D_Diffusion_TD_Plume.md)
+- [2-D transient sill heating](../exercises/05_2D_Diffusion_TD_Sill.md)
 
 # Heat Advection Equation
 
@@ -118,11 +118,11 @@ Other advection schemes are implemented in
 
 ## Examples
 
-- [2-D advection with constant velocity field](./examples/Advection/.md)
-- [Resolution test of 2-D advection](./examples/Advection/AdvectionRestest2D.md)
+- [2-D advection with constant velocity field](../examples/Advection/Advection2D.md)
+- [Resolution test of 2-D advection](../examples/Advection/AdvectionRestest2D.md)
 
 
 ## Exercises
 
-- [1-D Gaussian or block anomaly advection](./exercises/06_1D_Advection.md)
-- [2-D coupled advection–diffusion](./exercises/07_2D_Energy_Equation.md)
+- [1-D Gaussian or block anomaly advection](../exercises/06_1D_Advection.md)
+- [2-D coupled advection–diffusion](../exercises/07_2D_Energy_Equation.md)

@@ -156,7 +156,7 @@ Combination of the above two setups (bottom heating + internal heating).
 
 ---
 
-### [Thermo-mechanical Shear Localization](./man/examples/StrainLocalization.md)
+### [Thermo-mechanical Shear Localization](./man/examples/StrainLocalization/ShearBands.md)
 
 <img src="./assets/examples/ShearHeating/ShearHeatingBands_2D.gif" width="700">
 
