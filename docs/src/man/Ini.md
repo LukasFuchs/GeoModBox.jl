@@ -160,7 +160,7 @@ To advect the temperature, the initialization is called, for example, like [here
 
 ```julia
 # Tracer Initialization ---
-nmx,nmy     =   3,3
+nmx,nmy     =   5,5
 noise       =   1
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :thermal
@@ -176,24 +176,24 @@ MAVG        = (
     wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-# MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
-rkv     =   1.0ftz/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
+rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 # Interpolate on centroids ---
 @threads for k = 1:nmark
     Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
 end
+ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
 # Count marker per cell ---
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 ```
 
 To advect the phase, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl): 
 
 ```julia 
 # Tracer Advection ================================================== #
-nmx,nmy     =   3,3
+nmx,nmy     =   5,5
 noise       =   0
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :phase
@@ -209,13 +209,12 @@ MAVG        = (
         wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-# MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
 rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 # Count marker per cell ---
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 # Interpolate from markers to cell ---
 Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
 D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
@@ -235,7 +234,7 @@ To interpolate a property from the tracers back to the centroids or vertices, li
 The tracers are advected using Runge-Kutta 4th order. This is conducted using the function
 
 ```julia
-AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
 ```
 
 The input parameters are: 
@@ -260,11 +259,9 @@ The advection of temperature and the update of the temperature field on the cent
 
 ```julia 
 # Advect tracers ---
-AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-# CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
-     
-# Interpolate temperature from tracers to grid ---
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+# Interpolate temperature from markers to grid ---
 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
 D.T     .=  D.T_ex[2:end-1,2:end-1]
 ```
@@ -275,9 +272,9 @@ The advection of the phase and the update of the corresponding grid parameters i
 # Advection ===
 # Advect tracers ---
 @printf("Running on %d thread(s)\n", nthreads())  
-AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
-
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+@timeit to "Tracer Interpolation" begin
 # Interpolate phase from tracers to grid ---
 Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
 D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  

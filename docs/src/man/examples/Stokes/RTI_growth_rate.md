@@ -570,8 +570,6 @@ If wanted, the density, tracer, and viscosity fields are plotted. To verify the 
         end
 ```
 
-<!-- ![Growth_Rate_Example](../../../assets/examples/Stokes/RTI_GR_example.svg) -->
-
 <img src="../../../assets/examples/Stokes/RTI_GR_example.svg" width="700">
 
 **Figure 1. Example of a RTI model.** Top: Centroid velocity arrows on top of the density field. Middle: Centroid viscosity. Bottom: Zoom of the tracer field on the tip of the perturbation at the center of the model domain. The black tracer marks the tip, and the red tracer mark the vertical velocity nodes from which the vertical velocity is interpolated onto the tip. This example uses a perturbation of $A = h_{1}/15$ and a wavelength of 12 km. The model includes 50 centroids in the vertical direction. The number of horizontal centroids is chosen such that the resolution remains consistent in both the horizontal and vertical directions for all benchmark models. 
@@ -605,8 +603,6 @@ end
 display(to)
 ```
 
-<!-- ![RTI_GrowthRate](../../../assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png) -->
-
 <img src="../../../assets/examples/Stokes/RTI_Growth_Rate_nmx_5_nmy_5_MarkerInterpolation_arith.png" width="700">
 
 **Figure 2. RTI Growth Rate.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2019). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - 100 m, red - 10 m, yellow - 1 m). The rising velocity is numerically calculated following the approach shown in Figure 1. 
@@ -614,8 +610,6 @@ display(to)
 --- 
 
 ## Resolution Test
-
-<!-- ![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NC_MarkerInterpolation.png) -->
 
 <img src="../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NC_MarkerInterpolation.png" width="700">
 
@@ -626,8 +620,6 @@ The summary figure compares the relative error of the numerical growth rate for 
 For moderate viscosity contrasts ($\eta_r = 1$ and $\eta_r = 500$), all three averaging schemes produce comparable results, and increasing the marker density only slightly improves the accuracy. In contrast, for the extreme viscosity contrast ($\eta_r = 10^{-6}$), the choice of averaging scheme becomes critical. Arithmetic averaging consistently yields the smallest errors and is largely insensitive to the marker distribution, whereas geometric averaging introduces noticeably larger errors. Harmonic averaging performs poorly for this benchmark and remains inaccurate even for large numbers of markers.
 
 The comparison demonstrates that, for marker-in-cell simulations with strong viscosity contrasts, the choice of viscosity averaging scheme has a significantly greater influence on the numerical accuracy than the marker density itself. Increasing the number of markers cannot compensate for an unsuitable averaging scheme, while arithmetic averaging provides the most robust and accurate results for the Rayleigh-Taylor instability benchmark.
-
-<!-- ![RTI_Growth_Rate_Res_test](../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NM_MarkerInterpolation.png) -->
 
 <img src="../../../assets/examples/Stokes/RTI_Growth_Rate_Averaging_Summary_const_NM_MarkerInterpolation.png" width="700">
 

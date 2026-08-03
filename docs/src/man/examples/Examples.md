@@ -18,22 +18,22 @@ By clicking on the title of each document page, you will be directed to the corr
 - [2-D Poisson equation resolution test](./Diffusion/PoissonRestest.md)
 - [2-D Poisson equation with variable thermal properties](./Diffusion/PoissonVariablek.md)
 
-**Thermal Convection Models** 
-- [Bottom heated, isoviscous thermal convection](./BottomHeatedConvection.md)
-- [Internally heated, isoviscous thermal convection](./Convection/InternallyHeatedConvection.md)
-- [Mixed heated, isoviscous thermal convection](./Convection/MixedHeatedConvection.md)
-
 **Stokes Equation**
 - [1D channel flow with constant and depth-dependent viscosity](./Stokes/ChannelFlow1D.md)
 - [2D falling block benchmark (direct or defect correction)](./Stokes/FallingBlockBenchmark.md)
 - [2D falling block with constant or variable viscosity (defect correction)](./Stokes/FallingBlockDC.md)
 - [2D Rayleigh–Taylor instability](./Stokes/RTI.md)
-- [2D Rayleigh–Taylor instability benchmark and resolution test](./Stokes/RTI_growth_rate.md)
-- [2D viscous inclusion problem](./Stokes/ViscousInclusion.md)
+- [2D Rayleigh–Taylor instability growth-rate benchmark and resolution test](./Stokes/RTI_growth_rate.md)
 - [Van Keken Benchmark](./Stokes/VanKekenBenchmark.md)
+- [2D Viscous Inclusion Benchmark](./Stokes/ViscousInclusion.md)
+
+**Thermal Convection Models** 
+- [Bottom heated, isoviscous thermal convection](./BottomHeatedConvection.md)
+- [Internally heated, isoviscous thermal convection](./Convection/InternallyHeatedConvection.md)
+- [Mixed heated, isoviscous thermal convection](./Convection/MixedHeatedConvection.md)
 
 **Thermo-Mechanical Shear Localization**
-- Viscous shear localization
+- [Viscous shear localization (shear heating)](./StrainLocalization/ShearBands.md)
 
 In the following, the runtime for each of the provided examples is listed as a reference. 
 
@@ -47,20 +47,20 @@ In the following, the runtime for each of the provided examples is listed as a r
 | 2D_Advection_ResolutionTest.jl    | 1) save_fig = 1: 1.04 h                               |
 |                                   | 2) save_fig = -1: 1109 s                              |
 | **=== Heat Diffusion ===**                                                                |
-| *1D* ---                                                                                  |
+| --- *1D* ---                                                                              |
 | ContinentalGeotherm_1D.jl         | 7.22 s                                                | 
 | Heat_1D_discretization.jl         | 3.66 s                                                |
 | OceanicGeotherm_1D.jl             | 691 ms                                                |
-| *2D* ---                                                                                  |
+| --- *2D* ---                                                                              |
 | BackwardEuler.jl                  | 14.4 s                                                | 
 | ForwardEuler.jl                   | 5.08 s                                                |
 | Gaussian_Diffusion.jl             | 422 s                                                 | 
 | Poisson_RestTest.jl               | 23.5 s                                                |
 | Poisson_variable_k.jl             | 7.69 s                                                |
 | **=== Stokes Equation ===**                                                               |
-| *1D* ---                                                                                  |
+| --- *1D* ---                                                                              |
 | ChannelFlow_1D.jl                 | 1.53 s                                                |
-| *2D* ---                                                                                  |
+| --- *2D* ---                                                                              |
 | FallingBlockBenchmark_*.jl        | 1) Steady State: 6.33 s (dc: 5.98 s)                  |
 |                                   | 2) Time-Dependent                                     |
 |                                   |     a) Upwind: 114 s (dc: 114 s)                      |
@@ -77,13 +77,20 @@ In the following, the runtime for each of the provided examples is listed as a r
 | VanKekenBenchmark.jl              | 917 s                                                 |
 | VanKekenBenchmark_scaled.jl       | 807 s                                                 |
 | **=== Thermal Convection Models ===**                                                     |
-| BottomHeated.jl                   |                                                 |
-| InternallyHeated.jl               |                                                 |
-| MixedHeated.jl                    |                                                       |
+| --- *Constant Viscosity* ---                                                              |
+| BottomHeated.jl                   | 1541 s                                                |
+| InternallyHeated.jl               | 1518 s                                                |
+| MixedHeated.jl                    | 1474 s                                                |
+| --- *Variable Viscosity* ---                                                              |
+| BottomHeated_VarEta.jl            | 3.38 h                                                |
+| Blankenbach_var_eta.jl            | Res:  50x50 : 1587.42 s                               |
+|                                   |      100x100: 13182.8 s                               |
+| **=== Thermo-mechanical Shear Localization ===**                                          |
+| ShearHeatingShearBands.jl         | 1.32 h                                                |
 
 > **Note:** In `GeoModBox.jl`, thermal and kinematic boundary conditions are explicitly implemented within the solvers. The absolute values at *ghost nodes* are computed based on the values provided in the boundary condition tuple `BC`. Each tuple specifies the `type` (either Dirichlet or Neumann) and the corresponding `val`ue at each boundary.  
-> For constant velocity boundary conditions, additional values must be defined in `val` for the boundary nodes (e.g., `BC.val.vxW`, `BC.val.vxE`). These additional values are required to **directly** solve the momentum equation using a the backslash operator and to update the right-hand side of the linear system. Furthermore, if non-zero, these values must be assigned to the initial boundary nodes of the respective velocity fields.  
-> For more details on the implementation of constant velocity boundaries, refer to the documentation of the [viscous inclusion](./Stokes/ViscousInclusion.md) example or the [initial velocity setup](../Ini.md).
+> For the velocity boundary conditions, additional values must be defined in `val` for the boundary nodes (e.g., `BC.val.vxW`, `BC.val.vxE`). Furthermore, if non-zero, these values must be assigned to the initial boundary nodes of the respective velocity fields.  
+> For more details on the implementation of the velocity boundary conditions, refer to the documentation.
 
 > **Note:** By default, the results of time-dependent examples in `GeoModBox.jl` are stored as GIF animations. To visualize solutions at specific time steps without generating a GIF, set the parameter `save_fig = 0`. In this case, individual plots are not saved, so caution is advised when running problems that require multiple time step iterations.
 

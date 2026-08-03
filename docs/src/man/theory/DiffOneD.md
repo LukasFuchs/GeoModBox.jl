@@ -28,8 +28,6 @@ To solve Equation (3) numerically, the spatial domain is discretized and physica
 
 > **Note:** Although thermal conductivity is currently assumed to be constant, a *conservative, staggered-grid* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at cell centers (centroids), while the heat flux $q$ is defined at cell interfaces (vertices).
 
-<!-- ![1DDiscretization](../assets/Diff_1D_Discretization.png) -->
-
 <img src="../../assets/theory/Diff_1D_Discretization.png" width="700">
 
 **Figure 1. 1D Discretization.** Staggered finite difference grid for solving the 1D heat diffusion equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
@@ -46,7 +44,7 @@ I^\textrm{E} & = I^\textrm{C} + 1,
 
 where $I$ is the equation number (corresponding to the local index $i$ and the central stencil position $C$), and $I^\textrm{W}$ and $I^\textrm{E}$ denote the points West and East of the central point, respectively. These indices are used in the discretized FD equations below.
 
-A detailed implementation of various numerical schemes for solving a linear problem is provided in the example script [Heat_1D_discretization.jl](./examples/GaussianDiffusion1D.md). This example demonstrates several discretization methods for solving the 1D heat diffusion equation using the special-case formulation for linear problems (i.e., a single left-matrix division):
+A detailed implementation of various numerical schemes for solving a linear problem is provided in the example script [Heat_1D_discretization.jl](../examples/GaussianDiffusion1D.md). This example demonstrates several discretization methods for solving the 1D heat diffusion equation using the special-case formulation for linear problems (i.e., a single left-matrix division):
 
 - Explicit scheme
 - Implicit scheme

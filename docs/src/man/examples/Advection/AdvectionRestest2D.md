@@ -2,7 +2,7 @@
 
 This example presents a grid-resolution test for the two-dimensional
 advection schemes. The numerical setup is identical to that used in the
-[2D advection example](Advection2D.md).
+[2D advection example](./Advection2D.md).
 
 To evaluate the accuracy and resolution dependence of each advection
 scheme, the script calculates the following diagnostic quantities:
@@ -218,7 +218,7 @@ Now, one can calculate the initial conditions. Here, the built-in functions for 
         # ------------------------------------------------------------ #
 ```
 
-Now, one needs to define the time parameter. Here, the maximum time is set ssuch that the anomaly completes one full rotation. 
+Now, one needs to define the time parameter. Here, the maximum time is set such that the anomaly completes one full revolution. 
 
 ```Julia
         # Time ======================================================= #
@@ -322,8 +322,6 @@ Let's visualize the initial condition first.
         end
         # ------------------------------------------------------------ #
 ```
-
-<!-- ![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg) -->
 
 <img src="../../../assets/examples/Advection/AdvIniSetup.svg" width="700">
 
@@ -519,13 +517,9 @@ elseif save_fig == 0
 end
 ```
 
-<!-- ![Summary](../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png) -->
-
 <img src="../../../assets/examples/Advection/2D_advection_circle_RigidBody_SummaryFigure.png" width="700">
 
 **Figure 2. Summary.** Final temperature distribution after one complete revolution for each advection scheme at a resolution of 100 × 100 cells.
-
-<!-- ![AdvResFinal](../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png) -->
 
 <img src="../../../assets/examples/Advection/2D_advection_circle_RigidBody_ResTest.png" width="700">
 

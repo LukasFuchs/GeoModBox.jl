@@ -118,8 +118,6 @@ display(q)
 # ------------------------------------------------------------------- #
 ```
 
-<!-- ![OG1D_ini](../../../assets/examples/Diffusion/OG1D_iniT.svg) -->
-
 <img src="../../../assets/examples/Diffusion/OG1D_iniT.svg" width="700">
 
 **Figure 1. Initial temperature profile.**
@@ -190,8 +188,6 @@ end
 # ------------------------------------------------------------------- #
 ```
 
-<!-- ![OG1D_evolve](../../../assets/examples/Diffusion/OG1D_evolve.svg) -->
-
 <img src="../../../assets/examples/Diffusion/OG1D_evolve.svg" width="700">
 
 **Figure 2. Evolution of the temperature profile with depth in 5 Ma steps.**
@@ -244,7 +240,6 @@ savefig(p,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D.png")
 savefig(q,"./examples/DiffusionEquation/1D/Results/OceanicGeotherm_1D_evolve.png")
 # ======================================================================= #
 ```
-<!-- ![OG1D_final](../../../assets/examples/Diffusion/OG1D_final.svg) -->
 
 <img src="../../../assets/examples/Diffusion/OG1D_final.svg" width="700">
 

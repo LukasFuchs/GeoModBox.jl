@@ -149,13 +149,11 @@ savefig(p,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_01.png")
 savefig(q,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
 ```
-<!-- ![PPvari](../../../assets/examples/Diffusion/Poisson_vari_1.svg) -->
 
 <img src="../../../assets/examples/Diffusion/Poisson_vari_1.svg" width="700">
 
 **Figure 1. Temperature distribution for variable thermal parameters.**
 
-<!-- ![PPvari](../../../assets/examples/Diffusion/Poisson_vari_2.svg) -->
 
 <img src="../../../assets/examples/Diffusion/Poisson_vari_2.svg" width="700">
 

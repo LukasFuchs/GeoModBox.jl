@@ -16,13 +16,12 @@ Ini         =   (T=:blankenbach,)
 # Plot Settings ========================================================= #
 Pl  =   (
     qinc        =   10,
-    qsc         =   5.0e-5 # 1.0e-3, 4.0e-4, 5.0e-5
+    qsc         =   1.0e-3 # 1.0e-3, 4.0e-4, 5.0e-5
 )
 # Animation Settings ==================================================== #
-# k           =   scatter()
 path        =   string("./exercises/Correction/Results/")
 anim        =   Plots.Animation(path, String[] )
-save_fig    =   0
+save_fig    =   1
 # ----------------------------------------------------------------------- #
 # Benchmark Values ====================================================== # 
 # Taken from Gerya (2019), Introduction to numerical geodynamic modelling
@@ -60,14 +59,12 @@ P   =   Physics(
     k       =   5.0,                #   Thermal Conductivity [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.5e-5,             #   THermal Expansion [ K^-1 ]
-    # Q₀      =   0.0,                #   Volumetric Heat Production rate [W/m^3]
-    η₀      =   1e23,               #   Reference Viscosity [ Pa*s ]
+    η₀      =   1e21,               #   Reference Viscosity [ Pa*s ]
     ΔT      =   1000.0,             #   Temperature Difference
     # If Ra < 0, Ra will be calculated from the reference parameters.
     # If Ra is defined, the reference viscosity will be adjusted such that
     # the scaling parameters result in the given Ra.
     Ra      =   -9999,              #   Rayleigh number
-    # Ttop    =   273,                #   Temperature at the surface [ K ]
 )
 # ----------------------------------------------------------------------- #
 # Define Scaling Constants ============================================== # 
@@ -75,8 +72,8 @@ S   =   ScalingConstants!(M,P)
 # ----------------------------------------------------------------------- #
 # Numerical Grid ======================================================== #
 NC  =   (
-    x   =   50,
-    y   =   50,
+    x   =   100,
+    y   =   100,
 )
 NV      =   (
     x   =   NC.x + 1,
@@ -153,6 +150,7 @@ epsV_history    =   fill(NaN, T.itmax)
 find            =   0
 count           =   0
 epsV0           =   0
+final_step      =   0 
 # ----------------------------------------------------------------------- #
 # Scaling laws ========================================================== #
 ScaleParameters!(S,M,Δ,T,P,D)
@@ -201,11 +199,8 @@ VBC     =   (
 )
 # ----------------------------------------------------------------------- #
 # Rayleigh Number ======================================================= #
-# if P.Ra < 0
-    P.Ra     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.η₀/P.κ
-# else
-#     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.Ra/P.κ
-# end
+P.Ra        =   P.ρ₀*P.g*P.α*P.ΔT*S.hsc^3/P.η₀/P.κ
+
 filename    =   string("13_Blankenbach_",@sprintf("%.2e",P.Ra),
                         "_",NC.x,"_",NC.y,
                         "_",Ini.T)
@@ -213,8 +208,10 @@ filename    =   string("13_Blankenbach_",@sprintf("%.2e",P.Ra),
 # Linear System of Equations ============================================ #
 # Momentum Conservation Equation (MCE) ------
 niterM  =   50
-ϵM      =   1e-8
-RM      =   0
+atolM   =   1e-8        #   Absolute tolerance
+rtolM   =   1e-5        #   Relative tolerance; r = atolM0/atolM
+RM      =   0.0         #   Initialize absolute residual    
+RMrel   =   0.0         #   Initialize relative residual 
 off     =   [   NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
                 NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
@@ -224,7 +221,6 @@ Num     =    (
     Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
     T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
 )
-# ndof    =   maximum(Num.T)  
 ndofM   =   maximum(Num.Pt)
 KM      =   ExtendableSparseMatrix(ndofM,ndofM)      
 δx      =   zeros(ndofM)
@@ -234,18 +230,21 @@ F       =   zeros(ndofM)
 KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
 KMfac   =   lu(KM.cscmatrix)
 # Energy Conservation Equation (ECE) -------------------------------- #
-KT      =   ExtendableSparseMatrix(ndof,ndof)
 niterT  =   10
 ϵT      =   1e-12
+RE      =   0.0
+ndofT   =   maximum(Num.T)     
+KT      =   ExtendableSparseMatrix(ndofT,ndofT)
+δT      =   zeros(maximum(Num.T))
 RT      =   zeros(Float64,NC...)
 ∂2T     =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                 ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
-RE      =   0.0
 # ----------------------------------------------------------------------- #
 # Time Loop ============================================================= #
 for it = 1:T.itmax
+        R0      =   0.0
     # Reduce screen output ---
-    verbose_step    =   mod(it, 100) == 0 || it == 1
+    verbose_step    =   mod(it, 200) == 0 || it == 1 || final_step == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
@@ -268,23 +267,21 @@ for it = 1:T.itmax
         F[Num.Vy]   .=  Fm.y
         F[Num.Pt]   .=  FPt
         RM          =   norm(F)/length(F)
-        if verbose_step
-            @printf("  MCE %2d: ||RM|| = %1.4e\n", iter, RM)
+        if iter == 1
+            R0 = max(RM, eps())
         end
-        RM < ϵM ? break : nothing
-        # @printf("||RM|| = %1.4e\n", norm(F)/length(F))
-        #     norm(F)/length(F) < ϵM ? break : nothing
-        # # Update K ------
-        # KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+        RMrel       =   RM/R0
+        if verbose_step
+            @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+        end
+        (RM < atolM || RM/R0 < rtolM) && break
         # Solving Linear System of Equations ------
-        # δx      =   - KM \ F
-        δx      =   -(KMfac \ F)
+        δx      .=   -(KMfac \ F)
         # Update unknown variables ------
         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
         D.Pt                .+=  δx[Num.Pt]
     end
-    # D.ρ  =   ones(NC...)
     # ======
     # Calculate Velocity on the Centroids ------
     for i = 1:NC.x
@@ -311,20 +308,14 @@ for it = 1:T.itmax
     #   □    |     o     |     o     |      □
     # --- 
     # Get temperature at the vertices 
-    # Tv1     =   zeros(NV.x,1)
-    # Tv2     =   zeros(NV.x,1)
     @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
                     D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
     @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
                     D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
     # Calculate temperature gradient --- 
-    # dTdy    =   zeros(NV.x,1)
     @. dTdy =   -(Tv1 - Tv2)/Δ.y
     # Calculate Nusselt number ---
-    # Midpoint integration -
-    # for i=1:NC.x
-    #     Nus[it] +=   ((dTdy[i]+dTdy[i+1])/2)*Δ.x
-    # end
+    Nus[it]     =   0.0
     # Trapezoidal integration -
     for i = 1:NV.x
         if i == 1 || i == NV.x
@@ -338,7 +329,6 @@ for it = 1:T.itmax
     # Mean Temperature ---
     meanT[it]   =   mean(D.T)
     # Root Mean Square Velocity ---
-    # meanV[it]   =   mean(D.vc)
     meanV[it] = sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
     # ------------------------------------------------------------------- #
     # Calculate time stepping =========================================== #
@@ -346,10 +336,9 @@ for it = 1:T.itmax
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
     T.Δ         =   minimum([T.Δd,T.Δc])
-    if Time[it] > T.tmax
-        T.Δ         =   T.tmax - Time[it-1]
-        Time[it]    =   Time[it-1] + T.Δ
-        it          =   T.itmax
+    if Time[it] + T.Δ >= T.tmax
+        T.Δ        = T.tmax - Time[it]
+        final_step = 1
     end
     # Plot ============================================================== #
     if verbose_step
@@ -370,18 +359,6 @@ for it = 1:T.itmax
                         D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
                 la=0.5,color="black",
                 alpha=0.5)
-        # p = heatmap(x.c,y.c,D.T',
-        #         xlabel="x",ylabel="y",colorbar=true,
-        #         title="Temperature",color=cgrad(:lajolla),
-        #         aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
-        #         ylims=(M.ymin, M.ymax))
-        # contour!(p,x.c,y.c,D.T',lw=1,
-        #             color="white",cbar=false,alpha=0.5)
-        # quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
-        #     y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
-        #     quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
-        #             D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),
-        #     la=0.5,color="black",alpha=0.5)
         if save_fig == 1
             Plots.frame(anim)
         elseif save_fig == 0
@@ -399,9 +376,7 @@ for it = 1:T.itmax
     @. D.vyco  =   D.vyc
     # ------------------------------------------------------------------- #
     # Diffusion ========================================================= #
-    @printf("---Energy Calculation---\n")
-    # CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
-    # Alternatively - defect correction, more accurate! ---
+    verbose_step &&  @printf("---Energy Calculation---\n")
     # Update temperature field --- 
     @. D.T0 =   D.T
     # Assemble linear system ---
@@ -414,17 +389,11 @@ for it = 1:T.itmax
                 1.0, TBC, Δ, T.Δ[1]; C = 0.5 )
         RE      =   norm(RT)/length(RT)
         if verbose_step
-            @printf("  ECE %2d: ||RE|| = %1.4e\n", iter, RE)
+                @printf("   ECE %2d: ||RE|| = %1.4e\n", iter, RE)
         end
         RE < ϵT ? break : nothing
-        # @printf("||RT|| = %1.4e\n", norm(RT)/length(RT))
-        # norm(RT)/length(RT) < ϵT ? break : nothing
-        # # Assemble linear system
-        # K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
-        # # Solve for temperature correction: Cholesky factorisation
-        # Kc = cholesky(K1.cscmatrix)
         # Solve for temperature correction: Back substitutions
-        δT = -(KTc\RT[:])
+        δT .= -(KTc\RT[:])
         # Update temperature
         @. D.T += δT[Num.T]
     end
@@ -437,16 +406,13 @@ for it = 1:T.itmax
     if Time[it] > 0.05
         epsC    =   0.001
         ind = searchsortedfirst(@view(Time[1:it]), Time[it] - 0.05)
-        # epsV    =   std(meanV[ind:it])
         epsV    =   std(@view meanV[ind:it])
         if count == 0
-            epsV0   =   epsV
+            epsV0   = max(epsV, eps(Float64))
             count   += 1
         end
         epsV        /= epsV0
-        if save_fig == 1
-            epsV_history[it] = epsV
-        end
+        epsV_history[it] = epsV
         find    =   it
         verbose_step && @printf("ε_Vr = %g, ε_Cr = %g \n",epsV,epsC)
         if Time[it] >= T.tmax
@@ -513,17 +479,17 @@ q2  =   plot(Time[1:find],Nus[1:find],
             xlabel= "", ylabel= L"Nus",label="",
             xformatter = _ -> "",
             ylims=(0,25),xlims=(0,Time[find]),
-            guidefontsize = 24, tickfontsize = 18,
-            titlefontsize = 24,grid = false,
-            layout=(2,1),suplot=1)
+            guidefontsize = 14, tickfontsize = 14,
+            titlefontsize = 14,grid = false,
+                layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
-            layout=(2,1),suplot=1)
+                layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],meanV[1:find],
             xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
             xformatter =:auto,
-            guidefontsize = 24, tickfontsize = 18,
-            titlefontsize = 24,grid = false,
+            guidefontsize = 14, tickfontsize = 14,
+            titlefontsize = 14,grid = false,
             ylims=(0,8000),xlims=(0,Time[find]),
             layout=(2,1),subplot=2)
 plot!(q2,Time[1:find],B.Vrms[B.Nr].*ones(find,1),
@@ -562,4 +528,7 @@ end
 # ----------------------------------------------------------------------- #
 end
 
+start=time()
 BlankenbachBenchmark()
+stop=time()
+@printf("Runtime: %g s",stop-start)

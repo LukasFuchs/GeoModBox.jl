@@ -1,12 +1,12 @@
 # Mixed Heated Convection
 
-This directory contains examples of three types of mixed heated thermal convection, each driven by distinct heating mechanisms:
+This directory contains examples of several types of mixed heated thermal convection, each driven by distinct heating mechanisms:
 
 - [Purely internally heated](InternallyHeated.jl)
 - [Purely basally heated](BottomHeated.jl)
 - [Internally and basally heated](MixedHeated.jl)
 
-The default basal *Rayleigh number* $Ra_B$ is set to $10^4$ for all examples; however, higher values of $Ra_B$ (tested up to $Ra_B = 10^6$) can be applied.
+The default basal *Rayleigh number* $Ra_b$ is set to $10^6$ for all examples.
 
 All simulations use non-dimensional quantities. The governing equations are solved as follows:
 - The momentum conservation equation is solved using the defect correction method.

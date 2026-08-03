@@ -178,7 +178,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   40000,              #   Maximum iterations
+    itmax   =   50000,              #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year   #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -193,6 +193,7 @@ meanV           =   zeros(T.itmax)
 meanT           =   zeros(T.itmax)
 ΔTsteady        =   fill(NaN, T.itmax)
 find            =   0
+final_step      =   0 
 nsteady         =   0
 nsteady_required =  100
 # ----------------------------------------------------------------------- #
@@ -207,7 +208,7 @@ x       =   (
 )
 y       =   (
     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
     v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
 x1      =   (
@@ -270,25 +271,26 @@ Num    =    (
     Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
     T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
 )
-ndof    =   maximum(Num.T)        
-KM      =   ExtendableSparseMatrix(ndof,ndof)      
+ndofM   =   maximum(Num.Pt)     
+KM      =   ExtendableSparseMatrix(ndofM,ndofM)      
 δx      =   zeros(maximum(Num.Pt))
 F       =   zeros(maximum(Num.Pt))
 # Energy Conservation Equation (ECE) ------------------------------------ #
-K1      =   ExtendableSparseMatrix(ndof,ndof)
-# Defect correction ---
 niterT  =   10
 ϵT      =   1e-12
+RE      =   0.0
+ndofT   =   maximum(Num.T)     
+KT      =   ExtendableSparseMatrix(ndofT,ndofT)
+δT      =   zeros(maximum(Num.T))
 RT      =   zeros(Float64,NC...)
 ∂2T     =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                 ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
-RE      =   0.0
 # ----------------------------------------------------------------------- #
 # Time Loop ============================================================= #
 for it = 1:T.itmax
     R0      =   0.0
     # Reduce screen output ---
-    verbose_step    =   mod(it, 200) == 0 || it == 1
+    verbose_step    =   mod(it, 1000) == 0 || it == 1 || final_step == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
@@ -317,7 +319,7 @@ for it = 1:T.itmax
         F[Num.Pt]   .=  FPt
         RM          =   norm(F)/length(F)
         if iter == 1
-            R0 = RM
+            R0 = max(RM, eps())
         end
         RMrel       =   RM/R0
         if verbose_step
@@ -340,15 +342,54 @@ for it = 1:T.itmax
         end
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
+    # Nusselt Number ==================================================== #
+    # Grid structure at the surface ---
+    #   o - Centroids
+    #   x - Vertices 
+    #   □ - Ghost Nodes
+    #
+    #   □          □           □            □
+    #   
+    #        x --------- x --------- x
+    #        |           |           |
+    #   □    |     o     |     o     |      □ 
+    #        |           |           |
+    #        x --------- x --------- x      
+    #        |           |           |
+    #   □    |     o     |     o     |      □
+    # --- 
+    # Get temperature at the vertices 
+    @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
+                    D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
+    @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
+                    D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
+    # Calculate temperature gradient --- 
+    @. dTdy =   -(Tv1 - Tv2)/Δ.y
+    # Calculate Nusselt number ---
+    Nus[it]     =   0.0
+    # Trapezoidal integration -
+    for i = 1:NV.x
+        if i == 1 || i == NV.x
+            afac = 1
+        else
+            afac = 2
+        end
+        Nus[it]     += afac * dTdy[i]
+    end
+    Nus[it]     *=   Δ.x/2
+    # Mean Temperature ---
+    meanT[it]   =   mean(D.T)
+    # Root Mean Square Velocity ---
+    meanV[it]   =   sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
+    # ------------------------------------------------------------------- #
     # Calculate time stepping =========================================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
     T.Δ         =   minimum([T.Δd,T.Δc])
-    if Time[it] > T.tmax
-        T.Δ         =   T.tmax - Time[it-1]
-        Time[it]    =   Time[it-1] + T.Δ
-        it          =   T.itmax
+    if Time[it] + T.Δ >= T.tmax
+        T.Δ        = T.tmax - Time[it]
+        final_step = 1
     end
     # Plot ============================================================== #
     if verbose_step
@@ -390,10 +431,6 @@ for it = 1:T.itmax
         @. D.vxco   =   D.vxc
         @. D.vyco   =   D.vyc
     end
-    # @assert all(isfinite, D.vxc)
-    # @assert all(isfinite, D.vyc)
-    # @assert all(isfinite, D.T)
-    # @assert isfinite(T.Δ)
     semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
     @. D.vxco  =   D.vxc
     @. D.vyco  =   D.vyc
@@ -402,9 +439,9 @@ for it = 1:T.itmax
     verbose_step && @printf("---Energy Calculation---\n")
     @. D.T0 =   D.T
     # Assemble linear system ---
-    K1      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
+    KT      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
     # Solve for temperature correction: Cholesky factorisation
-    Kc      =   cholesky(K1.cscmatrix)
+    KTc      =   cholesky(KT.cscmatrix)
     for iter = 1:niterT
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
@@ -415,51 +452,12 @@ for it = 1:T.itmax
         end
         RE < ϵT ? break : nothing
         # Solve for temperature correction: Back substitutions
-        δT  = -(Kc\RT[:])
+        δT .= -(KTc\RT[:])
         # Update temperature
         @. D.T += δT[Num.T]
     end
     # Update extended field for advection scheme --- 
     D.T_ex[2:end-1,2:end-1]     .=  D.T
-    # ------------------------------------------------------------------- #
-    # Nusselt Number ==================================================== #
-    # Grid structure at the surface ---
-    #   o - Centroids
-    #   x - Vertices 
-    #   □ - Ghost Nodes
-    #
-    #   □          □           □            □
-    #   
-    #        x --------- x --------- x
-    #        |           |           |
-    #   □    |     o     |     o     |      □ 
-    #        |           |           |
-    #        x --------- x --------- x      
-    #        |           |           |
-    #   □    |     o     |     o     |      □
-    # --- 
-    # Get temperature at the vertices 
-    @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
-                    D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
-    @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
-                    D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
-    # Calculate temperature gradient --- 
-    @. dTdy =   -(Tv1 - Tv2)/Δ.y
-    # Calculate Nusselt number ---
-    # Trapezoidal integration -
-    for i = 1:NV.x
-        if i == 1 || i == NV.x
-            afac = 1
-        else
-            afac = 2
-        end
-        Nus[it]     += afac * dTdy[i]
-    end
-    Nus[it]     *=   Δ.x/2
-    # Mean Temperature ---
-    meanT[it]   =   mean(D.T)
-    # Root Mean Square Velocity ---
-    meanV[it]   =   sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
     # ------------------------------------------------------------------- #
     # Check break ======================================================= #
     # If the maximum time is reached or if the models reaches steady 
@@ -495,7 +493,7 @@ end
 # Save Animation ---
 if save_fig == 1
     # Write the frames to a GIF file
-    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+    Plots.gif(anim, string( path, filename, ".gif" ), fps = 10)
     foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 end
 valid   =   findall(isfinite, ΔTsteady)
@@ -554,17 +552,17 @@ q2  =   plot(Time[1:find],Nus[1:find],
             xlabel= "", ylabel= L"Nus",label="",
             xformatter = _ -> "",
             xlims=(0,Time[find]),
-            guidefontsize = 24, tickfontsize = 18,
-            titlefontsize = 24,grid = false,
-            layout=(2,1),suplot=1)
+            guidefontsize = 13, tickfontsize = 13,
+            titlefontsize = 13,grid = false,
+            layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
-            layout=(2,1),suplot=1)
+            layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],meanV[1:find],
             xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
             xformatter =:auto,
-            guidefontsize = 24, tickfontsize = 18,
-            titlefontsize = 24,grid = false,
+            guidefontsize = 13, tickfontsize = 13,
+            titlefontsize = 13,grid = false,
             xlims=(0,Time[find]),
             layout=(2,1),subplot=2)
 plot!(q2,Time[1:find],B.Vrms[B.Nr].*ones(find,1),

@@ -1,4 +1,6 @@
-This example reproduces **model 2a of the Blankenbach et al. (1989) thermal convection benchmark**, which extends the classical isoviscous convection problem by introducing a strongly temperature-dependent viscosity. In contrast to the corresponding isoviscous benchmark exercise, the viscosity varies by more than four orders of magnitude across the imposed temperature range, resulting in a substantially more realistic and challenging thermo-mechanical problem.
+# [Blankenbach Benchmark with Variable Viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/ThermalConvection/) 
+
+This example reproduces the **Blankenbach et al. (1989) thermal convection benchmark** including a strongly temperature-dependent viscosity. In contrast to the corresponding isoviscous benchmark exercise, the viscosity varies by more than four orders of magnitude across the imposed temperature range, resulting in a substantially more realistic and challenging thermo-mechanical problem.
 
 The viscosity is described by
 
@@ -11,7 +13,7 @@ c\frac{y}{H}
 \right),
 \end{equation}$
 
-where $\eta_0$ is the reference viscosity, while the coefficients $b$ and $c$ control the temperature and depth dependence of viscosity, respectively. For **model 2a**, the benchmark parameters are
+where $\eta_0$ is the reference viscosity, while the coefficients $b$ and $c$ control the temperature and depth dependence of viscosity, respectively. For this example, the benchmark parameters are
 
 $\begin{equation}
 b=\ln(16384), \qquad c=0,
@@ -21,19 +23,13 @@ such that viscosity depends exclusively on temperature.
 
 The introduction of temperature-dependent viscosity creates a nonlinear coupling between the momentum and energy equations. At each time step, the current temperature field determines the viscosity distribution, which is then treated as fixed during the solution of the Stokes equations. The resulting velocity field is subsequently used to advect and diffuse the temperature, modifying the viscosity distribution for the next time step. Although each individual Stokes solve is therefore linear, the complete thermo-mechanical evolution is nonlinear because temperature, viscosity, and velocity continuously influence one another.
 
-This example introduces several topics that are not covered by the isoviscous benchmark exercise:
-
-1. The implementation of a strongly temperature-dependent viscosity law.
-2. The nonlinear coupling between the energy and momentum equations through viscosity.
-3. The iterative solution of thermo-mechanically coupled convection.
-4. The influence of viscosity variations on the geometry and localization of mantle flow.
-5. The verification of the numerical solution using published benchmark diagnostics.
-
 The accuracy of the numerical solution is evaluated using the steady-state diagnostics reported by Blankenbach et al. (1989), including the **Nusselt number**, the **root mean square velocity**, the temperature gradients at the model corners, and the extrema of the vertical temperature profile through the centre of the model.
 
-Compared with the isoviscous benchmark, model 2a develops a markedly asymmetric convection pattern. Cold material near the upper boundary becomes highly viscous and forms a stiff thermal boundary layer, whereas the warmer interior remains comparatively weak and deforms more readily. This results in localized downwellings, broader upwellings, and a significantly more heterogeneous flow field than in the isoviscous case.
+Compared with the isoviscous benchmark, this example develops a markedly asymmetric convection pattern. Cold material near the upper boundary becomes highly viscous and forms a stiff thermal boundary layer, whereas the warmer interior remains comparatively weak and deforms more readily. This results in localized downwellings, broader upwellings, and a significantly more heterogeneous flow field than in the isoviscous case.
 
 The example therefore serves both as a verification of the variable-viscosity Stokes solver and as a demonstration of nonlinear thermo-mechanical coupling in mantle convection.
+
+The example makes use of the general momentum, heat diffusion, and semi-Lagrangian advection solvers provided by `GeoModBox.jl`. In addition, a helper function is introduced at the end of the script to compute a temperature-dependent viscosity field and interpolate it from cell centers to the grid vertices required by the variable-viscosity Stokes solver.
 
 ```Julia
 using Plots, ExtendableSparse
@@ -45,48 +41,7 @@ using Statistics, LinearAlgebra
 using Printf, LaTeXStrings, Measures
 ```
 
-```Julia
-function TdepViscosity!(D,b,c,y;avg_v=:geometric)
-    
-    # Non-dimensional - assuming η is scaled by P.η₀
-    @. D.ηc     =   exp(-b*D.T + c*(1.0 + y.c2d))
-
-    # --- Extended Centroids-
-    D.η_ex[2:end-1,2:end-1]     .=  D.ηc
-    D.η_ex[1,:]     .=  D.η_ex[2,:]
-    D.η_ex[end,:]   .=  D.η_ex[end-1,:]
-    D.η_ex[:,1]     .=  D.η_ex[:,2]
-    D.η_ex[:,end]   .=  D.η_ex[:,end-1]
-    # --- Vertices -
-    if avg_v == :arithmetic
-        @. D.ηv =
-            0.25*(
-                D.η_ex[1:end-1,1:end-1] + 
-                D.η_ex[2:end  ,1:end-1] + 
-                D.η_ex[1:end-1,2:end  ] + 
-                D.η_ex[2:end  ,2:end  ]
-            )
-    elseif avg_v == :harmonic
-        @. D.ηv =
-            4.0/(
-                1/D.η_ex[1:end-1,1:end-1] + 
-                1/D.η_ex[2:end  ,1:end-1] + 
-                1/D.η_ex[1:end-1,2:end  ] + 
-                1/D.η_ex[2:end  ,2:end  ]
-            )
-    elseif avg_v == :geometric
-        @. D.ηv =
-            exp(0.25*(
-                log(D.η_ex[1:end-1,1:end-1]) + 
-                log(D.η_ex[2:end  ,1:end-1]) + 
-                log(D.η_ex[1:end-1,2:end  ]) + 
-                log(D.η_ex[2:end  ,2:end  ])
-            ))
-    else
-        error("Unknown viscosity averaging: $(avg_v)")
-    end
-end
-```
+The initial temperature field is selected together with the plotting parameters, animation directory, and output options. Because the viscosity varies strongly with temperature, this example is computationally more expensive than the isoviscous model, particularly because the momentum matrix must be reassembled and factorized whenever the viscosity field changes.
 
 ```Julia
 # Define Initial Condition ============================================== #
@@ -105,6 +60,8 @@ anim        =   Plots.Animation(path, String[] )
 save_fig    =   1
 # ----------------------------------------------------------------------- #
 ```
+
+The benchmark values reported by Blankenbach et al. (1989) are stored for later comparison. During the simulation, the Nusselt number and the root-mean-square velocity are evaluated continuously and compared with these published reference values to verify the numerical implementation.
 
 ```Julia
 # Benchmark Values ====================================================== # 
@@ -132,6 +89,8 @@ B       =   (
 # ----------------------------------------------------------------------- #
 ```
 
+The physical model consists of a unit-aspect-ratio box heated from below and cooled from above. 
+
 ```Julia
 # Geometry ============================================================== #
 M   =   Geometry(
@@ -158,11 +117,15 @@ P   =   Physics(
 # ----------------------------------------------------------------------- #
 ```
 
+The scaling constants are derived from the dimensional geometry and physical parameters. They define the characteristic length, temperature, time, velocity, and viscosity scales used to transform the governing equations and model variables into nondimensional form.
+
 ```Julia
 # Define Scaling Constants ============================================== # 
 S   =   ScalingConstants!(M,P)
 # ----------------------------------------------------------------------- #
 ```
+
+Next, the staggered finite-difference grid and all required field variables are allocated. In addition to the temperature, velocity, pressure, and density fields, separate viscosity arrays are defined at cell centers and grid vertices, reflecting the variable placement required by the staggered Stokes discretization.
 
 ```Julia
 # Numerical Grid ======================================================== #
@@ -228,13 +191,15 @@ dTdy        =   zeros(NV.x,1)
 # ----------------------------------------------------------------------- #
 ```
 
+The time-stepping parameters are initialized together with arrays used to monitor the evolution of the benchmark. These diagnostics include the dimensionless time, Nusselt number, root-mean-square velocity, mean temperature, and the change in temperature between successive iterations, which is later used to detect steady state.
+
 ```Julia
 # Time parameters ======================================================= #
 T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   40000,              #   Maximum iterations
+    itmax   =   30000,              #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year   #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -249,16 +214,21 @@ meanV           =   zeros(T.itmax)
 meanT           =   zeros(T.itmax)
 ΔTsteady        =   fill(NaN, T.itmax)
 find            =   0
+final_step      =   0 
 nsteady         =   0
 nsteady_required =  100
 # ----------------------------------------------------------------------- #
 ```
+
+All dimensional model quantities are converted to their nondimensional equivalents. After this step, the numerical solver operates entirely with scaled coordinates, material properties, fields, and time increments.
 
 ```Julia
 # Scaling laws ========================================================== #
 ScaleParameters!(S,M,Δ,T,P,D)
 # ----------------------------------------------------------------------- #
 ```
+
+The computational coordinates are then generated for all staggered variable locations. Separate coordinate arrays are defined for centroids, vertices, and velocity nodes to simplify field interpolation, visualization, and finite-difference operations.
 
 ```Julia
 # Coordinates =========================================================== #
@@ -269,7 +239,7 @@ x       =   (
 )
 y       =   (
     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
     v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
 x1      =   (
@@ -289,6 +259,8 @@ y   =   merge(y,y1)
 # ----------------------------------------------------------------------- #
 ```
 
+The initial conductive temperature profile is initialized using the Blankenbach benchmark perturbation. From this temperature field, the initial temperature-dependent viscosity is computed according to the prescribed exponential viscosity law.
+
 ```Julia
 # Initial Condition ===================================================== #
 # Temperature ------
@@ -297,6 +269,8 @@ IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
 TdepViscosity!(D,B.b[B.Nr],B.c[B.Nr],y)
 # ----------------------------------------------------------------------- #
 ```
+
+Boundary conditions are prescribed for both the temperature and velocity fields. The model employs fixed temperatures at the upper and lower boundaries, insulating sidewalls, and free-slip mechanical boundary conditions, matching the original benchmark specification.
 
 ```Julia
 # Boundary Conditions =================================================== #
@@ -314,6 +288,8 @@ VBC     =   (
 # ----------------------------------------------------------------------- #
 ```
 
+If the Rayleigh number is specified explicitly, the reference viscosity is automatically adjusted to reproduce the desired value.
+
 ```Julia
 # Rayleigh Number ======================================================= #
 if P.Ra < 0
@@ -326,6 +302,8 @@ filename    =   string("Blankenbach_VarEta_",@sprintf("%.2e",P.Ra),
                         "_",Ini.T)
 # ----------------------------------------------------------------------- #
 ```
+
+The sparse linear systems required by the momentum and energy equations are assembled next. The Stokes equations are solved using the general defect-correction solver, whereas the transient heat equation is solved using a Crank-Nicolson discretization together with the same iterative defect-correction strategy.
 
 ```Julia
 # Linear System of Equations ============================================ #
@@ -344,28 +322,31 @@ Num    =    (
     Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
     T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
 )
-ndof    =   maximum(Num.T)        
-KM      =   ExtendableSparseMatrix(ndof,ndof)      
+ndofM   =   maximum(Num.Pt)     
+KM      =   ExtendableSparseMatrix(ndofM,ndofM)      
 δx      =   zeros(maximum(Num.Pt))
 F       =   zeros(maximum(Num.Pt))
 # Energy Conservation Equation (ECE) ------------------------------------ #
-K1      =   ExtendableSparseMatrix(ndof,ndof)
-# Defect correction ---
 niterT  =   10
 ϵT      =   1e-12
+RE      =   0.0
+ndofT   =   maximum(Num.T)     
+KT      =   ExtendableSparseMatrix(ndofT,ndofT)
+δT      =   zeros(maximum(Num.T))
 RT      =   zeros(Float64,NC...)
 ∂2T     =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                 ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
-RE      =   0.0
 # ----------------------------------------------------------------------- #
 ```
+
+The main time loop advances the coupled thermo-mechanical solution. At each step, the current model time is updated and detailed terminal output is restricted to selected intervals to reduce the cost of printing and plotting during the long variable-viscosity calculation.
 
 ```Julia
 # Time Loop ============================================================= #
 for it = 1:T.itmax
     R0      =   0.0
     # Reduce screen output ---
-    verbose_step    =   mod(it, 200) == 0 || it == 1
+    verbose_step    =   mod(it, 500) == 0 || it == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
@@ -374,6 +355,8 @@ for it = 1:T.itmax
         it, Time[it]
     )
 ```
+
+Each iteration consists of four main steps. First, the temperature-dependent viscosity is updated and the Stokes equations are solved to obtain the velocity and pressure fields. The resulting velocity field is then used to evaluate the benchmark diagnostics before advancing the temperature through semi-Lagrangian advection and implicit Crank-Nicolson diffusion. Finally, the convergence criteria are evaluated to determine whether a steady state has been reached.
 
 ```Julia
     # ------ MCE ------
@@ -397,7 +380,7 @@ for it = 1:T.itmax
         F[Num.Pt]   .=  FPt
         RM          =   norm(F)/length(F)
         if iter == 1
-            R0 = RM
+            R0 = max(RM, eps())
         end
         RMrel       =   RM/R0
         if verbose_step
@@ -422,18 +405,66 @@ for it = 1:T.itmax
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
 ```
 
+Once the velocity field has converged, the benchmark diagnostics are evaluated. The Nusselt number is computed from the temperature gradient at the upper boundary, while the root-mean-square velocity and the mean temperature provide additional measures of the convective vigor and thermal evolution.
+
+```Julia
+    # Nusselt Number ==================================================== #
+    # Grid structure at the surface ---
+    #   o - Centroids
+    #   x - Vertices 
+    #   □ - Ghost Nodes
+    #
+    #   □          □           □            □
+    #   
+    #        x --------- x --------- x
+    #        |           |           |
+    #   □    |     o     |     o     |      □ 
+    #        |           |           |
+    #        x --------- x --------- x      
+    #        |           |           |
+    #   □    |     o     |     o     |      □
+    # --- 
+    # Get temperature at the vertices 
+    @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
+                    D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
+    @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
+                    D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
+    # Calculate temperature gradient --- 
+    @. dTdy =   -(Tv1 - Tv2)/Δ.y
+    # Calculate Nusselt number ---
+    Nus[it]     =   0.0
+    # Trapezoidal integration -
+    for i = 1:NV.x
+        if i == 1 || i == NV.x
+            afac = 1
+        else
+            afac = 2
+        end
+        Nus[it]     += afac * dTdy[i]
+    end
+    Nus[it]     *=   Δ.x/2
+    # Mean Temperature ---
+    meanT[it]   =   mean(D.T)
+    # Root Mean Square Velocity ---
+    meanV[it]   =   sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
+    # ------------------------------------------------------------------- #
+```
+
+The next stable time step is determined from both the Courant-Friedrichs-Lewy (CFL) criterion and the thermal diffusion stability criterion. If the remaining simulation time is smaller than the computed time step, the time step is reduced to terminate the simulation exactly at the prescribed final time.
+
 ```Julia
     # Calculate time stepping =========================================== #
     T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
     T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
     T.Δ         =   minimum([T.Δd,T.Δc])
-    if Time[it] > T.tmax
-        T.Δ         =   T.tmax - Time[it-1]
-        Time[it]    =   Time[it-1] + T.Δ
-        it          =   T.itmax
+    if Time[it] + T.Δ >= T.tmax
+        T.Δ        = T.tmax - Time[it]
+        final_step = 1
     end
 ```
+
+The temperature, velocity, and viscosity are visualized at selected time steps. The left panel of the figure shows the temperature field and the right panel shows $\log_{10}(\eta/\eta_0)$. Frames are either stored for the final animation or displayed interactively.
 
 ```Julia
     # Plot ============================================================== #
@@ -473,30 +504,30 @@ for it = 1:T.itmax
     # ------------------------------------------------------------------- #
 ```
 
+The temperature field is then advected using the semi-Lagrangian method. The velocity field from the previous time step is retained to evaluate the characteristic trajectories required by the midpoint integration scheme.
+
 ```Julia
     # Advection ========================================================= #
     if it == 1
         @. D.vxco   =   D.vxc
         @. D.vyco   =   D.vyc
     end
-    @assert all(isfinite, D.vxc)
-    @assert all(isfinite, D.vyc)
-    @assert all(isfinite, D.T)
-    @assert isfinite(T.Δ)
     semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxco,D.vyco,x,y,T.Δ)
     @. D.vxco  =   D.vxc
     @. D.vyco  =   D.vyc
     # ------------------------------------------------------------------- #
 ```
 
+Following advection, thermal diffusion is solved using the Crank-Nicolson discretization. The defect-correction iterations continue until the temperature residual satisfies the prescribed convergence tolerance, completing one fully coupled thermo-mechanical time step.
+
 ```Julia
     # Diffusion ========================================================= #
     verbose_step && @printf("---Energy Calculation---\n")
     @. D.T0 =   D.T
     # Assemble linear system ---
-    K1      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
+    KT      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
     # Solve for temperature correction: Cholesky factorisation
-    Kc      =   cholesky(K1.cscmatrix)
+    KTc      =   cholesky(KT.cscmatrix)
     for iter = 1:niterT
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
@@ -507,7 +538,7 @@ for it = 1:T.itmax
         end
         RE < ϵT ? break : nothing
         # Solve for temperature correction: Back substitutions
-        δT  = -(Kc\RT[:])
+        δT .= -(KTc\RT[:])
         # Update temperature
         @. D.T += δT[Num.T]
     end
@@ -516,47 +547,7 @@ for it = 1:T.itmax
     # ------------------------------------------------------------------- #
 ```
 
-```Julia
-    # Nusselt Number ==================================================== #
-    # Grid structure at the surface ---
-    #   o - Centroids
-    #   x - Vertices 
-    #   □ - Ghost Nodes
-    #
-    #   □          □           □            □
-    #   
-    #        x --------- x --------- x
-    #        |           |           |
-    #   □    |     o     |     o     |      □ 
-    #        |           |           |
-    #        x --------- x --------- x      
-    #        |           |           |
-    #   □    |     o     |     o     |      □
-    # --- 
-    # Get temperature at the vertices 
-    @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
-                    D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1])/4
-    @. Tv2  =   (D.T_ex[1:end-1,end-1] + D.T_ex[2:end,end-1] + 
-                    D.T_ex[1:end-1,end-2] + D.T_ex[2:end,end-2])/4
-    # Calculate temperature gradient --- 
-    @. dTdy =   -(Tv1 - Tv2)/Δ.y
-    # Calculate Nusselt number ---
-    # Trapezoidal integration -
-    for i = 1:NV.x
-        if i == 1 || i == NV.x
-            afac = 1
-        else
-            afac = 2
-        end
-        Nus[it]     += afac * dTdy[i]
-    end
-    Nus[it]     *=   Δ.x/2
-    # Mean Temperature ---
-    meanT[it]   =   mean(D.T)
-    # Root Mean Square Velocity ---
-    meanV[it]   =   sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
-    # ------------------------------------------------------------------- #
-```
+Finally, the change in temperature between successive iterations is evaluated. Once this change remains below a prescribed tolerance for a sufficient number of consecutive time steps, the simulation is considered to have reached steady state and the time integration terminates.
 
 ```Julia
     # Check break ======================================================= #
@@ -592,11 +583,13 @@ for it = 1:T.itmax
 end
 ```
 
+After the simulation has finished, the final temperature and viscosity fields, together with the convergence history, are saved. Additional benchmark diagnostics are then generated to facilitate comparison with the published reference solution.
+
 ```Julia
 # Save Animation ---
 if save_fig == 1
     # Write the frames to a GIF file
-    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+    Plots.gif(anim, string( path, filename, ".gif" ), fps = 10)
     foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 end
 valid   =   findall(isfinite, ΔTsteady)
@@ -648,9 +641,6 @@ elseif save_fig == 0
     display(k)
 end
 # ----------------------------------------------------------------------- #
-```
-
-```Julia
 # Plot time serieses ==================================================== #
 q2  =   plot(layout=(2,1),size=(1200,900),dpi = 300)
 @show size(Time), size(Nus)
@@ -660,10 +650,10 @@ q2  =   plot(Time[1:find],Nus[1:find],
             xlims=(0,Time[find]),
             guidefontsize = 24, tickfontsize = 18,
             titlefontsize = 24,grid = false,
-            layout=(2,1),suplot=1)
+            layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],B.Nu[B.Nr].*ones(find,1),
             lw=0.5,color="red",linestyle=:dash,alpha=0.5,label="",
-            layout=(2,1),suplot=1)
+            layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],meanV[1:find],
             xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
             xformatter =:auto,
@@ -704,5 +694,62 @@ if save_fig == 1
 elseif save_fig == 0
     display(q3)
 end
-# ----------------------------------------------------------------------- #
+# ----------------------------------------------------------------------- 
+```
+<img src="../../../assets/examples/Convection/Blankenbach_VarEta_1.00e+04_100_100_blankenbach.gif" width="700">
+
+**Figure 1.** Evolution of the two-dimensional Blankenbach benchmark with temperature-dependent viscosity for a resolution of $100 \times 100$. The left panel shows the dimensionless temperature field with superimposed velocity vectors, while the right panel displays the logarithm of the normalized viscosity, $\log_{10}(\eta/\eta_0)$. As the initially conductive state becomes unstable, cold, highly viscous material accumulates beneath the upper boundary, whereas the hot interior develops a pronounced low-viscosity region that promotes vigorous convection.
+
+<img src="../../../assets/examples/Convection/Blankenbach_var_eta_TimeSeries_1.00e+04_100_100_blankenbach.png" width="700">
+
+**Figure 2.** Evolution of the dimensionless Nusselt number ($Nu$) and root-mean-square velocity ($V_{\mathrm{RMS}}$) for the temperature-dependent Blankenbach benchmark. The dashed horizontal lines indicate the published benchmark values, demonstrating the convergence of the numerical solution toward the reference solution after the initial transient adjustment.
+
+---
+
+The helper function below evaluates the exponential temperature-dependent viscosity law and interpolates the resulting cell-centered viscosities to the grid vertices. Several averaging schemes are available, although the geometric average is used throughout this benchmark because it provides the most accurate representation for strongly varying viscosities.
+
+```Julia
+# ======================================================================= #
+# Helper Function ======================================================= # 
+# ======================================================================= #
+function TdepViscosity!(D,b,c,y;avg_v=:geometric)
+    
+    # Non-dimensional - assuming η is scaled by P.η₀
+    @. D.ηc     =   exp(-b*D.T + c*(1.0 + y.c2d))
+
+    # --- Extended Centroids-
+    D.η_ex[2:end-1,2:end-1]     .=  D.ηc
+    D.η_ex[1,:]     .=  D.η_ex[2,:]
+    D.η_ex[end,:]   .=  D.η_ex[end-1,:]
+    D.η_ex[:,1]     .=  D.η_ex[:,2]
+    D.η_ex[:,end]   .=  D.η_ex[:,end-1]
+    # --- Vertices -
+    if avg_v == :arithmetic
+        @. D.ηv =
+            0.25*(
+                D.η_ex[1:end-1,1:end-1] + 
+                D.η_ex[2:end  ,1:end-1] + 
+                D.η_ex[1:end-1,2:end  ] + 
+                D.η_ex[2:end  ,2:end  ]
+            )
+    elseif avg_v == :harmonic
+        @. D.ηv =
+            4.0/(
+                1/D.η_ex[1:end-1,1:end-1] + 
+                1/D.η_ex[2:end  ,1:end-1] + 
+                1/D.η_ex[1:end-1,2:end  ] + 
+                1/D.η_ex[2:end  ,2:end  ]
+            )
+    elseif avg_v == :geometric
+        @. D.ηv =
+            exp(0.25*(
+                log(D.η_ex[1:end-1,1:end-1]) + 
+                log(D.η_ex[2:end  ,1:end-1]) + 
+                log(D.η_ex[1:end-1,2:end  ]) + 
+                log(D.η_ex[2:end  ,2:end  ])
+            ))
+    else
+        error("Unknown viscosity averaging: $(avg_v)")
+    end
+end
 ```

@@ -152,8 +152,6 @@ end
 # ----------------------------------------------------------------------- #
 ```
 
-<!-- ![Diff1Dini](../../../assets/examples/Diffusion/Diff_1D_iniT.svg) -->
-
 <img src="../../../assets/examples/Diffusion/Diff_1D_iniT.svg" width="700">
 
 **Figure 1. Initial temperature distribution.**
@@ -218,8 +216,6 @@ for n=1:nt
 end
 end
 ```
-
-<!-- ![Diff_1D_evolve](../../../assets/examples/Diffusion/Diff_1D_comparison.gif) -->
 
 <img src="../../../assets/examples/Diffusion/Diff_1D_comparison.gif" width="700">
 

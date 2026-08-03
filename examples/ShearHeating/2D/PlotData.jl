@@ -15,7 +15,7 @@ function field_plot(fieldnr, basepath, Diff, θ, Adv, NCx, NCy, avg_p, avg_v, st
         "frames_2D/",
     )
 
-    file = joinpath(folder, string(fieldnr, ".png"))
+file = joinpath(folder, string(fieldnr, ".png"))
     if !isfile(file)
         error("Field image not found: $(file)")
     end
@@ -251,13 +251,13 @@ plot!(p1, [NaN], [NaN],
 # Plot all simulations
 # ============================================================
 
-f1 = field_plot("000007", basepath, Diff, θfield, Advfield,
+f1 = field_plot("000004", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε ≈ 5%")
 
-f2 = field_plot("000020", basepath, Diff, θfield, Advfield,
+f2 = field_plot("000011", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε ≈ 15%")
 
-f3 = field_plot("000037", basepath, Diff, θfield, Advfield,
+f3 = field_plot("000019", basepath, Diff, θfield, Advfield,
                 NCx, NCy, avg_p, avg_v, style; title="ε ≈ 25%")
 
 for θ in θlist

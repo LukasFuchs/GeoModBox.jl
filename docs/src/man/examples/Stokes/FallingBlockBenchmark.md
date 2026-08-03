@@ -2,8 +2,6 @@
 
 The falling block benchmark is a well-established test for assessing the accuracy of the momentum solver and the efficiency of the advection scheme, particularly under strong viscosity and density contrasts. The model setup (Figure 1) is defined by a rectangular block with a certain viscosity and density within a matrix of a different viscosity and density. Due to the density contrast, the block sinks. Depending on the viscosity contrast, the block either deforms strongly during its descent or behaves nearly as a rigid body. Consequently, the benchmark simultaneously tests the treatment of large viscosity contrasts and the accuracy of material advection. 
 
-<!-- ![FallingBlockSU](../../../assets/examples/Stokes/FallingBlock_Setup.png) -->
-
 <img src="../../../assets/examples/Stokes/FallingBlock_Setup.png" width="700">
 
 **Figure 1. Falling Block Setup.** 
@@ -701,13 +699,9 @@ if td == 0
 end
 ```
 
-<!-- ![FallingBlockBM_Sink_Veloc](../../../assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png) -->
-
 <img src="../../../assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png" width="700">
 
 **Figure 2. Sinking Velocity.** Instantaneous, sinking velocity of the rectangular block for different viscosity ratios. 
-
-<!-- ![FallingBlockBM_Final_Stage](../../../assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png) -->
 
 <img src="../../../assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png" width="700">
 

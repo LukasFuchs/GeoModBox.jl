@@ -127,16 +127,16 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |    |   | ) CNA+semilag+dc:  |
 |    |   | ) CNA+upwind+dc:  |
 | 13 | Blankenbach Benchmark | **Resolution: 50×50** |
-|    |   | Ra = 1e4:  |
-|    |   | Ra = 1e5:  |
-|    |   | Ra = 1e6:  |
+|    |   | Ra = 1e4: 91.6504 s |
+|    |   | Ra = 1e5: 91.1549 s |
+|    |   | Ra = 1e6: 321.539 s |
 |    |   | **Resolution: 100×100** |
-|    |   | Ra = 1e4:  |
-|    |   | Ra = 1e5:  |
-|    |   | Ra = 1e6:  |
+|    |   | Ra = 1e4:  563.994 s |
+|    |   | Ra = 1e5:  297.469 s |
+|    |   | Ra = 1e6:  1069.46 s |
 |    |   | **Resolution Tests:** |
-|    |   | Ra = 1e4: |
-|    |   | Ra = 1e5: |
-|    |   | Ra = 1e6: |
+|    |   | Ra = 1e4: 160.83 s | 
+|    |   | Ra = 1e5: 1142.15 s | 
+|    |   | Ra = 1e6: 36283.8 s | 
 
 ¹: For the thermal convection, only the runtime where compilation and allocation overhead is avoided are shown, for the sake of simplicity. The number of iterations is shown in the parentheses. For the higher $Ra$ number models only the fastest and most accurate (see [here](../examples/Diffusion/GaussianDiffusion2D.md)) combinations of solvers from the low $Ra$ case haven been run. 

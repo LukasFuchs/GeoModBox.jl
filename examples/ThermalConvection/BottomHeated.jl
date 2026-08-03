@@ -20,7 +20,7 @@ Ini         =   (T=:lineara,)
 # Plot Einstellungen ================================================ #
 Pl  =   (
     qinc        =   10,
-    qsc         =   1.0e-4
+    qsc         =   5.0e-5
 )
 # Animationssettings ================================================ #
 path        =   string("./examples/ThermalConvection/Results/")
@@ -247,7 +247,7 @@ end
 for it = 1:T.itmax
     find = it
     R0      =   0.0
-    verbose_step    =   mod(it, 500) == 0 || it == 1 || final_step == 1
+    verbose_step    =   mod(it, 400) == 0 || it == 1 || final_step == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
@@ -417,7 +417,7 @@ end
 end
 if save_fig == 1
     # Write the frames to a GIF file
-    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+    Plots.gif(anim, string( path, filename, ".gif" ), fps = 10)
     foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 end
 valid   =   findall(isfinite, epsV_history)
@@ -539,6 +539,7 @@ function PlotFieldProfile(Pl,M,D,x,y,Tmean)
         color        = cgrad(:lajolla),
         colorbar     = true,
         aspect_ratio = :equal,
+        clims        = (0,1),
         xlims        = (M.xmin, xmax_plot),
         ylims        = (M.ymin, M.ymax),
     )

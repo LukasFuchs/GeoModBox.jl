@@ -30,8 +30,8 @@ end
 # ----------------------------------------------------------------------- #
 function ComputeStrainStress2D!(D,ε,τ,divV,Δ)
     @. divV =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x + (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y
-    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x - 1.0/3.0*divV
-    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y - 1.0/3.0*divV
+    @. ε.xx =   (D.vx[2:end,2:end-1] - D.vx[1:end-1,2:end-1])/Δ.x # - 1.0/3.0*divV
+    @. ε.yy =   (D.vy[2:end-1,2:end] - D.vy[2:end-1,1:end-1])/Δ.y # - 1.0/3.0*divV
     @. ε.xy =   0.5*( (D.vx[:,2:end] - D.vx[:,1:end-1])/Δ.y + (D.vy[2:end,:] - D.vy[1:end-1,:])/Δ.x ) 
     @. τ.xx =   2.0 * D.ηc * ε.xx
     @. τ.yy =   2.0 * D.ηc * ε.yy
@@ -105,7 +105,7 @@ end
 function Diagnostics!(phbd,nprof,
                         M,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
-                        xp,yp,it)
+                        xp,yp,it,verbose_step)
     pp  =   nothing
     r   =   nothing
     # Estimate shear band angle ----------------------------------------- #
@@ -194,7 +194,7 @@ function Diagnostics!(phbd,nprof,
     end
 
     # ------------------------------------------------------------------- #
-    if mod(it,5) == 0 || it == 1 || it == T.itmax
+    if verbose_step
         r = heatmap(x.c./1e3,y.c./1e3,log10.(ε.II'),color=cgrad(:batlow),
                     xlabel="x[km]",ylabel="y[km]",
                     clims=(-13.5,-12.0),
@@ -440,6 +440,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
         Δfacd   =   0.9,                #   Diffusion time factor
         itmax   =   400,                #   Maximum iterations
     )
+    final_step = false
     Time    =   zeros(T.itmax)
     # Initialize Time Step ---
     GetTimeStep!(T,Δ,P,D)
@@ -521,10 +522,10 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
     Num    =    (
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
-        Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),#
+        Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
         T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
     )
-    ndof    =   maximum(Num.T)  
+    ndofM       =   maximum(Num.Pt)  
     # Momentum conservation (MCE) ---
     # Iterations --- 
     niterM      =   80          #   Number of iterations 
@@ -532,32 +533,33 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
     rtolM       =   1e-5        #   Relative tolerance; r = atolM0/atolM
     RM          =   0.0         #   Initialize absolute residual    
     RMrel       =   0.0         #   Initialize relative residual 
-    KM          =   ExtendableSparseMatrix(ndof,ndof)
+    KM          =   ExtendableSparseMatrix(ndofM,ndofM)
     # Residuals ---
     Fm     =    (
         x       =   zeros(Float64,NV.x, NC.y), 
         y       =   zeros(Float64,NC.x, NV.y)
     )
     FPt     =   zeros(Float64,NC...)
+    δx      =   zeros(Float64,ndofM)
+    F       =   zeros(Float64,ndofM)
     # Energy conservation (ECE) ---
+    ndofT   =   maximum(Num.T)
     if FD.Method.Diff==:implicit || FD.Method.Diff==:CN
         if FD.Method.Diff==:CN
-            K1      =   ExtendableSparseMatrix(ndof,ndof)
-            K2      =   ExtendableSparseMatrix(ndof,ndof)
+            K1      =   ExtendableSparseMatrix(ndofT,ndofT)
+            K2      =   ExtendableSparseMatrix(ndofT,ndofT)
         else
-            K       =   ExtendableSparseMatrix(ndof,ndof)
+            K       =   ExtendableSparseMatrix(ndofT,ndofT)
         end
-        rhs         =   zeros(ndof)
+        rhs         =   zeros(ndofT)
     elseif FD.Method.Diff==:dc
         niter       =   10
         ϵ           =   1e-20
-        K           =   ExtendableSparseMatrix(ndof,ndof)
+        K           =   ExtendableSparseMatrix(ndofT,ndofT)
         R           =   zeros(Float64,NC...)
         ∂2T         =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                         ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
     end
-    δx      =   zeros(Float64,maximum(Num.Pt))
-    F       =   zeros(Float64,maximum(Num.Pt))
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
@@ -569,30 +571,37 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
             strain[it]  =   strain[it-1] + Ini.ε * T.Δ
         end
         shortening[it]  =   100 .* (1 .- exp.(-strain[it]))
+        if shortening[it] >= 35 
+            final_step = true
+        end
+        verbose_step    =   mod(it, 10) == 0 || it == 1 || final_step
         # ---
-        @printf("\nTime step: #%04d, Time [Myr]: %04e, Shortening: %2.2f\n ",it,
+        verbose_step && @printf("\nTime step: #%04d, Time [Myr]: %04e, Shortening: %2.2f\n ",it,
                     Time[it]/(60*60*24*365.25)/1.0e6,shortening[it])
         # Momentum Conservation Equation ================================ #
         # Initial Residual ---
         if it == 1
-            D.vx[2:end-1,:]    .=  0.0
-            D.vy[:,1:end-1]    .=  0.0
-            D.Pt               .=  0.0
+            # D.vx[2:end-1,:]    .=  0.0
+            # D.vy[:,1:end-1]    .=  0.0
+            # D.Pt               .=  0.0
+            D.vx[:, 2:end-1] .= 0.0
+            D.vy[2:end-1, :] .= 0.0
+            D.Pt             .= 0.0
         end
         @timeit to "Solution Iteration" begin
-        @printf("---Momentum Calculation ---\n")        
+        verbose_step && @printf("---Momentum Calculation ---\n")        
         for iter = 1:niterM
             @timeit to "Residual" begin
             Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,P.g,Fm,FPt)
-            F[Num.Vx]   =   Fm.x[:]
-            F[Num.Vy]   =   Fm.y[:]
-            F[Num.Pt]   =   FPt[:]
+            F[Num.Vx]   .=   Fm.x
+            F[Num.Vy]   .=   Fm.y
+            F[Num.Pt]   .=   FPt
             RM          =   norm(F)/length(F)
             if iter == 1
-                R0 = RM
+                R0 = max(RM, eps())
             end
             RMrel       =   RM/R0
-            @printf("it: %i, ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+            verbose_step && @printf("it: %i, ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
             (RM < atolM || RM/R0 < rtolM) && break
             end
             # Assemble Coefficients --
@@ -602,7 +611,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
             # ---
             # Solution of the linear system --
             @timeit to "Solution" begin
-            δx      =   - KM \ F
+            δx      .=   - KM \ F
             end
             # ---
             # Update Unknown Variables ---
@@ -620,6 +629,10 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
             UpdateRheo!(ε,Rhe,D,P)
             # ---
         end
+        # Ensure that strain rate, stress, and invariants correspond to
+        # the final velocity and viscosity fields
+        ComputeStrainStress2D!(D, ε, τ, divV, Δ)
+        GetSecondInvariants!(ε, τ)
         end
         # Get the velocity on the centroids --- 
         # For visualization purposes and Euler advection methods ---
@@ -635,7 +648,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
         pp,r    =   Diagnostics!(phbd,nprof,
                         M,T,D,Ini,x,y,ε,
                         θsb,θsb2,Dsb,εf,δTemp,strain,style,
-                        xp,yp,it)
+                        xp,yp,it,verbose_step)
         # Save diagnostics on file ---
         if save_fig == 1
             @printf(dfile,
@@ -659,24 +672,24 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
         @. D.Hs =   τ.xx .* ε.xx .+ τ.yy .* ε.yy .+ 2.0 .* τ.xyc .* ε.xyc
         # ---
         # Temperature diffusion --- 
-        @printf("---Energy Calculation---\n")
+        verbose_step && @printf("---Energy Calculation---\n")
         if FD.Method.Diff==:explicit
             ForwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC;
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
+                        ρ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:implicit
             BackwardEuler2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K, Num; 
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
+                        ρ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:CN
             CNA2Dc!(D, P.κ, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num; 
-                        ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
+                        ρ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
         elseif FD.Method.Diff==:dc
             D.T0        .=  D.T
             for iter = 1:niter
                 # Evaluate residual
                 ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
                         P.κ, TBC, Δ, T.Δ;
-                        C = FD.Method.θ, ρ₀ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
-                @printf("||R|| = %1.4e\n", norm(R)/length(R))
+                        C = FD.Method.θ, ρ = P.ρ₀, cp = P.cp, Qₛ = D.Hs)
+                verbose_step && @printf("||R|| = %1.4e\n", norm(R)/length(R))
                 norm(R)/length(R) < ϵ ? break : nothing
                 # Assemble linear system
                 K  = AssembleMatrix2Dc(P.κ, TBC, Num, NC, Δ, T.Δ;C=FD.Method.θ)
@@ -757,10 +770,10 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
         end
         # ---
         # Advection of tracers ---
-        @printf("Running on %d thread(s)\n", nthreads())  
+        verbose_step && @printf("Running on %d thread(s)\n", nthreads())  
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv)
         # --------------------------------------------------------------- #
-        if mod(it,5) == 0 || it == 1 || it == T.itmax
+        if verbose_step
             if save_fig == 1
                 pp !== nothing && Plots.frame(animProf, pp)
                 r  !== nothing && Plots.frame(anim2D, r)
@@ -835,7 +848,7 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
         @. D.Told_ex    =   D.T_ex
         end
         # --------------------------------------------------------------- #
-        if mod(it,10) == 0 || it == 1
+        if verbose_step
             @show it
             @show Time[it]
             @show strain[it]
@@ -853,8 +866,8 @@ function ShearHeatingShearBands(Diff,θ,Adv,style,avg)
             @show δTemp[it]
             @printf("Bulk shortening %g reached maximum value\n",shortening[it])
             break
-        else
-            T.itmax   =   it
+        # else
+        #     T.itmax   =   it
         end
     end # End Time Loop
     end

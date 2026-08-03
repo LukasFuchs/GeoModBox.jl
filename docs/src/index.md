@@ -6,7 +6,7 @@ The **Geod**ynamic **Mod**elling Tool**Box** is a Julia package primarily intend
 2) [**Momentum**](./man/theory/MomentumMain.md), 
 3) [**Mass** and **Compositon**](./man/theory/AdvectMain.md). 
 
-`GeoModBox.jl` includes a series of [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/) and [examples](./man/examples/Examples.md) of geodynamically well-defined problems. The exercises are provided as Jupyter notebooks for students to complete. The theoretical background is documented here.
+`GeoModBox.jl` includes a series of [exercises](./man/exercises/Exercises.md) and [examples](./man/examples/Examples.md) of geodynamically well-defined problems. The exercises are provided as Jupyter notebooks for students to complete. The theoretical background is documented here.
 
 The solvers for each governing equation can be used separately or in combination for dimensional or non-dimensional problems, with only minimal modifications when calling the functions. For more informations on how to use the individual functions please see the [list of functions](./man/listoffunctions.md) or individual [exmples](./man/examples/Examples.md). Some typical initial conditions, such as a linearly increasing temperature, are predefined and can be called using [specific functions](./man/Ini.md). In the following a brief explenation is given regarding the governing equations and the numerical method to solve them within the `GeoModBox.jl`. For more detailed information see the individual documentations. 
 
@@ -36,13 +36,13 @@ On geological timescales, Earth's mantle and lithosphere deform slowly due to th
 
 ## [Benchmarks and Examples](./man/examples/Examples.md)
 
-The following are visualizations of selected examples provided by `GeoModBox.jl`. For further details, refer to the documentation linked in each title.
+The following are visualizations of selected examples provided by `GeoModBox.jl`. For further details, refer to the documentation linked in each title. Each runtime can be found in the documentation of the [examples](./man/examples/Examples.md) and [exercises](./man/exercises/Exercises.md).
 
 ### [Gaussian Temperature Diffusion](./man/examples/Diffusion/GaussianDiffusion2D.md)
 
 <img src="./assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" width="700">
 
-**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 120 × 120, using the special solver with the [Crank-Nicholson discretization](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl), compared to the analytical solution. a) 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow). b) Total deviation from the analytical solution. c) 1-D y-profile along $x = 0$. d) Root Mean Square (RMS) total deviation over time.
+**Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 120 × 120, using the special solver with the [Crank-Nicholson discretization](./man/theory/DiffTwoD.md), compared to the analytical solution. a) 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow). b) Total deviation from the analytical solution. c) 1-D y-profile along $x = 0$. d) Root Mean Square (RMS) total deviation over time.
 
 <img src="./assets/examples/Diffusion/Gaussian_ResTest.png" width="700">
 
@@ -58,7 +58,7 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 <img src="./assets/examples/Advection/2D_advection_circle_RigidBody_markers_100_100_nth_1.gif" width="700">
 
-**Figure 3. Rigid-Body-Rotation.** Time-dependent advection of a rotating circular temperature anomaly using the **upwind (top)**, **semi-Lagrangian (middle)**, and **tracer (bottom)** methods on a 100 × 100 grid. Within a circular region, the velocity field follows rigid rotation; outside, it is zero. Temperature for tracers is interpolated to the grid for visualization but not updated on the tracers.
+**Figure 3. Rigid-Body-Rotation.** Time-dependent advection of a rotating circular temperature anomaly using the **upwind (top)**, **semi-Lagrangian (middle)**, and **tracer (bottom)** methods on a 100 × 100 grid. Within a circular region, the velocity field follows rigid rotation; outside, it is zero.
 
 ---
 
@@ -78,7 +78,9 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 --- 
 
-### [Rayleigh-Taylor Instability](./man/examples/Stokes/RTI.md)
+### [Rayleigh-Taylor Instability (RTI)](./man/examples/Stokes/RTI.md)
+
+#### [RTI Growth-rate Benchmark (Ramberg, 1968)](./man/examples/Stokes/RTI_growth_rate.md)
 
 <img src="./assets/examples/Stokes/RTI_ηr_-6.0_tracers_DC.gif" width="700">
 
@@ -88,34 +90,80 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 **Figure 8.** Growth rate of an initial cosinusoidal perturbation in a two-layer system across various wavelengths $\lambda$. The growth rate is arbitrarily scaled using $b_1$ and $b_2$ for visualization, following the approach of Gerya (2019). The lines are the analytical solutions for different viscosity ratios $\eta_r$ and the markers show the corresponding numerical results for models with decreasing amplitudes (black - 100 m, red - 10 m, yellow - 1 m).
 
+#### [RTI Benchmark (Van Keken et al., 1997)](./man/examples/Stokes/VanKekenBenchmark.md)
+
 <img src="./assets/examples/Stokes/VanKeKen_Benchmark_ηr_0.0_tracers_DC_arith.gif" width="700">
 
 **Figure 9.** Evolution of the dimensional Van Keken benchmark. The panels show the density field, tracer distribution, viscosity, and velocity magnitude together with the velocity vectors. The initially perturbed interface evolves into the characteristic Rayleigh-Taylor instability as the denser lower material sinks beneath the lighter upper layer.
 
 ---
 
-### [Blankenbach Benchmark]()
+### [Viscous Inclusion Benchmark](./man/examples/Stokes/ViscousInclusion.md)
 
+<img src="./assets/examples/Stokes/ViscousInclusion_Summary.png" width="700">
 
+**Figure 10.** Comparison between the numerical and analytical solutions for the horizontal velocity, vertical velocity, and pressure fields. The third column shows the corresponding relative error distributions. The largest errors are localized at the viscosity interface, where the material properties are discontinuous, while excellent agreement is obtained throughout the remainder of the domain.
 
-### [Thermal Convection](./man/examples/Convection/MixedHeatedConvection.md)
+---
+
+### Thermal Convection Models
+
+#### [Blankenbach Benchmark (Blankenbach et al., 1989)](./man/exercises/13_Blankenbach_Benchmark.md)
+
+<img src="./assets/exercises/13a.gif" width="700">
+
+**Figure 11.** Isoviscous, bottom-heated thermal convection for $Ra_b = 10^6$ with a resolution of 100×100.  
+The initial condition is a sinusoidally perturbed conductive temperature field.  
+The background color shows the non-dimensional temperature, overlaid by temperature isolines (every 0.05) and centroid velocity vectors. Heat diffusion is solved using the defect correction with a **Crank–Nicolson** discretization, the Stokes equation using the **defect correction** method, and temperature advection with the **semi-Lagrangian** method.  
+
+<img src="./assets/exercises/13g.png" width="700">
+
+**Figure 12.** Summary of the resolution study for a basal Rayleigh number of $Ra_b = 10^6$. (a) Final dimensionless temperature field with superimposed velocity vectors and temperature contours for the third model. (b) Vertical temperature profile through the center of the model. The black squares denote the published locations of the minimum and maximum temperatures reported by Blankenbach et al. (1989). (c) Evolution of the Nusselt number ($Nu$) and root-mean-square velocity ($V_{\mathrm{RMS}}$) toward steady state. The dashed red lines indicate the benchmark values. (d) Grid convergence of the Nusselt number, root-mean-square velocity, and mean temperature as a function of the inverse number of grid cells, $1/(n_x n_y)$. The dashed red lines correspond to the benchmark values.
+
+<img src="./assets/examples/Convection/Blankenbach_VarEta_1.00e+04_100_100_blankenbach.gif" width="700">
+
+**Figure 13.** Evolution of the two-dimensional Blankenbach benchmark with temperature-dependent viscosity for a resolution of $100 \times 100$. The left panel shows the dimensionless temperature field with superimposed velocity vectors, while the right panel displays the logarithm of the normalized viscosity, $\log_{10}(\eta/\eta_0)$. As the initially conductive state becomes unstable, cold, highly viscous material accumulates beneath the upper boundary, whereas the hot interior develops a pronounced low-viscosity region that promotes vigorous convection.
+
+#### [Mixed Thermal Convection Models](./man/examples/Convection/Overview_Convection.md)
+
+##### [Bottom Heated Convection](./man/examples/Convection/BottomHeatedConvection.md)
 
 <img src="./assets/examples/Convection/Bottom_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 10. Bottom-Heated, Isoviscous Convection for Ra = $10^6$, resolution 400 × 100.**  
-TOP: Transient temperature field with velocity vectors.  
-BOTTOM: Horizontally averaged temperature–depth profiles at each time step.  
-Solvers: defect correction (momentum), semi-Lagrangian (advection), Crank-Nicolson (heat diffusion).  
+**Figure 14. Bottom-Heated, Isoviscous Convection for $Ra_b = 10^6$, resolution 400 × 100.**  
+Solvers: defect correction(momentum), semi-Lagrangian (advection), defect correction + Crank-Nicolson discretization (heat diffusion).  
 Boundary conditions: Dirichlet (top/bottom), Neumann (sides), free-slip (velocity, all sides).
+
+##### [Internally Heated Convection](./man/examples/Convection/InternallyHeatedConvection.md)
 
 <img src="./assets/examples/Convection/Internally_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 11. Internally Heated Convection for $Ra_Q = 1.5 \cdot 10^6$, resolution 400 × 100.**  
+**Figure 15. Internally Heated Convection for $Ra_Q \approx 1.5 \cdot 10^7$, resolution 400 × 100.**  
 Same setup as above, but with Neumann boundary at the bottom (zero heat flux) and constant internal volumetric heat production $Q \approx 15$.
+
+##### [Mixed Heated Convection](./man/examples/Convection/MixedHeatedConvection.md)
 
 <img src="./assets/examples/Convection/Mixed_Heated_1.0e6_400_100_lineara.gif" width="700">
 
-**Figure 12. Mixed-Heated Convection for Ra = $...$, resolution 400 × 100.**  
+**Figure 16. Mixed-Heated Convection for a basal and internal-heating Rayleigh number of $Ra_b = 10^6, Ra_Q \approx 1.5 \cdot 10^7$, resolution 400 × 100.**  
 Combination of the above two setups (bottom heating + internal heating).
+
+#### [Bottom Heated with temperature-dependent viscosity](./man/examples/Convection/BottomHeatedConvection_VE.md)
+
+<img src="./assets/examples/Convection/Bottom_Heated_VE_1.0e6_400_100_lineara.gif" width="700">
+
+**Figure 17. Bottom-Heated, variable viscosity convection for $Ra_b = 10^6$, resolution 400 × 100.** Same setup as above, but with a temperature-dependent, Arrhenius-like viscosity resulting in a viscosity contrast of five orders of magnitude in a non-dimensional temperature range of 0-1.
+
+---
+
+### [Thermo-mechanical Shear Localization](./man/examples/StrainLocalization.md)
+
+<img src="./assets/examples/ShearHeating/ShearHeatingBands_2D.gif" width="700">
+
+**Figure 18.** Evolution of thermo-mechanical shear localization in the pure-shear benchmark using shear heating. The model employs the general defect-correction energy solver with a Crank–Nicolson discretization ($\theta = 0.5$), tracer-based temperature advection, and a grid resolution of $200 \times 100$ cells. Temperature-dependent, non-linear dislocation-creep viscosities are combined using arithmetic averaging for the phase mixing, centroid-to-vertex interpolation, and marker-to-grid interpolation. The animation shows the evolution of the second invariant of the strain-rate field (background colors), the weak inclusion (black contour), the evolving shear band (white contour), and the fixed diagnostic profile (red line) used to quantify strain-rate amplification, shear-band thickness, and shear-heating-induced temperature increase.
+
+<img src="./assets/examples/ShearHeating/FinalBenchmarkFigure_fixed_arithmetic_arithmetic.png" width="700">
+
+**Figure 19.** Evolution and quantitative characterization of thermo-mechanical shear localization for the fixed-profile diagnostic with arithmetic phase and vertex viscosity averaging. Panels (a)–(c) show the second invariant of the strain-rate field at approximately 5%, 15%, and 25% bulk shortening, including the weak inclusion and the profile used to evaluate localization. Panels (d)–(f) show the the strain-rate amplification, temperature increase, shear-band orientation, and shear-band thickness as functions of bulk shortening. Line color distinguishes the upwind, semi-Lagrangian, and tracer advection methods, while line style distinguishes backward Euler (θ = 0), Crank–Nicolson (θ = 0.5), and forward Euler (θ = 1) within the general defect-correction formulation.
 
 ------------------

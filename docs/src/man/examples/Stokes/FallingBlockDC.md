@@ -6,7 +6,7 @@ For more details on the defect correction method, please refer to the [momentum 
 
 For more details on the tracer advection method, please refer to the [advection scheme documentation](../../theory/AdvectMain.md). 
 
-For more details on initializing the model using tracers, please refer to the [initialization documentation](../../theory/Ini.md). 
+For more details on initializing the model using tracers, please refer to the [initialization documentation](../../Ini.md). 
 
 ---
 
@@ -284,8 +284,6 @@ savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_inst
 display(to)
 ```
 
-<!-- ![FBIsoInst](../../../assets/examples/Stokes/FallingBlockConstEta_instantaneous_DC.png) -->
-
 <img src="../../../assets/examples/Stokes/FallingBlockConstEta_instantaneous_DC.png" width="700">
 
 **Figure 1. Instantaneous solution of an isoviscous falling block problem.** 
@@ -376,7 +374,7 @@ y   =   merge(y,y1)
 # -------------------------------------------------------------------- #
 ```
 
-Unlike the previous example, the viscosity is no longer constant throughout the computational domain. Instead, it is determined by the spatial distribution of the two materials. Although the viscosity of each material remains constant, the viscosity field evolves because the tracers transport the material through the domain. For more information, please refer to the [documentation](../../theory/Ini.md).
+Unlike the previous example, the viscosity is no longer constant throughout the computational domain. Instead, it is determined by the spatial distribution of the two materials. Although the viscosity of each material remains constant, the viscosity field evolves because the tracers transport the material through the domain. For more information, please refer to the [documentation](../../Ini.md).
 
 ```Julia
 # Physics ============================================================ #
@@ -704,8 +702,6 @@ if save_fig == 1
 end
 display(to)
 ```
-
-<!-- ![FBvarytd](../../../assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif) -->
 
 <img src="../../../assets/examples/Stokes/Falling_block_ηr_0.0_tracers_DC.gif" width="700">
 

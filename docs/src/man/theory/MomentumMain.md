@@ -92,12 +92,12 @@ The following examples demonstrate applications of the Stokes equations implemen
 - [2D falling block with variable viscosity (defect correction)](../examples/Stokes/FallingBlockDC.md)  
 - [2D Rayleigh–Taylor instability benchmark (Ramberg (1968))](../examples/Stokes/RTI_growth_rate.md)
 - [2D Rayleigh-Taylor instability](../examples/Stokes/RTI.md)
-- [2D Van Keken et al. (1997) benchmark](../examples/Stokes/VanKekenBenchmark.md)
+- [2D Rayleigh-Taylor instability benchmark (Van Keken et al. (1997))](../examples/Stokes/VanKekenBenchmark.md)
 - [2D viscous inclusion problem](../examples/Stokes/ViscousInclusion.md)  
 
 Examples of coupled temperature–momentum systems (i.e., thermal convection models) using operator splitting include:
 
-- [Mixed heated convection models](../examples/Convection/MixedHeatedConvection.md)
+- [Mixed heated convection models](../examples/Convection/Overview_Convection.md)
 
 ## Exercises
 

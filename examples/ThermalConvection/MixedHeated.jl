@@ -4,7 +4,7 @@ using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using GeoModBox.AdvectionEquation.TwoD, GeoModBox.HeatEquation.TwoD
 using GeoModBox.Scaling
 using Statistics, LinearAlgebra
-using Printf, TimerOutputs, LaTeXStrings
+using Printf, TimerOutputs, LaTeXStrings, Measures
 
 # ======================================================================= #
 # Main Function ========================================================= #
@@ -20,7 +20,7 @@ Ini         =   (T=:lineara,)
 # Plot Einstellungen ================================================ #
 Pl  =   (
     qinc        =   10,
-    qsc         =   1.0e-4
+    qsc         =   5.0e-5
 )
 # Animationssettings ================================================ #
 path        =   string("./examples/ThermalConvection/Results/")
@@ -50,7 +50,7 @@ P   =   Physics(
     # berechnet. Falls Ra gegeben ist, dann wird die Referenzviskositaet so
     # angepasst, dass die Skalierungsparameter die gegebene Rayleigh-Zahl
     # ergeben.
-    Ra      =   1.0e4,              #   Rayleigh number
+    Ra      =   1.0e6,              #   Rayleigh number
     Ttop    =   273.15,             #   Temperatur an der Oberfläche [ K ]
 )
 # ------------------------------------------------------------------- #
@@ -122,7 +122,7 @@ T   =   TimeParameter(
     tmax    =   1000000.0,          #   [ Ma ]
     Δfacc   =   0.9,                #   Courant time factor
     Δfacd   =   0.9,                #   Diffusion time factor
-    itmax   =   20000,               #   Maximum iterations
+    itmax   =   10000,              #   Maximum iterations
 )
 T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
 T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
@@ -139,6 +139,7 @@ epsV_history    =   fill(NaN, T.itmax)
 find            =   0
 count           =   0
 epsV0           =   0
+final_step      =   0 
 # ------------------------------------------------------------------- #
 # Skalierungsgesetze ================================================ #
 ScaleParameters!(S,M,Δ,T,P,D)
@@ -203,6 +204,8 @@ end
 filename    =   string("Mixed_Heated_",P.Ra[1],
                         "_",NC.x,"_",NC.y,
                         "_",Ini.T)
+Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*((M.ymax-M.ymin)*S.hsc)^5) / (P.k*P.κ*P.η₀) 
+@printf("    Ra_Q: %04e\n ",Ra_Q)
 # =================================================================== #
 # Lineares Gleichungssystem ========================================= #
 @timeit to "EquationSetup" begin
@@ -246,8 +249,9 @@ end
 # Zeitschleife ====================================================== #
 @timeit to "Time Loop" begin
 for it = 1:T.itmax
+    find = it
     R0      =   0.0
-    verbose_step    =   mod(it, 500) == 0 || it == 1
+    verbose_step    =   mod(it, 400) == 0 || it == 1 || final_step == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
@@ -300,16 +304,6 @@ for it = 1:T.itmax
         end
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
-    # Berechnung der Zeitschrittlänge =============================== #
-    T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
-            (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-    T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
-    T.Δ         =   minimum([T.Δd,T.Δc])
-    if Time[it] > T.tmax
-        T.Δ         =   T.tmax - Time[it-1]
-        Time[it]    =   Time[it-1] + T.Δ
-        it          =   T.itmax
-    end
     # Wärmefluss an der Oberfläche ================================== #
     # Get temperature at the vertices         
     @. Tv1  =   (D.T_ex[1:end-1,end] + D.T_ex[2:end,end] + 
@@ -343,6 +337,20 @@ for it = 1:T.itmax
             p !== nothing && display(p)
         end
     end
+    if final_step == 1
+        @printf(" Maximum Time reached!\n")
+        break
+    end
+    # --------------------------------------------------------------- #
+    # Berechnung der Zeitschrittlänge =============================== #
+    T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
+            (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+    T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
+    T.Δ         =   minimum([T.Δd,T.Δc])
+    if Time[it] + T.Δ >= T.tmax
+        T.Δ        = T.tmax - Time[it]
+        final_step = 1
+    end
     # --------------------------------------------------------------- #
     # Advektion ===================================================== #
     if it == 1
@@ -367,7 +375,7 @@ for it = 1:T.itmax
     for iter = 1:niterT
         # Evaluate residual
         ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
-                1.0, TBC, Δ, T.Δ[1]; C = 0.5, Q = D.Q, ρ₀ = 1.0, cp = 1.0  )
+                1.0, TBC, Δ, T.Δ[1]; C = 0.5, Q = D.Q, ρ = 1.0, cp = 1.0  )
         RE      =   norm(RT)/length(RT)
         if verbose_step
             @printf("   ECE %2d: ||RE|| = %1.4e\n", iter, RE)
@@ -390,13 +398,11 @@ for it = 1:T.itmax
             ind = searchsortedfirst(@view(Time[1:it]), Time[it] - 0.05)
             epsV    =   std(@view meanV[ind:it])
             if count == 0
-                epsV0   =   epsV
+                epsV0   = max(epsV, eps(Float64))
                 count   += 1
             end
             epsV        /= epsV0
-        # if save_fig == 1
-                epsV_history[it] = epsV
-        # end
+            epsV_history[it] = epsV
         find    =   it
             verbose_step && @printf("ε_Vr = %g, ε_Cr = %g \n",epsV,epsC)
         if Time[it] >= T.tmax
@@ -415,7 +421,7 @@ end
 end
 if save_fig == 1
     # Write the frames to a GIF file
-    Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
+    Plots.gif(anim, string( path, filename, ".gif" ), fps = 10)
     foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
 end
 valid   =   findall(isfinite, epsV_history)
@@ -450,7 +456,7 @@ q2  =   plot(Time[1:find],Nus[1:find],
             xlims=(0,Time[find]),
             guidefontsize = 12, tickfontsize = 12,
             titlefontsize = 12, grid = false,
-            layout=(2,1),suplot=1)
+            layout=(2,1),subplot=1)
 plot!(q2,Time[1:find],meanV[1:find],
             xlabel= L"Time\ [\ non-dim\ ]", ylabel= L"V_{RMS}",label="",
             xformatter =:auto,
@@ -537,6 +543,7 @@ function PlotFieldProfile(Pl,M,D,x,y,Tmean)
         color        = cgrad(:lajolla),
         colorbar     = true,
         aspect_ratio = :equal,
+        clims        = (0,1),
         xlims        = (M.xmin, xmax_plot),
         ylims        = (M.ymin, M.ymax),
     )

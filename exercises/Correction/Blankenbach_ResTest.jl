@@ -212,8 +212,10 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     # Linear System of Equations ======================================== #
     # Momentum Conservation Equation (MCE) ------------------------------ #
     niterM  =   50
-    ϵM      =   1e-8
-    RM      =   0
+    atolM   =   1e-8        #   Absolute tolerance
+    rtolM   =   1e-5        #   Relative tolerance; r = atolM0/atolM
+    RM      =   0.0         #   Initialize absolute residual    
+    RMrel   =   0.0         #   Initialize relative residual 
     off     =   [   NV.x*NC.y,                          # vx
                     NV.x*NC.y + NC.x*NV.y,              # vy
                     NV.x*NC.y + NC.x*NV.y + NC.x*NC.y ] # Pt
@@ -223,9 +225,8 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
         T   =   reshape(1:NC.x*NC.y, NC.x, NC.y),
     )
-    @show maximum(Num.T), maximum(Num.Pt)
-    ndof    =   maximum(Num.T)  
-    KM      =   ExtendableSparseMatrix(ndof,ndof)
+    ndofM   =   maximum(Num.Pt)  
+    KM      =   ExtendableSparseMatrix(ndofM,ndofM)
     δx      =   zeros(maximum(Num.Pt))
     F       =   zeros(maximum(Num.Pt))
     # Assemble Matrix for momentum equation ---
@@ -233,21 +234,21 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
     KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
     KMfac   =   lu(KM.cscmatrix)
     # Energy Conservation Equation (ECE) -------------------------------- #
-    K1      =   ExtendableSparseMatrix(ndof,ndof)
-    # K2      =   ExtendableSparseMatrix(ndof,ndof)
-    # rhs     =   zeros(ndof)
-    # Defect correction ---
     niterT  =   10
     ϵT      =   1e-12
+    RE      =   0.0
+    ndofT   =   maximum(Num.T)     
+    KT      =   ExtendableSparseMatrix(ndofT,ndofT)
+    δT      =   zeros(maximum(Num.T))
     RT      =   zeros(Float64,NC...)
     ∂2T     =   (∂x2=zeros(NC.x, NC.y), ∂y2=zeros(NC.x, NC.y),
                     ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
-    RE      =   0.0
     # ------------------------------------------------------------------- #
     # Time Loop ========================================================= #
     for it = 1:T.itmax
+        R0      =   0.0
         # Reduce screen output ---
-        verbose_step    =   mod(it, 100) == 0 || it == 1 || final_step == 1
+        verbose_step    =   mod(it, 1000) == 0 || it == 1 || final_step == 1
         if it>1
             Time[it]  =   Time[it-1] + T.Δ
         end
@@ -270,21 +271,21 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
             F[Num.Vy]   .=  Fm.y
             F[Num.Pt]   .=  FPt
             RM          =   norm(F)/length(F)
-            if verbose_step
-                @printf("  MCE %2d: ||RM|| = %1.4e\n", iter, RM)
+            if iter == 1
+                R0 = max(RM, eps())
             end
-            RM < ϵM ? break : nothing
-            # Update K ------
-            # KM      =   Assemblyc(NC, NV, Δ, 1.0, VBC, Num)
+            RMrel       =   RM/R0
+            if verbose_step
+                @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+            end
+            (RM < atolM || RM/R0 < rtolM) && break
             # Solving Linear System of Equations ------
-            # δx      =   - KM \ F
-            δx      =   -(KMfac \ F)
+            δx      .=   -(KMfac \ F)
             # Update unknown variables ------
             D.vx[:,2:end-1]     .+=  δx[Num.Vx]
             D.vy[2:end-1,:]     .+=  δx[Num.Vy]
             D.Pt                .+=  δx[Num.Pt]
         end
-        # fill!(D.ρ, 1.0)
         # ======
         # Calculate Velocity on the Centroids ------
         for i = 1:NC.x
@@ -318,6 +319,7 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         # Calculate temperature gradient --- 
         @. dTdy =   -(Tv1 - Tv2)/Δ.y
         # Calculate Nusselt number ---
+        Nus[it]     =   0.0
         # Trapezoidal integration -
         for i = 1:NV.x
             if i == 1 || i == NV.x
@@ -331,23 +333,18 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         # Mean Temperature ---
         meanT[it]   =   mean(D.T)
         # Root Mean Square Velocity ---
-        # meanV[it]   =   mean(D.vc)
         meanV[it] = sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
-        if final_step == 1
-            @printf(" Maximum Time reached!\n")
-            break
-        end
         # --------------------------------------------------------------- #
         # Calculate time stepping ======================================= #
         T.Δc        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                 (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
         T.Δd        =   T.Δfacd * (1.0 / (2.0 *(1.0/Δ.x^2 + 1/Δ.y^2)))
         T.Δ         =   minimum([T.Δd,T.Δc])
-        if Time[it] > T.tmax
-            T.Δ         =   T.tmax - Time[it-1]
-            Time[it]    =   Time[it-1] + T.Δ
-            final_step  =   1
+        if Time[it] + T.Δ >= T.tmax
+            T.Δ        = T.tmax - Time[it]
+            final_step = 1
         end
+        # --------------------------------------------------------------- #
         # Advection ===================================================== #
         if it == 1
             @. D.vxco   =   D.vxc
@@ -359,28 +356,22 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         # --------------------------------------------------------------- #
         # Diffusion ===================================================== #
         verbose_step && @printf("---Energy Calculation---\n")
-        # CNA2Dc!(D, 1.0, Δ.x, Δ.y, T.Δ, NC, TBC, rhs, K1, K2, Num)
-        # Alternatively - defect correction, more accurate! ---
         @. D.T0 =   D.T
         # Assemble linear system ---
-        K1      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
+        KT      =   AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
         # Solve for temperature correction: Cholesky factorisation
-        Kc      =   cholesky(K1.cscmatrix)
+        KTc      =   cholesky(KT.cscmatrix)
         for iter = 1:niterT
             # Evaluate residual
             ComputeResiduals2Dc!( RT, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
                     1.0, TBC, Δ, T.Δ[1]; C = 0.5 )
             RE      =   norm(RT)/length(RT)
             if verbose_step
-                @printf("  ECE %2d: ||RE|| = %1.4e\n", iter, RE)
+                @printf("   ECE %2d: ||RE|| = %1.4e\n", iter, RE)
             end
             RE < ϵT ? break : nothing
-            # # Assemble linear system
-            # K1  = AssembleMatrix2Dc(1.0, TBC, Num, NC, Δ, T.Δ[1];C=0.5)
-            # # Solve for temperature correction: Cholesky factorisation
-            # Kc = cholesky(K1.cscmatrix)
             # Solve for temperature correction: Back substitutions
-            δT  = -(Kc\RT[:])
+            δT .= -(KTc\RT[:])
             # Update temperature
             @. D.T += δT[Num.T]
         end
@@ -393,17 +384,13 @@ function BlankenbachBenchmark(ncy,Ra,save_fig)
         if Time[it] > 0.05
             epsC    =   0.001
             ind = searchsortedfirst(@view(Time[1:it]), Time[it] - 0.05)
-            # epsV    =   std(meanV[ind:it])
             epsV    =   std(@view meanV[ind:it])
             if count == 0
-                # epsV0   =   epsV
-                epsV0 = max(epsV, eps(Float64))
+                epsV0   = max(epsV, eps(Float64))
                 count   += 1
             end
             epsV        /= epsV0
-            # if save_fig == 1
-                epsV_history[it] = epsV
-            # end
+            epsV_history[it] = epsV
             find    =   it
             verbose_step && @printf("ε_Vr = %g, ε_Cr = %g \n",epsV,epsC)
             if Time[it] >= T.tmax

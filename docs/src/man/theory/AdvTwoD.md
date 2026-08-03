@@ -3,8 +3,7 @@
 In two spatial dimensions ($x$ and $y$), assuming incompressible flow, the advection equation for temperature is given by
 
 $\begin{equation}
-\frac{\partial T}{\partial t}
-=
+\frac{\partial T}{\partial t} =
 -v_x\left(\frac{\partial T}{\partial x}\right)
 -v_y\left(\frac{\partial T}{\partial y}\right),
 \end{equation}$

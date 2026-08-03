@@ -33,8 +33,6 @@ $\kappa = k / \rho_0 / c_p$ is the thermal diffusivity [m²/s] and $\rho_0$ is a
 
 To numerically solve Equation (3), the spatial domain must be discretized and the relevant thermal properties assigned to the appropriate computational nodes.
 
-<!-- ![2DDiffusionGrid](../assets/2D_Diffusion_Grid.png) -->
-
 <img src="../../assets/theory/2D_Diffusion_Grid.png" width="700">
 
 **Figure 1. 2D Discretization.** *Staggered finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points between the *vertices* (black circles; horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
@@ -68,7 +66,7 @@ where $I^\textrm{S}$, $I^\textrm{W}$, $I^\textrm{E}$, and $I^\textrm{N}$ denote 
 
 When discretizing flux divergences, the indices $I^\textrm{C}$ and $I^\textrm{E}$ refer to the two adjacent flux degrees of freedom on the corresponding flux grid (the west and east faces of the control volume surrounding $T_{I^\textrm{C}}$), consistent with the staggered layout shown in Figure 1.
 
-A detailed implementation of several numerical schemes for solving a linear problem using a single left-matrix division is provided in the example script [Gaussian_Diffusion.jl](./examples/Diffusion/GaussianDiffusion2D.md).
+A detailed implementation of several numerical schemes for solving a linear problem using a single left-matrix division is provided in the example script [Gaussian_Diffusion.jl](../examples/Diffusion/GaussianDiffusion2D.md).
 
 This example demonstrates the application of several discretization methods for solving the 2D heat diffusion equation:
 

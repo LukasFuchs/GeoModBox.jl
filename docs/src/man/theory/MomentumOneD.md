@@ -26,8 +26,6 @@ In this 1D formulation, the horizontal pressure gradient is prescribed and acts 
 
 # Discretization
 
-<!-- ![Stokes1D_Grid](../assets/Stokes_1D_Grid.png) -->
-
 <img src="../../assets/theory/Stokes_1D_Grid.png" width="700">
 
 **Figure 1. Channel flow setup and finite difference grid.**  

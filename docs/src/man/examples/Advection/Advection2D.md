@@ -7,7 +7,7 @@ This example evaluates the accuracy of the advection solvers implemented for two
 - semi-lagrangian 
 - tracers
 
-The first three solvers can advect any property defined at the cell centroids, including the corresponding extended field containing ghost nodes. For this purpose, the staggered velocity components are interpolated to the cell centroids. Tracers are used to advect temperature. Changes in the grid-based temperature field are transferred to the tracers by calculating the temperature increment between the current and previous grid fields. This increment is interpolated to the tracers and added to their temperatures. The increment is then interpolated from the grid to the markers and added to the marker temperatures. The temperature at the centroids is subsequently computed using an arithmetic averaging scheme. For more implementation details please see the [documentation](../AdvectMain.md).
+The first three solvers can advect any property defined at the cell centroids, including the corresponding extended field containing ghost nodes. For this purpose, the staggered velocity components are interpolated to the cell centroids. Tracers are used to advect temperature. Changes in the grid-based temperature field are transferred to the tracers by calculating the temperature increment between the current and previous grid fields. This increment is interpolated to the tracers and added to their temperatures. The increment is then interpolated from the grid to the markers and added to the marker temperatures. The temperature at the centroids is subsequently computed using an arithmetic averaging scheme. For more implementation details please see the [documentation](../../theory/AdvectMain.md).
 
 The initial temperature condition can be defined using one of the following anomalies: 
 
@@ -25,8 +25,6 @@ Two different velocity fields can be used as initial conditions:
 The shear-cell velocity field is primarily intended for testing advection schemes, but it may also be used as an analytical initial condition for thermal-convection problems.
 
 In this example, rigid body rotation is the preferred initial velocity condition. Rigid body rotation provides a useful benchmark for testing advection scheme accuracy, as it applies pure rotation, displacing the anomaly without deformation. After one complete revolution, the shape and amplitude of the anomaly should ideally match the initial condition. Any deviation from the initial condition indicates either numerical diffusion (as in the upwind method) or interpolation error, particularly for sharp gradients. 
-
-<!-- ![APIni](../../../assets/examples/Advection/Advection_SetUp.png) -->
 
 <img src="../../../assets/examples/Advection/Advection_SetUp.png" width="700">
 
@@ -182,7 +180,7 @@ D       =   (
 # -------------------------------------------------------------------- #
 ```
 
-Now, one can calculate the initial conditions. Here, the built-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentation](../Ini.md). Following the velocity initialization, one can calculate the velocity on the centroids. 
+Now, one can calculate the initial conditions. Here, the built-in functions for the initial temperature and velocity conditions, `IniTemperature!()` and `IniVelocity!()`, respectively, are used. For more informaion please refer to the [documentation](../../Ini.md). Following the velocity initialization, one can calculate the velocity on the centroids. 
 
 ```Julia
 # Initial Conditions ================================================= #
@@ -207,7 +205,7 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-Now, one needs to define the time parameter. Here, the maximum simulation time is chosen such that the anomaly completes one full rotation. 
+Now, one needs to define the time parameter. Here, the maximum simulation time is chosen such that the anomaly completes one full revolution. 
 
 ```Julia
 # Time =============================================================== #
@@ -223,7 +221,7 @@ nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
 # -------------------------------------------------------------------- #
 ```
 
-If tracer are used one needs to initialize them in the following. For more information please refer to the [documentation](../Ini.md).
+If tracer are used one needs to initialize them in the following. For more information please refer to the [documentation](../../Ini.md).
 
 ```Julia
 # Tracer Advection =================================================== #
@@ -309,9 +307,7 @@ end
 # -------------------------------------------------------------------- #
 ```
 
-<!-- ![APIniPlot](../../../assets/examples/Advection/AdvIniSetup.svg) -->
-
-<img src="" width="700">
+<img src="../../../assets/examples/Advection/AdvIniSetup.svg" width="700">
 
 **Figure 2. Initial condition.** Initial rigid-body rotation setup with a circular temperature anomaly. The temperature is normalized by its initial maximum value, such that the maximum anomaly temperature equals one. 
 

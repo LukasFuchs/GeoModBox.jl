@@ -46,8 +46,6 @@ Together, the Stokes and continuity equations form a closed system for the unkno
 
 To numerically solve Equations (1) and (6), the spatial domain must be discretized and the relevant properties assigned to the appropriate computational nodes. Thus, the equations are discretized on a staggered finite difference grid, where the horizontal (cyan dashes) and vertical (orange dashes) velocities are defined between the regular grid points (vertices), and the pressure (red circles) within finite difference cells (centroids), as shown in Figure 1.
 
-<!-- ![MomentumGrid](../assets/MomentumGrid.png) -->
-
 <img src="../../assets/theory/MomentumGrid.jpg" width="700">
 
 **Figure 1. Staggered finite difference grid for the momentum and mass conservation equation.** The horizontal and vertical velocities require *ghost nodes* at the North, South, East, and West boundaries, respectively.
@@ -407,8 +405,6 @@ To discretize these equations, we define a numerical stencil indicating the grid
 
 The numerical stencils for the constant-viscosity momentum equations are shown in Figure 2. These stencils illustrate the neighboring grid points required to evaluate each component using a finite difference scheme.
 
-<!-- ![StencilConstEta](../../assets/theory/Stencil_const_eta.png) -->
-
 <img src="../../assets/theory/Stencil_const_eta.png" width="700">
 
 **Figure 2. Numerical stencils for constant viscosity.** a) *$x$-component*; b) *$y$-component*.
@@ -488,8 +484,6 @@ where $\eta_c$ denotes the viscosity defined at the *centroids*, and $\eta_v$ de
 ### Stencil
 
 The stencils for the variable-viscosity momentum equations illustrate the grid points required to discretize each velocity component using finite differences (Figure 3).
-
-<!-- ![Stencil_vary_eta](../../assets/theory/Stencil_vary_eta.png) -->
 
 <img src="../../assets/theory/Stencil_vary_eta.png" width="700">
 
@@ -587,8 +581,6 @@ The mass conservation equation provides the additional constraint required to so
 
 The corresponding numerical stencil involves only the horizontal and vertical velocity components (Figure 4).
 
-<!-- ![StencilContinuum](../../assets/theory/Stencil_continuum.png) -->
-
 <img src="../../assets/theory/Stencil_continuum.png" width="400">
 
 **Figure 4. Numerical stencil for the continuity equation.** 
@@ -630,13 +622,9 @@ The solution vector contains the horizontal and vertical velocity as well as the
 
 The coefficient matrix $\mathbf{K_{I^\textrm{C}_{i},I^k_{j}}}$ varies depending on the state of the viscosity. The structure of the coefficient matrix for a certain grid resolution and boundary condition is shown in Figures (5) and (6).  
 
-<!-- ![CoefficientMatrix](../../assets/theory/CoefficientMatrix.png) -->
-
 <img src="../../assets/theory/CoefficientMatrix.png" width="400">
 
 **Figure 5. Coefficient matrix, constant viscosity.** Non-zero entries of a coefficient matrix for a resolution of $nc_x=nc_y=10$, a constant viscosity, and free-slip boundaries. Highlighted are the areas for the different equations: $v_x$ - *$x$-component* of the momentum equation, $v_y$ - *$y$-component* of the momentum equation, $P$ - continuity equation. 
-
-<!-- ![CoefficientMatrix_vary](../../assets/theory/CoefficientMatrixEtaVary.png) -->
 
 <img src="../../assets/theory/CoefficientMatrixEtaVary.png" width="400">
 

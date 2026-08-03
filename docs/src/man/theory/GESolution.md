@@ -104,8 +104,6 @@ Staggered grids also offer advantages in implementing boundary conditions. For e
 
 For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temperature equation. The complete grid structure used for the governing equations in `GeoModBox.jl` is illustrated below:
 
-<!-- ![2DGrid_total](../assets/Grid_total.png) -->
-
 <img src="../../assets/theory/Grid_total.png" width="700">
 
 **Figure 1. Staggered Finite Difference Grid used in ´GeoModBox.jl`.**
@@ -120,7 +118,7 @@ where $i$ and $j$ are the local indices in the horizonal and vertical direction,
 
 # Initial Conditions 
 
-Certain initial conditions and parameter structures are already defined in `GeoModBox.jl` and can be called using certain functions. For more details on the variable structures and functions for initial conditions please see this [documentation](./Ini.md). 
+Certain initial conditions and parameter structures are already defined in `GeoModBox.jl` and can be called using certain functions. For more details on the variable structures and functions for initial conditions please see this [documentation](../Ini.md). 
 
 # Thermal convection
 
@@ -196,7 +194,7 @@ $\begin{equation}
 \left(\frac{\partial{T}}{\partial{t}} + v_j \frac{\partial{T}}{\partial{x_j}}\right) = \kappa \frac{\partial^2{T}}{\partial{x^2_i}} + \frac{Q}{\rho_0 c_p},
 \end{equation}$
 
-where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], $Q$ is the volumetric heat production rate [W/m³], and $c_p$ is the specific heat capacity [J/kg/K]. For implementation details, refer to the [thermal convection examples](./examples/MixedHeatedConvection.md).
+where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], $Q$ is the volumetric heat production rate [W/m³], and $c_p$ is the specific heat capacity [J/kg/K]. For implementation details, refer to the [thermal convection examples](../examples/Convection/Overview_Convection.md).
 
 **Continuity equation**
 
@@ -294,4 +292,4 @@ When interpreting or analyzing non-dimensional models, it is essential to keep t
 
 Compared to the dimensional equations, the non-dimensional (scaled) forms differ only slightly in structure. As a result, the same numerical solver can be used for both dimensional and non-dimensional formulations, requiring only minimal modifications when specifying the parameters. 
 
-For an implementation example, see the [thermal convection examples](./examples/MixedHeatedConvection.md).
+For an implementation example, see the [thermal convection examples](../examples/Convection/Overview_Convection.md).
