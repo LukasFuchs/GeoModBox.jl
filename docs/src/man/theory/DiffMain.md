@@ -118,7 +118,7 @@ Other advection schemes are implemented in
 
 ## Examples
 
-- [2-D advection with constant velocity field](../examples/Advection/.md)
+- [2-D advection with constant velocity field](../examples/Advection/Advection2D.md)
 - [Resolution test of 2-D advection](../examples/Advection/AdvectionRestest2D.md)
 
 
