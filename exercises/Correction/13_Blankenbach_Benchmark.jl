@@ -59,7 +59,7 @@ P   =   Physics(
     k       =   5.0,                #   Thermal Conductivity [ W/m/K ]
     cp      =   1250.0,             #   Heat capacity [ J/kg/K ]
     α       =   2.5e-5,             #   THermal Expansion [ K^-1 ]
-    η₀      =   1e21,               #   Reference Viscosity [ Pa*s ]
+    η₀      =   1e23,               #   Reference Viscosity [ Pa*s ]
     ΔT      =   1000.0,             #   Temperature Difference
     # If Ra < 0, Ra will be calculated from the reference parameters.
     # If Ra is defined, the reference viscosity will be adjusted such that
@@ -244,7 +244,7 @@ RT      =   zeros(Float64,NC...)
 for it = 1:T.itmax
         R0      =   0.0
     # Reduce screen output ---
-    verbose_step    =   mod(it, 200) == 0 || it == 1 || final_step == 1
+    verbose_step    =   mod(it, 400) == 0 || it == 1 || final_step == 1
     if it>1
         Time[it]  =   Time[it-1] + T.Δ
     end
