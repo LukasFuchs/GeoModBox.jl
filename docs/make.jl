@@ -35,7 +35,7 @@ makedocs(
             ],
         ],
         "Exercises" => Any[
-            "General" => "man/Exercises.md",
+            "General" => "man/exercises/Exercises.md",
             "01 - Euler Advection" => "man/exercises/01_Euler_Advection.md",
             "02 - 1D Heat Diffusion (explicit)" => "man/exercises/02_1D_Heat_explicit.md",
             "03 - 1D Heat Diffusion (implicit)" => "man/exercises/03_1D_Heat_implicit.md",
@@ -52,7 +52,7 @@ makedocs(
             "13 - Blankenbach Benchmark" => "man/exercises/13_Blankenbach_Benchmark.md", 
         ],
         "Examples" => Any[
-            "General" => "man/Examples.md",
+            "General" => "man/examples/Examples.md",
             "Diffusion Equation" => Any[
                 "Oceanic Geotherm (1D)" => "man/examples/Diffusion/OceanicGeotherm.md", 
                 "Continental Geotherm (1D)" => "man/examples/Diffusion/ContinentalGeotherm.md", 
