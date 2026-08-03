@@ -8,6 +8,64 @@ using Base.Threads
 using Printf, LinearAlgebra
 using TimerOutputs
 
+function UpdateRheo(D,ρ,η,avg)
+
+    # Density --- artihmetic averaging ---
+    @. D.ρ     =   ρ[1]*(1.0 - D.p) + ρ[2]*D.p
+    D.ρe[2:end-1,2:end-1]     .=  D.ρ
+    D.ρe[1,:]     .=  D.ρe[2,:]
+    D.ρe[end,:]   .=  D.ρe[end-1,:]
+    D.ρe[:,1]     .=  D.ρe[:,2]
+    D.ρe[:,end]   .=  D.ρe[:,end-1]
+
+    # Viscosity - Centroids and vertices ---
+    if avg ==     :arith
+        @. D.ηc =   (1.0 - D.p) * η[1] + D.p * η[2]
+    elseif avg == :harm
+        @. D.ηc =   1.0 / ( (1.0 - D.p) / η[1] + D.p / η[2] )
+    elseif avg == :geom
+        @. D.ηc =   η[1]^(1.0 - D.p) * η[2]^D.p
+    else
+        error("Unknown viscosity averaging: $(avg)")
+    end
+    # --- Extended Centroids-
+    D.ηce[2:end-1,2:end-1]     .=  D.ηc
+    D.ηce[1,:]     .=  D.ηce[2,:]
+    D.ηce[end,:]   .=  D.ηce[end-1,:]
+    D.ηce[:,1]     .=  D.ηce[:,2]
+    D.ηce[:,end]   .=  D.ηce[:,end-1]
+    # --- Vertices -
+    if avg == :arith
+        @. D.ηv =
+            0.25*(
+                D.ηce[1:end-1,1:end-1] + 
+                D.ηce[2:end  ,1:end-1] + 
+                D.ηce[1:end-1,2:end  ] + 
+                D.ηce[2:end  ,2:end  ]
+            )
+    elseif avg == :harm
+        @. D.ηv =
+            4.0/(
+                1/D.ηce[1:end-1,1:end-1] + 
+                1/D.ηce[2:end  ,1:end-1] + 
+                1/D.ηce[1:end-1,2:end  ] + 
+                1/D.ηce[2:end  ,2:end  ]
+            )
+    elseif avg == :geom
+        @. D.ηv =
+            exp(0.25*(
+                log(D.ηce[1:end-1,1:end-1]) + 
+                log(D.ηce[2:end  ,1:end-1]) + 
+                log(D.ηce[1:end-1,2:end  ]) + 
+                log(D.ηce[2:end  ,2:end  ])
+            ))
+    else
+        error("Unknown viscosity averaging: $(avg)")
+    end
+
+    return D
+end
+
 function RTI_GrowthRate()
     to              = TimerOutput()
     @timeit to "Ini" begin
@@ -17,13 +75,34 @@ function RTI_GrowthRate()
         qinc    =   5, 
         qsc     =   100*(60*60*24*365.25)*5e1,
     )
+    # How to update the numerical nodes from the marker ---
+    #   1) Phase ratio (:PhaseRatio), or
+    #   2) Direct bilinear interpolation of marker properties to the grid
+    #      (:MarkerInterpolation)
+    MaterialInterpolation   =   :MarkerInterpolation
+    # Define the averaging scheme used for both material-transfer methods:
+    #   1) Arithmetic   (:arith)
+    #   2) Geometric    (:geom)
+    #   3) Harmonic     (:harm)
+    avg                     =   :arith
+    
+    MaterialInterpolation ∈ (:PhaseRatio, :MarkerInterpolation) ||
+        error("Unknown material interpolation method: $MaterialInterpolation")
+    avg ∈ (:arith, :geom, :harm) ||
+        error("Unknown averaging scheme: $avg")
+    # Although both strategies employ bilinear interpolation from the 
+    # markers to the numerical grid, they differ in the quantity that is 
+    # interpolated. The phase-ratio approach first interpolates the 
+    # material phase and subsequently reconstructs the material 
+    # properties using a mixing law, whereas the direct interpolation 
+    # approach transfers the material properties themselves. Since 
+    # viscosity is a nonlinear material property, the two approaches 
+    # generally produce different numerical solutions.
+    # ------------------------------------------------------------------- #
     # Define Initial Condition ========================================== #
-    # Density Averaging ---
-    #   centroids or vertices
-    ρavg        =   :centroids
-    nm          =   5
     # Initial Marker distribution ---
     Ini         =   (p=:RTI,) 
+    nm          =   5
     # Perturbation wavelength [ m ]
     λᵣ          =   [3 4 5 6 8 9 10 12 14]*1e3
     # ------------------------------------------------------------------- #
@@ -38,11 +117,14 @@ function RTI_GrowthRate()
     ρ           =   [ρ₀,ρ₁]                 #   Density for phases
     ηᵣ          =   [1e-6 1 10 100 500]     #   Viscosity ratio
     phase       =   [0,1]
+    # Script notation:
+    #   phase 0: upper layer  (corresponds to η₁, ρ₁, h₁ in Gerya)
+    #   phase 1: lower layer  (corresponds to η₂, ρ₂, h₂ in Gerya)
     # ------------------------------------------------------------------- #
-    # Plotting factors following Gerya (2009) --------------------------- #
+    # Plotting factors following Gerya (2019) --------------------------- #
     b1          =   [0.5 1 5 50 250]
     b2          =   [0.2 0.15 0.1 0.05 0]
-    # Divisional factor of the amplitude following Gerya (2009) --------- #
+    # Divisional factor of the amplitude following Gerya (2019) --------- #
     delfac      =   [15 150 1500]
     ms          =   zeros(3)
     ms          =   [8,6,4,2]
@@ -107,7 +189,7 @@ function RTI_GrowthRate()
                             (2*ϕ₂^3)/
                             (cosh(2*ϕ₂) - 1 - 2*ϕ₂^2)
             
-            @. PP.Kₐ[:,i]   =   -d12/(c11*j22 - d12*i21)
+            PP.Kₐ[:, i] .= abs.(d12 ./ (c11 .* j22 .- d12 .* i21))
             @. PP.ϕₐ        =   ϕ₁
             # ----------------------------------------------------------- #
             @timeit to "λ Loop" begin
@@ -118,8 +200,8 @@ function RTI_GrowthRate()
                 δA          =   -(M.ymax-M.ymin)/2/delfac[k]    #   Amplitude [ m ]
                 @printf("δA = %g\n",δA)
                 # ---
-                ar          =   Int64(round(2 * λ / (M.ymax-M.ymin)))  # aspect ratio
-                M.xmax      =   (M.ymax-M.ymin)*ar
+                # Horizontal model width following Gerya (2019): L = 2λ
+                M.xmax      =   M.xmin + 2.0 * λ
                 @printf("       xmax: %g \n",M.xmax)
                 @printf("       λ = %g\n",λ)
                 # ------------------------------------------------------- #
@@ -164,9 +246,7 @@ function RTI_GrowthRate()
                 # Allocation ============================================ #
                 D       =   (
                     ρ       =   zeros(Float64,(NC...)),
-                    ρv      =   zeros(Float64,NV...),
                     ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),
-                    p       =   zeros(Float64,(NC...)),
                     cp      =   zeros(Float64,(NC...)),
                     vx      =   zeros(Float64,(NV.x,NV.y+1)),
                     vy      =   zeros(Float64,(NV.x+1,NV.y)),    
@@ -174,11 +254,14 @@ function RTI_GrowthRate()
                     vxc     =   zeros(Float64,(NC...)),
                     vyc     =   zeros(Float64,(NC...)),
                     vc      =   zeros(Float64,(NC...)),
+                    wt      =   zeros(Float64,(NC.x,NC.y)),
                     wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     wtv     =   zeros(Float64,(NV.x,NV.y)),
                     ηc      =   zeros(Float64,NC...),
                     ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
                     ηv      =   zeros(Float64,NV...),
+                    p       =   zeros(Float64,NC...),
+                    p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
                 )
                 # ------------------------------------------------------- #
                 # Needed for the defect correction solution ---
@@ -197,7 +280,8 @@ function RTI_GrowthRate()
                 # Boundary Conditions =================================== #
                 VBC     =   (
                     type    =   (E=:freeslip,W=:freeslip,S=:noslip,N=:noslip),
-                    val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+                    val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                                    vyS=0.0,vyN=0.0,vxW=0.0,vxE=0.0),
                 )
                 # ------------------------------------------------------- #
                 # Tracer Advection ====================================== #
@@ -214,7 +298,7 @@ function RTI_GrowthRate()
                 )
                 MAVG        = (
                     PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
-                    PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+                    PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
                     wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                     wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
                 )
@@ -222,35 +306,23 @@ function RTI_GrowthRate()
                 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;λ,δA)
                 # Count tracer per cell ---
                 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
-                # Interpolate density --- 
-                if ρavg==:centroids
-                    # Interpolate density from markers to cell ---
+                if MaterialInterpolation == :PhaseRatio
+                    # Phase ---
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+                    D.p     .=  D.p_ex[2:end-1,2:end-1]
+                    UpdateRheo(D,ρ,η,avg)
+                elseif MaterialInterpolation == :MarkerInterpolation
+                    # Interpolate from markers to cell ---
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+                    D.p     .=  D.p_ex[2:end-1,2:end-1]
                     Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
                     D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-                elseif ρavg==:vertices 
-                    # Interpolate density from markers to vertices ---
-                    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ρv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,ρ)
-                    for i = 1:NC.x
-                        D.ρ[i,:]    .=   (D.ρv[i,1:end-1] .+ 
-                                            D.ρv[i,2:end,:] .+ 
-                                            D.ρv[i+1,1:end-1] .+ 
-                                            D.ρv[i+1,2:end])./4
-                    end
-                end     
-                # pl5 = scatter()
-                # scatter!(pl5,Ma.x[Ma.phase.==1],Ma.y[Ma.phase.==1],
-                #             markersize=3,markershape=:circle,label="",
-                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
-                #             ylims=(-1600,-1400))
-                # scatter!(pl5,Ma.x[Ma.phase.==0],Ma.y[Ma.phase.==0],
-                #             markersize=3,markershape=:circle,label="",markercolor=:red,
-                #             xlims=((M.xmax-M.xmin)/2-λ/2,(M.xmax-M.xmin)/2+λ/2),
-                #             ylims=(-1600,-1400))
-                # display(pl5)
-                # Interpolate Viscosity ---
-                Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-                D.ηc    .=   D.ηce[2:end-1,2:end-1]
-                Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+                    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avg)
+                    D.ηc    .=   D.ηce[2:end-1,2:end-1]
+                    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avg)
+                else
+                    error("Unknown material interpolation method: $MaterialInterpolation")
+                end
                 end
                 # ------------------------------------------------------- #
                 # System of Equations =================================== #
@@ -280,26 +352,27 @@ function RTI_GrowthRate()
                 # Momentum Equation ===
                 D.vx    .=  0.0
                 D.vy    .=  0.0
-                D.Pt    .=  0.0
+                D.Pt    .=  1.0
                 @timeit to "Solution Iteration" begin
+                # Assemble Coefficients ========================================= #
+                @timeit to "Assembly" begin
+                K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                Kfac    =   lu(K.cscmatrix)
+                end
                 for iter=1:niter
                     # Initial Residual -------------------------------------- #
                     @timeit to "Residual" begin
                     Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-                    F[Num.Vx]   =   Fm.x[:]
-                    F[Num.Vy]   =   Fm.y[:]
-                    F[Num.Pt]   =   FPt[:]
+                    F[Num.Vx]   .=   Fm.x
+                    F[Num.Vy]   .=   Fm.y
+                    F[Num.Pt]   .=   FPt
                     @printf("||R|| = %1.4e\n", norm(F)/length(F))
                     norm(F)/length(F) < ϵ ? break : nothing
-                    end
-                    # Assemble Coefficients ================================= #
-                    @timeit to "Assembly" begin
-                    K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
                     end
                     # ------------------------------------------------------- #
                     # Solution of the linear system ========================= #
                     @timeit to "Solution" begin
-                    δx      =   - K \ F
+                    δx      =   - (Kfac \ F)
                     end
                     # ------------------------------------------------------- #
                     # Update Unknown Variables ============================== #
@@ -376,10 +449,10 @@ function RTI_GrowthRate()
                             markersize=3,label="",color=:blue,
                             layout=(3,1),subplot=3)
                     scatter!(p,(x1.vy2d[xn+1,yn+1]/1e3,y1.vy2d[xn+1,yn+1]/1e3),
-                            markersize=3,label="",color=:red,
+                            markersize=3,label="",color=:blue,
                             layout=(3,1),subplot=3)
                     scatter!(p,(x1.vy2d[xn+2,yn+1]/1e3,y1.vy2d[xn+2,yn+1]/1e3),
-                            markersize=3,label="",color=:red,
+                            markersize=3,label="",color=:blue,
                             layout=(3,1),subplot=3)
                     display(p)
                 end
@@ -402,7 +475,7 @@ function RTI_GrowthRate()
     end
     if save_fig == 1
         savefig(q,string("./examples/StokesEquation/2D/Results/RTI_Growth_Rate_nmx_",nm,
-                            "_nmy_",nm,".png"))
+                            "_nmy_",nm,"_",MaterialInterpolation,"_",avg,".png"))
     else
         display(q)
     end

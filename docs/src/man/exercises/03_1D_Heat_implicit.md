@@ -1,6 +1,6 @@
 # [03 - 1D Heat Diffusion (implicit)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/03_1D_Heat_implicit_en.ipynb)
 
-This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation using the implicit (backward Euler) scheme. The implicit approach is unconditionally stable and thus avoids the restrictive time-step limitation of explicit methods. However, stability does not imply higher accuracy, and the scheme requires solving a linear system at each time step.  
+This exercise focuses on solving the one-dimensional heat diffusion equation without internal heat generation and viscous dissipation using the implicit (backward Euler) scheme. The implicit approach is unconditionally stable and thus avoids the restrictive time-step limitation of explicit methods. However, stability does not imply higher accuracy, and the scheme requires solving a linear system at each time step.  
 
 The main objectives are:  
 
@@ -15,6 +15,8 @@ The main objectives are:
 
 The resulting transient evolution of a Gaussian temperature anomaly is shown in Figure 1.  
 
-![FinalPlot_3](../../assets/03_1D_implicit_3.gif)  
+<!-- ![FinalPlot_3](../../assets/exercises/03.gif)   -->
+
+<img src="../../assets/exercises/03.gif" width="700">
 
 **Figure 1. Transient behavior of a one-dimensional Gaussian temperature anomaly.**

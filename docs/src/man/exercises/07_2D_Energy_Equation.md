@@ -10,6 +10,8 @@ This exercise focuses on solving the two-dimensional energy conservation equatio
 
 The example below shows the evolution of an initial linear temperature field in a constant shear cell velocity field (Figure 1).
 
-![Exercise07](../../assets/07_2D_EnergyEquation_linear_ShearCell_semilag_CNA.gif)
+<!-- ![Exercise07](../../assets/exercises/07.gif) -->
 
-**Figure 1.** Evolution of a 2-D temperature field unsing the Crank-Nicholson approach for diffusion and the semi-lagrangian method for advection.
+<img src="../../assets/exercises/07.gif" width="700">
+
+**Figure 1.** Evolution of a 2-D temperature field unsing the defect correction approach with a Crank-Nicholson discretization for diffusion and the tracers for temperature advection.

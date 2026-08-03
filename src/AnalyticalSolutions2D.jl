@@ -1,5 +1,84 @@
 """
-    Dani_Solution_vec!(type,D,M,x,y,rad,mus_i,NC,NV)
+    Dani_Solution_vec!(type, D, M, x, y, rad, mus_i, NC, NV)
+
+Compute the analytical pressure and velocity solution for a circular
+viscous inclusion embedded in an infinite viscous matrix undergoing either
+pure shear or simple shear deformation.
+
+The analytical solution is evaluated on the staggered finite-difference
+grid used by `GeoModBox.jl`. Pressure is computed at the cell centers,
+whereas the velocity components are evaluated at the corresponding
+staggered velocity locations. In addition, the analytical boundary
+velocities required by the numerical Stokes solver are extracted from the
+analytical solution.
+
+The implementation is based on the complex-variable formulation of the
+Eshelby inclusion problem presented by Schmid (2002) and was vectorized by
+Thibault Duretz and Ludovic Räss.
+
+# Arguments
+
+    - `type`    : Deformation mode:
+                    - `:PureShear`
+                    - `:SimpleShear`
+    - `D`       : Data structure containing the analytical pressure, velocity, and
+                    boundary-condition arrays.
+    - `M`       : Model geometry.
+    - `x`       : Horizontal coordinates of the staggered grid.
+    - `y`       : Vertical coordinates of the staggered grid.
+    - `rad`     : Radius of the circular inclusion.
+    - `mus_i`   : Inclusion viscosity normalized by the matrix viscosity.
+    - `NC`      : Number of cell centers in each coordinate direction.
+    - `NV`      : Number of grid vertices in each coordinate direction.
+
+# Output
+
+The function updates the analytical solution stored in `D`:
+
+    - `D.Pa`    : Pressure at the cell centers.
+    - `D.Vxa`   : Horizontal velocity on the staggered `vₓ` grid.
+    - `D.Vya`   : Vertical velocity on the staggered `vᵧ` grid.
+    - `D.Vx_W`, `D.Vx_E`: Horizontal boundary velocities.
+    - `D.Vy_S`, `D.Vy_N`: Vertical boundary velocities.
+    - `D.Vx_S`, `D.Vx_N`: Horizontal velocities on the non-conforming boundary
+                            nodes.
+    - `D.Vy_W`, `D.Vy_E`: Vertical velocities on the non-conforming boundary
+                            nodes.
+
+The arrays contained in `D` are modified in place.
+
+# Notes
+
+The matrix viscosity is normalized to unity (`ηₘ = 1`), and the inclusion
+viscosity is specified through the viscosity ratio `mus_i`.
+
+This analytical solution is primarily intended for benchmarking the Stokes
+solver by comparing the numerical and analytical pressure and velocity
+fields.
+
+# Example
+
+```julia
+Dani_Solution_vec!(
+    :PureShear,
+    D,
+    M,
+    x,
+    y,
+    0.2,
+    1.0e3,
+    NC,
+    NV,
+)
+```
+# References
+
+Schmid, D. W. (2002). Finite strain of viscous inclusions in
+power-law fluids. Journal of Geophysical Research, 107(B11).
+
+The implementation is based on the original MATLAB routine
+CYL_P_MATRIX.m by Dani Schmid and the vectorized Julia version by
+Thibault Duretz and Ludovic Räss.
 """
 function Dani_Solution_vec!(type,D,M,x,y,rad,mus_i,NC,NV)
 # [ Vx_N,Vx_S,Vx_W,Vx_E,Vy_N,Vy_S,Vy_W,Vy_E,Pa,Vxa,Vya ]

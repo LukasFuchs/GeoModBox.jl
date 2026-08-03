@@ -2,21 +2,14 @@ using Plots, Interpolations, Statistics
 using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.InitialCondition, GeoModBox.Tracers.TwoD
 using Base.Threads
-using Printf
-using TimerOutputs
+using Printf, TimerOutputs, LaTeXStrings, Measures
 
-@doc raw"""
-    Advection_2D_ResTest()
-
-...
-
-"""
 function Advection_2D_ResTest()
 to      =   TimerOutput()
 @printf("Running on %d thread(s)\n", nthreads())
 
-nrnxny      =   5
-Scheme      =   ["upwind","slf","semilag","tracers"]
+nrnxny      =   6
+Scheme      =   ["upwind","slf","semilag","markers"]
 ns          =   size(Scheme,1)
 @show ns
 save_fig    =   1
@@ -28,36 +21,39 @@ St      = (
     Tmax        =   zeros(size(Scheme,1),nrnxny),
     Tmean       =   zeros(size(Scheme,1),nrnxny),    
 )
+p3 = plot(layout=(2,2),
+        dpi = 300, size=(1200,900))
+panel   =   ["a)","b)","c)","d)"]
 # -------------------------------------------------------------------- #
 # Define Initial Condition =========================================== #
-# Temperature - 
+# Temperature --- 
 #   1) circle, 2) gaussian, 3) block
-# Velocity - 
+# Velocity --- 
 #   1) RigidBody, 2) ShearCell
 Ini         =   (T=:circle,V=:RigidBody,) 
+# -------------------------------------------------------------------- #
+# Model Constants ==================================================== #
+M   =   (
+    xmin    =   0.0,
+    xmax    =   1.0,
+    ymin    =   0.0,
+    ymax    =   1.0,
+)
+BC  =   ()  # dummy
+# -------------------------------------------------------------------- #
+# Plot constants ===================================================== #
+Pl  =   (
+    inc         =   5,
+    sc          =   1.0e9,
+    Minc        =   1, 
+    Msz         =   0.2,
+)
 # -------------------------------------------------------------------- #
 @timeit to "AdvectionScLoop" begin
 for m = 1:ns # Loop over advection schemes
     # Define Numerical Scheme ======================================== #
     FD          =   (Method     = (Adv=Scheme[m],),)    
     @printf("Advection Scheme: %s\n ",string(FD.Method.Adv))
-    # ---------------------------------------------------------------- #
-    # Plot constants ================================================= #
-    Pl  =   (
-        inc         =   5,
-        sc          =   1.0e9,
-        Minc        =   1, 
-        Msz         =   0.2,
-    )
-    # ---------------------------------------------------------------- #
-    # Model Constants ================================================ #
-    M   =   (
-        xmin    =   0.0,
-        xmax    =   1.0,
-        ymin    =   0.0,
-        ymax    =   1.0,
-    )
-    BC  =   ()  # dummy
     # ---------------------------------------------------------------- #
     @timeit to "ResolutionLoop" begin
     for l = 1:nrnxny # Loop over differnet resolutions
@@ -84,7 +80,7 @@ for m = 1:ns # Loop over advection schemes
         )
         y       = (
             c       =   LinRange(M.ymin + Δ.y/2.0, M.ymax - Δ.y/2.0, NC.y),
-            ce      =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+            ce      =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
             v       =   LinRange(M.ymin, M.ymax, NV.y),    
         )
         x1      =   ( 
@@ -102,7 +98,7 @@ for m = 1:ns # Loop over advection schemes
         )
         y   =   merge(y,y1)
         # ------------------------------------------------------------ #
-        # Animationsettings =0======================================== #
+        # Animationsettings ========================================== #
         path        =   string("./examples/AdvectionEquation/Results/")
         anim        =   Plots.Animation(path, String[] )
         filename    =   string("2D_advection_",Ini.T,"_",Ini.V,
@@ -114,6 +110,7 @@ for m = 1:ns # Loop over advection schemes
             T       =   zeros(Float64,(NC.x,NC.y)),
             T_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
             T_exo   =   zeros(Float64,(NC.x+2,NC.y+2)),
+            Told_ex =   zeros(Float64,(NC.x+2,NC.y+2)),
             vx      =   zeros(Float64,(NV.x,NV.y+1)),
             vy      =   zeros(Float64,(NV.x+1,NV.y)),    
             vxc     =   zeros(Float64,(NC.x,NC.y)),
@@ -124,7 +121,6 @@ for m = 1:ns # Loop over advection schemes
             wtv     =   zeros(Float64,(NV...)),
             Tmax    =   [0.0],
             Tmin    =   [0.0],
-            Tmean   =   [0.0],
         )
         # Initial Condition ========================================== #
         @timeit to "IniCondition" begin
@@ -135,7 +131,7 @@ for m = 1:ns # Loop over advection schemes
         end
         D.Tmax[1]   =   maximum(D.T_ex)
         D.Tmin[1]   =   minimum(D.T_ex)
-        D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
+        # D.Tmean[1]  =   (D.Tmax[1]+D.Tmin[1])/2
         # Velocity ---
         IniVelocity!(Ini.V,D,BC,NV,Δ,M,x,y)            # [ m/s ]
         # Get the velocity on the centroids ---
@@ -154,16 +150,16 @@ for m = 1:ns # Loop over advection schemes
             Δfac    =   1.0,    # Courant time factor, i.e. dtfac*dt_courant
             Δ       =   [0.0],
         )
-        T.tmax[1]   =   π*((M.xmax-M.xmin)-Δ.x)/maximum(D.vc)   # t = U/v [ s ]
+        T.tmax[1]   =   π*((M.xmax-M.xmin)-2*Δ.x)/maximum(D.vc)   # t = U/v [ s ]
         T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
                     (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
         nt          =   ceil(Int,T.tmax[1]/T.Δ[1])
         # ------------------------------------------------------------ #
         # Tracer Advection =========================================== #
-        if FD.Method.Adv == "tracers"
+        if FD.Method.Adv == "markers"
             @timeit to "TracerIni" begin
             # Tracer Initialization ---
-            nmx,nmy     =   3,3
+            nmx,nmy     =   5,5
             noise       =   1
             nmark       =   nmx*nmy*NC.x*NC.y
             Aparam      =   :thermal
@@ -179,7 +175,6 @@ for m = 1:ns # Loop over advection schemes
                 wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
                 wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
             )
-            # MPC     =   merge(MPC,MPC1)
             Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
             # RK4 weights ---
             rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -188,33 +183,45 @@ for m = 1:ns # Loop over advection schemes
             @threads for k = 1:nmark
                 Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
             end
+            ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
             # Count marker per cell ---
-            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+            CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
             end
         end
         # ------------------------------------------------------------ #
         # Visualize initial condition -------------------------------- #
-        if FD.Method.Adv == "tracers"
+        if FD.Method.Adv == "markers"
             p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                     aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                     ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
-                    colorbar=true,layout=(1,2),subplot=1)
+                    colorbar=true, size = (1200,600), dpi = 300,
+                                        title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                    layout=(1,2),subplot=1)
             quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                             D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-                    color="white",layout=(1,2),subplot=1)
+                    color="white",
+                    layout=(1,2),subplot=1)
             heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
-                    aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-                    colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
+                    aspect_ratio=:equal,
+                    xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax),
+                    colorbar=true,clims=(0.0, 18.0),
                     layout=(1,2),subplot=2)
         else
             p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                     color=:thermal, colorbar=true, aspect_ratio=:equal, 
-                    xlabel="x", ylabel="z", 
-                    title="Temperature", 
-                    xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                    clims=(0.5, 1.0))
+                    xlabel= L"x", ylabel= L"z", 
+                    title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                    xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax), 
+                    clims=(0.5, 1.0),
+                    size = (900,900), dpi = 300,
+                    guidefontsize = 20, tickfontsize = 20,
+                    right_margin = 10mm,
+                    titlefontsize = 20,
+                    )
             quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                     quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                             D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
@@ -227,56 +234,63 @@ for m = 1:ns # Loop over advection schemes
         end
         # ------------------------------------------------------------ #
         # Time Loop ================================================== #
-        for i=2:nt
-            #@printf("Time step: #%04d\n ",i) 
-
-            @timeit to "Advection" begin
+        for i = 2:nt
             if FD.Method.Adv == "upwind"
                 upwindc2D!(D.T,D.T_ex,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "slf"
                 slfc2D!(D.T,D.T_ex,D.T_exo,D.vxc,D.vyc,NC,T.Δ[1],Δ.x,Δ.y)
             elseif FD.Method.Adv == "semilag"
-                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,[],[],x,y,T.Δ[1])
-            elseif FD.Method.Adv == "tracers"
-                # Advect tracers ---
-                AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-                # CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
-                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
-                
-                # Interpolate temperature from tracers to grid ---
+                semilagc2D!(D.T,D.T_ex,D.vxc,D.vyc,D.vxc,D.vyc,x,y,T.Δ[1])
+            elseif FD.Method.Adv == "markers"
+                @. ΔT_grid     =   D.T_ex - D.Told_ex
+                @threads for k = 1:nmark
+                    local ΔTm       =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+                    Ma.T[k]     += ΔTm
+                end
+                # Advect markers ---
+                AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+                CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+                # Interpolate temperature from markers to grid ---
                 Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
                 D.T     .=  D.T_ex[2:end-1,2:end-1]
             end
-            end
-            display(string("ΔT = ",((maximum(filter(!isnan,D.T))-D.Tmax[1])/D.Tmax[1])*100))
-
             # Plot Solution ---
             if mod(i,10) == 0 || i == nt
-                if FD.Method.Adv == "tracers"
+                if FD.Method.Adv == "markers"
                     p = heatmap(x.c,y.c,(D.T./D.Tmax)',color=:thermal, 
                             aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
                             ylims=(M.ymin, M.ymax),clims=(0.5, 1.0),
-                            colorbar=true,layout=(1,2),subplot=1)
+                            colorbar=true, size = (1200,600), dpi = 300,
+                                                title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                            layout=(1,2),subplot=1)
                     quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
                             y.c2d[1:Pl.inc:end,1:Pl.inc:end],
                             quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
                                     D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
-                            color="white",layout=(1,2),subplot=1)
+                            color="white",
+                            layout=(1,2),subplot=1)
                     heatmap!(p,x.c,y.c,MPC.c',color=:inferno, 
-                            aspect_ratio=:equal,xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax),
-                            colorbar=true,clims=(0.0, 18.0),title=:"Marker per cell",
+                            aspect_ratio=:equal,
+                            xlims=(M.xmin, M.xmax), 
+                            ylims=(M.ymin, M.ymax),
+                            colorbar=true,clims=(0.0, 18.0),
                             layout=(1,2),subplot=2)
                 else
                     p = heatmap(x.c , y.c, (D.T./D.Tmax)', 
                             color=:thermal, colorbar=true, aspect_ratio=:equal, 
-                            xlabel="x", ylabel="z", 
-                            title="Temperature", 
-                            xlims=(M.xmin, M.xmax), ylims=(M.ymin, M.ymax), 
-                            clims=(0.5, 1.0))
-                    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                                y.c2d[1:Pl.inc:end,1:Pl.inc:end],
-                                quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
-                                        D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+                            xlabel= L"x", ylabel= L"z", 
+                            title= latexstring("\\mathrm{", string(FD.Method.Adv), "}"),
+                            xlims=(M.xmin, M.xmax), 
+                            ylims=(M.ymin, M.ymax), 
+                            clims=(0.5, 1.0),
+                            size = (900,900), dpi = 300,
+                            guidefontsize = 20, tickfontsize = 20,
+                            right_margin = 10mm,
+                            titlefontsize = 20,
+                            )
+                    quiver!(p,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                            quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                                    D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
                             color="white")
                 end
                 if save_fig == 1
@@ -285,7 +299,10 @@ for m = 1:ns # Loop over advection schemes
                     display(p)                        
                 end
             end
-                
+            if FD.Method.Adv == "markers"
+                # Update old temperature field ---
+                @. D.Told_ex    =   D.T_ex
+            end
         end # End Time loop    
         # Save Animation ============================================= #
         if save_fig == 1
@@ -301,10 +318,60 @@ for m = 1:ns # Loop over advection schemes
         St.Tmax[m,l]    =   maximum(filter(!isnan,D.T))
         St.Tmean[m,l]   =   mean(abs.(filter(!isnan,D.T)))
         # ------------------------------------------------------------ #
-
+        # Generate final summarizing plot ------------------------------ #
+        if l == 5
+            if FD.Method.Adv == "upwind"
+                xlab = ""
+                xf      =   _ -> ""
+                ylab = L"z"
+                yf      = :auto
+            elseif FD.Method.Adv == "slf"
+                xlab    = ""
+                xf      =   _ -> ""
+                ylab    = ""
+                yf      =  _ -> ""
+            elseif FD.Method.Adv == "semilag"
+                xlab    = L"x"
+                xf      = :auto
+                ylab    = L"z"
+                yf      = :auto
+            elseif FD.Method.Adv == "markers"
+                xlab    = L"x"
+                xf      = :auto
+                ylab    = ""
+                yf      =  _ -> ""
+            end
+            heatmap!(p3,x.c , y.c, (D.T./D.Tmax)', 
+                    color=:thermal, colorbar=true, aspect_ratio=:equal, 
+                    xlabel= xlab, ylabel= ylab, 
+                    title= latexstring("\\mathrm{",panel[m],"\\quad ",
+                             string(FD.Method.Adv), "}"),
+                    xformatter = xf, 
+                    yformatter = yf,
+                    xlims=(M.xmin, M.xmax), 
+                    ylims=(M.ymin, M.ymax), 
+                    clims=(0.5, 1.0),
+                    guidefontsize = 20, tickfontsize = 12,
+                    titlefontsize = 20,
+                    subplot=m,
+                    )
+            quiver!(p3,x.c2d[1:Pl.inc:end,1:Pl.inc:end],y.c2d[1:Pl.inc:end,1:Pl.inc:end],
+                    quiver=(D.vxc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc,
+                            D.vyc[1:Pl.inc:end,1:Pl.inc:end].*Pl.sc),        
+                    color="white",subplot=m)
+        end
     end # End resolution loop
+
     end
 end # End method loop
+
+end
+if save_fig == 1 || save_fig == -1
+    savefig(p3,string("./examples/AdvectionEquation/",
+                        "Results/2D_advection_",Ini.T,"_",
+                        Ini.V,"_SummaryFigure.png"))
+elseif save_fig == 0
+    display(p3)
 end
 q   =   plot(0,0,layout=(1,3))
 for m=1:ns    
@@ -312,24 +379,27 @@ for m=1:ns
                 marker=:circle,markersize=3,label=Scheme[m],
                 xaxis=:log,yaxis=:log,
                 xlims=(minimum(St.nxny), maximum(St.nxny)), 
-                ylims=(1e-15, 1e3), 
-                xlabel="1/nx/ny",ylabel="ΔT[%]",layout=(1,3),
+                ylims=(1e-15, 1e4), 
+                xlabel= L"\frac{1}{nx \cdot ny}",
+                ylabel = L"\varepsilon_{T_{\max}}\ [\%]",
+                layout=(1,3),
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,yaxis=:log,
                 xlims=(minimum(St.nxny), maximum(St.nxny)), 
                 ylims=(1e2, 1e5),
-                xlabel="1/nx/ny",ylabel="T_{max}",
+                xlabel= L"\frac{1}{nx \cdot ny}",
+                ylabel= L"T_{max}",
                 subplot=2)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
                 marker=:circle,markersize=3,label="",
                 xaxis=:log,yaxis=:log,
                 xlims=(minimum(St.nxny), maximum(St.nxny)), 
                 ylims=(1e2, 1e4), 
-                xlabel="1/nx/ny",ylabel="⟨T⟩",
+                xlabel= L"\frac{1}{nx \cdot ny}",
+                ylabel= L"⟨\ T\ ⟩",
                 subplot=3)
-    display(q)
 end
 # --------------------------------------------------------------------- #
 # Save Final Figure =================================================== #
@@ -337,6 +407,8 @@ if save_fig == 1 || save_fig == -1
     savefig(q,string("./examples/AdvectionEquation/",
                         "Results/2D_advection_",Ini.T,"_",
                         Ini.V,"_ResTest.png"))
+elseif save_fig == 0
+    display(q)
 end
 # --------------------------------------------------------------------- #
 display(to)

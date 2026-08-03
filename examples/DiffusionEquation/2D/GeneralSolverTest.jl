@@ -1,10 +1,11 @@
 using Plots, GeoModBox.HeatEquation.TwoD, ExtendableSparse
-using Statistics, Printf, LinearAlgebra
-using TimerOutputs
+using Statistics, LinearAlgebra
+using TimerOutputs, LaTeXStrings, Measures
+using ExactFieldSolutions
 
 function Gaussian_Diffusion()
 to      =   TimerOutput()
-Schema  =   ["explicit","implicit","CNA"]
+Schema  =   ["explicit","implicit","CN"]
 ns          =   size(Schema,1)
 nrnxny      =   6
 save_fig    =   1
@@ -15,14 +16,11 @@ P       = (
     k       =   3,              #   Thermal Conductivity [ W/m/K ]
     cp      =   1000,           #   Specific Heat Capacity [ J/kg/K ]
     ρ       =   3200,           #   Density [ kg/m^3 ]
-    K0      =   273.15,         #   Kelvin at 0 °C
 )
 P1      = (
     κ       =   P.k/P.ρ/P.cp,   #   Thermal Diffusivity [ m^2/s ] 
     Tamp    =   500,            #   Temperaturamplitude [K]
     σ       =   20e3,           #   
-    Xc      =   0.0,            #   x-Coordinate of the Anomalycenter
-    Zc      =   0.0             #   y-Coordinate of the Anomalycenter
 )
 P       =   merge(P,P1)
 # -------------------------------------------------------------------- #
@@ -32,8 +30,6 @@ St      = (
     nxny        =   zeros(size(Schema,1),nrnxny),
     Tmax        =   zeros(size(Schema,1),nrnxny),
     Tmean       =   zeros(size(Schema,1),nrnxny),
-    Tanamax     =   [0.0],
-    Tanamean    =   [0.0]
 )
 # -------------------------------------------------------------------- #
 # Loop over different discretization schemes ------------------------- #
@@ -75,8 +71,8 @@ for m = 1:ns
         T       =   merge(T,T1)
         T.Δ[1]  =   T.Δfac * (1.0 / ( 2.0 * P.κ * ( 1 /Δ.x^2 + 1 / Δ.y^2 )))
         
-        nt      =   ceil(Int,T.tmax/T.Δ[1])     #   Number of Time Steps
-        time    =   zeros(1,nt)
+        nt      =   ceil(Int,T.tmax/T.Δ[1]) + 1     #   Number of Time Steps
+        time    =   zeros(nt)
         # ------------------------------------------------------------ #
         # Initial Conditions  ---------------------------------------- #
         D       = (
@@ -89,7 +85,6 @@ for m = 1:ns
             εT          =   zeros(NC...),
             Tmax        =   zeros(1,nt),
             Tmean       =   zeros(1,nt),
-            Tmaxa       =   zeros(1,nt),
             Tprofile    =   zeros(NC.y,nt),
             Tprofilea   =   zeros(NC.y,nt),           
         )
@@ -119,7 +114,7 @@ for m = 1:ns
                             ∂x20=zeros(NC.x, NC.y), ∂y20=zeros(NC.x, NC.y))
         if FDSchema == "implicit"
             C = 0
-        elseif FDSchema == "CNA"
+        elseif FDSchema == "CN"
             C = 0.5
         elseif FDSchema == "explicit"
             C = 1
@@ -127,36 +122,37 @@ for m = 1:ns
         end
         @timeit to "Time Loop" begin
         # Time Loop -------------------------------------------------- #
-        for n = 1:nt
-            if n>1
-                @timeit to "Solution" begin
-                for iter = 1:niter
-                    # Evaluate residual
-                    ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
-                            P.κ, BC, Δ, T.Δ[1];C)
-                    # @printf("||R|| = %1.4e\n", norm(R)/length(R))
-                    norm(R)/length(R) < ϵ ? break : nothing
-                    # Assemble linear system
-                    K  = AssembleMatrix2Dc(P.κ, BC, Num, NC, Δ, T.Δ[1];C)
-                    # Solve for temperature correction: Cholesky factorisation
-                    Kc = cholesky(K.cscmatrix)
-                    # Solve for temperature correction: Back substitutions
-                    δT = -(Kc\R[:])
-                    # Update temperature
-                    @. D.T += δT[Num.T]
-                end
-                D.T0    .= D.T
-                end
-                time[n]     =   time[n-1] + T.Δ[1]
-                if time[n] > T.tmax 
-                    T.Δ[1]  =   T.tmax - time[n-1]
-                    time[n] =   time[n-1] + T.Δ[1]
-                end                
-                # Exact solution on cell centroids
-                AnalyticalSolution2D!(D.Tana, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ))
-                # Exact solution on cell boundaries
-                BoundaryConditions2D!(BC, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ)) 
+        for n = 2:nt
+            time[n]     =   time[n-1] + T.Δ[1]
+            if time[n] > T.tmax 
+                T.Δ[1]  =   T.tmax - time[n-1]
+                time[n] =   time[n-1] + T.Δ[1]
+            end                
+            # Exact solution on cell centroids
+            AnalyticalSolution2D!(D.Tana, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ))
+            # Exact solution on cell boundaries
+            BoundaryConditions2D!(BC, x.c, y.c, time[n], (T0=P.Tamp,K=P.κ,σ=P.σ)) 
+            # if n>1
+            @timeit to "Solution" begin
+            for iter = 1:niter
+                # Evaluate residual
+                ComputeResiduals2Dc!(R, D.T, D.T_ex, D.T0, D.T_ex0, ∂2T, 
+                        P.κ, BC, Δ, T.Δ[1];C)
+                # @printf("||R|| = %1.4e\n", norm(R)/length(R))
+                norm(R)/length(R) < ϵ ? break : nothing
+                # Assemble linear system
+                K  = AssembleMatrix2Dc(P.κ, BC, Num, NC, Δ, T.Δ[1];C)
+                # Solve for temperature correction: Cholesky factorisation
+                Kc = cholesky(K.cscmatrix)
+                # Solve for temperature correction: Back substitutions
+                δT = -(Kc\R[:])
+                # Update temperature
+                @. D.T += δT[Num.T]
             end
+            D.T0    .= D.T
+            end
+                
+            # end
             # Maximum and Mean Temperature with time ---
             D.Tmax[n]   =   maximum(D.T)
             D.Tmean[n]  =   mean(D.T)
@@ -179,33 +175,58 @@ for m = 1:ns
         St.nxny[m,l]    =   1/NC.x/NC.y
         St.Tmax[m,l]    =   D.Tmax[nt]
         St.Tmean[m,l]   =   D.Tmean[nt]
-        St.Tanamax[1]   =   maximum(D.Tana)
-        St.Tmean[1]     =   mean(D.Tana)
         # ------------------------------------------------------------ #
     end
     end
 end
 end
 # Visualize Statistical Values --------------------------------------- #
-q   =   plot(0,0,layout=(1,3))
+q   =   plot(0,0,layout=(1,3),
+            dpi=300)
 for m = 1:ns
     plot!(q,St.nxny[m,:],St.ε[m,:],
-                marker=:circle,markersize=3,label=Schema[m],
+                marker=:circle,markersize=4,
+                legend = :topleft,
+                label=Schema[m],
                 xaxis=:log,yaxis=:log,
-                xlabel="1/nx/ny",ylabel="ε_{T}",layout=(1,3),
+                markerstrokewidth=0.0,
+                xlims=(3e-5,5e-3),
+                ylims=(1e-2,1e1),
+                xlabel= L"\frac{1}{nx \cdot ny}",ylabel= L"ε_{T}",
                 subplot=1)
     plot!(q,St.nxny[m,:],St.Tmax[m,:],
-                marker=:circle,markersize=3,label="",
+                marker=:circle,markersize=4,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="T_{max}",
+                xlims=(3e-5,5e-3),
+                ylims=(86,100),
+                markerstrokewidth=0.0,
+                xlabel=L"\frac{1}{nx \cdot ny}",ylabel= L"T_{max}",
                 subplot=2)
     plot!(q,St.nxny[m,:],St.Tmean[m,:],
-                marker=:circle,markersize=3,label="",
+                marker=:circle,markersize=4,label="",
                 xaxis=:log,
-                xlabel="1/nx/ny",ylabel="⟨T⟩",
+                xlims=(3e-5,5e-3),
+                ylims=(9.97,10.01),
+                markerstrokewidth=0.0,
+                xlabel=L"\frac{1}{nx \cdot ny}",ylabel= L"⟨\ T\ ⟩",
                 subplot=3)
-    display(q)
 end
+annotate!(
+    q, 3.5e-6, 10.0,
+    text("a)", 10, :black, :bold, :left),
+    subplot = 1,
+)
+annotate!(
+    q, 3.5e-6, 100.0,
+    text("b)", 10, :black, :bold, :left),
+    subplot = 2,
+)
+annotate!(
+    q, 3.5e-6, 10.01,
+    text("c)", 10, :black, :bold, :left),
+    subplot = 3,
+)
+display(q)
 # --------------------------------------------------------------------- #
 # Save Final Figure --------------------------------------------------- #
 if save_fig == 1

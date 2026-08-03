@@ -3,23 +3,47 @@ using ExtendableSparse
 # Time-dependent solvers, constant thermal parameters =================== #
 # ======================================================================= #
 """
-    ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC)
+    ForwardEuler1Dc!(explicit, κ, Δx, Δt, nc, BC;
+                     Q=zeros(nc), ρ=3200.0, cp=1200.0)
 
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using an explicit, forward euler finite difference scheme.
+Solves the one-dimensional transient heat equation using an explicit
+Forward Euler finite-difference scheme.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Temperature is defined at cell centroids, while the heat flux is evaluated
+at the cell boundaries. Ghost nodes are used to impose Dirichlet or Neumann
+boundary conditions. Thermal diffusivity is assumed to be constant.
 
-    explicit    : Tuple, containing the regular temperature array T and 
-                  array containing the ghost nodes T_ex
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
+Optional internal heating can be included through the volumetric heat
+production term `Q`.
+
+# Arguments
+
+    explicit    : Structure or tuple containing:
+                  `T`, the temperature array on the centroids, and
+                  `T_ex`, the extended temperature array including ghost nodes.
+    κ           : Thermal diffusivity.
+    Δx          : Grid spacing.
+    Δt          : Time step.
+    nc          : Number of centroid nodes.
+    BC          : Structure or tuple defining the boundary-condition types
+                  and values at the western and eastern boundaries.
+
+# Keyword Arguments
+
+    Q           : Volumetric heat production rate defined on the centroids
+                  (default: `zeros(nc)`).
+    ρ           : Density (default: `3200.0`).
+    cp          : Specific heat capacity (default: `1200.0`).
+
+# Notes
+
+The temperature update is explicit and second-order accurate in space but
+first-order accurate in time. The timestep must therefore satisfy the
+diffusive stability condition.
+
+After each timestep, the updated centroid temperatures are copied back to
+the interior of `explicit.T_ex`. The ghost-node values are updated again 
+when the routine is called for the next timestep.
 """
 function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC; 
                                 Q = zeros(nc), ρ=3200.0, cp=1200.0 )
@@ -31,8 +55,8 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC;
     explicit.T_ex[1]    =   (BC.type.W==:Dirichlet) * (2 * BC.val.W - explicit.T_ex[2]) + 
                             (BC.type.W==:Neumann) * (explicit.T_ex[2] - BC.val.W*Δx)
     # East --
-    explicit.T_ex[end]  =   (BC.type.W==:Dirichlet) * (2 * BC.val.E - explicit.T_ex[nc+1]) +
-                            (BC.type.W==:Neumann) * (explicit.T_ex[nc+1] + BC.val.E*Δx)
+    explicit.T_ex[end]  =   (BC.type.E==:Dirichlet) * (2 * BC.val.E - explicit.T_ex[nc+1]) +
+                            (BC.type.E==:Neumann) * (explicit.T_ex[nc+1] + BC.val.E*Δx)
     for i = 1:nc
         # Calculate temperature at point i for the new time ---        
         explicit.T[i] =   explicit.T_ex[i+1] + κ * Δt * 
@@ -43,47 +67,81 @@ function ForwardEuler1Dc!( explicit, κ, Δx, Δt, nc, BC;
 end
 
 """
-    ComputeResiduals1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+    ComputeResiduals1Dc!(
+        R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt;
+        C=0.0, Q=0.0, ρ=3200.0, cp=1200.0
+    )
 
-Computes the residual of the onedimensional heat diffusion equation assuming 
-no internal heating and constant thermal parameters.
+Computes the residual of the one-dimensional transient heat equation for
+constant thermal parameters.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Temperature is defined at cell centroids, while second spatial derivatives
+are evaluated using central finite differences and ghost nodes. Dirichlet
+and Neumann boundary conditions are supported at the western and eastern
+boundaries.
 
-    dc          : Tuple, containing the current temperature array T, 
-                  the temperature array with ghost nodes T_ex,
-                  the partial derivatives ∂2T∂x2, and the
-                  residual R
-    κ           : Diffusivity [ m²/s ]
-    Δx          : Grid spacing [ m ]
-    Δt          : Time step [ s ]       
-    BC          : Tuple for the boundary condition
+The temporal discretization is controlled by `C` and can represent Backward
+Euler, Crank–Nicolson, or Forward Euler time integration. Optional internal
+heating can be included through the volumetric heat-production term `Q`.
+
+# Arguments
+
+    R        : Residual vector defined on the centroids.
+    T        : Temperature at the current iteration or new time level.
+    T_ex     : Extended current-temperature array including ghost nodes.
+    T0       : Temperature at the previous time level.
+    T_ex0    : Extended previous-temperature array including ghost nodes.
+    ∂2T      : Structure or tuple containing the second spatial derivatives
+               `∂x2` and `∂x20`.
+    κ        : Thermal diffusivity.
+    BC       : Structure or tuple defining the boundary-condition types and
+               values at the western and eastern boundaries.
+    Δx       : Grid spacing.
+    Δt       : Time step.
+
+# Keyword Arguments
+
+    C        : Temporal weighting parameter (default: `0.0`):
+               `0.0` for Backward Euler,
+               `0.5` for Crank–Nicolson,
+               `1.0` for Forward Euler.
+    Q        : Volumetric heat-production rate (default: `0.0`).
+    ρ        : Density (default: `3200.0`).
+    cp       : Specific heat capacity (default: `1200.0`).
+
+# Notes
+
+The residual is evaluated as a weighted combination of the diffusion term at
+the previous and current time levels. Backward Euler and Crank–Nicolson require
+the current-temperature contribution, whereas Forward Euler uses only the
+previous temperature field.
+
+Backward Euler is first-order accurate in time, Crank–Nicolson is second-order
+accurate in time, and Forward Euler is first-order accurate in time. The
+spatial discretization is second-order accurate.
 """
 function ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt;
                 C=0,Q=0.0,ρ=3200.0,cp=1200.0)
     if C < 1
         # Implicit
         T_ex[2:end-1]   .=  T    
-        T_ex[1]         =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex[2]) + (BC.type.W==:Neumannn)*(T_ex[2] - BC.val.W*Δx)
-        T_ex[end]       =   (BC.type.W==:Dirichlet)*(2*BC.val.E - T_ex[end-1]) + (BC.type.W==:Neumannn)*(T_ex[end-1] + BC.val.E*Δx)
+        T_ex[1]         =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex[2]) + (BC.type.W==:Neumann)*(T_ex[2] - BC.val.W*Δx)
+        T_ex[end]       =   (BC.type.E==:Dirichlet)*(2*BC.val.E - T_ex[end-1]) + (BC.type.E==:Neumann)*(T_ex[end-1] + BC.val.E*Δx)
         @. ∂2T.∂x2      =   (T_ex[3:end] - 2 * T_ex[2:end-1] + T_ex[1:end-2]) / Δx^2
         if C==0.5
             # CNA
             T_ex0[2:end-1]  .=  T0    
-            T_ex0[1]        =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex0[2]) + (BC.type.W==:Neumannn)*(T_ex0[2] - BC.val.W*Δx)
-            T_ex0[end]      =   (BC.type.W==:Dirichlet)*(2*BC.val.E - T_ex0[end-1]) + (BC.type.W==:Neumannn)*(T_ex0[end-1] + BC.val.E*Δx)
+            T_ex0[1]        =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex0[2]) + (BC.type.W==:Neumann)*(T_ex0[2] - BC.val.W*Δx)
+            T_ex0[end]      =   (BC.type.E==:Dirichlet)*(2*BC.val.E - T_ex0[end-1]) + (BC.type.E==:Neumann)*(T_ex0[end-1] + BC.val.E*Δx)
             @. ∂2T.∂x20     =   (T_ex0[3:end] - 2 * T_ex0[2:end-1] + T_ex0[1:end-2]) / Δx^2
         end
     else
         # explicit
         T_ex0[2:end-1]  .=   T0    
         T_ex0[1]        =   (BC.type.W==:Dirichlet)*(2*BC.val.W - T_ex0[2]) + 
-                                (BC.type.W==:Neumannn)*(T_ex0[2] - BC.val.W*Δx)
-        T_ex0[end]      =   (BC.type.W==:Dirichlet)*(2*BC.val.E - T_ex0[end-1]) + 
-                                (BC.type.W==:Neumannn)*(T_ex0[end-1] + BC.val.E*Δx)
+                                (BC.type.W==:Neumann)*(T_ex0[2] - BC.val.W*Δx)
+        T_ex0[end]      =   (BC.type.E==:Dirichlet)*(2*BC.val.E - T_ex0[end-1]) + 
+                                (BC.type.E==:Neumann)*(T_ex0[end-1] + BC.val.E*Δx)
         @. ∂2T.∂x20     =   (T_ex0[3:end] - 2 * T_ex0[2:end-1] + T_ex0[1:end-2]) / Δx^2
     end
     # Calculate residual ------------------------------------------------ #
@@ -92,9 +150,47 @@ function ComputeResiduals1Dc!( R, T, T_ex, T0, T_ex0, ∂2T, κ, BC, Δx, Δt;
 end
 
 """
-    AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K; C )
+    AssembleMatrix1Dc!(κ, Δx, Δt, nc, BC, K; C=0.0)
 
-Setup the coefficient matrix for the linear system of equations. 
+Assembles the coefficient matrix for the one-dimensional transient heat
+equation with constant thermal diffusivity.
+
+Temperature is defined at cell centroids, and the spatial diffusion term is
+discretized using second-order central finite differences. Dirichlet and
+Neumann boundary conditions are incorporated directly into the matrix
+coefficients at the western and eastern boundaries.
+
+The temporal discretization is controlled by `C`. For `C < 1`, the matrix
+contains the implicit contribution of the diffusion term. For `C = 1`, the
+diffusion contribution vanishes and the matrix reduces to the temporal term.
+
+# Arguments
+
+    κ        : Thermal diffusivity.
+    Δx       : Grid spacing.
+    Δt       : Time step.
+    nc       : Number of centroid nodes.
+    BC       : Structure or tuple defining the boundary-condition types and
+               values at the western and eastern boundaries.
+    K        : Coefficient matrix to be assembled in place.
+
+# Keyword Arguments
+
+    C        : Temporal weighting parameter (default: `0.0`):
+               `0.0` for Backward Euler,
+               `0.5` for Crank–Nicolson,
+               `1.0` for Forward Euler.
+
+# Notes
+
+The matrix corresponds to the current-time contribution of the generalized
+time-discretization scheme used by `ComputeResiduals1Dc!`. Backward Euler and
+Crank–Nicolson require a diffusion contribution in the matrix, whereas Forward
+Euler is fully explicit.
+
+The assembled matrix is tridiagonal. Boundary conditions modify the diagonal
+coefficients of the first and last equations. After assembly, `flush!(K)` is
+called to finalize the sparse matrix.
     
 """
 function AssembleMatrix1Dc!( κ, Δx, Δt, nc, BC, K;C=0 )
@@ -132,27 +228,54 @@ end
 
 
 """
-    BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K)
+    BackwardEuler1Dc!(
+        implicit, κ, Δx, Δt, nc, BC, K, rhs;
+        Q=0.0, ρ=3200.0, cp=1200.0
+    )
 
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using an implicit, backward euler finite difference scheme.
+Solves the one-dimensional transient heat equation using an implicit Backward
+Euler finite-difference scheme with constant thermal diffusivity.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Temperature is defined at cell centroids, while the diffusion term is
+discretized using second-order central finite differences. Dirichlet and
+Neumann boundary conditions are incorporated directly into the coefficient
+matrix and right-hand-side vector.
 
-    implicit    : Tuple, containing the current temperature array T0 and 
-                  the new temperature array T
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
-    K           : Coefficient matrix for linear system of equations
+Optional internal heating can be included through the volumetric
+heat-production term `Q`.
+
+# Arguments
+
+    implicit    : Structure or tuple containing `T`, the temperature array
+                  defined on the centroids. The array is updated in place with
+                  the solution at the new time level.
+    κ           : Thermal diffusivity.
+    Δx          : Grid spacing.
+    Δt          : Time step.
+    nc          : Number of centroid nodes.
+    BC          : Structure or tuple defining the boundary-condition types and
+                  values at the western and eastern boundaries.
+    K           : Coefficient matrix for the linear system of equations.
+    rhs         : Right-hand-side vector.
+
+# Keyword Arguments
+
+    Q           : Volumetric heat-production rate (default: `0.0`).
+    ρ           : Density (default: `3200.0`).
+    cp          : Specific heat capacity (default: `1200.0`).
+
+# Notes
+
+Backward Euler is first-order accurate in time and unconditionally stable for
+the linear diffusion equation. The spatial discretization is second-order
+accurate.
+
+The coefficient matrix and right-hand-side vector are assembled inside the
+routine. The temperature at the new time level is obtained by solving the
+resulting linear system, and `implicit.T` is updated in place.
 """
 function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs; 
-                                Q=0.0,ρ=3200.0,cp=1200.0)
+                                Q = 0.0, ρ = 3200.0, cp = 1200.0 )
     # =================================================================== #
     # LF; 19.09.2024 - Version 1.0 - Julia                                #
     # =================================================================== #
@@ -195,25 +318,56 @@ function BackwardEuler1Dc!( implicit, κ, Δx, Δt, nc, BC , K, rhs;
 end
 
 """
-    CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2 )
+    CNA1Dc!(
+        cna, κ, Δx, Δt, nc, BC, K1, K2;
+        Q=0.0, ρ=3200.0, cp=1200.0
+    )
 
-Solves the onedimensional heat diffusion equation assuming no internal heating and
-constant thermal parameters using Crank-Nicolson finite difference scheme.
+Solves the one-dimensional transient heat equation using the Crank–Nicolson
+finite-difference scheme with constant thermal diffusivity.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Temperature is defined at cell centroids, while the diffusion term is
+discretized using second-order central finite differences. Dirichlet and
+Neumann boundary conditions are incorporated directly into the coefficient
+matrices and right-hand-side vector.
 
-    cna         : Tuple, containing the current temperature array T0 and 
-                  the new temperature array T
-    κ           : Diffusivity [ m²/s ]
-    Δt          : Time step [ s ]
-    nc          : Number of central nodes
-    Δx          : Grid spacing [ m ]
-    BC          : Tuple for the boundary condition
-    K1          : Coefficient matrix for the unknow variables 
-    K2          : Coefficient matrix for the know variables
+The Crank–Nicolson method combines the diffusion operators evaluated at the
+current and new time levels with equal weighting, resulting in a second-order
+accurate temporal discretization. Optional internal heating can be included
+through the volumetric heat-production term `Q`.
+
+# Arguments
+
+    cna         : Structure or tuple containing `T`, the temperature array
+                  defined on the centroids. The array is updated in place with
+                  the solution at the new time level.
+    κ           : Thermal diffusivity.
+    Δx          : Grid spacing.
+    Δt          : Time step.
+    nc          : Number of centroid nodes.
+    BC          : Structure or tuple defining the boundary-condition types and
+                  values at the western and eastern boundaries.
+    K1          : Coefficient matrix associated with the unknown temperature
+                  field at the new time level.
+    K2          : Coefficient matrix associated with the known temperature
+                  field at the previous time level.
+
+# Keyword Arguments
+
+    Q           : Volumetric heat-production rate (default: `0.0`).
+    ρ           : Density (default: `3200.0`).
+    cp          : Specific heat capacity (default: `1200.0`).
+
+# Notes
+
+The Crank–Nicolson scheme is second-order accurate in both space and time.
+For linear diffusion problems it is unconditionally stable, although large
+time steps may produce weak temporal oscillations.
+
+The coefficient matrices `K1` and `K2` are assembled inside the routine. The
+right-hand-side vector is constructed from the previous temperature field and
+the volumetric heat-production term before solving the resulting linear
+system. The computed temperature field overwrites `cna.T`.
 """
 function CNA1Dc!( cna, κ, Δx, Δt, nc, BC, K1, K2; 
                         Q=0.0,ρ=3200.0,cp=1200.0 )
@@ -278,23 +432,56 @@ end
 # Time-dependent solvers, variable thermal parameters =================== #
 # ======================================================================= #
 """
-    ForwardEuler1D!( explicit, κ, Δx, Δt, nc, BC)
+    ForwardEuler1D!(T, Py, Δt, Δy, nc, BC)
 
-Solves the onedimensional heat diffusion equation assuming internal heating and
-variable thermal parameters using an explicit, forward euler finite difference scheme.
+Solves the one-dimensional transient heat equation using an explicit Forward
+Euler finite-difference scheme with variable thermal parameters and internal
+heat production.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. 
+Temperature is defined at cell centroids, while thermal conductivity is
+defined at the cell boundaries. The conductive heat flux is therefore
+discretized in conservative form. Density, specific heat capacity, and heat
+production are defined at the cell centroids.
 
-    T           : Tuple, containing the regular temperature array T and 
-                  array containing the ghost nodes T_ex
-    Py          : Tuple, containing the thermal parameters ρ, k, cp, and H [ W/kg ]
-    Δt          : Time step [ s ]
-    Δy          : Grid spacing [ m ]
-    nc          : Number of central nodes
-    BC          : Tuple for the boundary condition
+Dirichlet and Neumann boundary conditions are supported at the southern and
+northern boundaries. Ghost nodes are used to impose the boundary conditions.
+
+# Arguments
+
+    T       : Structure or tuple containing:
+              `T`, the temperature array defined at the cell centroids, and
+              `T_ex`, the extended temperature array including ghost nodes.
+              Both arrays are updated in place.
+    Py      : Structure or tuple containing the thermal parameters:
+              `k`, thermal conductivity defined at the cell boundaries;
+              `ρ`, density defined at the cell centroids;
+              `cp`, specific heat capacity defined at the cell centroids;
+              `H`, specific heat-production rate defined at the cell
+              centroids.
+    Δt      : Time step.
+    Δy      : Grid spacing.
+    nc      : Number of centroid nodes.
+    BC      : Structure or tuple defining the boundary-condition types and
+              values at the southern and northern boundaries.
+
+# Notes
+
+Scalar values may be supplied for `k`, `ρ`, `cp`, and `H`. In this case, the
+values are expanded internally to arrays of the required size.
+
+The heat-production parameter `H` is expressed per unit mass. The corresponding
+volumetric heat-production rate is therefore
+
+    Q = ρ * H.
+
+The method is first-order accurate in time and second-order accurate in space.
+Because the temperature update is explicit, the timestep must satisfy the
+diffusive stability condition. For variable thermal parameters, the timestep
+should be selected using the largest local thermal diffusivity.
+
+After each timestep, the updated centroid temperatures are copied to the
+interior of `T.T_ex`. The ghost-node values are updated again when the routine
+is called for the next timestep.
 
 """
 function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
@@ -333,41 +520,65 @@ function ForwardEuler1D!(T,Py,Δt,Δy,nc,BC)
 end
 
 """
-    ComputeResiduals1D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δx, Δt;C=0)
+    ComputeResiduals1D!(
+        R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δx, Δt;
+        C=0.0
+    )
 
-Function to calculate the residual of the one dimensional heat diffusion equation assuming 
-variable thermal parameters and radiogenic heating only. The residual is required for 
-defection correction to solve the linear system of equations. 
+Computes the residual of the one-dimensional transient heat equation with
+variable thermal properties and volumetric heat production.
 
-The temperature is defined on central nodes and the heat flux on the vertices. 
-Boundary conditions are currently limited to Dirichlet and Neumann. Using central 
-temperature nodes requires external ghost nodes, which are used to define the 
-boundary conditions. The caluclated residual is used in an iteration loop to calculate 
-the correction term of the initial temperature guess. The coefficient matrix is build 
-via `AssembleMatrix1D()`. 
+The conductive heat flux is discretized in conservative form, with temperature
+defined at the cell centroids and thermal conductivity at the cell boundaries.
+Ghost nodes are used to impose Dirichlet and Neumann boundary conditions.
 
-    R           : 1D array for the residual
-    T           : 1D centroid temperature field of the next time step
-    T_ex        : 1D extended centroid temperature field including the ghost nodes
-    T_0         : 1D centroid temperature field of the current time step
-    T_ex0       : 1D extended centroid temperature field of the current time step
-    Q           : Volumetric heat production rate [ W/m³ ]
-    ∂T          : Tuple containing the first space derivatives of the temperature
-                  in the horizontal direction
-    q           : Tuple or structure containing the 2D horizontal heat flux
-    ρ           : Density [ kg/m³ ]
-    Cp          : Specific heat capacity [ J/kg/K ]
-    k           : Thermal conductivity [ W/m/K ]
-    BC          : Tuple for the boundary condition
-    Δx          : Tuple or strucutre containint the horizontal and vertical grid resolution [ m ]
-    Δt          : Time step [ s ]
+The routine evaluates the residual for the generalized θ-method, allowing
+Backward Euler, Crank–Nicolson, and Forward Euler time discretizations through
+the weighting parameter `C`. The residual is intended for defect-correction
+iterations and is used together with the coefficient matrix assembled by
+`AssembleMatrix1D!`.
 
-Optional input values: 
-    C           : Constant defining the residual for a certain finite difference discretization 
-                  method, i.e.: 
-                        C = 0   -> implicit, backward Euler discretization (default)
-                        C = 0.5 -> Crank-Nicolson discretization
-                        C = 1   -> explicit, forward Euler discretization
+# Arguments
+
+    R       : Residual vector defined at the cell centroids.
+    T       : Temperature at the current iteration or new time level.
+    T_ex    : Extended current-temperature array including ghost nodes.
+    T0      : Temperature at the previous time level.
+    T_ex0   : Extended previous-temperature array including ghost nodes.
+    Q       : Volumetric heat-production rate defined at the cell centroids.
+    ∂T      : Structure or tuple containing the temperature gradients
+              `∂x` and `∂x0`.
+    q       : Structure or tuple containing the conductive heat fluxes
+              `x` and `x0`.
+    ρ       : Density defined at the cell centroids.
+    Cp      : Specific heat capacity defined at the cell centroids.
+    k       : Thermal conductivity defined at the cell boundaries.
+    BC      : Structure or tuple defining the boundary-condition types and
+              values at the western and eastern boundaries.
+    Δx      : Grid spacing.
+    Δt      : Time step.
+
+# Keyword Arguments
+
+    C       : Temporal weighting parameter (default: `0.0`):
+              `0.0` for Backward Euler,
+              `0.5` for Crank–Nicolson,
+              `1.0` for Forward Euler.
+
+# Notes
+
+The residual is evaluated in conservative form as
+
+- the transient storage term,
+- the divergence of the conductive heat flux, and
+- the volumetric heat-production term.
+
+Backward Euler evaluates the conductive heat flux entirely at the new time
+level, Crank–Nicolson averages the previous and current time levels, and
+Forward Euler uses only the previous time level.
+
+The routine updates the ghost-node values, temperature gradients, and heat
+fluxes before evaluating the residual.
     
 """
 function ComputeResiduals1D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, Δx, Δt;C=0)
@@ -399,29 +610,51 @@ function ComputeResiduals1D!(R, T, T_ex, T0, T_ex0, Q, ∂T, q, ρ, Cp, k, BC, �
 end
 
 """
-    AssembleMatrix1D(ρ, cp, k, Δx, Δt, nc, BC, K;C=0 )
+    AssembleMatrix1D(ρ, cp, k, Δx, Δt, nc, BC, K; C=0.0)
 
-Function to build the coefficient matrix K for the unknown centroid temperature field in the 
-2D heat diffusion equation assuming variable thermal parameter and radiogenig heating only. 
+Assembles the coefficient matrix for the one-dimensional transient heat
+equation with variable thermal properties.
 
-The coefficient matrix is build using a five-point finite difference stencil, resulting in 
-a five, non-zero diagonal matrix to solve the system of equations. 
+Temperature is defined at the cell centroids, while thermal conductivity is
+defined at the cell boundaries. The conductive term is discretized in
+conservative flux-divergence form using second-order central finite
+differences. Dirichlet and Neumann boundary conditions are incorporated
+directly into the matrix coefficients at the western and eastern boundaries.
 
-    ρ       : Density [ kg/m³ ]
-    cp      : Specific heat capacity [ J/kg/K ]
-    k       : Thermal conductivity [ W/m/K ]
-    Δx      : Tuple or structure containing the horizontal grid resolution
-    Δt      : Time step [ s ]
-    nc      : Tuple or structure containing the number of centroids in the horizontal direction 
-    BC      : Tuple for the boundary condition
-    K       : Coefficient matrix
+The temporal discretization is controlled by `C`. For `C < 1`, the matrix
+contains the implicit contribution of the conductive term. For `C = 1`, the
+conductive contribution vanishes and the matrix contains only the transient
+storage term.
 
-Optional input values: 
-    C           : Constant defining the residual for a certain finite difference discretization 
-                  method, i.e.: 
-                        C = 0   -> implicit, backward Euler discretization (default)
-                        C = 0.5 -> Crank-Nicolson discretization
-                        C = 1   -> explicit, forward Euler discretization
+# Arguments
+
+    ρ       : Density defined at the cell centroids.
+    cp      : Specific heat capacity defined at the cell centroids.
+    k       : Thermal conductivity defined at the cell boundaries.
+    Δx      : Grid spacing.
+    Δt      : Time step.
+    nc      : Number of centroid nodes.
+    BC      : Structure or tuple defining the boundary-condition types and
+              values at the western and eastern boundaries.
+    K       : Coefficient matrix to be assembled.
+
+# Keyword Arguments
+
+    C       : Temporal weighting parameter (default: `0.0`):
+              `0.0` for Backward Euler,
+              `0.5` for Crank–Nicolson,
+              `1.0` for Forward Euler.
+
+# Notes
+
+The matrix corresponds to the current-time contribution of the generalized
+time-discretization scheme used by `ComputeResiduals1D!`.
+
+The assembled matrix is tridiagonal because each centroid temperature is
+coupled only to its western and eastern neighbours. Boundary conditions modify
+the coefficients in the first and last matrix rows.
+
+The matrix is modified in place and finalized using `flush!(K)`.
 """
 function AssembleMatrix1D( ρ, cp, k, Δx, Δt, nc, BC, K;C=0 )
     for i=1:nc
