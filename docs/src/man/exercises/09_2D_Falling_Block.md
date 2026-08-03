@@ -11,4 +11,6 @@ The goals of this exercise are to:
 
 This exercise provides a simple but powerful benchmark problem to validate the Stokes solver and to understand the dynamics of density-driven flow in an isoviscous medium.  
 
-![Exercise09](../../assets/09_FallingBlock_Instantan.png)
+<!-- ![Exercise09](../../assets/exercises/09.png) -->
+
+<img src="../../assets/exercises/09.png" width="700">

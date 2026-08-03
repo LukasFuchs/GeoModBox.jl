@@ -17,7 +17,7 @@ function FallingBlockVarEta_Dc()
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   4,
-        mainc   =   2,
+        mainc   =   1,
         qsc     =   100*(60*60*24*365.25)*5e1
     )
     # ------------------------------------------------------------------- #
@@ -49,7 +49,7 @@ function FallingBlockVarEta_Dc()
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -123,7 +123,8 @@ function FallingBlockVarEta_Dc()
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                    vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
@@ -138,7 +139,7 @@ function FallingBlockVarEta_Dc()
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
     @timeit to "Tracer Ini" begin
-    nmx,nmy     =   3,3
+    nmx,nmy     =   5,5
     noise       =   0
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :phase
@@ -154,7 +155,6 @@ function FallingBlockVarEta_Dc()
             wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
             wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    # MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -172,8 +172,11 @@ function FallingBlockVarEta_Dc()
     end
     # System of Equations =============================================== #
     # Iterations --- 
-    niter       =   50
-    ϵ           =   1e-8
+    niter      =   50
+    atol       =   1e-8        #   Absolute tolerance
+    rtol       =   1e-5        #   # Relative convergence tolerance (RM/R0)
+    RM         =   0.0         #   Initialize absolute residual    
+    RMrel      =   0.0         #   Initialize relative residual 
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -183,7 +186,9 @@ function FallingBlockVarEta_Dc()
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-                )
+    )
+    ndof    =   maximum(Num.Pt)        
+    K       =   ExtendableSparseMatrix(ndof,ndof)      
     δx      =   zeros(maximum(Num.Pt))
     F       =   zeros(maximum(Num.Pt))
     # Residuals ---
@@ -197,6 +202,7 @@ function FallingBlockVarEta_Dc()
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
     for it = 1:nt
+        R0      =   0.0
         # Update Time ---
         T.time[1]   =   T.time[2] 
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
@@ -207,30 +213,36 @@ function FallingBlockVarEta_Dc()
         D.vy    .=  0.0
         D.Pt    .=  0.0
         @timeit to "Solution Iteration" begin
-        for iter = 1:niter
-            @timeit to "Residual" begin
-            Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-            F[Num.Vx]   =   Fm.x[:]
-            F[Num.Vy]   =   Fm.y[:]
-            F[Num.Pt]   =   FPt[:]
-            @printf("||R|| = %1.4e\n", norm(F)/length(F))
-            norm(F)/length(F) < ϵ ? break : nothing
-            end
-            # Assemble Coefficients ===================================== #
             @timeit to "Assembly" begin
-            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                Kfac    =   lu(K.cscmatrix)
             end
-            # ----------------------------------------------------------- #
-            # Solution of the linear system ============================= #
-            @timeit to "Solution" begin
-            δx      =   - K \ F
+            for iter = 1:niter
+                @timeit to "Residual" begin
+                    Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+                    F[Num.Vx]   .=   Fm.x
+                    F[Num.Vy]   .=   Fm.y
+                    F[Num.Pt]   .=   FPt
+                    RM          =   norm(F)/length(F)
+                    if iter == 1
+                        R0 = max(RM, eps())
+                    end
+                    RMrel       =   RM/R0
+                    # if verbose_step
+                    @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+                    # end
+                    (RM < atol || RM/R0 < rtol) && break
+                end
+                # Solution of the linear system ============================= #
+                @timeit to "Solution" begin
+                    δx      .=   - (Kfac \ F)
+                end
+                # ----------------------------------------------------------- #
+                # Update Unknown Variables ================================== #
+                D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+                D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+                D.Pt                .+=  δx[Num.Pt]
             end
-            # ----------------------------------------------------------- #
-            # Update Unknown Variables ================================== #
-            D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-            D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-            D.Pt                .+=  δx[Num.Pt]
-        end
         end
         # --------------------------------------------------------------- #
         # Get the velocity on the centroids ---
@@ -242,9 +254,6 @@ function FallingBlockVarEta_Dc()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ---
-        @show(minimum(D.vc))
-        @show(maximum(D.vc))
-        # ---
         if T.time[2] >= T.tmax[1]
             it = nt
         end
@@ -253,7 +262,8 @@ function FallingBlockVarEta_Dc()
             p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="ρ",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             ylims=(M.ymin/1e3, M.ymax/1e3),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+                        ylims=(M.ymin/1e3, M.ymax/1e3),
                         layout=(2,2),subplot=1)
             scatter!(p,Ma.x[1:Pl.mainc:end]./1e3,Ma.y[1:Pl.mainc:end]./1e3,
                         ms=1,ma=0.5,mc=Ma.phase[1:Pl.mainc:end],markerstrokewidth=0.0,
@@ -288,7 +298,7 @@ function FallingBlockVarEta_Dc()
         if T.time[2] >= T.tmax[1]
             break
         end
-         # Calculate Time Stepping ---
+        # Calculate Time Stepping ---
         T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
                             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
         @printf("\n")

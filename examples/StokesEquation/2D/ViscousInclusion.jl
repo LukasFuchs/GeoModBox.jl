@@ -4,11 +4,9 @@ using GeoModBox.MomentumEquation.TwoD
 using Base.Threads, LinearAlgebra, Statistics
 
 function ViscousInclusion()
-## ===================== Some initial definitions ======================= #
-# save_fig    =   0
-# plotfields  =:yes
-#Py.scale        =   'yes';
-FDMethod    =:dc
+to          =   TimerOutput()
+# ===================== Some initial definitions ======================== #
+save_fig    =   1
 # ----------------------------------------------------------------------- #
 # Define Initial Condition ============================================== #
 Ini         =   (
@@ -21,7 +19,7 @@ Ini         =   (
 EllA        =   2e-1            # [ m ]
 EllB        =   2e-1            # [ m ] 
 # ----------------------------------------------------------------------- #
-## ==================== Define model geometry constants ================= #
+# ==================== Define model geometry constants ================== #
 M       =   Geometry(
         ymin    =   -1.0,     #   Model depth [ m ]
         ymax    =   0.0,        
@@ -29,7 +27,7 @@ M       =   Geometry(
         xmax    =   1.0,      #   Model length [ m ]
 )
 # ----------------------------------------------------------------------- #
-## ====================== Define the numerical grid ===================== #
+# ====================== Define the numerical grid ====================== #
 NC  =   ( 
     x   =   50, 
     y   =   50, 
@@ -49,7 +47,7 @@ x       =   (
 )
 y       =   (
     c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-    ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+    ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
     v   =   LinRange(M.ymin,M.ymax,NV.y),
 )
 x1      =   (
@@ -68,7 +66,7 @@ y1      =   (
 y   =   merge(y,y1)
 # ----------------------------------------------------------------------- #
 # ====================== Define physical constants ====================== #
-g       =   10.0                #   Gravitational acceleration [ m/s^2 ]
+g       =   0.0                 #   Gravitational acceleration [ m/s^2 ]
 # 0 - upper layer; 1 - lower layer
 η₀      =   1e19                #   Viscosity composition 0 [ Pa s ]
 η₁      =   1e23                #   Viscosity composition 1 - Inclusion [ Pa s]
@@ -140,6 +138,31 @@ AnaSol  =   (
 
 Dani_Solution_vec!(Ini.V,AnaSol,M,x,y,EllA,η₁/η₀,NC,NV)
 
+# Dimensional scaling of the analytical solution
+# The analytical velocity is linear in the dimensional coordinates,
+# so only the background strain-rate scale is required.
+velocity_scale = Ini.ε
+velocity_scale = Ini.ε
+pressure_scale = η₀ * Ini.ε
+
+# Conforming velocity nodes
+AnaSol.Vxa .*= velocity_scale
+AnaSol.Vya .*= velocity_scale
+
+# Boundary velocities
+AnaSol.Vx_N .*= velocity_scale
+AnaSol.Vx_S .*= velocity_scale
+AnaSol.Vx_W .*= velocity_scale
+AnaSol.Vx_E .*= velocity_scale
+
+AnaSol.Vy_N .*= velocity_scale
+AnaSol.Vy_S .*= velocity_scale
+AnaSol.Vy_W .*= velocity_scale
+AnaSol.Vy_E .*= velocity_scale
+
+# Pressure
+AnaSol.Pa .*= pressure_scale
+
 # Boundary Conditions ---
 # Horizontal velocity 
 VBC.val.S    .=  AnaSol.Vx_S
@@ -153,31 +176,22 @@ VBC.val.W    .=  AnaSol.Vy_W
 VBC.val.vyS  .=  AnaSol.Vy_S
 VBC.val.vyN  .=  AnaSol.Vy_N
 
-@. D.vx[1,2:end-1]      =   AnaSol.Vx_W
-@. D.vx[end,2:end-1]    =   AnaSol.Vx_E
-@. D.vy[2:end-1,1]      =   AnaSol.Vy_S
-@. D.vy[2:end-1,end]    =   AnaSol.Vy_N
+# Initialize the unknown fields without erasing boundary values
+D.vx[:, 2:end-1] .= 0.0
+D.vy[2:end-1, :] .= 0.0
+D.Pt             .= 0.0
 
-AnaSol.Pa        .-=  mean(AnaSol.Pa)
-# ----------------------------------------------------------------------- #
 # Tracer Advection ====================================================== #
 nmx,nmy     =   5,5
 noise       =   0
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :phase
-MPC         =   (
-        c       =   zeros(Float64,(NC.x,NC.y)),
-        v       =   zeros(Float64,(NV.x,NV.y)),
-        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
-)
 MAVG        = (
         PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
         wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
         wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-# MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase;
                 ellA=EllA,ellB=EllB,α=α)
 # Interpolate from markers to cell ---
@@ -189,10 +203,11 @@ Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
 D.ηc    .=  D.η_ex[2:end-1,2:end-1]
 Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 # ----------------------------------------------------------------------- #
-# System of Equations =================================================== #
-# Iterations
-niter   =   50
-ϵ       =   1e-8
+niter      =   50
+atol       =   1e-10       #   Absolute tolerance
+rtol       =   1e-10       #   # Relative convergence tolerance (RM/R0)
+RM         =   0.0         #   Initialize absolute residual    
+RMrel      =   0.0         #   Initialize relative residual 
 # Numbering, without ghost nodes! ---
 off    = [  NV.x*NC.y,                          # vx
             NV.x*NC.y + NC.x*NV.y,              # vy
@@ -203,182 +218,326 @@ Num    =    (
     Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
     Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
             )
+ndof    =   maximum(Num.Pt)        
+K       =   ExtendableSparseMatrix(ndof,ndof)      
 δx      =   zeros(maximum(Num.Pt))
 F       =   zeros(maximum(Num.Pt))
-χ       =   zeros(maximum(Num.Pt))      #   Unknown Vector ME
-rhs     =   zeros(maximum(Num.Pt))      #   Right-hand Side M
 # Residuals ---
 Fm     =    (
     x       =   zeros(Float64,NV.x, NC.y), 
     y       =   zeros(Float64,NC.x, NV.y)
 )
-FPt     =   zeros(Float64,NC...)      
+FPt     =   zeros(Float64,NC...)  
+R0      =   0.0
 # ----------------------------------------------------------------------- #
-# ## ========================== Scale Parameters ========================== #
-# switch lower(Py.scale)
-#     case 'yes'
-#         [M,N,D,T,S]         =   ScaleParameters(B,M,Py,N,D,T);
-# end
-# # ----------------------------------------------------------------------- #
 # Solution ============================================================== #
-# Momentum Equation ===
 # Initial Residual ------------------------------------------------------ #
-D.vx[2:end-1,:]     .=  0.0
-D.vy[:,2:end-1]     .=  0.0
-D.Pt    .=  1.0
-if FDMethod==:dc
-    for iter=1:niter
-        Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-        F[Num.Vx]   =   Fm.x[:]
-        F[Num.Vy]   =   Fm.y[:]
-        F[Num.Pt]   =   FPt[:]
-        @printf("||R|| = %1.4e\n", norm(F)/length(F))
-        norm(F)/length(F) < ϵ ? break : nothing
-        # Assemble Coefficients ========================================= #
-        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-        # --------------------------------------------------------------- #
-        # Solution of the linear system ================================= #
-        δx      =   - K \ F
-        # --------------------------------------------------------------- #
-        # Update Unknown Variables ====================================== #
-        D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-        D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-        D.Pt                .+=  δx[Num.Pt]
-    end
-elseif FDMethod==:direct
-    # Update K ---
-    K   =   Assembly( NC, NV, Δ, D.ηc, D.ηv, VBC, Num )
-    # Update RHS ---
-    # rhs term defined by the Boussinesq approximation
-    rhs     =   updaterhs( NC, NV, Δ, D.ηc, D.ηv, D.ρ, -g, VBC, Num )
-    # Solve System of Equations ---
-    χ       =   K \ rhs
-    # Update Unknown Variables ---
-    D.vx[:,2:end-1]     .=  χ[Num.Vx]
-    D.vy[2:end-1,:]     .=  χ[Num.Vy]
-    D.Pt                .=  χ[Num.Pt]
-end
-# @. D.Pt     -=  mean(D.Pt)
+# Assemble Coefficients ================================================= #
+K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+Kfac    =   lu(K.cscmatrix)
 # ----------------------------------------------------------------------- #
-Pe      =   copy(D.Pt)
-Pe      =   abs.((D.Pt.-AnaSol.Pa))./maximum(abs.(AnaSol.Pa)).*100
-Vxe     =   copy(AnaSol.Vxa)
-Vxe     =   abs.((D.vx[:,2:end-1].-AnaSol.Vxa))./maximum(abs.(AnaSol.Vxa)).*100
-Vye     =   copy(AnaSol.Vya)
-Vye     =   abs.((D.vy[2:end-1,:].-AnaSol.Vya))./maximum(abs.(AnaSol.Vya)).*100
+for iter=1:niter
+    Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+    F[Num.Vx]   .=   Fm.x
+    F[Num.Vy]   .=   Fm.y
+    F[Num.Pt]   .=   FPt
+    RM          =   norm(F)/length(F)
+    if iter == 1
+        R0 = max(RM, eps())
+    end
+    RMrel       =   RM/R0
+    @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+    (RM < atol || RM/R0 < rtol) && break
+    # Solution of the linear system ===================================== #
+    δx      .=   - (Kfac \ F)
+    # ------------------------------------------------------------------- #
+    # Update Unknown Variables ========================================== #
+    D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+    D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+    D.Pt                .+=  δx[Num.Pt]
+end
 
-p = heatmap(x.v,y.ce,(D.vx)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Numerical - vx",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=1)
-heatmap!(p,x.ce,y.v,(D.vy)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Numerical - v_y ",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=4)
-heatmap!(p,x.c,y.c,D.Pt',color=:glasgow,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Numerical - P_t",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=7)
-heatmap!(p,x.v,y.c,(AnaSol.Vxa)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Analytical - vx",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=2)
-heatmap!(p,x.c,y.v,(AnaSol.Vya)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Analytical - v_y ",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=5)
-heatmap!(x.c,y.c,AnaSol.Pa',color=:glasgow,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Analytical - P_t",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=8)
-heatmap!(p,x.v,y.c,(Vxe)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Error - vy",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=3)
-heatmap!(p,x.c,y.v,(Vye)',color=:berlin,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Error - v_y ",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=6)
-heatmap!(p,x.c,y.c,Pe',color=:glasgow,
-            xlabel="x[km]",ylabel="y[km]",colorbar=true,
-            title="Error - P_t",
-            aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-            ylims=(M.ymin, M.ymax),
-            layout=(3,3),subplot=9)
-display(p)
+D.Pt            .-=  mean(D.Pt)
+AnaSol.Pa       .-=  mean(AnaSol.Pa)
+# ----------------------------------------------------------------------- #
+vx_num = D.vx[:, 2:end-1]
+vy_num = D.vy[2:end-1, :]
 
-# display(heatmap(x.v,y.ce,(D.vx)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Numerical - vx",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=1)
-# display(heatmap(x.ce,y.v,(D.vy)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Numerical - v_y ",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=4)
-# display(heatmap(x.c,y.c,D.Pt',color=:glasgow,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Numerical - P_t",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=7)
-# display(heatmap(x.v,y.c,(AnaSol.Vxa)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Analytical - vx",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=2))
-# display(heatmap(x.c,y.v,(AnaSol.Vya)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Analytical - v_y ",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=5)
-# display(heatmap(x.c,y.c,AnaSol.Pa',color=:glasgow,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Analytical - P_t",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=8)
-# display(heatmap(x.v,y.c,(Vxe)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Error - vy",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=3)
-# display(heatmap(x.c,y.v,(Vye)',color=:berlin,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Error - v_y ",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=6)
-# display(heatmap(x.c,y.c,Pe',color=:glasgow,
-#             xlabel="x[km]",ylabel="y[km]",colorbar=true,
-#             title="Error - P_t",
-#             aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
-#             ylims=(M.ymin, M.ymax)))
-#             # layout=(3,3),subplot=9)
-# # display(p)
+L2_vx = norm(vx_num .- AnaSol.Vxa) / norm(AnaSol.Vxa) * 100.0
+L2_vy = norm(vy_num .- AnaSol.Vya) / norm(AnaSol.Vya) * 100.0
+L2_P  = norm(D.Pt .- AnaSol.Pa)    / norm(AnaSol.Pa)  * 100.0
 
+Linf_vx = maximum(abs.(vx_num .- AnaSol.Vxa)) /
+          maximum(abs, AnaSol.Vxa) * 100.0
+
+Linf_vy = maximum(abs.(vy_num .- AnaSol.Vya)) /
+          maximum(abs, AnaSol.Vya) * 100.0
+
+Linf_P = maximum(abs.(D.Pt .- AnaSol.Pa)) /
+         maximum(abs, AnaSol.Pa) * 100.0
+
+@printf("   Relative L2 error vx: %8.4f %%\n", L2_vx)
+@printf("   Relative L2 error vy: %8.4f %%\n", L2_vy)
+@printf("   Relative L2 error P : %8.4f %%\n", L2_P)
+
+@printf("   Relative L∞ error vx: %8.4f %%\n", Linf_vx)
+@printf("   Relative L∞ error vy: %8.4f %%\n", Linf_vy)
+@printf("   Relative L∞ error P : %8.4f %%\n", Linf_P)
+
+Pe = abs.(D.Pt .- AnaSol.Pa) ./ maximum(abs, AnaSol.Pa) .* 100.0
+
+Vxe = abs.(
+        D.vx[:, 2:end-1] .- AnaSol.Vxa
+    ) ./ maximum(abs, AnaSol.Vxa) .* 100.0
+
+Vye = abs.(
+        D.vy[2:end-1, :] .- AnaSol.Vya
+    ) ./ maximum(abs, AnaSol.Vya) .* 100.0
+
+# Visualization ========================================================= #
+
+# Reference scales
+Lref = M.xmax - M.xmin
+Vref = Ini.ε * Lref
+Pref = η₀ * Ini.ε
+
+# Dimensionless fields
+vx_num_plot = D.vx[:, 2:end-1] ./ Vref
+vy_num_plot = D.vy[2:end-1, :] ./ Vref
+P_num_plot  = D.Pt ./ Pref
+
+vx_ana_plot = AnaSol.Vxa ./ Vref
+vy_ana_plot = AnaSol.Vya ./ Vref
+P_ana_plot  = AnaSol.Pa ./ Pref
+
+# Common color limits
+vx_lim = max(
+    maximum(abs, vx_num_plot),
+    maximum(abs, vx_ana_plot),
+)
+
+vy_lim = max(
+    maximum(abs, vy_num_plot),
+    maximum(abs, vy_ana_plot),
+)
+
+P_lim = max(
+    maximum(abs, P_num_plot),
+    maximum(abs, P_ana_plot),
+)
+
+Verr_lim = max(maximum(Vxe), maximum(Vye))
+Perr_lim = maximum(Pe)
+
+# Analytical inclusion boundary
+θ    = range(0.0, 2π, length=301)
+xc   = (M.xmin + M.xmax) / 2
+yc   = (M.ymin + M.ymax) / 2
+xinc = xc .+ EllA .* cos.(θ)
+yinc = yc .+ EllB .* sin.(θ)
+
+# Initialize figure
+p = plot(
+    layout        = (3, 3),
+    size          = (1200, 1000),
+    left_margin   = 7Plots.mm,
+    right_margin  = 5Plots.mm,
+    bottom_margin = 6Plots.mm,
+    top_margin    = 4Plots.mm,
+)
+
+# Horizontal velocity =================================================== #
+
+heatmap!(
+    p,
+    x.v,
+    y.c,
+    vx_num_plot';
+    subplot      = 1,
+    color        = :berlin,
+    clims        = (-vx_lim, vx_lim),
+    title        = "Numerical \$v_x/V_{ref}\$",
+    ylabel       = "y [m]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.v,
+    y.c,
+    vx_ana_plot';
+    subplot      = 2,
+    color        = :berlin,
+    clims        = (-vx_lim, vx_lim),
+    title        = "Analytical \$v_x/V_{ref}\$",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.v,
+    y.c,
+    Vxe';
+    subplot      = 3,
+    color        = :thermal,
+    clims        = (0.0, Verr_lim),
+    title        = "Error \$v_x\$ [%]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+# Vertical velocity ===================================================== #
+
+heatmap!(
+    p,
+    x.c,
+    y.v,
+    vy_num_plot';
+    subplot      = 4,
+    color        = :berlin,
+    clims        = (-vy_lim, vy_lim),
+    title        = "Numerical \$v_y/V_{ref}\$",
+    ylabel       = "y [m]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.c,
+    y.v,
+    vy_ana_plot';
+    subplot      = 5,
+    color        = :berlin,
+    clims        = (-vy_lim, vy_lim),
+    title        = "Analytical \$v_y/V_{ref}\$",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.c,
+    y.v,
+    Vye';
+    subplot      = 6,
+    color        = :thermal,
+    clims        = (0.0, Verr_lim),
+    title        = "Error \$v_y\$ [%]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+# Pressure ============================================================== #
+
+heatmap!(
+    p,
+    x.c,
+    y.c,
+    P_num_plot';
+    subplot      = 7,
+    color        = :vik,
+    clims        = (-P_lim, P_lim),
+    title        = "Numerical \$P/P_{ref}\$",
+    xlabel       = "x [m]",
+    ylabel       = "y [m]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.c,
+    y.c,
+    P_ana_plot';
+    subplot      = 8,
+    color        = :vik,
+    clims        = (-P_lim, P_lim),
+    title        = "Analytical \$P/P_{ref}\$",
+    xlabel       = "x [m]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+heatmap!(
+    p,
+    x.c,
+    y.c,
+    Pe';
+    subplot      = 9,
+    color        = :thermal,
+    clims        = (0.0, Perr_lim),
+    title        = "Error \$P\$ [%]",
+    xlabel       = "x [m]",
+    colorbar     = true,
+    aspect_ratio = :equal,
+    xlims        = (M.xmin, M.xmax),
+    ylims        = (M.ymin, M.ymax),
+    framestyle   = :box,
+)
+
+# Remove repeated labels and adjust fonts
+for sp in 1:6
+    plot!(p; subplot=sp, xlabel="")
+end
+
+for sp in (2, 3, 5, 6, 8, 9)
+    plot!(p; subplot=sp, ylabel="")
+end
+
+for sp in 1:9
+    plot!(
+        p,
+        xinc,
+        yinc;
+        subplot   = sp,
+        color     = :black,
+        linewidth = 1.0,
+        linestyle = :dash,
+        label     = "",
+    )
+
+    plot!(
+        p;
+        subplot       = sp,
+        tickfontsize  = 8,
+        guidefontsize = 10,
+        titlefontsize = 11,
+    )
+end
+
+if save_fig == 1
+    savefig(p,string("./examples/StokesEquation/2D/Results/ViscousInclusion_Summary.png"))
+else
+    display(p)
+end
+display(to)
 # ----------------------------------------------------------------------- #
 # =============================== END =================================== #
 # ----------------------------------------------------------------------- #

@@ -10,6 +10,8 @@ The main objectives are to understand:
 
 The equation is solved using the explicit Euler method, and the resulting particle advection is illustrated in Figure 1.  
 
-![Exercise1a](../../assets/01_1D_Euler.gif)  
+<!-- ![Exercise1a](../../assets/exercises/01.gif)   -->
+
+<img src="../../assets/exercises/01.gif" width="700">
 
 **Figure 1. One-dimensional particle advection computed with the Euler method.**
