@@ -13,15 +13,16 @@ function VanKekenBenchmark()
 
     to          =   TimerOutput()
     @timeit to "Ini" begin
-    save_fig    =   0
+    save_fig    =   1
     # Define Initial Condition ========================================== #
     Ini         =   (p=:RTI,) 
+    avg         =   :arith
     # ------------------------------------------------------------------- #
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   10,
         mainc   =   5,
-        qsc     =   100*(60*60*24*365.25)*3
+        qsc     =   0.1, # 100*(60*60*24*365.25)*3
     )
     # ------------------------------------------------------------------- #
     # Geometry ========================================================== #
@@ -30,32 +31,32 @@ function VanKekenBenchmark()
         ymax    =   0.0,
         xmin    =   0.0,
     )
-    λ           =   2*0.9142*(M.ymax-M.ymin)        #   Perturbation wavelength[ m ]
-    δA          =   -0.02*(M.ymax-M.ymin)            #   Amplitude [ m ]
-    ar          =   (λ / (M.ymax-M.ymin))/2       #   aspect ratio
-    M.xmax      =   (M.ymax-M.ymin)*ar
+    # Dimensionless benchmark ratios
+    λratio      =   2.0 * 0.9142
+    Aratio      =   0.02
+    hc          =   0.8
+
+    Hdim        =   M.ymax - M.ymin
+    M.xmax      =   0.5 * λratio * Hdim
     # -------------------------------------------------------------------- #
     # Physics ============================================================ #
-    g       =   10.0                #   Gravitational acceleration [ m/s^2 ]
+    P   =   Physics(
+        g       =   10.0,                #   Gravitational acceleration [ m/s^2 ]
+        κ       =   1e-6,
+        η₀      =   1e20,                #   Viscosity composition 0 [ Pa s ]
+        ρ₀      =   3000.0,              #   Density composition 0 [ kg/m^3 ]
+    )
     # 0 - upper layer; 1 - lower layer
-    η₀      =   1e20                #   Viscosity composition 0 [ Pa s ]
+    # η₀      =   1e20                #   Viscosity composition 0 [ Pa s ]
     η₁      =   1e20                #   Viscosity composition 1 [ Pa s]
-    ηᵣ      =   log10(η₁/η₀)
-    η       =   [η₀,η₁]             #   Viscosity for phases 
+    ηᵣ      =   log10(η₁/P.η₀)
+    η       =   [P.η₀,η₁]             #   Viscosity for phases 
 
-    hc      =   0.8
     h₀      =   hc * (M.ymax-M.ymin)        # Thickness upper layer
     h₁      =   (1-hc) * (M.ymax-M.ymin)    # Thickness lower layer
     yc      =   abs(M.ymin + h₁)            # Layer interface depth
-    @show h₀, h₁
 
-    κ       =   1e-6
     Rb      =   1
-    Δρ      =   Rb * κ * η₀ / (g * (M.ymax-M.ymin)^3)
-
-    ρ₀      =   3000.0              #   Density composition 0 [ kg/m^3 ]
-    ρ₁      =   ρ₀ - Δρ             #   Density composition 1 [ kg/m^3 ]
-    ρ       =   [ρ₀,ρ₁]             #   Density for phases
 
     phase   =   [0,1]
     # -------------------------------------------------------------------- #
@@ -80,15 +81,16 @@ function VanKekenBenchmark()
     path        =   string("./examples/StokesEquation/2D/Results/")
     anim        =   Plots.Animation(path, String[] )
     filename    =   string("VanKeKen_Benchmark_ηr_",round(ηᵣ),
-                            "_tracers_DC")
+                            "_tracers_DC_scaled_",avg)
     # ------------------------------------------------------------------- #
     # Allocation ======================================================== #
-    D       =   (
+    D       =   DataFields(
+        # Q       =   zeros(Float64,(NC...)),
+        p       =   zeros(Float64,(NC...)),
+        p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         ρ       =   zeros(Float64,(NC...)),  
-        ρe      =   zeros(Float64,(NC.x+2,NC.y+2)),    
-        p       =   zeros(Float64,NC...),
-        p_ex    =   zeros(Float64,NC.x+2,NC.y+2),  
-        # cp      =   zeros(Float64,(NC...)),
+        ρ_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),    
+        cp      =   zeros(Float64,(NC...)),
         vx      =   zeros(Float64,(NV.x,NV.y+1)),
         vy      =   zeros(Float64,(NV.x+1,NV.y)),    
         Pt      =   zeros(Float64,(NC...)),
@@ -99,7 +101,7 @@ function VanKekenBenchmark()
         wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
         wtv     =   zeros(Float64,(NV.x,NV.y)),
         ηc      =   zeros(Float64,NC...),
-        ηce     =   zeros(Float64,(NC.x+2,NC.y+2)),
+        η_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         ηv      =   zeros(Float64,NV...),
     )
     # ------------------------------------------------------------------- #
@@ -119,7 +121,8 @@ function VanKekenBenchmark()
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:noslip,N=:noslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                        vyS=0.0,vyN=0.0,vxW=0.0,vxE=0.0),
     )
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
@@ -129,14 +132,26 @@ function VanKekenBenchmark()
         itmax   =   500,            #   Maximum iterations; 50
     )
     T.tmax      =   T.tmax*1e6*T.year    #   [ s ]
-    T.Δ         =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
-                        (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
+    T.Δ         =   0.0
 
     Time        =   zeros(T.itmax)
     V_RMS       =   zeros(T.itmax)
+    final_step  =   0
     # ------------------------------------------------------------------- #
     # Scaling laws ========================================================== #
     ScaleParameters!(S,M,Δ,T,P,D)
+    # Correct parameters
+    # Scaled geometrical parameters
+    H  = M.ymax - M.ymin
+
+    h₀ = hc * H
+    h₁ = (1.0 - hc) * H
+
+    yc = abs(M.ymin + h₁)
+    λ  = λratio * H
+    δA = - Aratio * H
+
+    η   ./=     P.η₀
     # ----------------------------------------------------------------------- #
     # Coordinates ======================================================= #
     x       =   (
@@ -146,7 +161,7 @@ function VanKekenBenchmark()
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -190,19 +205,22 @@ function VanKekenBenchmark()
     # Count marker per cell ---
     CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
     # Interpolate from markers to cell ---
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.pe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
-    D.p     .=   D.pe[2:end-1,2:end-1]  
-    # Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-    # D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-    D.ηc    .=   D.ηce[2:end-1,2:end-1]
-    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,:phase,phase)
+    D.p .= D.p_ex[2:end-1, 2:end-1]
+    # Phase field (0 or 1) -> nondimensional density anomaly
+    @. D.ρ = -Rb * D.p
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avg)
+    D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avg)
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
     # Iterations
-    niter   =   50
-    ϵ       =   1e-10
+    niter       =   50
+    atol        =   1e-8        #   Absolute tolerance
+    rtol        =   1e-5        #   Relative tolerance; r = atolM0/atolM
+    RM          =   0.0         #   Initialize absolute residual    
+    RMrel       =   0.0         #   Initialize relative residual 
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -226,36 +244,45 @@ function VanKekenBenchmark()
     # Time Loop ========================================================= #
     @timeit to "Time Loop" begin
     for it = 1:T.itmax
+        R0      =   0.0
         # Update Time ---
         if it > 1
             Time[it]   =   Time[it-1] + T.Δ 
         end
-        @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
-                    Time[it]/(60*60*24*365.25)/1.0e6)
+        @printf("Time step: #%04d, Time: %04e\n ",it,
+                    Time[it])
         # Momentum Equation ===
         # Initial Residual ---------------------------------------------- #
-        D.vx    .=  0.0
-        D.vy    .=  0.0
-        D.Pt    .=  1.0
+        if it == 1
+            D.vx    .=  0.0
+            D.vy    .=  0.0
+            D.Pt    .=  0.0
+        end
         @timeit to "Solution Iteration" begin
-        @. D.ρ  =   -D.p
+        # Assemble Coefficients ========================================= #
+        @timeit to "Assembly" begin
+        K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+        Kfac    =   lu(K.cscmatrix)
+        end
         for iter=1:niter
             @timeit to "Residual" begin
             Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,1.0,Fm,FPt)
-            F[Num.Vx]   =   Fm.x[:]
-            F[Num.Vy]   =   Fm.y[:]
-            F[Num.Pt]   =   FPt[:]
-            @printf("||R|| = %1.4e\n", norm(F)/length(F))
-            norm(F)/length(F) < ϵ ? break : nothing
+            F[Num.Vx]   .=   Fm.x
+            F[Num.Vy]   .=   Fm.y
+            F[Num.Pt]   .=   FPt
+            RM          =   norm(F)/length(F)
+            if iter == 1
+                R0 = max(RM, eps(Float64))
             end
-            # Assemble Coefficients ========================================= #
-            @timeit to "Assembly" begin
-            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+            RMrel       =   RM/R0
+            @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+            (RM < atol || RM/R0 < rtol) && break
             end
             # --------------------------------------------------------------- #
             # Solution of the linear system ================================= #
+            # @printf("hello")
             @timeit to "Solution" begin
-            δx      =   - K \ F
+            δx      =   - (Kfac \ F)
             end
             # --------------------------------------------------------------- #
             # Update Unknown Variables ====================================== #
@@ -274,43 +301,36 @@ function VanKekenBenchmark()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ---
-        @show(minimum(D.vc))
-        @show(maximum(D.vc))
-        # ---
-        if Time[it] >= T.tmax
-            it = T.itmax
-        end
-        # ---
-        if mod(it,4) == 0 || it == T.itmax || it == 1
-            p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
-                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
-                        title="ρ",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
-                        ylims=(M.ymin/1e3, M.ymax/1e3),
+        if mod(it,4) == 0 || final_step == 1 || it == 1
+            p = heatmap(x.c,y.c,D.p',color=:inferno,
+                        xlabel="x",ylabel="y",colorbar=true,
+                        title="Phase",
+                        aspect_ratio=:equal,xlims=(M.xmin, M.xmax),                             
+                        ylims=(M.ymin, M.ymax),
                         layout=(2,2),subplot=1)
-            scatter!(p,Ma.x[1:Pl.mainc:end]./1e3,Ma.y[1:Pl.mainc:end]./1e3,
+            scatter!(p,Ma.x[1:Pl.mainc:end],Ma.y[1:Pl.mainc:end],
                         ms=1,ma=0.5,mc=Ma.phase[1:Pl.mainc:end],markerstrokewidth=0.0,
-                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
+                        xlabel="x",ylabel="y",colorbar=true,
                         title="tracers",label="",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                        ylims=(M.ymin/1e3, M.ymax/1e3),
+                        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
+                        ylims=(M.ymin, M.ymax),
                         layout=(2,2),subplot=2)
-            heatmap!(p,x.c./1e3,y.c./1e3,D.vc',
-                        xlabel="x[km]",ylabel="y[km]",colorbar=true,
+            heatmap!(p,x.c,y.c,D.vc',
+                        xlabel="x",ylabel="y",colorbar=true,
                         title="V_c",color=cgrad(:batlow),
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),
-                        ylims=(M.ymin/1e3, M.ymax/1e3),
+                        aspect_ratio=:equal,xlims=(M.xmin, M.xmax),
+                        ylims=(M.ymin, M.ymax),
                         layout=(2,2),subplot=4)
-            quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-                        y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
+            quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
+                        y.c2d[1:Pl.qinc:end,1:Pl.qinc:end],
                         quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
                                 D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc),        
                         la=0.5,color="white",layout=(2,2),subplot=4)
-            heatmap!(p,x.c./1e3,y.c./1e3,log10.(D.ηc'),color=reverse(cgrad(:roma)),
-                        xlabel="x[km]",ylabel="y[km]",title="η_c",
-                        clims=(15,27),
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3), 
-                        ylims=(M.ymin/1e3, M.ymax/1e3),colorbar=true,
+            heatmap!(p,x.c,y.c,log10.(D.ηc'),color=reverse(cgrad(:roma)),
+                        xlabel="x",ylabel="y",title="log10(η_c)",
+                        # clims=(15,27),
+                        aspect_ratio=:equal,xlims=(M.xmin, M.xmax), 
+                        ylims=(M.ymin, M.ymax),colorbar=true,
                         layout=(2,2),subplot=3)
             if save_fig == 1
                 Plots.frame(anim)
@@ -318,16 +338,17 @@ function VanKekenBenchmark()
                 display(p)
             end
         end
-        if Time[it] >= T.tmax
+        if final_step == 1
+            @printf(" Maximum Time reached!\n")
             break
         end
         # Calculate Time Stepping ---
         T.Δ        =   T.Δfacc * minimum((Δ.x,Δ.y)) / 
                 (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
-        if Time[it] > T.tmax
+        if Time[it] >= T.tmax
             T.Δ         =   T.tmax - Time[it-1]
             Time[it]    =   Time[it-1] + T.Δ
-            it          =   T.itmax
+            final_step  =   1
         end
         # Advection ===
         @timeit to "Tracer Advection" begin
@@ -336,15 +357,16 @@ function VanKekenBenchmark()
         AdvectTracer2D(Ma,nmark,D,x,y,T.Δ,Δ,NC,rkw,rkv;style=1)
         CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
         # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.pe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
-        D.p     .=   D.pe[2:end-1,2:end-1]  
-        # Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρe,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
-        # D.ρ     .=   D.ρe[2:end-1,2:end-1]  
-        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ηce,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
-        D.ηc    .=   D.ηce[2:end-1,2:end-1]
-        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        D.p     .=  D.p_ex[2:end-1,2:end-1]
+        # Nondimensional density anomaly
+        # Phase field (0 or 1) -> nondimensional density anomaly
+        @. D.ρ = -Rb * D.p
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η;avgm=avg)
+        D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η;avgm=avg)
         end
-        V_RMS[it]   =   mean(D.vc)
+        V_RMS[it]   =   sqrt(mean(D.vxc.^2 .+ D.vyc.^2))
     end # End Time Loop
     end
     # Save Animation ---
@@ -354,11 +376,11 @@ function VanKekenBenchmark()
         foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
     end
     # Plot time serieses ==================================================== #
-    p2  =   plot(Time./T.year./1e6,V_RMS,
-                xlabel="Time [ Myrs ]", ylabel="V_RMS [ m/s ]",label="")
+    p2  =   plot(Time,V_RMS,
+                xlabel="Time", ylabel="V_RMS",label="")
     if save_fig == 1
-        savefig(p2,string("./examples/StokesEquation/2D/Results/VanKekenBenchmark_TimeSeries_",
-                            "_",NC.x,"_",NC.y,".png"))
+        savefig(p2,string("./examples/StokesEquation/2D/Results/VanKekenBenchmark_TimeSeries_Scaled",
+                            "_",NC.x,"_",NC.y,"_",avg,".png"))
     elseif save_fig == 0
         display(p2)
     end

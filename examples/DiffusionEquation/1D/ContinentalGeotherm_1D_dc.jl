@@ -1,7 +1,6 @@
 using Plots, ExtendableSparse, LinearAlgebra
 using GeoModBox.HeatEquation.OneD
 using TimerOutputs
-#CHECK HEAT FLUX CALUCLATION!!!
 
 function ContinentalGeotherm_1D_dc()
 to = TimerOutput()

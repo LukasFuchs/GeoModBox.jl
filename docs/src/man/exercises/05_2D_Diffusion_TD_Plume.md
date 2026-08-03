@@ -1,4 +1,4 @@
-# [05 - 2D Heat Diffusion (transient, plume)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Plume_en.ipynb)
+<!-- # [05 - 2D Heat Diffusion (transient, plume)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/05_2D_Diffusion_TD_Plume_en.ipynb) -->
 
 This exercise focuses on solving the transient two-dimensional heat diffusion equation in the presence of a localized plume at the base of the domain. The setup represents a simplified geodynamic scenario where a plume head heats the lithosphere over time. The transient case is particularly useful to compare explicit and implicit time integration schemes and to understand their numerical properties.
 
@@ -13,10 +13,14 @@ The main objectives are:
 
 The evolution of the temperature field due to plume heating is illustrated in Figure 1. The vertical profiles and the maximum temperature over time are illustrated in Figure 2. 
 
-![Exercise05_1](../../assets/05_2D_Plume_explicit.gif)  
+<!-- ![Exercise05_1](../../assets/exercises/05_1a.gif)   -->
+
+<img src="../../assets/exercises/05_1a.gif" width="700">
 
 **Figure 1.** Time-dependent evolution of the two-dimensional temperature field with basal plume heating using the explicit scheme. 
 
-![Exercise_05_2](../../assets/05_Plume_TProfile_Tmax_explicit.png)
+<!-- ![Exercise_05_2](../../assets/exercises/05_1b.png) -->
+
+<img src="../../assets/exercises/05_1b.png" width="700">
 
 **Figure 2.** Temperature-Depth profiles over time and the evolution of the maximum temperature with time. 
