@@ -113,7 +113,7 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 #### [Blankenbach Benchmark (Blankenbach et al., 1989)](https://geosci-ffm.github.io/GeoModBox.jl/dev/man/exercises/13_Blankenbach_Benchmark/)
 
-<img src="./assets/exercises/13a.gif" width="700">
+<img src="./docs/src/assets/exercises/13a.gif" width="700">
 
 **Figure 11.** Isoviscous, bottom-heated thermal convection for $Ra_b = 10^6$ with a resolution of 100×100.  
 The initial condition is a sinusoidally perturbed conductive temperature field.  
