@@ -223,6 +223,36 @@ For an actual model, the required fields should be allocated with dimensions
 consistent with the chosen finite-difference grid before the corresponding
 solver is called.
 
+<<<<<<< HEAD
+    Q       = zeros(1,1)
+    T       = zeros(1,1)
+    T0      = zeros(1,1)
+    T_ex    = zeros(1,1)
+    T_exo   = zeros(1,1)
+    ηc      = zeros(1,1)
+    η_ex    = zeros(1,1)
+    ηv      = zeros(1,1)
+    ηp      = zeros(1,1)
+    ρ       = zeros(1,1)
+    ρ_ex    = zeros(1,1)
+    cp      = zeros(1,1)
+    vx      = zeros(1,1)
+    vy      = zeros(1,1)
+    Pt      = zeros(1,1)
+    vxc     = zeros(1,1)
+    vyc     = zeros(1,1)
+    vxco    = zeros(1,1)
+    vyco    = zeros(1,1)
+    vc      = zeros(1,1)
+    wt      = zeros(1,1)
+    wte     = zeros(1,1)
+    wtv     = zeros(1,1)
+    ΔTtop   = zeros(1)
+    ΔTbot   = zeros(1)
+    Tmax    = 0.0
+    Tmin    = 0.0
+    Tmean   = 0.0
+=======
 # Fields
 
 ## Thermal fields
@@ -283,6 +313,7 @@ solver is called.
 # Default values
 
 All matrix fields are initialized as
+>>>>>>>>> Temporary merge branch 2
 
 ```julia
 zeros(1, 1)
