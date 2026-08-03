@@ -28,7 +28,7 @@ By clicking on the title of each document page, you will be directed to the corr
 - [2D Viscous Inclusion Benchmark](./Stokes/ViscousInclusion.md)
 
 **Thermal Convection Models** 
-- [Bottom heated, isoviscous thermal convection](./BottomHeatedConvection.md)
+- [Bottom heated, isoviscous thermal convection](./Convection/BottomHeatedConvection.md)
 - [Internally heated, isoviscous thermal convection](./Convection/InternallyHeatedConvection.md)
 - [Mixed heated, isoviscous thermal convection](./Convection/MixedHeatedConvection.md)
 
