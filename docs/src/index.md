@@ -40,7 +40,9 @@ The following are visualizations of selected examples provided by `GeoModBox.jl`
 
 ### [Gaussian Temperature Diffusion](./man/examples/Diffusion/GaussianDiffusion2D.md)
 
-<img src="./assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" width="700">
+```@raw html
+    <img src="./assets/examples/Diffusion/Gaussian_Diffusion_CN_nx_120_ny_120.gif" width="700">
+```
 
 **Figure 1. Gaussian Diffusion.** Time-dependent, diffusive solution of a 2-D Gaussian temperature anomaly at a resolution of 120 × 120, using the special solver with the [Crank-Nicholson discretization](./man/theory/DiffTwoD.md), compared to the analytical solution. a) 2-D temperature field with numerical isotherms (solid black) and analytical isotherms (dashed yellow). b) Total deviation from the analytical solution. c) 1-D y-profile along $x = 0$. d) Root Mean Square (RMS) total deviation over time.
 
