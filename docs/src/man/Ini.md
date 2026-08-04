@@ -77,7 +77,7 @@ IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y)
 ## Initial Phase
 
 ```julia
-IniPhase!(type,D,M,x,y,NC;phase=0)
+IniPhase!(type,D,M,x,y,NC;phase=[0 1])
 ```
 
 Currently, only one initial phase configuration is available: 
@@ -257,6 +257,12 @@ The advection of temperature and the update of the temperature field on the cent
 
 ```julia 
 # Advect tracers ---
+@. ΔT_grid     =   D.T_ex - D.Told_ex
+@threads for k = 1:nmark
+    local ΔTm       =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+    Ma.T[k]     += ΔTm
+end
+# Advect markers ---
 AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
 CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 # Interpolate temperature from markers to grid ---
@@ -335,6 +341,7 @@ P = Physics(
     Ttop    = 273.15,           # Temperature at the top [ K ]
     Tbot    = Ttop + ΔT,        # Temperature at the bottom [ K ] 
     Ra      = 1e5,              # Rayleigh number
+    RG      = 8.314             # Gas Constant [ J/mol/kg ]
 )
 ```
 
@@ -352,21 +359,29 @@ P = Physics(
 ```julia 
 D = DataFields(
     Q           = zeros(1,1)
+    Hs          = zeros(1,1)
     T           = zeros(1,1)
     T0          = zeros(1,1)
     T_ex        = zeros(1,1)
-    T_exo       = zeros(1,1)
+    T_ex0       = zeros(1,1)
+    Told_ex     = zeros(1,1)
     ηc          = zeros(1,1)
     η_ex        = zeros(1,1)
     ηv          = zeros(1,1)
+    ηp          = zeros(1,1)
     ρ           = zeros(1,1)
     ρ_ex        = zeros(1,1)
+    p           = zeros(1,1)
+    p_ex        = zeros(1,1)
+    pv          = zeros(1,1)
     cp          = zeros(1,1)
     vx          = zeros(1,1)
     vy          = zeros(1,1)
     Pt          = zeros(1,1)
     vxc         = zeros(1,1)
     vyc         = zeros(1,1)
+    vxco        = zeros(1,1)
+    vyco        = zeros(1,1)
     vc          = zeros(1,1)
     wt          = zeros(1,1)
     wte         = zeros(1,1)

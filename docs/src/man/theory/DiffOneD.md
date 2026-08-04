@@ -26,9 +26,11 @@ Equation (3) is a *parabolic partial differential equation* (PDE) that can be so
 
 To solve Equation (3) numerically, the spatial domain is discretized and physical parameters are assigned to the corresponding grid locations.
 
-> **Note:** Although thermal conductivity is currently assumed to be constant, a *conservative, staggered-grid* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at cell centers (centroids), while the heat flux $q$ is defined at cell interfaces (vertices).
+> **Note:** Although thermal conductivity is assumed to be constant here, a *conservative, staggered-grid* approach is employed to ensure physical consistency. In this scheme, temperature $T$ is defined at cell centers (centroids), while the heat flux $q$ is defined at cell interfaces (vertices).
 
-<img src="../../assets/theory/Diff_1D_Discretization.png" width="700">
+```@raw html
+    <img src="../../assets/theory/Diff_1D_Discretization.png" width="700">
+```
 
 **Figure 1. 1D Discretization.** Staggered finite difference grid for solving the 1D heat diffusion equation. Temperature is defined at centroids, while heat flux is defined at vertices. *Ghost nodes* are introduced to implement *Dirichlet* and *Neumann* boundary conditions.
 
@@ -48,7 +50,7 @@ A detailed implementation of various numerical schemes for solving a linear prob
 
 - Explicit scheme
 - Implicit scheme
-- Crank–Nicolson approach
+- Crank-Nicolson approach
 
 The numerical results are compared with the analytical solution of a Gaussian temperature distribution to assess accuracy and performance. Additional scripts demonstrate how to solve the 1D heat diffusion equation using the general, combined formulation for non-linear problems with defect correction. These scripts end with `*_dc.jl`. Below, the schemes are briefly described and their main strengths and limitations are highlighted.
 
@@ -56,9 +58,9 @@ The numerical results are compared with the analytical solution of a Gaussian te
 
 Within `GeoModBox.jl`, a distinction is made between the centroid field and the extended field, which includes ghost nodes.
 
-The extended field is used for the linear explicit (forward Euler) scheme and for residual evaluation in the non-linear solution using defect correction. For these solvers, ghost node temperatures are computed internally from the prescribed boundary conditions, and the extended field is used to evaluate the discrete operators.
+The extended field is used for the explicit (forward Euler) scheme (special-case solver) and for residual evaluation in the non-linear solution using defect correction (general solver). For these solvers, ghost node temperatures are computed internally from the prescribed boundary conditions, and the extended field is used to evaluate the discrete operators.
 
-For solvers that involve a coefficient matrix (e.g., linear implicit schemes and non-linear solutions for constant and variable thermal properties), only the centroid values enter the system. Consequently, the size of the coefficient matrix is determined by the number of centroids. After solving the PDE, these solvers update the centroid temperatures in the extended field accordingly.
+For solvers that involve a coefficient matrix (e.g., implicit special-case solver and general solver for constant and variable thermal properties), only the centroid values enter the system. Consequently, the size of the coefficient matrix is determined by the number of centroids. After solving the PDE, these solvers update the centroid temperatures in the extended field accordingly.
 
 ## Boundary Conditions 
 
@@ -126,7 +128,7 @@ $\begin{equation}
 a = \frac{\kappa \Delta t}{\Delta x^2}.
 \end{equation}$
 
-Equation (12) is evaluated for all centroids at each time step, given initial and boundary conditions. Boundary conditions are applied by substituting ghost node values (Equations (5)–(8)) into the discrete equations for centroids adjacent to the boundaries. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
+Equation (12) is evaluated for all centroids at each time step, given initial and boundary conditions. Boundary conditions are applied by substituting ghost node values (Equations (5)-(8)) into the discrete equations for centroids adjacent to the boundaries. For implementation details, see the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl).
 
 ## Implicit Scheme (Backward Euler)
 
@@ -385,7 +387,7 @@ $\begin{equation}
 
 ## Crank-Nicolson approach (CNA)
 
-The Backward Euler scheme is unconditionally stable but only first-order accurate in time. To improve temporal accuracy while retaining stability, the Crank–Nicolson scheme can be used. This method employs a time-centered discretization and is second-order accurate in time.
+The Backward Euler scheme is unconditionally stable but only first-order accurate in time. To improve temporal accuracy while retaining stability, the Crank-Nicolson scheme can be used. This method employs a time-centered discretization and is second-order accurate in time.
 
 In 1D, the Crank-Nicolson discretization becomes:
 
@@ -477,7 +479,9 @@ For implementation details, refer to the [source code](https://github.com/GeoSci
 
 Similar to the pure implicit scheme, there is a *special case* for solving this system when the problem is linear. In that case, the heat diffusion equation reduces to Equation (48) and can be solved directly via *left matrix division*. The coefficient matrices remain unchanged for the given boundary conditions, but the right-hand side must be updated accordingly (setting $\bm{r}=0$ and adding the known parameters to the right-hand side).
 
-Within `GeoModBox.jl`, the general solution to a non-linear system using the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme (constant thermal properties; extended field including ghost nodes) is implemented in the combined form:
+## The $\theta$-rule
+
+Within `GeoModBox.jl`, the general solution to a non-linear system using the *explicit*, *implicit*, or *Crank-Nicolson* discretization scheme (constant thermal properties; extended field including ghost nodes) is implemented in the combined form:
 
 $\begin{equation}
 \frac{\partial{T}}{\partial{t}} 

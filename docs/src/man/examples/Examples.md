@@ -27,10 +27,12 @@ By clicking on the title of each document page, you will be directed to the corr
 - [Van Keken Benchmark](./Stokes/VanKekenBenchmark.md)
 - [2D Viscous Inclusion Benchmark](./Stokes/ViscousInclusion.md)
 
-**Thermal Convection Models** 
+**[Thermal Convection Models](./Convection/Overview_Convection.md)** 
 - [Bottom heated, isoviscous thermal convection](./Convection/BottomHeatedConvection.md)
 - [Internally heated, isoviscous thermal convection](./Convection/InternallyHeatedConvection.md)
 - [Mixed heated, isoviscous thermal convection](./Convection/MixedHeatedConvection.md)
+- [Bottom heated, temperature-dependent viscosity](./Convection/BottomHeatedConvection_VE.md)
+- [Blankenbach benchmark; variable viscosity](./Convection/Blankenbach_Var_Eta.md)
 
 **Thermo-Mechanical Shear Localization**
 - [Viscous shear localization (shear heating)](./StrainLocalization/ShearBands.md)

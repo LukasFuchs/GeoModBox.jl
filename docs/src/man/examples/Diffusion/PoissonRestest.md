@@ -6,7 +6,7 @@ The maximum resolution is define by `n*ncx x n*ncy`, where `n` needs to be defin
 
 The temperature equation is solved for each resolution in a loop and the maximum and mean temperature is stored. In theory, increasing the resolution should asymptotically approach the exact solution of the problem. 
 
-For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../../theory/DiffTwoD.md)
+For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary_en.ipynb) or the [documentation](../../theory/DiffTwoD.md)
 
 ---
 
@@ -189,4 +189,6 @@ savefig("./examples/DiffusionEquation/2D/Results/Poisson_ResTest.png")
 # ----------------------------------------------------------------------- #
 ```
 
+```@raw html
 <img src="../../../assets/examples/Diffusion/Poisson_ResTest.png" width="700">
+```

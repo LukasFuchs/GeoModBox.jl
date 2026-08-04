@@ -101,8 +101,8 @@ Examples of coupled temperature–momentum systems (i.e., thermal convection mod
 
 ## Exercises
 
-- [Steady-state, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb)  
-- [Time-dependent, isoviscous 2D falling block](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/10_2D_Falling_Block_td.ipynb)  
-- [2D thermal convection (isoviscous)](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/11_2D_Thermal_Convection.ipynb)  
-- [Scaled 2D thermal convection](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/12_2D_Thermal_Convection_scaled.ipynb)  
-- [Blankenbach benchmark with resolution study](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/13_Blankenbach_Benchmark.ipynb)
+- [Steady-state, isoviscous 2D falling block](../exercises/09_2D_Falling_Block.md)  
+- [Time-dependent, isoviscous 2D falling block](../exercises/10_2D_Falling_Block_td.md)  
+- [2D thermal convection (isoviscous)](../exercises/11_2D_Thermal_Convection.md)  
+- [Scaled 2D thermal convection](../exercises/12_2D_Thermal_Convection_scaled.md)  
+- [Blankenbach benchmark with resolution study](../exercises/13_Blankenbach_Benchmark.md)

@@ -1,6 +1,6 @@
 # [Viscous Inclusion](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/ViscousInclusion.jl)
 
-This example demonstrates the numerical solution of the incompressible Stokes equations for a circular viscous inclusion embedded in an infinite matrix undergoing pure shear deformation. Owing to its analytical solution (Dani et al., 1978), the problem has become one of the classical benchmark tests for verifying Stokes solvers with strongly heterogeneous viscosity distributions.
+This example demonstrates the numerical solution of the incompressible Stokes equations for a circular viscous inclusion embedded in an infinite matrix undergoing pure shear deformation. Owing to its analytical solution (Schmid, 2002), the problem has become one of the classical benchmark tests for verifying Stokes solvers with strongly heterogeneous viscosity distributions.
 
 The model consists of a circular inclusion with a viscosity four orders of magnitude larger than the surrounding matrix. Both materials have identical densities, such that no buoyancy forces are present and the deformation is driven exclusively by the prescribed pure-shear boundary conditions. The analytical solution provides the complete velocity and pressure fields, allowing a direct quantitative comparison with the numerical solution.
 
@@ -582,6 +582,7 @@ display(to)
 
 The resulting comparison demonstrates that the finite-difference discretization accurately reproduces the analytical solution. The largest errors are confined to the viscosity interface, where the material properties are discontinuous and the analytical solution exhibits discontinuities in the stress field. Away from the inclusion boundary, both the velocity and pressure fields agree closely with the analytical solution, confirming the accuracy of the staggered-grid implementation.
 
+```@raw html
 <img src="../../../assets/examples/Stokes/ViscousInclusion_Summary.png" width="700">
-
+```
 **Figure 1.** Comparison between the numerical and analytical solutions for the horizontal velocity, vertical velocity, and pressure fields. The third column shows the corresponding relative error distributions. The largest errors are localized at the viscosity interface, where the material properties are discontinuous, while excellent agreement is obtained throughout the remainder of the domain.

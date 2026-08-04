@@ -1,4 +1,4 @@
-# [Blankenbach Benchmark with Variable Viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/ThermalConvection/) 
+# [Blankenbach Benchmark with Variable Viscosity](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/ThermalConvection/Blankenbach_var_eta.jl) 
 
 This example reproduces the **Blankenbach et al. (1989) thermal convection benchmark** including a strongly temperature-dependent viscosity. In contrast to the corresponding isoviscous benchmark exercise, the viscosity varies by more than four orders of magnitude across the imposed temperature range, resulting in a substantially more realistic and challenging thermo-mechanical problem.
 
@@ -696,12 +696,15 @@ elseif save_fig == 0
 end
 # ----------------------------------------------------------------------- 
 ```
-<img src="../../../assets/examples/Convection/Blankenbach_VarEta_1.00e+04_100_100_blankenbach.gif" width="700">
 
+```@raw html
+<img src="../../../assets/examples/Convection/Blankenbach_VarEta_1.00e+04_100_100_blankenbach.gif" width="700">
+```
 **Figure 1.** Evolution of the two-dimensional Blankenbach benchmark with temperature-dependent viscosity for a resolution of $100 \times 100$. The left panel shows the dimensionless temperature field with superimposed velocity vectors, while the right panel displays the logarithm of the normalized viscosity, $\log_{10}(\eta/\eta_0)$. As the initially conductive state becomes unstable, cold, highly viscous material accumulates beneath the upper boundary, whereas the hot interior develops a pronounced low-viscosity region that promotes vigorous convection.
 
+```@raw html
 <img src="../../../assets/examples/Convection/Blankenbach_var_eta_TimeSeries_1.00e+04_100_100_blankenbach.png" width="700">
-
+```
 **Figure 2.** Evolution of the dimensionless Nusselt number ($Nu$) and root-mean-square velocity ($V_{\mathrm{RMS}}$) for the temperature-dependent Blankenbach benchmark. The dashed horizontal lines indicate the published benchmark values, demonstrating the convergence of the numerical solution toward the reference solution after the initial transient adjustment.
 
 ---

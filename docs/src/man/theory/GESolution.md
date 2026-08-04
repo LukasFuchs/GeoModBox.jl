@@ -2,7 +2,7 @@
 
 ## Governing Equations
 
-The governing equations for solving geodynamical problems, **neglecting adiabatic effects** and assuming **only radioactive heat sources**, are given by the conservation laws of 
+The governing equations for solving geodynamical problems, **neglecting adiabatic effects** and assuming **radioactive and viscous dissipation** as the only internal heat sources, are given by the conservation laws of 
 
 **=== Momentum ===**
 
@@ -23,14 +23,15 @@ $\boldsymbol{g}$ is the gravitational acceleration vector [m/s²].
 **=== Energy ===**
 
 $\begin{equation}
-\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H,
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = -\frac{\partial q_i}{\partial x_i} + \rho H + \Phi_s,
 \end{equation}$
 
 where 
 $c_p$ is the specific heat capacity [J/kg/K],
 $T$ is temperature [K],
 $q_i$ is the heat flux [W/m²] in direction $i$,
-$H$ is the internal heat production per unit mass [W/kg]. 
+$H$ is the internal heat production per unit mass [W/kg],
+$\Phi_s$ is the viscous dissipation source term [W/kg].
 
 **=== Mass ===**
 
@@ -118,11 +119,11 @@ where $i$ and $j$ are the local indices in the horizonal and vertical direction,
 
 # Initial Conditions 
 
-Certain initial conditions and parameter structures are already defined in `GeoModBox.jl` and can be called using certain functions. For more details on the variable structures and functions for initial conditions please see this [documentation](../Ini.md). 
+Certain initial conditions and parameter structures are already defined in `GeoModBox.jl` and can be called using certain functions. For more details on the variable structures and functions for initial conditions please see the [specification documentation](../Ini.md). 
 
 # Thermal convection
 
-The equations discussed here are used to solve for temperature, pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters—such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)—is forthcoming, simplifications are often employed to make the problem more tractable. The following assumptions and approximations are made witin the `GeoModBox.jl` to solve a two-dimensional, thermal convection problem. 
+The equations discussed here are used to solve for temperature, pressure and velocity in two-dimensional thermal convection systems. While support for variable thermodynamic parameters-such as density ($\rho$), specific heat capacity ($c_p$), and thermal conductivity ($k$)-is forthcoming, simplifications are often employed to make the problem more tractable. The following assumptions and approximations are made witin `GeoModBox.jl` to solve a two-dimensional, thermal convection problem. 
 
 ## Constitutive Relation
 
@@ -191,10 +192,10 @@ where $P_{\text{dyn}}$ is the dynamic pressure [Pa], $\tau_{ij}$ is the deviator
 **Temperature equation**
 
 $\begin{equation}
-\left(\frac{\partial{T}}{\partial{t}} + v_j \frac{\partial{T}}{\partial{x_j}}\right) = \kappa \frac{\partial^2{T}}{\partial{x^2_i}} + \frac{Q}{\rho_0 c_p},
+\left(\frac{\partial{T}}{\partial{t}} + v_j \frac{\partial{T}}{\partial{x_j}}\right) = \kappa \frac{\partial^2{T}}{\partial{x^2_i}} + \frac{Q}{\rho_0 c_p} + \frac{\Phi_s}{\rho_0 c_p},
 \end{equation}$
 
-where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], $Q$ is the volumetric heat production rate [W/m³], and $c_p$ is the specific heat capacity [J/kg/K]. For implementation details, refer to the [thermal convection examples](../examples/Convection/Overview_Convection.md).
+where $t$ is time [s], $v_j$ is the velocity in the $j$-th direction [m/s], $\kappa = \frac{k}{\rho c_p}$ is the thermal diffusivity [m²/s], $Q$ is the volumetric heat production rate [W/m³], $\Phi_s$ the viscous dissipation source term, and $c_p$ is the specific heat capacity [J/kg/K]. For implementation details, refer to the [thermal convection examples](../examples/Convection/Overview_Convection.md).
 
 **Continuity equation**
 
@@ -204,7 +205,7 @@ $\begin{equation}
 
 ## Scaling
 
-In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (15)–(18), certain *scaling constants* are introduced and the associated *scaling laws* derived.
+In geodynamic modeling, it is common practice to non-dimensionalize the governing equations to generalize results across different physical scales and to enable experimental modeling (e.g., in laboratory settings). To non-dimensionalize equations (16)–(19), certain *scaling constants* are introduced and the associated *scaling laws* derived.
 
 ### Scaling Constants
 
@@ -231,7 +232,8 @@ t & = t' \cdot t_{sc}, \\
 v & = v' \cdot v_{sc}, \\
 \tau & = \tau' \cdot \tau_{sc}, \\
 T & = T' \cdot T_{sc}, \\
-Q & = Q' \cdot Q_{sc}.
+Q & = Q' \cdot Q_{sc}, \\
+\Phi_s & = \Phi_s' \cdot Q_{sc}.
 \end{split}\end{equation}$
 
 When applied, many of the constants cancel out, resulting in non-dimensional equations that structurally resemble the dimensional ones.
@@ -279,7 +281,7 @@ $\begin{equation}
 **Temperature equation**
 
 $\begin{equation}
-\left(\frac{\partial{T'}}{\partial{t'}} + v_j' \frac{\partial{T'}}{\partial{x_j'}}\right) = \frac{\partial^2{T'}}{\partial{x^{'2}_i}} + Q'.
+\left(\frac{\partial{T'}}{\partial{t'}} + v_j' \frac{\partial{T'}}{\partial{x_j'}}\right) = \frac{\partial^2{T'}}{\partial{x^{'2}_i}} + Q' + \Phi_s'.
 \end{equation}$
 
 **Continuity equation**

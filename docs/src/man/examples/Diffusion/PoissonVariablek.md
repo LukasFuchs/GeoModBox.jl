@@ -2,7 +2,7 @@
 
 This example solves the steady-state 2-D temperature equation—i.e., the Poisson equation—assuming a variable thermal conductivity $k$. 
 
-For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercise/04_2D_Diffusion_Stationary.ipynb) or the [documentation](../../theory/DiffTwoD.md)
+For more details on the model setup and the physics or the numerical scheme, please see the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/04_2D_Diffusion_Stationary_en.ipynb) or the [documentation](../../theory/DiffTwoD.md)
 
 ---
 
@@ -150,11 +150,12 @@ savefig(q,"./examples/DiffusionEquation/2D/Results/Poisson_variable_k_02.png")
 # ----------------------------------------------------------------------- #
 ```
 
+```@raw html
 <img src="../../../assets/examples/Diffusion/Poisson_vari_1.svg" width="700">
-
+```
 **Figure 1. Temperature distribution for variable thermal parameters.**
 
-
+```@raw html
 <img src="../../../assets/examples/Diffusion/Poisson_vari_2.svg" width="700">
-
+```
 **Figure 2. Thermal conductivity distribution.**

@@ -2,8 +2,9 @@
 
 The falling block benchmark is a well-established test for assessing the accuracy of the momentum solver and the efficiency of the advection scheme, particularly under strong viscosity and density contrasts. The model setup (Figure 1) is defined by a rectangular block with a certain viscosity and density within a matrix of a different viscosity and density. Due to the density contrast, the block sinks. Depending on the viscosity contrast, the block either deforms strongly during its descent or behaves nearly as a rigid body. Consequently, the benchmark simultaneously tests the treatment of large viscosity contrasts and the accuracy of material advection. 
 
+```@raw html
 <img src="../../../assets/examples/Stokes/FallingBlock_Setup.png" width="700">
-
+```
 **Figure 1. Falling Block Setup.** 
 
 The purpose of this benchmark is twofold: 
@@ -21,7 +22,7 @@ In the tracer method, each marker carries the complete set of material propertie
 >**Note**: In its current implementation, the staggered leapfrog scheme is not well suited for advecting discontinuous phase fields. Although clamping prevents unphysical phase values, the dispersive nature of the leapfrog scheme produces oscillatory interfaces that significantly degrade the solution quality. The semi-Lagrangian method performs considerably better but becomes computationally expensive for large viscosity contrasts because it requires substantially smaller timesteps than the other advection methods.
 
 This example solves the falling block benchmark across a viscosity contrast range spanning six orders of magnitude (from $10^{-6}$ to $10^6$). 
-The simulation yields either the block’s initial sinking velocity (for steady-state problems; `td = 0`), or its final position (for time-dependent problems with a viscosity ratio $\eta_r \geq 0$, `td = 1`). For additional information on the benchmark, please refer to the [exercise](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/09_2D_Falling_Block.ipynb). This example uses the specialized direct Stokes solver provided by `GeoModBox.jl`. An equivalent implementation based on the [general defect-correction solver](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark_DC.jl) is available separately. Both implementations solve the same benchmark problem and produce equivalent solutions for the prescribed linear viscosity field, while illustrating two different solver interfaces.
+The simulation yields either the block’s initial sinking velocity (for steady-state problems; `td = 0`), or its final position (for time-dependent problems with a viscosity ratio $\eta_r \geq 0$, `td = 1`). For additional information on the benchmark, please refer to the [exercise](../../exercises/09_2D_Falling_Block.md). This example uses the specialized direct Stokes solver provided by `GeoModBox.jl`. An equivalent implementation based on the [general defect correction solver](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark_DC.jl) is available separately. Both implementations solve the same benchmark problem and produce equivalent solutions for the prescribed linear viscosity field, while illustrating two different solver interfaces.
 
 Again, the output of the script depends on the definition of the parameter `save_fig`. 
 
@@ -699,10 +700,12 @@ if td == 0
 end
 ```
 
+```@raw html
 <img src="../../../assets/examples/Stokes/FallingBlock_SinkingVeloc_tracers_direct_arithmetic.png" width="700">
-
+```
 **Figure 2. Sinking Velocity.** Instantaneous, sinking velocity of the rectangular block for different viscosity ratios. 
 
+```@raw html
 <img src="../../../assets/examples/Stokes/FallingBlock_FinalStage_tracers_direct_arithmetic.png" width="700">
-
+```
 **Figure 3. Final stage.** Final stage of the sinking block for different viscosity ratios using the tracer method. 
