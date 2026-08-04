@@ -12,8 +12,7 @@ The main objectives are:
 
 The resulting stationary solution is illustrated in Figure 1.  
 
-<!-- ![Exercise04](../../assets/exercises/04.png)   -->
-
+```@raw html
 <img src="../../assets/exercises/04.png" width="700">
-
+```
 **Figure 1. Stationary two-dimensional temperature distribution.**

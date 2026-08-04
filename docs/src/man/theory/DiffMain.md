@@ -5,7 +5,7 @@ The conservation of energy is a fundamental physical principle stating that ener
 Assuming radioactive heat production as the only internal heat source, the general energy equation can be written as
 
 $\begin{equation}
-\left(\frac{\partial E}{\partial t} + v_j\frac{\partial{E}}{\partial{x_j}}\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H,
+\left(\frac{\partial E}{\partial t} + v_j\frac{\partial{E}}{\partial{x_j}}\right) + \frac{\partial q_{i}}{\partial x_{i}} = \rho H + \Phi_s,
 \end{equation}$
 
 where the internal energy is defined as $E = c_p \rho T$. Here $c_p$ is the specific heat capacity [J/kg/K],
@@ -14,8 +14,9 @@ $T$ is the temperature [K],
 $t$ is time [s],
 $v_j$ is the velocity [m/s] in direction $j$,
 $q_i$ is the heat flux [W/m²] in direction $i$,
-$\partial/\partial x_i$ denotes the spatial derivative in direction $i$, and
-$H$ is the internal heat production per unit mass [W/kg].
+$\partial/\partial x_i$ denotes the spatial derivative in direction $i$,
+$H$ is the internal heat production per unit mass [W/kg], and
+$\Phi_s$ is the viscous dissipation source term [W/m³].
 
 Indices $i$ and $j$ denote spatial directions. Repeated indices follow Einstein summation notation, implying summation over spatial dimensions.
 
@@ -30,10 +31,10 @@ where $k_i$ is the thermal conductivity [W/m/K] in direction $i$. The heat flux 
 Substituting Fourier’s law into the energy equation yields the **temperature conservation equation** in Eulerian form:
 
 $\begin{equation}
-\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
+\rho c_p \left(\frac{\partial T}{\partial t} + v_j\frac{\partial{T}}{\partial{x_j}}\right) = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H + \Phi_s.
 \end{equation}$
 
-This equation describes temperature changes due to diffusion (right-hand side) and advection (left-hand side).
+This equation describes temperature changes due to diffusion (right-hand side), advection (left-hand side), and internal heat sources.
 
 In `GeoModBox.jl`, these equations are solved using finite difference discretizations on structured grids. Temperature is defined at cell centers (centroids), while fluxes are evaluated at cell interfaces using a staggered-grid formulation. This conservative discretization ensures consistent heat flux calculations and numerical stability.
 
@@ -48,10 +49,10 @@ In situations where the material is stationary (for example during the thermal e
 Neglecting the advective term, the heat diffusion equation becomes
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H.
+\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x_i}\left(k_i\frac{\partial{T}}{\partial{x_i}}\right) + \rho H + \Phi_s.
 \end{equation}$
 
-`GeoModBox.jl` provides several finite difference (FD) schemes to solve the heat diffusion equation for both time-dependent and steady-state problems. The implementation supports optional radioactive heating and variable thermal parameters in both
+`GeoModBox.jl` provides several finite difference (FD) schemes to solve the heat diffusion equation for both time-dependent and steady-state problems. The implementation supports optional radioactive heating, viscous dissipation (2-D only), and variable thermal parameters in both
 
 - [1-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/1Dsolvers.jl)
 - [2-D](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl)
@@ -60,17 +61,17 @@ Available discretization methods include
 
 - Forward Euler  
 - Backward Euler  
-- Crank–Nicolson  
+- Crank-Nicolson  
 - Alternating Direction Implicit (ADI)
 
-Except for ADI, all solvers are implemented for both constant and variable thermal properties. Linear problems can be solved directly using a left-matrix division, while non-linear problems are solved iteratively using the defect correction method.
+Except for ADI, all solvers are implemented for both constant and variable thermal properties. Linear problems can be solved directly using a left-matrix division (internally called special-case solver), while non-linear problems are solved iteratively using the defect correction method (internally called general solver).
 
 Detailed descriptions of the numerical schemes are provided in the documentation of the
 
 - [1-D solvers](./DiffOneD.md)
 - [2-D solvers](./DiffTwoD.md)
 
-Currently, Dirichlet and Neumann boundary conditions are supported. Implementation details can be found in the [HeatEquation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/).
+Currently, Dirichlet and Neumann boundary conditions are supported. Implementation details can be found in the [heat equation source directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/).
 
 ## Examples
 
@@ -82,8 +83,7 @@ The following example scripts demonstrate the application of the diffusion solve
 - [2-D resolution test with Gaussian anomaly](../examples/Diffusion/GaussianDiffusion2D.md)
 - [2-D Poisson equation resolution test](../examples/Diffusion/PoissonRestest.md)
 
-Additional examples can be found in the full  
-[example directory](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/DiffusionEquation/).
+Additional examples can be found in the full [example documentation](../examples/Examples.md).
 
 ## Exercises
 
@@ -125,4 +125,4 @@ Other advection schemes are implemented in
 ## Exercises
 
 - [1-D Gaussian or block anomaly advection](../exercises/06_1D_Advection.md)
-- [2-D coupled advection–diffusion](../exercises/07_2D_Energy_Equation.md)
+- [2-D coupled advection-diffusion](../exercises/07_2D_Energy_Equation.md)

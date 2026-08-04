@@ -22,32 +22,32 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 
 | Exercise | Type | Total Runtime [s] |
 |:----------|:------|:----------------|
-| 1 | Euler Advection | 5.741 |
-| 2 | 1-D Heat Diffusion (explicit) | 1) 1.82 s |
+| 1 | [Euler Advection](./01_Euler_Advection.md) | 5.741 |
+| 2 | [1-D Heat Diffusion (explicit)](./02_1D_Heat_explicit.md) | 1) 1.82 s |
 |   |   | 2) 1.75 s  |
 |   |   | 3) 1.86 s |
-| 3 | 1-D Heat Diffusion (implicit) | 1) 1.48 s  |
+| 3 | [1-D Heat Diffusion (implicit)](./03_1D_Heat_implicit.md) | 1) 1.48 s  |
 |   |   | 2) 1.57 s  |
 |   |   | 3) 2.55 s |
-| 4 | 2-D Steady State Heat Equation | 3.69 s |
-| 5a | 2-D Time-dep. Heat Equation (Plume) | 1) Special Solver (Explicit): 19.74 s |
+| 4 | [2-D Steady State Heat Equation](./04_2D_Diffusion_Stationary.md) | 3.69 s |
+| 5a | [2-D Time-dep. Heat Equation (Plume)](./05_2D_Diffusion_TD_Plume.md) | 1) Special Solver (Explicit): 19.74 s |
 |    |   | 2) Special Solver (Implicit): 55.29 s |
 |    |   | 3) General Solver (Explicit): 24.75 s |
 |    |   | 4) General Solver (Implicit): 58.44 s |
 |    |   | 5) General Solver (CNA): 59.35 s |
-| 5b | 2-D Time-dep. Heat Equation (Sill) | 1) Special Solver (Explicit): 17.08 s |
+| 5b | [2-D Time-dep. Heat Equation (Sill)](./05_2D_Diffusion_TD_Sill.md) | 1) Special Solver (Explicit): 17.08 s |
 |    |   | 2) Special Solver (Implicit): 56.61 s |
 |    |   | 3) General Solver (Explicit): 31.24 |
 |    |   | 4) General Solver (Implicit): 60.42 s |
 |    |   | 5) General Solver (CNA): 58.9 s |
-| 6 | 1-D Advection Scheme | 1) FTCS: 4.866 |
+| 6 | [1-D Advection Scheme](./06_1D_Advection.md) | 1) FTCS: 4.866 |
 |   |   | 2) Upwind: 5.047 |
 |   |   | 3) Downwind: 4.68 |
 |   |   | 4) LAX: 5.202 |
 |   |   | 5) SLF: 5.241 |
 |   |   | 6) Semilag: 9.886 |
 |   |   | 7) Tracers: 9.566 |
-| 7 | 2-D Energy Equation | 1) Upwind+explicit: 9.11 s |
+| 7 | [2-D Energy Equation](./07_2D_Energy_Equation.md) | 1) Upwind+explicit: 9.11 s |
 |   |   | 2) Upwind+implicit: 19.04 s |
 |   |   | 3) Upwind+CNA: 16.35 s |
 |   |   | 4) Upwind+ADI: 144.68 s |
@@ -62,13 +62,13 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |   |   | 13) Tracers+CNA: 143.1 s |
 |   |   | 14) Tracers+ADI: 246.73 s |
 |   |   | 15) Tracers+dc: 150.38 s |
-| 8 | 1-D Stokes Equation | 671 ms |
-| 9 | 2-D Falling Block (steady state) | 1.22 s |
-| 10 | 2-D Falling Block (time-dep.) | 1) Upwind: 4.89 s |
+| 8 | [1-D Stokes Equation](./08_1D_Stokes.md) | 671 ms |
+| 9 | [2-D Falling Block (steady state)](./09_2D_Falling_Block.md) | 1.22 s |
+| 10 | [2-D Falling Block (time-dep.)](./10_2D_Falling_Block_td.md) | 1) Upwind: 4.89 s |
 |    |   | 2) SLF: 5.31 s |
 |    |   | 3) SL: 4.94 s |
 |    |   | 4) Tracers: 7.96 s |
-| 11¹ | Thermal Convection (dim), **Resolution: 150×50** | **Ra = 1e4** (Diff+Adv+Momentum) |
+| 11¹ | [Thermal Convection (dim)](./11_2D_Thermal_Convection.md), **Resolution: 150×50** | **Ra = 1e4** (Diff+Adv+Momentum) |
 |     |   | 1) Explicit+upwind+direct:  |
 |     |   | 2) Implicit+upwind+direct:  |
 |     |   | 3) CNA+upwind+direct:  |
@@ -97,7 +97,7 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |     |   | 4) Explicit+semilag+dc:  |
 |     |   | 5) CNA+semilag+dc:  |
 |     |   | 6) CNA+upwind+dc:  |
-| 12 | Thermal Convection (scaled), **Resolution: 150×50** | **Ra = 1e4** (Diff+Adv+Momentum) |
+| 12 | [Thermal Convection (scaled)](./12_2D_Thermal_Convection_scaled.md), **Resolution: 150×50** | **Ra = 1e4** (Diff+Adv+Momentum) |
 |    |   | 1) Explicit+upwind+direct:  |
 |    |   | 2) Implicit+upwind+direct:  |
 |    |   | 3) CNA+upwind+direct:  |
@@ -126,7 +126,7 @@ All exercises were performed on a single CPU: *AMD Ryzen 7 7735U with Radeon Gra
 |    |   | ) Explicit+semilag+dc:  |
 |    |   | ) CNA+semilag+dc:  |
 |    |   | ) CNA+upwind+dc:  |
-| 13 | Blankenbach Benchmark | **Resolution: 50×50** |
+| 13 | [Blankenbach Benchmark](./13_Blankenbach_Benchmark.md) | **Resolution: 50×50** |
 |    |   | Ra = 1e4: 91.6504 s |
 |    |   | Ra = 1e5: 91.1549 s |
 |    |   | Ra = 1e6: 321.539 s |

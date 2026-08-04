@@ -3,7 +3,7 @@
 In two spatial dimensions ($x$ and $y$), the diffusive part of the temperature evolution equation, assuming only radiogenic heat production, is given by:
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} -\frac{\partial q_y}{\partial y} + Q,
+\rho c_p \frac{\partial T}{\partial t} = -\frac{\partial q_x}{\partial x} -\frac{\partial q_y}{\partial y} + Q + \Phi_s,
 \end{equation}$
 
 where 
@@ -11,19 +11,20 @@ $\rho$ is the density [kg/m³],
 $c_p$ is the specific heat capacity [J/kg/K],
 $T$ is the temperature [K],
 $t$ is time [s],
-$q_x$ and $q_y$ are the components of the conductive heat flux vector in the $x$- and $y$-directions [W/m²], and
-$Q$ is the volumetric heat production rate [W/m³], related to the mass-specific heat production $H$ via $Q = \rho H$.
+$q_x$ and $q_y$ are the components of the conductive heat flux vector in the $x$- and $y$-directions [W/m²],
+$Q$ is the volumetric heat production rate [W/m³], related to the mass-specific heat production $H$ via $Q = \rho H$, and
+$\Phi_s$ is the viscous dissipation rate [W/m³].
 
 By applying Fourier’s law and allowing for spatially variable thermal conductivity $k_x$ and $k_y$ [W/m/K], the equation becomes
 
 $\begin{equation}
-\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k_x \frac{\partial T}{\partial x}\right) + \frac{\partial}{\partial y}\left(k_y \frac{\partial T}{\partial y}\right) + Q.
+\rho c_p \frac{\partial T}{\partial t} = \frac{\partial}{\partial x}\left(k_x \frac{\partial T}{\partial x}\right) + \frac{\partial}{\partial y}\left(k_y \frac{\partial T}{\partial y}\right) + Q + \Phi_s.
 \end{equation}$
 
 If the thermal properties are assumed constant, this simplifies to
 
 $\begin{equation}
-\frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q}{\rho_0 c_p},
+\frac{\partial T}{\partial t} = \kappa \left(\frac{\partial^2 T}{\partial x^2} + \frac{\partial^2 T}{\partial y^2}\right) + \frac{Q + \Phi_s}{\rho_0 c_p},
 \end{equation}$
   
 where 
@@ -33,7 +34,9 @@ $\kappa = k / \rho_0 / c_p$ is the thermal diffusivity [m²/s] and $\rho_0$ is a
 
 To numerically solve Equation (3), the spatial domain must be discretized and the relevant thermal properties assigned to the appropriate computational nodes.
 
-<img src="../../assets/theory/2D_Diffusion_Grid.png" width="700">
+```@raw html
+    <img src="../../assets/theory/2D_Diffusion_Grid.png" width="700">
+```
 
 **Figure 1. 2D Discretization.** *Staggered finite difference grid* for solving the 2D heat diffusion equation. Temperature values are defined at the *centroids* (red circles), while heat fluxes are computed at the points between the *vertices* (black circles; horizontal flux: blue crosses; vertical flux: green squares). *Ghost nodes* (grey circles) are used to implement *Dirichlet* and *Neumann* boundary conditions.
 
@@ -635,6 +638,8 @@ $\begin{equation}\begin{gather*}
 For implementation details, refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/HeatEquation/2Dsolvers.jl).
 
 Similar to the pure implicit scheme, there is a *special case* for solving this system of equations when the system is linear. In that case, the heat diffusion equation reduces to Equation (49) and can be solved directly via *left matrix division*. The coefficient matrices remain the same, even for the given boundary conditions. However, the right-hand side must be updated accordingly by setting $\mathbf{r}=0$ and adding the known terms to the right-hand side of the equations.
+
+## The $\theta$-Rule
 
 Within `GeoModBox.jl`, the general solution of a non-linear system using the *explicit*, *implicit*, or *Crank–Nicolson* discretization scheme, assuming constant thermal properties and using the extended temperature field (including ghost nodes), is implemented in the combined form:
 

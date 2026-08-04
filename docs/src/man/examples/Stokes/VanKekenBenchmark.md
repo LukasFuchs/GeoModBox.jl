@@ -4,9 +4,9 @@ The Van Keken et al. (1997) benchmark is a classical Rayleigh-Taylor instability
 
 In this example, the benchmark is implemented in dimensional formulation. Material properties are specified in SI units, including viscosity, density, gravitational acceleration, and thermal diffusivity. The density contrast is chosen such that the buoyancy number is
 
-```math
+$$\begin{equation}
 R_b=\frac{\Delta \rho\,g\,H^3}{\eta\,\kappa}=1,
-```
+\end{equation}$$
 
 where $H$ is the model height, $\eta$ is the reference viscosity, and $\kappa$ is the thermal diffusivity.
 
@@ -440,22 +440,26 @@ display(to)
 
 ---
 
+```@raw html
 <img src="../../../assets/examples/Stokes/VanKeKen_Benchmark_ηr_0.0_tracers_DC_arith.gif" width="700">
-
+```
 **Figure 1.** Evolution of the dimensional Van Keken benchmark. The panels show the density field, tracer distribution, viscosity, and velocity magnitude together with the velocity vectors. The initially perturbed interface evolves into the characteristic Rayleigh-Taylor instability as the denser lower material sinks beneath the lighter upper layer.
 
+```@raw html
 <img src="../../../assets/examples/Stokes/VanKekenBenchmark_TimeSeries_100_100_arith.png" width="700">
-
+```
 **Figure 2.** Evolution of the root-mean-square (RMS) velocity for the dimensional benchmark. The rapid increase in RMS velocity reflects the growth of the Rayleigh-Taylor instability before gradually approaching a quasi-steady state.
 
 ---
 
 As discussed above, GeoModBox.jl also provides a fully nondimensional implementation of the Van Keken benchmark. The governing equations, material properties, and boundary conditions are appropriately scaled, while the numerical algorithm remains unchanged. After converting the results back to physical units, both implementations produce identical solutions, demonstrating that the Stokes solver is independent of the choice of physical units.
 
+```@raw html
 <img src="../../../assets/examples/Stokes/VanKeKen_Benchmark_ηr_0.0_tracers_DC_scaled_arith.gif" width="700">
-
+```
 **Figure 3.** Evolution of the nondimensional Van Keken benchmark. Although all variables are solved in nondimensional form, the predicted interface evolution, flow pattern, and velocity field are identical to those obtained using the dimensional formulation.
 
+```@raw html
 <img src="../../../assets/examples/Stokes/VanKekenBenchmark_TimeSeries_Scaled_100_100_arith.png" width="700">
-
+```
 **Figure 4.** Root-mean-square (RMS) velocity obtained from the nondimensional benchmark. After appropriate scaling, the temporal evolution is identical to that of the dimensional implementation, confirming the consistency of the nondimensional scaling framework.

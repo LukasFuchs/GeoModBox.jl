@@ -6,9 +6,9 @@ The example builds directly upon the bottom-heated convection model and demonstr
 
 This example considers internally heated convection with an internal-heating Rayleigh number of 
 
-$$
+$$\begin{equation}
 Ra_Q \approx 1.5 \cdot 10^7.
-$$
+\end{equation}$$
 
 ---
 
@@ -603,12 +603,14 @@ display(to)
 # ======================================================================= #
 ```
 
+```@raw html
 <img src="../../../assets/examples/Convection/Internally_Heated_1.0e6_400_100_lineara.gif" width="700">
-
+```
 **Figure 1.** Evolution of internally heated thermal convection. Heat generated uniformly throughout the domain is transported toward the cold surface by convection, producing broad upwellings and narrow downwellings. The figure shows the temperature field, velocity vectors, and the horizontally averaged temperature profile during the simulation.
 
+```@raw html
 <img src="../../../assets/examples/Convection/Internally_Heated_TimeSeries1.0e6_400_100_lineara_.png" width="700">
-
+```
 **Figure 2.** Evolution of the Nusselt number and root-mean-square velocity. These diagnostic quantities illustrate the transition from the initial conductive state toward vigorous convection and the subsequent approach to a statistically steady convective regime.
 
 ---

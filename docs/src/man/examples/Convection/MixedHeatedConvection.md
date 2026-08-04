@@ -5,9 +5,10 @@ This example demonstrates two-dimensional mixed-heated thermal convection using 
 The example combines the numerical components introduced throughout the previous convection examples. The coupled Stokes and heat equations are solved using adaptive time stepping, semi-Lagrangian advection, and a Crank–Nicolson discretization of the heat equation solved with the general defect-correction framework. During the simulation, diagnostic quantities such as the Nusselt number, the root-mean-square velocity, and the horizontally averaged temperature profile are monitored to characterize the evolution of the convective system.
 
 This example combines basal and internal heating with 
-$$ 
+
+$$\begin{equation}
 Ra_b = 10^6,\qquad Ra_Q \approx 1.5 \cdot 10^7. 
-$$
+\end{equation}$$
 
 ---
 
@@ -600,13 +601,14 @@ display(to)
 # ======================================================================= #
 ```
 
-
+```@raw html
 <img src="../../../assets/examples/Convection/Mixed_Heated_1.0e6_400_100_lineara.gif" width="700">
-
+```
 **Figure 1.** Evolution of mixed-heated thermal convection for a basal and internal-heating Rayleigh number of $Ra_b = 10^6, Ra_Q \approx 1.5 \cdot 10^7$. The convective flow is driven by the combined effects of basal heating and uniform internal heat production. The animation illustrates the transition from the initial conductive temperature field to a statistically steady convective state. Each frame shows the temperature field, velocity vectors, and the horizontally averaged temperature profile.
 
+```@raw html
 <img src="../../../assets/examples/Convection/Mixed_Heated_TimeSeries1.0e6_400_100_lineara_.png" width="700">
-
+```
 **Figure 2.** Temporal evolution of the Nusselt number ($Nu$) and the root-mean-square velocity ($V_\mathrm{RMS}$). The Nusselt number measures the efficiency of convective heat transport through the upper boundary relative to pure conduction, while the RMS velocity characterizes the overall vigor of the convective circulation. Both quantities evolve from the initial conductive state toward a statistically steady mixed-heated convection regime.
 
 ---

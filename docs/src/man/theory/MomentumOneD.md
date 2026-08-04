@@ -26,7 +26,9 @@ In this 1D formulation, the horizontal pressure gradient is prescribed and acts 
 
 # Discretization
 
-<img src="../../assets/theory/Stokes_1D_Grid.png" width="700">
+```@raw html
+    <img src="../../assets/theory/Stokes_1D_Grid.png" width="700">
+```
 
 **Figure 1. Channel flow setup and finite difference grid.**  
 *Left:* Sketch of uniaxial channel flow driven by either a constant velocity at the top ($v_x$) and/or a horizontal pressure gradient $\left(\frac{\Delta P}{\Delta x} = P_1 - P_0\right)$, representing Couette, Poiseuille, or Couette-Poiseuille flow.  
@@ -256,6 +258,6 @@ For linear systems, this procedure converges in a single iteration. For non-line
 
 Implementation details can be found in the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/MomentumEquation/1Dsolvers.jl).
 
-An example of solving channel flow using the defect correction method is provided in the [examples](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/1D/ChannelFlow_1D.jl).
+An example of solving channel flow using the defect correction method is provided in the [examples](../examples/Examples.md).
 
-Solving the same problem using the direct method is part of the [exercises](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/exercises/08_1D_Stokes.ipynb).
+Solving the same problem using the direct method is part of the [exercises](../exercises/08_1D_Stokes.md).

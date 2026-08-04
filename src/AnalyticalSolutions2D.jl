@@ -73,8 +73,8 @@ Dani_Solution_vec!(
 ```
 # References
 
-Schmid, D. W. (2002). Finite strain of viscous inclusions in
-power-law fluids. Journal of Geophysical Research, 107(B11).
+Schmid, D. W. (2002). Finite and infinite heterogeneities 
+under pure and simple shear (Doctoral dissertation, ETH Zurich).
 
 The implementation is based on the original MATLAB routine
 CYL_P_MATRIX.m by Dani Schmid and the vectorized Julia version by

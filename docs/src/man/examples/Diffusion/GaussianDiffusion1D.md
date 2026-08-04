@@ -152,8 +152,9 @@ end
 # ----------------------------------------------------------------------- #
 ```
 
+```@raw html
 <img src="../../../assets/examples/Diffusion/Diff_1D_iniT.svg" width="700">
-
+```
 **Figure 1. Initial temperature distribution.**
 
 With all parameters defined, the 1-D temperature conservation equation is solved iteratively for each time step using a `for` loop. Within the time loop, the equation is solved seperately using each of the above mentioned numerical discretization schemes. 
@@ -217,8 +218,9 @@ end
 end
 ```
 
+```@raw html
 <img src="../../../assets/examples/Diffusion/Diff_1D_comparison.gif" width="700">
-
+```
 **Figure 2. Temperature evolution and corresponding error for each numerical scheme.** exp - Forward Euler, imp - Backward Euler, cna - Crank-Nicolson. 
 
 Finally, the plots are compiled into an animation, and individual PNG files corresponding to specific time steps are deleted. 

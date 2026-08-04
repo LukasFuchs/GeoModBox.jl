@@ -73,7 +73,7 @@ makedocs(
                 "Falling Block" => "man/examples/Stokes/FallingBlockDC.md", 
                 "Rayleigh Taylor Instability (RTI)" => "man/examples/Stokes/RTI.md", 
                 "RTI - Growth Rate" => "man/examples/Stokes/RTI_growth_rate.md", 
-                "RTI (Van Keken et al., 1997)" => "man/examples/Stokes/ViscousInclusion.md",
+                "RTI (Van Keken et al., 1997)" => "man/examples/Stokes/VanKekenBenchmark.md",
                 "Viscous Inclusion" => "man/examples/Stokes/ViscousInclusion.md",
             ],
             "Mixed Thermal Convection" => Any[
