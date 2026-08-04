@@ -92,8 +92,6 @@ $\begin{equation}\begin{split}
 \textrm{backward difference} &: \quad \frac{\partial{u}}{\partial{x}}\vert_{i,j} = \frac{u(x)-u(x-\Delta{x})}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) = \frac{u_{i,j}-u_{i-1,j}}{\Delta{x}} + \cal{O}\left(\Delta{x}\right) \\
 \end{split}\end{equation}$
 
-<!-- For further details, refer to the [lecture notes](https://lukasfuchs.wordpress.com/numerical-methods-in-geophysics/) or see the reference below. -->
-
 ## Staggered Finite Difference
 
 To solve partial differential equations within a given domain using the finite difference method, it is first necessary to generate a *numerical grid* on which finite differences can be computed. The most straightforward approach is to discretize the domain using a *regular*, *uniform* grid, where the spacing between grid points is constant and all variables are defined at the same locations. Such grids are commonly used to solve equations like the Poisson equation, the heat equation, or advective transport equations.
@@ -104,7 +102,9 @@ Staggered grids also offer advantages in implementing boundary conditions. For e
 
 For these reasons, `GeoModBox.jl` adopts a staggered grid for solving the temperature equation. The complete grid structure used for the governing equations in `GeoModBox.jl` is illustrated below:
 
-<img src="../../assets/theory/Grid_total.png" width="700">
+```@raw html
+    <img src="../../assets/theory/Grid_total.png" width="700">
+```
 
 **Figure 1. Staggered Finite Difference Grid used in ´GeoModBox.jl`.**
 
