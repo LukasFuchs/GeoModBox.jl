@@ -1,13 +1,15 @@
-using Plots
-using ExtendableSparse
+using Plots, ExtendableSparse
 using GeoModBox.InitialCondition, GeoModBox.MomentumEquation.TwoD
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function FallingBlockConstEta_Dc()
+    to          =   TimerOutput()
     # =================================================================== #
     # Script to solve the instantaneous solution of the falling block     #
     # problem using the defect correction solution method.                #
     # =================================================================== #
+    @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
     # Density --- 
     #   1) block
@@ -26,8 +28,8 @@ function FallingBlockConstEta_Dc()
         ymin    =   -500.0e3,   # [ m ]
         ymax    =   0.0,
     )
-    # -------------------------------------------------------------------- #
-    # Grid =============================================================== #
+    # ------------------------------------------------------------------- #
+    # Grid ============================================================== #
     NC      =   (
         x   =   50, 
         y   =   50,
@@ -47,7 +49,7 @@ function FallingBlockConstEta_Dc()
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -64,8 +66,8 @@ function FallingBlockConstEta_Dc()
         vy2d    =   0*x.ce .+ y.v',
     )
     y   =   merge(y,y1)
-    # -------------------------------------------------------------------- #
-    # Physics ============================================================ #
+    # ------------------------------------------------------------------- #
+    # Physics =========================================================== #
     g       =   9.81            #   Gravitational acceleration
 
     η₀      =   1.0e21          #   Reference Viscosity
@@ -81,8 +83,8 @@ function FallingBlockConstEta_Dc()
         vx      =   zeros(Float64,NV.x,NC.y+2),
         vy      =   zeros(Float64,NC.x+2,NV.y),
         Pt      =   zeros(Float64,NC...),
-        p       =   zeros(Int64,NC...),
-        p_ex    =   zeros(Int64,NC.x+2,NC.y+2),
+        p       =   zeros(Float64,NC...),
+        p_ex    =   zeros(Float64,NC.x+2,NC.y+2),
         ρ       =   zeros(Float64,NC...),
         vxc     =   zeros(Float64,NC...),
         vyc     =   zeros(Float64,NC...),
@@ -100,17 +102,12 @@ function FallingBlockConstEta_Dc()
         yy      =   zeros(Float64,NC...), 
         xy      =   zeros(Float64,NV...),
     )
-    # Residuals ---
-    Fm     =    (
-        x       =   zeros(Float64,NV.x, NC.y), 
-        y       =   zeros(Float64,NC.x, NV.y)
-    )
-    FPt         =   zeros(Float64,NC...)
     # ------------------------------------------------------------------- #
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                    vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     # ------------------------------------------------------------------- #
     # Initial Condition ================================================= #
@@ -120,41 +117,67 @@ function FallingBlockConstEta_Dc()
     end
     # ------------------------------------------------------------------- #
     # System of Equations =============================================== #
-    # Iterations
-    niter   =   10
-    ϵ       =   1e-12
+    # Iterations --- 
+    niter      =   50
+    atol       =   1e-8        #   Absolute tolerance
+    rtol       =   1e-5        #   # Relative residual tolerance; RMrel = RM/R0
+    RM         =   0.0         #   Initialize absolute residual    
+    RMrel      =   0.0         #   Initialize relative residual 
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
                 NV.x*NC.y + NC.x*NV.y + NC.x*NC.y]  # Pt
 
-    Num     = (
+    Num    =    (
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-                )
-    F       =   zeros(maximum(Num.Pt))
+    )
+    ndof    =   maximum(Num.Pt)        
+    K       =   ExtendableSparseMatrix(ndof,ndof)      
     δx      =   zeros(maximum(Num.Pt))
+    F       =   zeros(maximum(Num.Pt))
+    # Residuals ---
+    Fm     =    (
+        x       =   zeros(Float64,NV.x, NC.y), 
+        y       =   zeros(Float64,NC.x, NV.y)
+    )
+    FPt     =   zeros(Float64,NC...)  
+    R0      =   0
     # ------------------------------------------------------------------- #
+    end
+    @timeit to "Solution Iteration" begin
+    @timeit to "Assembly" begin
+    K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
+    Kfac    =   lu(K.cscmatrix)
+    end
+    # Initial Residual -------------------------------------------------- #
+    D.vx    .=  0.0
+    D.vy    .=  0.0
+    D.Pt    .=  0.0    
     for iter = 1:niter
-        # Initial Residual -------------------------------------------------- #
+        @timeit to "Residual" begin
         Residuals2Dc!(D,VBC,ε,τ,divV,Δ,η₀,g,Fm,FPt)
         F[Num.Vx]   =   Fm.x[:]
         F[Num.Vy]   =   Fm.y[:]
         F[Num.Pt]   =   FPt[:]
-        @printf("||R|| = %1.4e\n", norm(F)/length(F))
-        norm(F)/length(F) < ϵ ? break : nothing
-        # ------------------------------------------------------------------- #
-        # Assemble Coefficients ============================================= #
-        K       =   Assemblyc(NC, NV, Δ, η₀, VBC, Num)
-        # ------------------------------------------------------------------- #
-        # Solution of the linear system ===================================== #
-        δx      =   - K \ F
-        # ------------------------------------------------------------------- #
-        # Update Unknown Variables ========================================== #
+        RM          =   norm(F)/length(F)
+        if iter == 1
+            R0 = RM
+        end
+        RMrel       =   RM/R0
+        @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+        (RM < atol || RM/R0 < rtol) && break
+        end
+        @timeit to "Solution" begin
+        δx      .=   - (Kfac \ F)
+        end
+        # --------------------------------------------------------------- #
+        # Update Unknown Variables ====================================== #
         D.vx[:,2:end-1]     .+=  δx[Num.Vx]
         D.vy[2:end-1,:]     .+=  δx[Num.Vy]
         D.Pt                .+=  δx[Num.Pt]
+    end
     end
     # ------------------------------------------------------------------- #
     # Get the velocity on the centroids ---
@@ -166,9 +189,6 @@ function FallingBlockConstEta_Dc()
     end
     @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
     # ---
-    @show(minimum(D.vc))
-    @show(maximum(D.vc))
-    # ---
     p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
             xlabel="x[km]",ylabel="y[km]",colorbar=false,
             title="Density",
@@ -177,7 +197,7 @@ function FallingBlockConstEta_Dc()
             layout=(2,2),subplot=1)
     quiver!(p,x.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
             y.c2d[1:Pl.qinc:end,1:Pl.qinc:end]./1e3,
-            quiver=(D.vx[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
+            quiver=(D.vxc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc,
             D.vyc[1:Pl.qinc:end,1:Pl.qinc:end].*Pl.qsc), 
             la=0.5,
             color="white",layout=(2,2),subplot=1)
@@ -201,7 +221,8 @@ function FallingBlockConstEta_Dc()
             layout=(2,2),subplot=2)
     display(p)
 
-    savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_Instanteneous_DC.png"))
+    savefig(p,string("./examples/StokesEquation/2D/Results/FallingBlockConstEta_instantaneous_DC.png"))
+    display(to)
 end
 
 FallingBlockConstEta_Dc()

@@ -5,8 +5,11 @@ using GeoModBox.AdvectionEquation.TwoD
 using GeoModBox.Tracers.TwoD
 using Base.Threads
 using Printf, LinearAlgebra
+using TimerOutputs
 
 function FallingBlockVarEta_Dc()
+    to          =   TimerOutput()
+    @timeit to "Ini" begin
     # Define Initial Condition ========================================== #
     #   1) block
     Ini         =   (p=:block,) 
@@ -14,7 +17,7 @@ function FallingBlockVarEta_Dc()
     # Plot Settings ===================================================== #
     Pl  =   (
         qinc    =   4,
-        mainc   =   2,
+        mainc   =   1,
         qsc     =   100*(60*60*24*365.25)*5e1
     )
     # ------------------------------------------------------------------- #
@@ -46,7 +49,7 @@ function FallingBlockVarEta_Dc()
     )
     y       =   (
         c   =   LinRange(M.ymin+Δ.y/2,M.ymax-Δ.y/2,NC.y),
-        ce  =   LinRange(M.ymin - Δ.x/2.0, M.ymax + Δ.x/2.0, NC.y+2),
+        ce  =   LinRange(M.ymin - Δ.y/2.0, M.ymax + Δ.y/2.0, NC.y+2),
         v   =   LinRange(M.ymin,M.ymax,NV.y),
     )
     x1      =   (
@@ -91,13 +94,17 @@ function FallingBlockVarEta_Dc()
         vy      =   zeros(Float64,NC.x+2,NV.y),
         Pt      =   zeros(Float64,NC...),
         p       =   zeros(Float64,NC...),
+        p_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         ρ       =   zeros(Float64,NC...),
+        ρ_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         vxc     =   zeros(Float64,NC...),
         vyc     =   zeros(Float64,NC...),
         vc      =   zeros(Float64,NC...),
         wt      =   zeros(Float64,(NC.x,NC.y)),
+        wte     =   zeros(Float64,(NC.x+2,NC.y+2)),
         wtv     =   zeros(Float64,(NV.x,NV.y)),
         ηc      =   zeros(Float64,NC...),
+        η_ex    =   zeros(Float64,(NC.x+2,NC.y+2)),
         ηv      =   zeros(Float64,NV...),
     )
     # Needed for the defect correction solution ---
@@ -116,7 +123,8 @@ function FallingBlockVarEta_Dc()
     # Boundary Conditions =============================================== #
     VBC     =   (
         type    =   (E=:freeslip,W=:freeslip,S=:freeslip,N=:freeslip),
-        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x)),
+        val     =   (E=zeros(NV.y),W=zeros(NV.y),S=zeros(NV.x),N=zeros(NV.x),
+                    vxE=zeros(NC.y),vxW=zeros(NC.y),vyS=zeros(NC.x),vyN=zeros(NC.x)),
     )
     # ------------------------------------------------------------------- #
     # Time ============================================================== #
@@ -130,42 +138,45 @@ function FallingBlockVarEta_Dc()
     nt          =   9999
     # ------------------------------------------------------------------- #
     # Tracer Advection ================================================== #
-    nmx,nmy     =   3,3
+    @timeit to "Tracer Ini" begin
+    nmx,nmy     =   5,5
     noise       =   0
     nmark       =   nmx*nmy*NC.x*NC.y
     Aparam      =   :phase
     MPC         =   (
-        c       =   zeros(Float64,(NC.x,NC.y)),
-        v       =   zeros(Float64,(NV.x,NV.y)),
-        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+            c       =   zeros(Float64,(NC.x,NC.y)),
+            v       =   zeros(Float64,(NV.x,NV.y)),
+            th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+            thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
     )
-    MPC1        = (
-        PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-        wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+    MAVG        = (
+            PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+            PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+            wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+            wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
     )
-    MPC     =   merge(MPC,MPC1)
     Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
     # RK4 weights ---
     rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
     rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
     # Count marker per cell ---
-    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+    CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
     # Interpolate from markers to cell ---
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-    Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-    # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-    Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-    # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-    #                         D.ηv[2:end-0,1:end-1] + 
-    #                         D.ηv[1:end-1,2:end-0] + 
-    #                         D.ηv[2:end-0,2:end-0])
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+    D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+    D.p     .=  D.p_ex[2:end-1,2:end-1]
+    Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+    D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+    Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+    end
     # System of Equations =============================================== #
     # Iterations --- 
-    niter       =   50
-    ϵ           =   1e-8
+    niter      =   50
+    atol       =   1e-8        #   Absolute tolerance
+    rtol       =   1e-5        #   # Relative convergence tolerance (RM/R0)
+    RM         =   0.0         #   Initialize absolute residual    
+    RMrel      =   0.0         #   Initialize relative residual 
     # Numbering, without ghost nodes! ---
     off    = [  NV.x*NC.y,                          # vx
                 NV.x*NC.y + NC.x*NV.y,              # vy
@@ -175,7 +186,9 @@ function FallingBlockVarEta_Dc()
         Vx  =   reshape(1:NV.x*NC.y, NV.x, NC.y), 
         Vy  =   reshape(off[1]+1:off[1]+NC.x*NV.y, NC.x, NV.y), 
         Pt  =   reshape(off[2]+1:off[2]+NC.x*NC.y,NC...),
-                )
+    )
+    ndof    =   maximum(Num.Pt)        
+    K       =   ExtendableSparseMatrix(ndof,ndof)      
     δx      =   zeros(maximum(Num.Pt))
     F       =   zeros(maximum(Num.Pt))
     # Residuals ---
@@ -185,8 +198,11 @@ function FallingBlockVarEta_Dc()
     )
     FPt     =   zeros(Float64,NC...)      
     # ------------------------------------------------------------------- #
+    end
     # Time Loop ========================================================= #
+    @timeit to "Time Loop" begin
     for it = 1:nt
+        R0      =   0.0
         # Update Time ---
         T.time[1]   =   T.time[2] 
         @printf("Time step: #%04d, Time [Myr]: %04e\n ",it,
@@ -196,23 +212,37 @@ function FallingBlockVarEta_Dc()
         D.vx    .=  0.0
         D.vy    .=  0.0
         D.Pt    .=  0.0
-        for iter = 1:niter
-            Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
-            F[Num.Vx]   =   Fm.x[:]
-            F[Num.Vy]   =   Fm.y[:]
-            F[Num.Pt]   =   FPt[:]
-            @printf("||R|| = %1.4e\n", norm(F)/length(F))
-            norm(F)/length(F) < ϵ ? break : nothing
-            # Assemble Coefficients ===================================== #
-            K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
-            # ----------------------------------------------------------- #
-            # Solution of the linear system ============================= #
-            δx      =   - K \ F
-            # ----------------------------------------------------------- #
-            # Update Unknown Variables ================================== #
-            D.vx[:,2:end-1]     .+=  δx[Num.Vx]
-            D.vy[2:end-1,:]     .+=  δx[Num.Vy]
-            D.Pt                .+=  δx[Num.Pt]
+        @timeit to "Solution Iteration" begin
+            @timeit to "Assembly" begin
+                K       =   Assembly(NC, NV, Δ, D.ηc, D.ηv, VBC, Num)
+                Kfac    =   lu(K.cscmatrix)
+            end
+            for iter = 1:niter
+                @timeit to "Residual" begin
+                    Residuals2D!(D,VBC,ε,τ,divV,Δ,D.ηc,D.ηv,g,Fm,FPt)
+                    F[Num.Vx]   .=   Fm.x
+                    F[Num.Vy]   .=   Fm.y
+                    F[Num.Pt]   .=   FPt
+                    RM          =   norm(F)/length(F)
+                    if iter == 1
+                        R0 = max(RM, eps())
+                    end
+                    RMrel       =   RM/R0
+                    # if verbose_step
+                    @printf("   MCE %2d: ||R|| = %1.4e, ||R||/||R₀|| = %1.4e\n",iter,RM,RMrel)
+                    # end
+                    (RM < atol || RM/R0 < rtol) && break
+                end
+                # Solution of the linear system ============================= #
+                @timeit to "Solution" begin
+                    δx      .=   - (Kfac \ F)
+                end
+                # ----------------------------------------------------------- #
+                # Update Unknown Variables ================================== #
+                D.vx[:,2:end-1]     .+=  δx[Num.Vx]
+                D.vy[2:end-1,:]     .+=  δx[Num.Vy]
+                D.Pt                .+=  δx[Num.Pt]
+            end
         end
         # --------------------------------------------------------------- #
         # Get the velocity on the centroids ---
@@ -224,9 +254,6 @@ function FallingBlockVarEta_Dc()
         end
         @. D.vc        = sqrt(D.vxc^2 + D.vyc^2)
         # ---
-        @show(minimum(D.vc))
-        @show(maximum(D.vc))
-        # ---
         if T.time[2] >= T.tmax[1]
             it = nt
         end
@@ -235,7 +262,8 @@ function FallingBlockVarEta_Dc()
             p = heatmap(x.c./1e3,y.c./1e3,D.ρ',color=:inferno,
                         xlabel="x[km]",ylabel="y[km]",colorbar=false,
                         title="ρ",
-                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             ylims=(M.ymin/1e3, M.ymax/1e3),
+                        aspect_ratio=:equal,xlims=(M.xmin/1e3, M.xmax/1e3),                             
+                        ylims=(M.ymin/1e3, M.ymax/1e3),
                         layout=(2,2),subplot=1)
             scatter!(p,Ma.x[1:Pl.mainc:end]./1e3,Ma.y[1:Pl.mainc:end]./1e3,
                         ms=1,ma=0.5,mc=Ma.phase[1:Pl.mainc:end],markerstrokewidth=0.0,
@@ -270,7 +298,7 @@ function FallingBlockVarEta_Dc()
         if T.time[2] >= T.tmax[1]
             break
         end
-         # Calculate Time Stepping ---
+        # Calculate Time Stepping ---
         T.Δ[1]      =   T.Δfac * minimum((Δ.x,Δ.y)) / 
                             (sqrt(maximum(abs.(D.vx))^2 + maximum(abs.(D.vy))^2))
         @printf("\n")
@@ -281,26 +309,31 @@ function FallingBlockVarEta_Dc()
             T.time[2]   =   T.time[1] + T.Δ[1]
         end
         # Advection ===
+        @timeit to "Tracer Advection" begin
         # Advect tracers ---
         @printf("Running on %d thread(s)\n", nthreads())  
-        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
+        AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+        CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+        @timeit to "Tracer Interpolation" begin
         # Interpolate phase from tracers to grid ---
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-        Markers2Cells(Ma,nmark,MPC.PG_th,D.ηc,MPC.wt_th,D.wt,x,y,Δ,Aparam,η)
-        # Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-        Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-        # @. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-        #                     D.ηv[2:end-0,1:end-1] + 
-        #                     D.ηv[1:end-1,2:end-0] + 
-        #                     D.ηv[2:end-0,2:end-0])
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+        D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+        D.p     .=  D.p_ex[2:end-1,2:end-1]
+        Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+        D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+        Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
+        end
+        end
     end # End Time Loop
+    end
     # Save Animation ---
     if save_fig == 1
         # Write the frames to a GIF file
         Plots.gif(anim, string( path, filename, ".gif" ), fps = 15)
         foreach(rm, filter(startswith(string(path,"00")), readdir(path,join=true)))
     end
+    display(to)
 end
 
 FallingBlockVarEta_Dc()

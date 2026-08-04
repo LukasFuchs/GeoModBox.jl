@@ -1,4 +1,4 @@
-# Initial Conditions
+# Specifications
 
 `GeoModBox.jl` includes several [routines](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/InitialCondition/2Dini.jl) or [structures](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Structures.jl) to define certain parameters or initialize specific anomalies. The initial conditions can be specified for properties defined on their corresponding grid (i.e., temperature, velocity, or phase) or for tracers. 
 
@@ -23,17 +23,17 @@ The input parameters are:
 - NC - Structure or tuple containing the centroids parameter 
 - D - Structure or tuple containing the field arrays
 - x - Structure or tuple containing the x-coordinates
-- y - tructure or tuple containing the y-coordinates
+- y - Structure or tuple containing the y-coordinates
 
 Certain default values can be modified as well: 
 
-- Tb - Scalar value for the background temperature
-- Ta - Scalar value for the maximum (anomaly) temperature
+- Tb - Scalar value for the background (or top) temperature
+- Ta - Scalar value for the maximum (anomaly or bottom) temperature
 - σ - Width of the Gaussian temperature anomaly
 
 The temperature is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
-The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/MixedHeatedConvection/BottomHeated.jl): 
+The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/ThermalConvection/BottomHeated.jl): 
 
 ```Julia 
 IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
@@ -42,7 +42,7 @@ IniTemperature!(Ini.T,M,NC,D,x,y;Tb=P.Tbot,Ta=P.Ttop)
 ## Initial Velocity
 
 ```julia
-IniVelocity!(type,D,VBC,NC,NV,Δ,M,x,y;ε=1e-15)
+IniVelocity!(type,D,VBC,NV,Δ,M,x,y;ε=1e-15)
 ```
 
 The following velocity configurations are currently supported: 
@@ -51,13 +51,13 @@ The following velocity configurations are currently supported:
 2. A shear cell (`ShearCell`)
 3. Simple Shear (`SimpleShear`) 
 4. Pure Shear (`PureShear`)
+5. Pure Shear for the shear band experiment (`ShearBandPS`)
 
 The input parameters are: 
 
 - type - Parameter defining the type (see above)
 - D - Structure or tuple containing the field arrays
 - VBC - Structure or tuple containing the velocity boundary conditions
-- NC - Structure or tuple containing the centroids parameter 
 - NV - Structure or tuple containing the vertices parameter 
 - Δ - Structure or tuple containing the grid resolution
 - M - Structure or tuple containing the geometry
@@ -77,7 +77,7 @@ IniVelocity!(Ini.V,D,VBC,NC,NV,Δ,M,x,y)
 ## Initial Phase
 
 ```julia
-IniPhase!(type,D,M,x,y,NC;phase=0)
+IniPhase!(type,D,M,x,y,NC;phase=[0 1])
 ```
 
 Currently, only one initial phase configuration is available: 
@@ -99,7 +99,7 @@ Certain default values can be modified as well:
 
 The phase is initialized on the extended centroid grid. The corresponding field without *ghost nodes* is updated accordingly.
 
-The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark.jl): 
+The function is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockBenchmark_DC.jl): 
 
 ```Julia
 IniPhase!(Ini.p,D,M,x,y,NC;phase)
@@ -113,64 +113,69 @@ for i in eachindex(phase)
 end
 ```
 
-# Tracer Calculations
+# Tracer Method
 
-Because tracer advection can be performed in parallel, additional parameters must be defined. However, `GeoModBox.jl` provides functionality to initialize tracer positions and rectangular phase anomalies, if needed. Additional initial configuration methods are encouraged and can be integrated. 
+Because tracer advection can be performed in parallel, additional parameters must be defined. `GeoModBox.jl` provides functionality to initialize certain tracer positions. Additional initial configuration methods are encouraged and can be integrated. The properties can either be interpolated from the centroids to the tracers or initialized first on the tracers followed by an interpolation on the grid. 
 
 The following steps are required to use tracers: 
 
 **1. Tracer initialization**
 
-To initialize the tracers, one needs to define the number per cell, wanted noise, and what property should be advected. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`. 
+To initialize the tracers, one needs to define what property should be advected, the number of markers per cell, the wanted noise, the initial shape, and the phase ID. The tracer properties can be interpolated to the centroids or vertices using a bilinear interpoltion scheme. For the centroids, the extended centroid field must be used. The remaining parameters are the general `tuples` or `structures` used in `GeoModBox.jl`.
 
 Following the definition of the required parameters for the tracer advection, the initial tracer position can be defined via the function 
 
 ```julia
-IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15)
+ IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,ini,phase;λ=1.0e3,δA=5e2/15,ellA=100.0,ellB=100.0,α=0.0)
 ``` 
 
 The function initializes the position, phase, and memory of the tracers. As initial tracer phase distribution one can choose: 
-- `ini=:block` - a rectangular block
-- `ini=:RTI` - a cosine perturbation with wavelength λ and amplitude δA 
+-   `ini=:block`        : a rectangular block
+-   `ini=:RTI`          : a cosine perturbation with wavelength λ and amplitude δA 
+    `ini:=Inclusion`    : a viscous circular or elliptical inclusion
 
 The input parameters are: 
 
-- Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
-- nmx - number of horizontal tracers per cell
-- nmy - number of vertical tracers per cell
-- Δ - Structure or tuple containing the grid resolution
-- M - Structure or tuple containing the geometry
-- NC - Structure or tuple containing centroids parameter
-- noise - add noise; 1 - yes, 0 - no
-- ini - Initial phase distribution (`block`)
-- phase - Vector with phase IDs, (e.g. [0,1])
-- λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
-- δA - Amplitude [m] of the perturbation
+    - Aparam - defines if temperature (`thermal`) or phase (`phase`) is advected
+    - nmx - number of horizontal tracers per cell
+    - nmy - number of vertical tracers per cell
+    - Δ - Structure or tuple containing the grid resolution
+    - M - Structure or tuple containing the geometry
+    - NC - Structure or tuple containing centroids parameter
+    - noise - add noise; 1 - yes, 0 - no
+    - ini - Initial phase distribution (`block`)
+    - phase - Vector with phase IDs, (e.g. [0,1])
+
+Certain default values can be modified as well: 
+
+    - λ - Wavelength [m] for a cosine perturbation, e.g. for the RTI
+    - δA - Amplitude [m] of the perturbation
+    - ellA - Major half axis [m] of the elliptical inclusion
+    - ellB - Minor half axis [m] of the elliptical inclusion
+    - α - Rotation angle [°] of the elliptical inclusion  
+
+The output is a tuple including the x-, and y-coordinates of the tracers and the phase ID as one dimensional arrays. If temperature is advected, temperature is also stored for each marker. 
 
 To advect the temperature, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
 ```julia
 # Tracer Initialization ---
-nmx,nmy     =   3,3         # tracer per cell in x and y direction
-noise       =   1           # add noise to the initial position
-nmark       =   nmx*nmy*NC.x*NC.y   # total number of tracers
-Aparam      =   :thermal    # Property to be advected
-# Tuple required for the tracer count 
+nmx,nmy     =   5,5
+noise       =   1
+nmark       =   nmx*nmy*NC.x*NC.y
+Aparam      =   :thermal
 MPC         =   (
-    c       =   zeros(Float64,(NC.x,NC.y)),             # per centroid
-    v       =   zeros(Float64,(NV.x,NV.y)),             # per vertices
-    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),  # per thread
-    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),  # per thread
+    c       =   zeros(Float64,(NC.x,NC.y)),
+    v       =   zeros(Float64,(NV.x,NV.y)),
+    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
 )
-# Tuple for the tracer count and the weighting
-MPC1        = (
-    PG_th   =   [similar(D.T) for _ = 1:nthreads()],        # per thread
-    PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],      # per thread
-    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],       # per thread
-    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],      # per thread
+MAVG        = (
+    PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+    PV_th   =   [similar(D.wtv) for _ = 1:nthreads()],   # per thread
+    wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-MPC     =   merge(MPC,MPC1)
-# Function to initialize tracer distribution
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,0,0)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
@@ -179,53 +184,57 @@ rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
 @threads for k = 1:nmark
     Ma.T[k] =   FromCtoM(D.T_ex, k, Ma, x, y, Δ, NC)
 end
-# Count tracer per cell ---
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
+ΔT_grid     =   zeros(Float64,(NC.x+2,NC.y+2))
+# Count marker per cell ---
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
 ```
 
 To advect the phase, the initialization is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl): 
 
 ```julia 
 # Tracer Advection ================================================== #
-nmx,nmy     =   3,3
+nmx,nmy     =   5,5
 noise       =   0
 nmark       =   nmx*nmy*NC.x*NC.y
 Aparam      =   :phase
 MPC         =   (
-    c       =   zeros(Float64,(NC.x,NC.y)),
-    v       =   zeros(Float64,(NV.x,NV.y)),
-    th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
-    thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
+        c       =   zeros(Float64,(NC.x,NC.y)),
+        v       =   zeros(Float64,(NV.x,NV.y)),
+        th      =   zeros(Float64,(nthreads(),NC.x,NC.y)),
+        thv     =   zeros(Float64,(nthreads(),NV.x,NV.y)),
 )
-MPC1        = (
-    PG_th   =   [similar(D.ρ) for _ = 1:nthreads()],    # per thread
-    PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
-    wt_th   =   [similar(D.wt) for _ = 1:nthreads()],   # per thread
-    wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
+MAVG        = (
+        PC_th   =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        PV_th   =   [similar(D.ηv) for _ = 1:nthreads()],   # per thread
+        wte_th  =   [similar(D.wte) for _ = 1:nthreads()],  # per thread
+        wtv_th  =   [similar(D.wtv) for _ = 1:nthreads()],  # per thread
 )
-MPC     =   merge(MPC,MPC1)
 Ma      =   IniTracer2D(Aparam,nmx,nmy,Δ,M,NC,noise,Ini.p,phase)
 # RK4 weights ---
 rkw     =   1.0/6.0*[1.0 2.0 2.0 1.0]   # for averaging
 rkv     =   1.0/2.0*[1.0 1.0 2.0 2.0]   # for time stepping
-# Count tracer per cell ---
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,1)
-# Interpolate from tracers to cell ---
-Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-@. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                        D.ηv[2:end-0,1:end-1] + 
-                        D.ηv[1:end-1,2:end-0] + 
-                        D.ηv[2:end-0,2:end-0])
+# Count marker per cell ---
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+# Interpolate from markers to cell ---
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+D.ρ     .=  D.ρ_ex[2:end-1,2:end-1]  
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+D.p     .=  D.p_ex[2:end-1,2:end-1]
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+D.ηc    .=  D.η_ex[2:end-1,2:end-1]
+Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 ```
+
+To interpolate a property, like the temperature, from the centroids to the tracers one can use the function `FromCtoM()`. 
+
+To interpolate a property from the tracers back to the centroids or vertices, like the viscosity, one can use the functions `Markers2Cells()` or `Markers2Vertices()`. Per default, an arithmetic averaging scheme is used to inerpolate the property, however, geometric and harmonic means are also available. For more information regarding the functions, please see the help function. 
 
 **2. Tracer advection** 
 
 The tracers are advected using Runge-Kutta 4th order. This is conducted using the function
 
 ```julia
-AdvectTracer2D(Ma,nmark,D,x,y,dt,Δ,NC,rkw,rkv,style)
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
 ```
 
 The input parameters are: 
@@ -244,19 +253,21 @@ The input parameters are:
 
 For more details please refer to the [source code](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/src/Tracers/2Dsolvers.jl).
 
->**Note:** Currently, temperature is not intended to be advected via tracers, as this would require the update of the tracer temperature via incremental changes rather than absolute value. Within the [2-D advection example](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl) temperature advection is only used assuming non-diffusive process. Thus, no update of the tracer temperature is required! 
-
 The advection of temperature and the update of the temperature field on the centroids is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/AdvectionEquation/2D_Advection.jl): 
 
 ```julia 
 # Advect tracers ---
-AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-# CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,i)
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,i)
-     
-# Interpolate temperature from tracers to grid ---
-Markers2Cells(Ma,nmark,MPC.PG_th,D.T,MPC.wt_th,D.wt,x,y,Δ,Aparam,0)           
-D.T_ex[2:end-1,2:end-1]     .= D.T
+@. ΔT_grid     =   D.T_ex - D.Told_ex
+@threads for k = 1:nmark
+    local ΔTm       =   FromCtoM(ΔT_grid, k, Ma, x, y, Δ, NC)
+    Ma.T[k]     += ΔTm
+end
+# Advect markers ---
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+# Interpolate temperature from markers to grid ---
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.T_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,0)           
+D.T     .=  D.T_ex[2:end-1,2:end-1]
 ```
 
 The advection of the phase and the update of the corresponding grid parameters is called, for example, like [here](https://github.com/GeoSci-FFM/GeoModBox.jl/blob/main/examples/StokesEquation/2D/FallingBlockVarEta_DC.jl): 
@@ -265,17 +276,17 @@ The advection of the phase and the update of the corresponding grid parameters i
 # Advection ===
 # Advect tracers ---
 @printf("Running on %d thread(s)\n", nthreads())  
-AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv,1)
-CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV,it)
-
-# Update grid parameters from tracers distributions ---
-Markers2Cells(Ma,nmark,MPC.PG_th,D.ρ,MPC.wt_th,D.wt,x,y,Δ,Aparam,ρ)
-Markers2Cells(Ma,nmark,MPC.PG_th,D.p,MPC.wt_th,D.wt,x,y,Δ,Aparam,phase)
-Markers2Vertices(Ma,nmark,MPC.PV_th,D.ηv,MPC.wtv_th,D.wtv,x,y,Δ,Aparam,η)
-@. D.ηc     =   0.25 * (D.ηv[1:end-1,1:end-1] + 
-                    D.ηv[2:end-0,1:end-1] + 
-                    D.ηv[1:end-1,2:end-0] + 
-                    D.ηv[2:end-0,2:end-0])
+AdvectTracer2D(Ma,nmark,D,x,y,T.Δ[1],Δ,NC,rkw,rkv)
+CountMPC(Ma,nmark,MPC,M,x,y,Δ,NC,NV)
+@timeit to "Tracer Interpolation" begin
+# Interpolate phase from tracers to grid ---
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.ρ_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,ρ)
+D.ρ     .=   D.ρ_ex[2:end-1,2:end-1]  
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.p_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,phase)
+D.p     .=  D.p_ex[2:end-1,2:end-1]
+Markers2Cells(Ma,nmark,MAVG.PC_th,D.η_ex,MAVG.wte_th,D.wte,x,y,Δ,Aparam,η)
+D.ηc    .=   D.η_ex[2:end-1,2:end-1]
+Markers2Vertices(Ma,nmark,MAVG.PV_th,D.ηv,MAVG.wtv_th,D.wtv,x,y,Δ,Aparam,η)
 ```
 
 >**Note:** The tracer distribution and interpolation of tracer properties to the centroids or vertices is a very helpful feature to initialize different, more complex model setups. This will be part of future implementations. 
@@ -330,6 +341,7 @@ P = Physics(
     Ttop    = 273.15,           # Temperature at the top [ K ]
     Tbot    = Ttop + ΔT,        # Temperature at the bottom [ K ] 
     Ra      = 1e5,              # Rayleigh number
+    RG      = 8.314             # Gas Constant [ J/mol/kg ]
 )
 ```
 
@@ -346,26 +358,39 @@ P = Physics(
 
 ```julia 
 D = DataFields(
-    Q       = zeros(1,1),
-    T       = zeros(1,1),
-    T0      = zeros(1,1),
-    T_ex    = zeros(1,1),
-    T_exo   = zeros(1,1),
-    ρ       = zeros(1,1),
-    cp      = zeros(1,1),
-    vx      = zeros(1,1),
-    vy      = zeros(1,1),
-    Pt      = zeros(1,1),
-    vxc     = zeros(1,1),
-    vyc     = zeros(1,1),
-    vc      = zeros(1,1),
-    wt      = zeros(1,1),
-    wtv     = zeros(1,1),
-    ΔTtop   = zeros(1),
-    ΔTbot   = zeros(1),
-    Tmax    = 0.0,
-    Tmin    = 0.0,
-    Tmean   = 0.0,
+    Q           = zeros(1,1)
+    Hs          = zeros(1,1)
+    T           = zeros(1,1)
+    T0          = zeros(1,1)
+    T_ex        = zeros(1,1)
+    T_ex0       = zeros(1,1)
+    Told_ex     = zeros(1,1)
+    ηc          = zeros(1,1)
+    η_ex        = zeros(1,1)
+    ηv          = zeros(1,1)
+    ηp          = zeros(1,1)
+    ρ           = zeros(1,1)
+    ρ_ex        = zeros(1,1)
+    p           = zeros(1,1)
+    p_ex        = zeros(1,1)
+    pv          = zeros(1,1)
+    cp          = zeros(1,1)
+    vx          = zeros(1,1)
+    vy          = zeros(1,1)
+    Pt          = zeros(1,1)
+    vxc         = zeros(1,1)
+    vyc         = zeros(1,1)
+    vxco        = zeros(1,1)
+    vyco        = zeros(1,1)
+    vc          = zeros(1,1)
+    wt          = zeros(1,1)
+    wte         = zeros(1,1)
+    wtv         = zeros(1,1)
+    ΔTtop       = zeros(1)
+    ΔTbot       = zeros(1)
+    Tmax        = 0.0
+    Tmin        = 0.0
+    Tmean       = 0.0
 end
 )
 ```
