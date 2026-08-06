@@ -321,7 +321,7 @@ CountMPC(
     for ith=1:nthreads()
         nmark_out += nmark_out_th[ith]
     end
-    verbose && @printf("%d markers out\n", nmark_out[1])
+    verbose && @printf("%d markers out\n", nmark_out)
 
     # Initialize marker per cell per thread array ---
     @threads for j = 1:NC.y
