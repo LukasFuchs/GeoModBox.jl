@@ -115,9 +115,6 @@ if P.Ra < 0
 else
     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*(M.ymax-M.ymin)^3/P.Ra/P.κ
 end
-filename    =   string("Blankenbach_VarEta_",@sprintf("%.2e",P.Ra),
-                        "_",NC.x,"_",NC.y,
-                        "_",Ini.T)
 # ----------------------------------------------------------------------- #
 # Define Scaling Constants ============================================== # 
 S   =   ScalingConstants!(M,P)
@@ -135,6 +132,9 @@ NV      =   (
     x   =   (M.xmax - M.xmin)/NC.x,
     y   =   (M.ymax - M.ymin)/NC.y,
 )
+filename    =   string("Blankenbach_VarEta_",@sprintf("%.2e",P.Ra),
+                        "_",NC.x,"_",NC.y,
+                        "_",Ini.T)
 # ----------------------------------------------------------------------- #
 # Data Arrays =========================================================== #
 D       =   DataFields(

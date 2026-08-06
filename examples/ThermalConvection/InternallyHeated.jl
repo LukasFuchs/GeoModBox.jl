@@ -64,9 +64,6 @@ else
     # die Referenzviskositaet η₀ angepasst. 
     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*(M.ymax-M.ymin)^3/P.Ra/P.κ
 end
-filename    =   string("Internally_Heated_",P.Ra,
-                        "_",NC.x,"_",NC.y,
-                        "_",Ini.T)
 Ra_Q    =   (P.ρ₀*P.g*P.α*P.Q₀*((M.ymax-M.ymin))^5) / (P.k*P.κ*P.η₀) 
 @printf("    Ra_Q: %04e\n ",Ra_Q)
 # =================================================================== #
@@ -86,6 +83,9 @@ NV      =   (
     x   =   (M.xmax - M.xmin)/NC.x,
     y   =   (M.ymax - M.ymin)/NC.y,
 )
+filename    =   string("Internally_Heated_",P.Ra,
+                        "_",NC.x,"_",NC.y,
+                        "_",Ini.T)
 # ------------------------------------------------------------------- #
 # Initialisierung der Datenfelder =================================== #
 D       =   DataFields(

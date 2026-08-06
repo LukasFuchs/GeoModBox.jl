@@ -64,9 +64,6 @@ else
     # die Referenzviskositaet η₀ angepasst. 
     P.η₀     =   P.ρ₀*P.g*P.α*P.ΔT*(M.ymax-M.ymin)^3/P.Ra/P.κ
 end
-filename    =   string("Bottom_Heated_",P.Ra,
-                        "_",NC.x,"_",NC.y,
-                        "_",Ini.T)
 # =================================================================== #
 # Definiere Skalierungskonstanten =================================== # 
 S   =   ScalingConstants!(M,P)
@@ -84,6 +81,9 @@ NV      =   (
     x   =   (M.xmax - M.xmin)/NC.x,
     y   =   (M.ymax - M.ymin)/NC.y,
 )
+filename    =   string("Bottom_Heated_",P.Ra,
+                        "_",NC.x,"_",NC.y,
+                        "_",Ini.T)
 # ------------------------------------------------------------------- #
 # Initialisierung der Datenfelder =================================== #
 D       =   DataFields(
