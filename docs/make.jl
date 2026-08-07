@@ -13,6 +13,7 @@ makedocs(
     modules = [GeoModBox],
     pages = [
         "Home" => "index.md", 
+        "Installation" => "Installation.md",
         "Governing Equation" => Any[
             "Solution" => Any[
                 "General" => "man/theory/GESolution.md", 
