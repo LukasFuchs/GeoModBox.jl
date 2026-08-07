@@ -69,7 +69,7 @@ t_{\\mathrm{sc}} = \\frac{H^2}{\\kappa},
 
 v_{\\mathrm{sc}} = \\frac{\\kappa}{H},
 
-\tau_{\\mathrm{sc}} = \\frac{\\eta_0 \\kappa}{H},
+\tau_{\\mathrm{sc}} = \\frac{\\eta_0 \\kappa}{H^2},
 
 T_{\\mathrm{sc}} = \\Delta T,
 
@@ -114,7 +114,7 @@ function ScalingConstants!(M,P)
     S.hsc   =   (M.ymax-M.ymin)                         #   Length scale [ m ]
     S.tsc   =   (M.ymax-M.ymin)^2 / P.κ                 #   Time scale [ s ]
     S.vsc   =   P.κ / (M.ymax-M.ymin)                   #   Velocity scale [ m/s ]
-    S.τsc   =   (P.η₀ * P.κ)/(M.ymax-M.ymin)            #   Stress scale [ Pa ]
+    S.τsc   =   (P.η₀ * P.κ)/(M.ymax-M.ymin)^2          #   Stress scale [ Pa ]
     S.Tsc   =   P.ΔT                                    #   Temperature scale [ K ]
     S.Qsc   =   (P.ΔT*P.κ*P.ρ₀*P.cp)/(M.ymax-M.ymin)^2  #   Heat source scale [ w/m³ ]
 
