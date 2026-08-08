@@ -91,7 +91,7 @@ where
 
 # Returns
 
-Returns a Constants structure containing the characteristic scalingconstants in SI units.
+Returns a Constants structure containing the characteristic scaling constants in SI units.
 
 # Example
 
@@ -103,9 +103,9 @@ S.vsc
 
 # Notes
 
-The returned scaling constants can be used to convert dimensional modelparameters 
-to their non-dimensional counterparts, or to convertnon-dimensional simulation 
-results back to SI units for analysis andvisualization. 
+The returned scaling constants can be used to convert dimensional model parameters 
+to their non-dimensional counterparts, or to convert non-dimensional simulation 
+results back to SI units for analysis and visualization. 
 """ 
 function ScalingConstants!(M,P)
 
