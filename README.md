@@ -1,4 +1,5 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://geosci-ffm.github.io/GeoModBox.jl/)
+[![Unit Tests](https://github.com/GeoSci-FFM/GeoModBox.jl/actions/workflows/UnitTests.yml/badge.svg)](https://github.com/GeoSci-FFM/GeoModBox.jl/actions/workflows/UnitTests.yml)
 
 # GeoModBox.jl
 
