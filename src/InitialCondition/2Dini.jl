@@ -113,7 +113,7 @@ IniTemperature!(:circle,M,NC,D,x,y;Tb = 1200.0,Ta = 0.0,)
         Ttop    =   Ta
         Tbot    =   Tb
         Tgrad   =   (Tbot-Ttop)/(M.ymax-M.ymin)         # [ K/m ]
-        @show Tgrad
+        # @show Tgrad
         @threads for i = 1:NC.x+2
             for j = 1:NC.y+2
                 D.T_ex[i,j] = -Tgrad*(y.ce[j]) + Ttop
